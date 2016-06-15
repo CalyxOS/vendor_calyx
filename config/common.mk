@@ -74,3 +74,6 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     persist.security.deny_new_usb=dynamic
+
+PRODUCT_COPY_FILES += \
+    vendor/calyx/prebuilt/deny_new_usb.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/deny_new_usb.rc
