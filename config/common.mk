@@ -65,3 +65,6 @@ PRODUCT_PACKAGES += \
     Eleven \
     Seedvault \
     Ripple
+
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+    persist.security.deny_new_usb=dynamic
