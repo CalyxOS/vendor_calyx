@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- Google-specific version of Launcher3/res/xml/default_workspace.xml -->
+<favorites>
+  <!-- Hotseat (We use the screen as the position of the item in the hotseat) -->
+  <!-- Dialer Signal [All Apps] Orfox Camera -->
+  <favorite container="-101" screen="0" x="0" y="0" packageName="com.android.dialer" className="com.android.dialer.app.DialtactsActivity"/>
+  <favorite container="-101" screen="1" x="1" y="0" packageName="org.thoughtcrime.securesms" className="org.thoughtcrime.securesms.RoutingActivity"/>
+  <!--
+  <favorite container="-101" screen="3" x="2" y="0" packageName="org.chromium.chrome" className="com.google.android.apps.chrome.Main"/>
+  -->
+  <favorite container="-101" screen="3" x="2" y="0" packageName="info.guardianproject.orfox" className="info.guardianproject.orfox.App"/>
+  <favorite container="-101" screen="4" x="3" y="0" packageName="com.android.camera2" className="com.android.camera.CameraActivity"/>
+
+  <favorite screen="0" x="0" y="3" packageName="se.leap.bitmaskclient" className="se.leap.bitmaskclient.StartActivity"/>
+  <favorite screen="0" x="0" y="4" packageName="eu.siacs.conversations" className="eu.siacs.conversations.ui.ConversationActivity"/>
+  <favorite screen="0" x="1" y="4" packageName="com.fsck.k9" className="com.fsck.k9.activity.Accounts"/>
+  <favorite screen="0" x="2" y="4" packageName="org.openobservatory.ooniprobe" className="org.openobservatory.ooniprobe.activity.MainActivity"/>
+  <favorite screen="0" x="3" y="4" packageName="org.sufficientlysecure.keychain" className="org.sufficientlysecure.keychain.ui.MainActivity"/>
+  <favorite screen="0" x="4" y="4" packageName="org.torproject.android" className="org.torproject.android.OrbotMainActivity"/>
+  <favorite screen="0" x="4" y="3" packageName="org.fdroid.fdroid" className="org.fdroid.fdroid.views.main.MainActivity"/>
+  <!-- Any other installed apps will appear in All Apps -->
+</favorites>
