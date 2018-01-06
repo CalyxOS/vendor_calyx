@@ -26,6 +26,7 @@
   <favorite container="-101" screen="4" x="3" y="0" packageName="com.android.camera2" className="com.android.camera.CameraActivity"/>
 
   <favorite screen="0" x="0" y="3" packageName="se.leap.bitmaskclient" className="se.leap.bitmaskclient.StartActivity"/>
+  <favorite screen="0" x="1" y="3" packageName="rg.briarproject.briar.beta" className="oorg.briarproject.briar.android.splash.SplashScreenActivity"/>
   <favorite screen="0" x="0" y="4" packageName="eu.siacs.conversations" className="eu.siacs.conversations.ui.ConversationActivity"/>
   <favorite screen="0" x="1" y="4" packageName="com.fsck.k9" className="com.fsck.k9.activity.Accounts"/>
   <favorite screen="0" x="2" y="4" packageName="org.openobservatory.ooniprobe" className="org.openobservatory.ooniprobe.activity.MainActivity"/>
