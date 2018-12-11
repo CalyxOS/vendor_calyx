@@ -191,8 +191,10 @@ endif
 
 ifeq ($(FULL_KERNEL_BUILD),true)
 
+ifeq ($(TARGET_COMPILE_WITH_MSM_KERNEL),true)
 KERNEL_HEADERS_INSTALL_DIR := $(KERNEL_OUT)/usr
 KERNEL_HEADERS_INSTALL_DEPS := $(KERNEL_OUT)/.headers_install_deps
+endif
 
 ifeq ($(NEED_KERNEL_MODULE_ROOT),true)
 KERNEL_MODULES_INSTALL := root
@@ -345,6 +347,7 @@ $(TARGET_KERNEL_MODULES): TARGET_KERNEL_BINARIES
 
 $(TARGET_PREBUILT_INT_KERNEL): $(TARGET_KERNEL_MODULES)
 
+ifeq ($(TARGET_COMPILE_WITH_MSM_KERNEL),true)
 # Install kernel (uapi) headers.
 #
 # The dependency file serves two purposes:
@@ -391,6 +394,8 @@ $(KERNEL_HEADERS_INSTALL_DIR): $(KERNEL_HEADERS_INSTALL_DEPS)
 	@echo "Depending on $(KERNEL_HEADERS_INSTALL_DIR) is deprecated." 1>&2
 	@echo "Use INSTALLED_KERNEL_HEADERS instead." 1>&2
 	@exit 1
+
+endif
 
 .PHONY: kerneltags
 kerneltags: $(KERNEL_CONFIG)
