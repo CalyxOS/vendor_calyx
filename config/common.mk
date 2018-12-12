@@ -3,6 +3,10 @@ DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 PRODUCT_COPY_FILES += \
 	vendor/calyx/prebuilt/bootanimation.zip:system/media/bootanimation.zip
 
+# OTA Updater
+PRODUCT_PACKAGES += \
+	Updater
+
 # Apps
 PRODUCT_PACKAGES += \
 	F-Droid \
