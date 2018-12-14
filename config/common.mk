@@ -1,5 +1,7 @@
 include vendor/calyx/config/version.mk
 
+PRODUCT_ADB_KEYS := vendor/calyx/adb_keys
+
 DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
