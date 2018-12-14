@@ -7,6 +7,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
 	Updater
 
+# SetupWizard
+PRODUCT_PACKAGES += \
+	CalyxSetupWizard
+
 # Apps
 PRODUCT_PACKAGES += \
 	F-Droid \
