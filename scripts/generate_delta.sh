@@ -13,7 +13,7 @@ KEY_DIR=keys/$DEVICE
 OLD=$2
 NEW=$3
 
-if [[ -d build ]]; then
+if [[ -d build/tools/releasetools ]]; then
   RELEASETOOLS_PATH=build/tools
 else
   # For usage with otatools.zip
