@@ -31,13 +31,9 @@ fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
-get_radio_image_version() {
-  grep -Po "require version-$1=\K.+" vendor/$2/vendor-board-info.txt | tr '[:upper:]' '[:lower:]'
-}
-
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ]]; then
-  BOOTLOADER=$(get_radio_image_version bootloader google_devices/$DEVICE)
-  RADIO=$(get_radio_image_version baseband google_devices/$DEVICE)
+  BOOTLOADER=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
+  RADIO=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine ]]; then
   : # TODO
 else
