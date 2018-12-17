@@ -2,7 +2,7 @@
 
 error() {
   echo error: $1, please try again >&2
-  echo "Usage: $0 device [target-files.zip]"
+  echo "Usage: $0 device oldversion newversion"
   exit 1
 }
 
