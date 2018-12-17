@@ -9,7 +9,7 @@ error() {
 [[ $# -eq 3 ]] ||  error "incorrect number of arguments"
 
 DEVICE=$1
-KEY_DIR=keys/$DEVICE
+KEY_DIR=keys
 OLD=$2
 NEW=$3
 
