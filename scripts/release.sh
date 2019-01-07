@@ -27,6 +27,7 @@ else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH=.
+  EXTRA_RELEASETOOLS_ARGS="-p ."
 fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
@@ -51,15 +52,15 @@ elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
 fi
 
 echo "Creating signed targetfiles zip"
-$RELEASETOOLS_PATH/releasetools/sign_target_files_apks -p . -o -d "$KEY_DIR" "${VERITY_SWITCHES[@]}" \
+$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files -p . -k "$KEY_DIR/releasekey" "${EXTRA_OTA[@]}" $TARGET_FILES \
+$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" "${EXTRA_OTA[@]}" $TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
 echo "Creating factory images"
-$RELEASETOOLS_PATH/releasetools/img_from_target_files -p . $SIGNED_TARGET_FILES \
+$RELEASETOOLS_PATH/releasetools/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-img-$BUILD.zip || exit 1
 
 cd $OUT || exit 1
