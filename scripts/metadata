@@ -10,3 +10,32 @@ buildid[marlin]=pq1a.190105.004 # 2019-01-05
 buildid[sailfish]=pq1a.190105.004 # 2019-01-05
 buildid[taimen]=pq1a.190105.004 # 2019-01-05
 buildid[walleye]=pq1a.190105.004 # 2019-01-05
+
+branch=pie-qpr1-release
+prev_branch=pie-qpr1-s2-release
+aosp_version=PQ1A.190105.004
+aosp_version_real=PQ1A.190105.004
+aosp_tag=android-9.0.0_r30
+
+aosp_forks=(
+	device_common
+	device_google_marlin
+	device_google_muskie
+	device_google_taimen
+	device_google_wahoo
+	platform_build
+	platform_hardware_qcom_bootctrl
+)
+
+declare -A kernels
+kernels[google_marlin]=android-9.0.0_r0.52 # 2019-01-05
+kernels[google_wahoo]=android-9.0.0_r0.53 # 2019-01-05
+
+independent=(
+	platform_manifest
+	platform_packages_apps_SetupWizard
+	platform_packages_apps_Updater
+	vendor_android-prepare-vendor
+	vendor_calyx
+	vendor_calyx-tmp
+)
