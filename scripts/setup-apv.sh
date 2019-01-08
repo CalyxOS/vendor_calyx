@@ -1,6 +1,8 @@
 #!/bin/bash
 # Setup android-prepare-vendor for all supported devices
 
+set -o nounset
+
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source $SCRIPTPATH/metadata
