@@ -6,7 +6,7 @@ devices=(
 )
 
 declare -A buildid
-buildid[marlin]=pq1a.181205.002.a1 # 2018-12-05
-buildid[sailfish]=pq1a.181205.002.a1 # 2018-12-05
-buildid[taimen]=pq1a.181205.002 # 2018-12-05
-buildid[walleye]=pq1a.181205.002 # 2018-12-05
+buildid[marlin]=pq1a.190105.004 # 2019-01-05
+buildid[sailfish]=pq1a.190105.004 # 2019-01-05
+buildid[taimen]=pq1a.190105.004 # 2019-01-05
+buildid[walleye]=pq1a.190105.004 # 2019-01-05
