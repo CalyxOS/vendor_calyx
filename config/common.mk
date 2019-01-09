@@ -14,7 +14,8 @@ PRODUCT_PACKAGES += \
 # Apps
 PRODUCT_PACKAGES += \
 	F-Droid \
-	F-DroidPrivelegedExtension
+	F-DroidPrivelegedExtension \
+	Chromium
 
 # Temporary, for prebuilt apps
 $(call inherit-product, vendor/calyx-tmp/common.mk)
