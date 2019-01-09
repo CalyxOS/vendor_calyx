@@ -35,6 +35,7 @@ independent=(
 	platform_manifest
 	platform_packages_apps_SetupWizard
 	platform_packages_apps_Updater
+	platform_prebuilts_calyx
 	vendor_android-prepare-vendor
 	vendor_calyx
 	vendor_calyx-tmp
