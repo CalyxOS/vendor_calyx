@@ -23,8 +23,15 @@ aosp_forks=(
 	device_google_muskie
 	device_google_taimen
 	device_google_wahoo
+	platform_bionic
 	platform_build
+	platform_frameworks_av
+	platform_hardware_qcom_audio
 	platform_hardware_qcom_bootctrl
+	platform_hardware_qcom_display
+	platform_hardware_qcom_gps
+	platform_hardware_qcom_media
+	platform_hardware_qcom_msm8998
 )
 
 declare -A kernels
@@ -33,10 +40,24 @@ kernels[google_wahoo]=android-9.0.0_r0.62 # 2019-02-05
 
 independent=(
 	platform_manifest
+	device_qcom_sepolicy
+	device_xiaomi_jasmine
+	device_xiaomi_sdm660-common
+	kernel_xiaomi_jasmine
+	platform_external_ant-wireless_ant_native
+	platform_external_ant-wireless_antradio-library
+	platform_external_ant-wireless_ant_service
+	platform_packages_apps_F-DroidPrivilegedExtension
 	platform_packages_apps_SetupWizard
 	platform_packages_apps_Updater
+	platform_packages_resources_devicesettings
 	platform_prebuilts_calyx
 	vendor_android-prepare-vendor
 	vendor_calyx
 	vendor_calyx-tmp
+	vendor_qcom_opensource_audio
+	vendor_qcom_opensource_cryptfs_hw
+	vendor_qcom_opensource_dataservices
+	vendor_qcom_opensource_interfaces
+	vendor_xiaomi_jasmine
 )
