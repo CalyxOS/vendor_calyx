@@ -2,8 +2,6 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
-set -o nounset
-
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device [target-files.zip]"

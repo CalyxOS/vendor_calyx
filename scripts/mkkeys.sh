@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -o nounset
-
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 key_dir subject"
