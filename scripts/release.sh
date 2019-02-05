@@ -65,6 +65,10 @@ $RELEASETOOLS_PATH/releasetools/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $
 
 cd $OUT || exit 1
 
-source ../../device/common/generate-factory-images-common.sh
+if [ -d $ANDROID_BUILD_TOP ]; then
+	source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
+else
+	source ../../device/common/generate-factory-images-common.sh
+fi
 
 mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD_NUMBER.zip
