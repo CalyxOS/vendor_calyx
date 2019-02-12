@@ -56,7 +56,7 @@ $RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS 
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" "${EXTRA_OTA[@]}" $TARGET_FILES \
+$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
 echo "Creating factory images"
