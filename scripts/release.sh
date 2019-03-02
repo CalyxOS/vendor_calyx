@@ -35,7 +35,7 @@ VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
-elif [[ $DEVICE == jasmine ]]; then
+elif [[ $DEVICE == jasmine_sprout ]]; then
   : # TODO
 else
   error "Unsupported device $DEVICE"
@@ -43,7 +43,7 @@ fi
 
 mkdir -p $OUT || exit 1
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine ]]; then
+if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; then
   VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
                    --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then

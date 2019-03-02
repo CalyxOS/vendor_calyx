@@ -41,9 +41,9 @@ kernels[google_wahoo]=android-9.0.0_r0.62 # 2019-02-05
 independent=(
 	platform_manifest
 	device_qcom_sepolicy
-	device_xiaomi_jasmine
+	device_xiaomi_jasmine_sprout
 	device_xiaomi_sdm660-common
-	kernel_xiaomi_jasmine
+	kernel_xiaomi_jasmine_sprout
 	platform_external_ant-wireless_ant_native
 	platform_external_ant-wireless_antradio-library
 	platform_external_ant-wireless_ant_service
@@ -59,5 +59,5 @@ independent=(
 	vendor_qcom_opensource_cryptfs_hw
 	vendor_qcom_opensource_dataservices
 	vendor_qcom_opensource_interfaces
-	vendor_xiaomi_jasmine
+	vendor_xiaomi_jasmine_sprout
 )
