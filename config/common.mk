@@ -14,7 +14,7 @@ PRODUCT_PACKAGES += \
 # Apps
 PRODUCT_PACKAGES += \
 	F-Droid \
-	F-DroidPrivelegedExtension \
+	F-DroidPrivilegedExtension \
 	Chromium
 
 # Temporary, for prebuilt apps
