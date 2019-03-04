@@ -32,6 +32,7 @@ aosp_forks=(
 	platform_hardware_qcom_gps
 	platform_hardware_qcom_media
 	platform_hardware_qcom_msm8998
+	platform_prebuilts_misc
 )
 
 declare -A kernels
