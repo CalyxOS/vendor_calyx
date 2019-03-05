@@ -1,25 +1,20 @@
 devices=(
-	marlin
-	sailfish
 	taimen
 	walleye
 )
 
 declare -A buildid
-buildid[marlin]=pq2a.190205.003 # 2019-02-05
-buildid[sailfish]=pq2a.190205.003 # 2019-02-05
-buildid[taimen]=pq2a.190205.002 # 2019-02-05
-buildid[walleye]=pq2a.190205.002 # 2019-02-05
+buildid[taimen]=pq2a.190305.002 # 2019-03-05
+buildid[walleye]=pq2a.190305.002 # 2019-03-05
 
 branch=pie-qpr2-release
-prev_branch=pie-qpr1-release
-aosp_version=PQ2A.190205.003
-aosp_version_real=PQ2A.190205.003
-aosp_tag=android-9.0.0_r33
+prev_branch=pie-qpr2-release
+aosp_version=PQ2A.190305.003
+aosp_version_real=PQ2A.190305.003
+aosp_tag=android-9.0.0_r34
 
 aosp_forks=(
 	device_common
-	device_google_marlin
 	device_google_muskie
 	device_google_taimen
 	device_google_wahoo
@@ -36,8 +31,7 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_marlin]=android-9.0.0_r0.61 # 2019-02-05
-kernels[google_wahoo]=android-9.0.0_r0.62 # 2019-02-05
+kernels[google_wahoo]=android-9.0.0_r0.65 # 2019-03-05
 
 independent=(
 	platform_manifest
