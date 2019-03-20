@@ -34,4 +34,5 @@
   <favorite screen="0" x="4" y="4" packageName="org.torproject.android" className="org.torproject.android.OrbotMainActivity"/>
   <favorite screen="0" x="4" y="3" packageName="org.fdroid.fdroid" className="org.fdroid.fdroid.views.main.MainActivity"/>
   <!-- Any other installed apps will appear in All Apps -->
+  <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="org.chromium.chrome" className="org.chromium.chrome.browser.searchwidget.SearchWidgetProvider" appWidgetId="-1" />
 </favorites>
