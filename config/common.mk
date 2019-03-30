@@ -17,5 +17,9 @@ PRODUCT_PACKAGES += \
 	F-DroidPrivilegedExtension \
 	Chromium
 
+# Overlays
+PRODUCT_PACKAGES += \
+	CalyxOSF-DroidOverlay
+
 # Temporary, for prebuilt apps
 $(call inherit-product, vendor/calyx-tmp/common.mk)

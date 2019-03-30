@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.calyxos.fdroid.overlay"
+    android:versionCode="1"
+    android:versionName="1.0">
+    <overlay android:targetPackage="org.fdroid.fdroid" android:priority="1"/>
+
+    <application android:label="@string/fdroid_overlay" android:hasCode="false"/>
+</manifest>
