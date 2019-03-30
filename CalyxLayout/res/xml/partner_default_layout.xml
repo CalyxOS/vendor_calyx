@@ -37,10 +37,19 @@
   	<favorite packageName="com.fsck.k9" className="com.fsck.k9.activity.Accounts" />
   	<favorite packageName="com.android.email" className="com.android.email.activity.Welcome"/>
   </resolve>
-  <favorite container="-101" screen="3" x="3" y="0" packageName="org.chromium.chrome" className="com.google.android.apps.chrome.Main"/>
+  <resolve
+    container="-101"
+    screen="3"
+    x="3"
+    y="0" >
+    <favorite packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.app.launch.LaunchActivity"/>
+    <favorite packageName="org.chromium.chrome" className="com.google.android.apps.chrome.Main"/>
+  </resolve>
   <favorite container="-101" screen="4" x="4" y="0" packageName="com.android.camera2" className="com.android.camera.CameraActivity"/>
 
   <!-- Search widget shown at the top, provided by the browser -->
+  <!-- <resolve> doesn't work for appwidgets so just put them both here, the first installed app wins -->
+  <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.widget.SearchWidget" appWidgetId="-1" />
   <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="org.chromium.chrome" className="org.chromium.chrome.browser.searchwidget.SearchWidgetProvider" appWidgetId="-1" />
 
   <!-- Bottom Row: - - - - F-Droid  -->
