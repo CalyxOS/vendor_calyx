@@ -46,6 +46,10 @@ mkdir -p $OUT || exit 1
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; then
   VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
                    --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
+elif [[ $DEVICE == blueline || $DEVICE == crosshatch ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
+  AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
