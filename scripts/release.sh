@@ -32,7 +32,7 @@ fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye || $1 == blueline || $1 == crosshatch ]]; then
+if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine_sprout ]]; then
