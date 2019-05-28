@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- Google-specific version of Launcher3/res/xml/default_workspace.xml -->
+<favorites>
+  <!-- Note: For any apps not included on the sytem or vendor partition, fallbacks
+       should be provided by using the resolve tag -->
+
+  <!-- Hotseat (We use the screen as the position of the item in the hotseat) -->
+  <!-- Dialer Signal/Messaging K-9Mail/E-Mail Chromium Camera -->
+  <favorite container="-101" screen="0" x="0" y="0" packageName="com.android.dialer" className="com.android.dialer.app.DialtactsActivity"/>
+  <resolve
+  	container="-101"
+  	screen="1"
+  	x="1"
+  	y="0" >
+  	<favorite packageName="org.thoughtcrime.securesms" className="org.thoughtcrime.securesms.RoutingActivity" />
+  	<favorite packageName="com.android.messaging" className="com.android.messaging.ui.conversationlist.ConversationListActivity" />
+  </resolve>
+  <resolve
+  	container="-101"
+  	screen="2"
+  	x="2"
+  	y="0" >
+  	<favorite packageName="com.fsck.k9" className="com.fsck.k9.activity.Accounts" />
+  	<favorite packageName="com.android.email" className="com.android.email.activity.Welcome"/>
+  </resolve>
+  <resolve
+    container="-101"
+    screen="3"
+    x="3"
+    y="0" >
+    <favorite packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.app.launch.LaunchActivity"/>
+    <favorite packageName="org.chromium.chrome" className="com.google.android.apps.chrome.Main"/>
+  </resolve>
+  <favorite container="-101" screen="4" x="4" y="0" packageName="com.android.camera2" className="com.android.camera.CameraActivity"/>
+
+  <!-- Search widget shown at the top, provided by the browser -->
+  <!-- <resolve> doesn't work for appwidgets so just put them both here, the first installed app wins -->
+  <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.widget.SearchWidget" appWidgetId="-1" />
+  <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="org.chromium.chrome" className="org.chromium.chrome.browser.searchwidget.SearchWidgetProvider" appWidgetId="-1" />
+
+  <!-- Bottom Row: - - - - F-Droid  -->
+  <favorite screen="0" x="4" y="4" packageName="org.fdroid.fdroid" className="org.fdroid.fdroid.views.main.MainActivity"/>
+
+  <!-- Any other installed apps will appear in All Apps -->
+</favorites>
