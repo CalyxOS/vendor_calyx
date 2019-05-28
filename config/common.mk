@@ -11,11 +11,36 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	CalyxSetupWizard
 
+# Homescreen Layout
+PRODUCT_PACKAGES += \
+	CalyxLayout
+
+# Local F-droid repo
+PRODUCT_PACKAGES += \
+	fdroid-repo \
+	Briar \
+	CalyxVPN \
+	Conversations \
+	DuckDuckGoPrivacyBrowser \
+	K-9Mail \
+	MozillaNlpBackend \
+	MuPDFviewer \
+	OONIProbe \
+	OpenKeychain \
+	Orbot \
+	RiseupVPN \
+	Signal \
+	TorBrowser \
+	Weather \
+	YubicoAuthenticator
+
+# microG
+PRODUCT_PACKAGES += \
+	GmsCore \
+	FakeStore
+
 # Apps
 PRODUCT_PACKAGES += \
 	F-Droid \
 	F-DroidPrivilegedExtension \
 	Chromium
-
-# Temporary, for prebuilt apps
-$(call inherit-product, vendor/calyx-tmp/common.mk)
