@@ -3,9 +3,11 @@ DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 PRODUCT_COPY_FILES += \
 	vendor/calyx/prebuilt/bootanimation.zip:system/media/bootanimation.zip
 
+ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
 	Updater
+endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
