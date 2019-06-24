@@ -35,6 +35,7 @@ aosp_forks=(
 	platform_hardware_qcom_media
 	platform_hardware_qcom_msm8998
 	platform_packages_apps_Launcher3
+	platform_packages_apps_Settings
 	platform_prebuilts_misc
 )
 
