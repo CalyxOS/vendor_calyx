@@ -20,18 +20,26 @@ PRODUCT_PACKAGES += \
 # Local F-droid repo
 PRODUCT_PACKAGES += \
 	fdroid-repo \
+	AuroraStore \
 	Briar \
 	CalyxVPN \
 	Conversations \
+	DAVx5 \
+	DejaVuLocationService \
 	DuckDuckGoPrivacyBrowser \
 	K-9Mail \
+	LocationPrivacy \
+	Maps \
 	MozillaNlpBackend \
 	MuPDFviewer \
+	NominatimNlpBackend \
 	OONIProbe \
 	OpenKeychain \
 	Orbot \
 	RiseupVPN \
 	Signal \
+	ScrambledExif \
+	Tasks \
 	TorBrowser \
 	Weather \
 	YubicoAuthenticator
