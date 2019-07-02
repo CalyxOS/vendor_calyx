@@ -29,7 +29,6 @@ PRODUCT_PACKAGES += \
 	DuckDuckGoPrivacyBrowser \
 	K-9Mail \
 	LocationPrivacy \
-	Maps \
 	MozillaNlpBackend \
 	MuPDFviewer \
 	NominatimNlpBackend \
