@@ -53,7 +53,11 @@ for repo in "${aosp_forks[@]}"; do
   else
     git fetch aosp --tags || exit 1
 
-    git pull --rebase aosp $aosp_tag || wait_for_conflict $repo
+    if [[ $repo != platform_manifest ]]; then
+        git reset --hard $aosp_tag || exit 1
+        git cherry-pick --ff $aosp_tag_main..gitlab-priv/$branch_main || wait_for_conflict $repo
+    fi
+
     git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
     git push -f gitlab-priv $aosp_tag:refs/tags/$aosp_tag || exit 1
   fi

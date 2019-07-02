@@ -8,10 +8,12 @@ buildid[bonito]=pq3b.190705.003 # 2019-07-05
 buildid[sargo]=pq3b.190705.003 # 2019-07-05
 
 branch=pie-3a
-prev_branch=pie
+prev_branch=pie-3a
+branch_main=pie
 aosp_version=PQ3B.190705.003
 aosp_version_real=PQ3B.190705.003
 aosp_tag=android-9.0.0_r45
+aosp_tag_main=android-9.0.0_r44
 
 aosp_forks=(
 	device_common
