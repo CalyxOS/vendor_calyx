@@ -50,7 +50,6 @@ independent=(
 	platform_packages_resources_devicesettings
 	platform_prebuilts_calyx
 	vendor_android-prepare-vendor
-	vendor_calyx
 	vendor_qcom_opensource_audio
 	vendor_qcom_opensource_cryptfs_hw
 	vendor_qcom_opensource_dataservices
