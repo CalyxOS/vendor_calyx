@@ -132,3 +132,7 @@ PRODUCT_DEXPREOPT_SPEED_APPS += \
 
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     dalvik.vm.systemuicompilerfilter=speed
+
+# Enforce privapp-permissions allowlist
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+    ro.control_privapp_permissions=enforce
