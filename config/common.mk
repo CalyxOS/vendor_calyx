@@ -1,3 +1,5 @@
+include vendor/calyx/config/version.mk
+
 DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 
 PRODUCT_COPY_FILES += \
