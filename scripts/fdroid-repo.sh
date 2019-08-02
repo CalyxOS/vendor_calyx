@@ -7,7 +7,6 @@ FDROIDREPOTMP=$(mktemp -d)
 JOBID=$(curl -sI https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/artifacts/master/download?job=fdroid-repo | grep Location | cut -d / -f 8)
 
 pushd $SCRIPTPATH/../../../prebuilts/calyx/
-repo start fdroid-update-${DATE} . || exit 1
 pushd $FDROIDREPOTMP
 curl -L https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download -o artifacts.zip || exit 1
 unzip artifacts.zip
