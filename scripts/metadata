@@ -6,16 +6,16 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=pq3a.190705.001 # 2019-07-05
-buildid[walleye]=pq3a.190705.001 # 2019-07-05
-buildid[crosshatch]=pq3a.190705.003 # 2019-07-05
-buildid[blueline]=pq3a.190705.003 # 2019-07-05
+buildid[taimen]=pq3a.190801.002 # 2019-08-01
+buildid[walleye]=pq3a.190801.002 # 2019-08-01
+buildid[crosshatch]=pq3a.190801.002 # 2019-08-01
+buildid[blueline]=pq3a.190801.002 # 2019-08-01
 
 branch=pie
 prev_branch=pie
-aosp_version=PQ3A.190705.003
-aosp_version_real=PQ3A.190705.003
-aosp_tag=android-9.0.0_r44
+aosp_version=PQ3A.190801.002
+aosp_version_real=PQ3A.190801.002
+aosp_tag=android-9.0.0_r46
 
 aosp_forks=(
 	device_common
@@ -40,8 +40,8 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_wahoo]=android-9.0.0_r0.96 # 2019-07-05
-kernels[google_bluecross]=android-9.0.0_r0.98 # 2019-07-05
+kernels[google_wahoo]=android-9.0.0_r0.112 # 2019-08-01
+kernels[google_bluecross]=android-9.0.0_r0.113 # 2019-08-01
 
 independent=(
 	platform_manifest
