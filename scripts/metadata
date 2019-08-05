@@ -4,16 +4,16 @@ devices=(
 )
 
 declare -A buildid
-buildid[bonito]=pq3b.190705.003 # 2019-07-05
-buildid[sargo]=pq3b.190705.003 # 2019-07-05
+buildid[bonito]=pq3b.190801.002 # 2019-08-01
+buildid[sargo]=pq3b.190801.002 # 2019-08-01
 
 branch=pie-3a
 prev_branch=pie-3a
 branch_main=pie
-aosp_version=PQ3B.190705.003
-aosp_version_real=PQ3B.190705.003
-aosp_tag=android-9.0.0_r45
-aosp_tag_main=android-9.0.0_r44
+aosp_version=PQ3B.190801.002
+aosp_version_real=PQ3B.190801.002
+aosp_tag=android-9.0.0_r47
+aosp_tag_main=android-9.0.0_r46
 
 aosp_forks=(
 	device_common
@@ -35,7 +35,7 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_bonito]=android-9.0.0_r0.100 # 2019-07-05
+kernels[google_bonito]=android-9.0.0_r0.114 # 2019-08-01
 
 independent=(
 	platform_manifest
