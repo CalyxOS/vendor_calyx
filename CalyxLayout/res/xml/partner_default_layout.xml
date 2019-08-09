@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (C) 2013 The Android Open Source Project
+     Copyright (C) 2019 The Calyx Institute
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -52,7 +53,10 @@
   <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.widget.SearchWidget" appWidgetId="-1" />
   <appwidget screen="0" x="0" y="0" spanX="5" spanY="1" packageName="org.chromium.chrome" className="org.chromium.chrome.browser.searchwidget.SearchWidgetProvider" appWidgetId="-1" />
 
-  <!-- Bottom Row: - - - - F-Droid  -->
+  <!-- Bottom Row: CalyxVPN TorBrowser AuroraStore - F-Droid  -->
+  <favorite screen="0" x="0" y="4" packageName="org.calyxinstitute.vpn" className="se.leap.bitmaskclient.StartActivity"/>
+  <favorite screen="0" x="1" y="4" packageName="org.torproject.torbrowser" className="org.mozilla.gecko.BrowserApp"/>
+  <favorite screen="0" x="2" y="4" packageName="com.aurora.store" className="com.aurora.store.activity.AuroraActivity"/>
   <favorite screen="0" x="4" y="4" packageName="org.fdroid.fdroid" className="org.fdroid.fdroid.views.main.MainActivity"/>
 
   <!-- Any other installed apps will appear in All Apps -->
