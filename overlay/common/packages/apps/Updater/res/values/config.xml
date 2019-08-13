@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="url" translatable="false">https://release.calyxinstitute.org/</string>
+    <string name="network_type_default" translatable="false">2</string>
+    <string name="battery_not_low_default" translatable="false">true</string>
 </resources>
