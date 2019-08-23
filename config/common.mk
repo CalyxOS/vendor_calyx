@@ -9,6 +9,10 @@ ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
 	Updater
+
+PRODUCT_PACKAGES += \
+	repo-manifest
+
 endif
 
 # SetupWizard
