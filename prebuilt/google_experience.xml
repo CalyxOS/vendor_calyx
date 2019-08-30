@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<config>
+	<!-- For Google Camera -->
+	<feature name="com.google.android.feature.GOOGLE_EXPERIENCE" />
+</config>
