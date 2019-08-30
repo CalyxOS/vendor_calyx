@@ -12,7 +12,12 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
 	repo-manifest
+endif
 
+# For Google Camera
+ifeq ($(filter-out bonito sargo, $(TARGET_DEVICE)),)
+PRODUCT_COPY_FILES += \
+	vendor/calyx/prebuilt/google_experience.xml:system/etc/sysconfig/google_experience.xml
 endif
 
 # SetupWizard
