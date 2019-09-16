@@ -51,6 +51,7 @@ elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEV
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
+  EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
@@ -61,7 +62,7 @@ $RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS 
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $SIGNED_TARGET_FILES \
+$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
 echo "Creating factory images"
