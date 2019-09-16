@@ -34,8 +34,8 @@ VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -
 
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ||
 	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
-  RADIO=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
+  RADIO=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine_sprout ]]; then
   : # TODO
 else
