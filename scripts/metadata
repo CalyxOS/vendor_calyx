@@ -3,67 +3,51 @@ devices=(
 	walleye
 	crosshatch
 	blueline
+	bonito
+	sargo
 )
 
 declare -A buildid
-buildid[taimen]=pq3a.190801.002 # 2019-08-01
-buildid[walleye]=pq3a.190801.002 # 2019-08-01
-buildid[crosshatch]=pq3a.190801.002 # 2019-08-01
-buildid[blueline]=pq3a.190801.002 # 2019-08-01
+buildid[taimen]=qp1a.190711.020 # 2019-09-05
+buildid[walleye]=qp1a.190711.020 # 2019-09-05
+buildid[crosshatch]=qp1a.190711.020 # 2019-09-05
+buildid[blueline]=qp1a.190711.020 # 2019-09-05
+buildid[bonito]=qp1a.190711.020 # 2019-09-05
+buildid[sargo]=qp1a.190711.020 # 2019-09-05
 
-branch=pie
-prev_branch=pie
-aosp_version=PQ3A.190801.002
-aosp_version_real=PQ3A.190801.002
-aosp_tag=android-9.0.0_r46
+branch=staging/q
+prev_branch=
+aosp_version=qp1a.190711.020
+aosp_version_real=qp1a.190711.020
+aosp_tag=android-10.0.0_r2
 
 aosp_forks=(
 	device_common
+	device_google_bonito
 	device_google_crosshatch
 	device_google_muskie
 	device_google_taimen
 	device_google_wahoo
-	platform_bionic
 	platform_build
 	platform_build_soong
-	platform_frameworks_av
 	platform_frameworks_base
-	platform_hardware_qcom_audio
-	platform_hardware_qcom_bootctrl
-	platform_hardware_qcom_display
-	platform_hardware_qcom_gps
-	platform_hardware_qcom_media
-	platform_hardware_qcom_msm8998
 	platform_packages_apps_Launcher3
 	platform_packages_apps_Settings
-	platform_prebuilts_misc
 )
 
 declare -A kernels
-kernels[google_wahoo]=android-9.0.0_r0.112 # 2019-08-01
-kernels[google_bluecross]=android-9.0.0_r0.113 # 2019-08-01
+kernels[google_wahoo]=android-10.0.0_r0.2 # 2019-09-05
+kernels[google_bluecross]=android-10.0.0_r0.3 # 2019-09-05
+kernels[google_bonito]=android-10.0.0_r0.4 # 2019-09-05
 
 independent=(
 	platform_manifest
-	device_qcom_sepolicy
-	device_xiaomi_jasmine_sprout
-	device_xiaomi_sdm660-common
-	kernel_xiaomi_jasmine_sprout
-	platform_external_ant-wireless_ant_native
-	platform_external_ant-wireless_antradio-library
-	platform_external_ant-wireless_ant_service
 	platform_packages_apps_F-DroidPrivilegedExtension
 	platform_packages_apps_SetupWizard
 	platform_packages_apps_Updater
-	platform_packages_resources_devicesettings
 	platform_prebuilts_calyx
 	vendor_android-prepare-vendor
 	vendor_calyx
-	vendor_qcom_opensource_audio
-	vendor_qcom_opensource_cryptfs_hw
-	vendor_qcom_opensource_dataservices
-	vendor_qcom_opensource_interfaces
-	vendor_xiaomi_jasmine_sprout
 )
 
 # The list of apps we want to sign and update out of band
