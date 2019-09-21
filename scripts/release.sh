@@ -58,7 +58,8 @@ elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
 fi
 
 echo "Creating signed targetfiles zip"
-$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" "${VERITY_SWITCHES[@]}" \
+$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
+  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
