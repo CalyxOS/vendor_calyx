@@ -26,30 +26,7 @@ PRODUCT_PACKAGES += \
 	CalyxLayout
 
 # Local F-droid repo
-PRODUCT_PACKAGES += \
-	fdroid-repo \
-	AuroraStore \
-	Briar \
-	CalyxVPN \
-	Conversations \
-	DAVx5 \
-	DejaVuLocationService \
-	DuckDuckGoPrivacyBrowser \
-	K-9Mail \
-	LocationPrivacy \
-	MozillaNlpBackend \
-	MuPDFviewer \
-	NominatimNlpBackend \
-	OONIProbe \
-	OpenKeychain \
-	Orbot \
-	RiseupVPN \
-	Signal \
-	ScrambledExif \
-	Tasks \
-	TorBrowser \
-	Weather \
-	YubicoAuthenticator
+$(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
 
 # microG
 PRODUCT_PACKAGES += \
