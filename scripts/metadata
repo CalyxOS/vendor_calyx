@@ -36,9 +36,10 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_wahoo]=android-10.0.0_r0.2 # 2019-09-05
-kernels[google_bluecross]=android-10.0.0_r0.3 # 2019-09-05
-kernels[google_bonito]=android-10.0.0_r0.4 # 2019-09-05
+#kernels[google_wahoo]=android-10.0.0_r0.2 # 2019-09-05
+#kernels[google_bluecross]=android-10.0.0_r0.3 # 2019-09-05
+#kernels[google_bonito]=android-10.0.0_r0.4 # 2019-09-05
+#kernels[google_msm-4.9]=TBD # 2019-09-05
 
 independent=(
 	platform_manifest
