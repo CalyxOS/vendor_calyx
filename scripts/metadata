@@ -10,15 +10,15 @@ devices=(
 declare -A buildid
 buildid[taimen]=qp1a.190711.020 # 2019-09-05
 buildid[walleye]=qp1a.190711.020 # 2019-09-05
-buildid[crosshatch]=qp1a.190711.020 # 2019-09-05
-buildid[blueline]=qp1a.190711.020 # 2019-09-05
-buildid[bonito]=qp1a.190711.020 # 2019-09-05
-buildid[sargo]=qp1a.190711.020 # 2019-09-05
+buildid[crosshatch]=qp1a.190711.020.c3 # 2019-09-05
+buildid[blueline]=qp1a.190711.020.c3 # 2019-09-05
+buildid[bonito]=qp1a.190711.020.c3 # 2019-09-05
+buildid[sargo]=qp1a.190711.020.c3 # 2019-09-05
 
 branch=staging/q
 prev_branch=
-aosp_version=qp1a.190711.020
-aosp_tag=android-10.0.0_r2
+aosp_version=qp1a.190711.020.c3
+aosp_tag=android-10.0.0_r3
 
 aosp_forks=(
 	device_common
