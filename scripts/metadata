@@ -70,3 +70,31 @@ declare -A appkey
 appkey[Chromium]=testkey
 appkey[GmsCore]=testkey
 appkey[Backup]=platform
+
+# APEX keys
+apexes=(
+	com.android.conscrypt.apex
+	com.android.media.apex
+	com.android.media.swcodec.apex
+	com.android.resolv.apex
+	com.android.runtime.release.apex
+	com.android.tzdata.apex
+)
+
+# Container: x509.pem & pk8
+declare -A apex_container_key
+apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_container_key[com.android.media.apex]=com.android.media
+apex_container_key[com.android.media.swcodec.apex]=com.android.media.swcodec
+apex_container_key[com.android.resolv.apex]=testcert
+apex_container_key[com.android.runtime.release.apex]=com.android.runtime.release
+apex_container_key[com.android.tzdata.apex]=com.android.tzdata
+
+# Payload: avbpubkey & pem
+declare -A apex_payload_key
+apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_payload_key[com.android.media.apex]=com.android.media
+apex_payload_key[com.android.media.swcodec.apex]=com.android.media.swcodec
+apex_payload_key[com.android.resolv.apex]=com.android.resolv
+apex_payload_key[com.android.runtime.release.apex]=com.android.runtime
+apex_payload_key[com.android.tzdata.apex]=com.android.tzdata

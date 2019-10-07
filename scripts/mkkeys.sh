@@ -12,9 +12,10 @@ error() {
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 TOP="$SCRIPTPATH/../../.."
 
+source $SCRIPTPATH/metadata
+
 KEY_DIR=$1
 SUBJECT="$2"
-MKKEY=$TOP/development/tools/make_key
 GENVERITYKEY=generate_verity_key
 AVBTOOL=avbtool
 
@@ -23,18 +24,27 @@ mkdir -p $KEY_DIR
 
 pushd $KEY_DIR
 
-for k in releasekey platform shared media; do
-	$MKKEY $k "$SUBJECT"
+for k in releasekey platform shared media networkstack; do
+	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
 
 # Verified Boot (Pixel, Mi A2)
-$MKKEY verity "$SUBJECT"
+$SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
 openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
 
 # AVB 2.0 (Pixel 2)
 openssl genrsa -out avb.pem 2048
 $AVBTOOL extract_public_key --key avb.pem --output avb_pkmd.bin
+
+for apex in "${apexes[@]}"; do
+	$SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
+done
+
+for apex in "${apexes[@]}"; do
+	openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
+	$AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
+done
 
 popd
 
