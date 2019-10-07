@@ -2,6 +2,10 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
+SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
+
+source $SCRIPTPATH/metadata
+
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device [target-files.zip]"
@@ -50,16 +54,23 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; 
 elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
-  AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
   EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
+fi
+
+if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
+  $DEVICE == sargo || $DEVICE == bonito ]]; then
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
+  for apex in "${apexes[@]}"; do
+    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+  done
 fi
 
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
-  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${VERITY_SWITCHES[@]}" \
+  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
