@@ -8,17 +8,17 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=qp1a.190711.020 # 2019-09-05
-buildid[walleye]=qp1a.190711.020 # 2019-09-05
-buildid[crosshatch]=qp1a.190711.020.c3 # 2019-09-05
-buildid[blueline]=qp1a.190711.020.c3 # 2019-09-05
-buildid[bonito]=qp1a.190711.020.c3 # 2019-09-05
-buildid[sargo]=qp1a.190711.020.c3 # 2019-09-05
+buildid[taimen]=qp1a.191005.007.a1 # 2019-10-06
+buildid[walleye]=qp1a.191005.007.a1 # 2019-10-06
+buildid[crosshatch]=qp1a.191005.007 # 2019-10-06
+buildid[blueline]=qp1a.191005.007 # 2019-10-06
+buildid[bonito]=qp1a.191005.007 # 2019-10-06
+buildid[sargo]=qp1a.191005.007 # 2019-10-06
 
 branch=staging/q
-prev_branch=
-aosp_version=qp1a.190711.020.c3
-aosp_tag=android-10.0.0_r3
+prev_branch=staging/q
+aosp_version=qp1a.191005.007.a1
+aosp_tag=android-10.0.0_r5
 
 aosp_forks=(
 	device_common
@@ -35,10 +35,8 @@ aosp_forks=(
 )
 
 declare -A kernels
-#kernels[google_wahoo]=android-10.0.0_r0.2 # 2019-09-05
-#kernels[google_bluecross]=android-10.0.0_r0.3 # 2019-09-05
-#kernels[google_bonito]=android-10.0.0_r0.4 # 2019-09-05
-#kernels[google_msm-4.9]=TBD # 2019-09-05
+#kernels[google_wahoo]=android-10.0.0_r0.8 # 2019-10-06
+#kernels[google_msm-4.9]=android-10.0.0_r0.12 # 2019-10-06
 
 independent=(
 	platform_manifest
