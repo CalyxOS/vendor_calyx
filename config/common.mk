@@ -40,7 +40,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	F-Droid \
 	F-DroidPrivilegedExtension \
-	Chromium
+	Chromium \
+	Eleven
 
 # Include AOSP audio files
 include vendor/calyx/config/aosp_audio.mk
