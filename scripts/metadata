@@ -27,11 +27,24 @@ aosp_forks=(
 	device_google_muskie
 	device_google_taimen
 	device_google_wahoo
+	platform_bionic
 	platform_build
 	platform_build_soong
+	platform_external_tinycompress
+	platform_frameworks_av
 	platform_frameworks_base
+	platform_frameworks_native
+	platform_hardware_interfaces
+	platform_hardware_libhardware
+	platform_hardware_libhardware_legacy
+	platform_hardware_qcom_audio
+	platform_hardware_qcom_bootctrl
+	platform_hardware_qcom_data_ipacfg-mgr
+	platform_packages_apps_DeskClock
 	platform_packages_apps_Launcher3
+	platform_packages_apps_Messaging
 	platform_packages_apps_Settings
+	platform_system_core
 )
 
 declare -A kernels
@@ -40,12 +53,39 @@ declare -A kernels
 
 independent=(
 	platform_manifest
+	device_qcom_sepolicy
+	device_xiaomi_jasmine_sprout
+	device_xiaomi_sdm660-common
+	kernel_xiaomi_jasmine_sprout
+	platform_external_ant-wireless_ant_native
+	platform_external_ant-wireless_ant_service
+	platform_external_ant-wireless_antradio-library
+	platform_external_json-c
+	platform_hardware_qcom-caf_common
+	platform_packages_apps_Eleven
 	platform_packages_apps_F-DroidPrivilegedExtension
 	platform_packages_apps_SetupWizard
 	platform_packages_apps_Updater
+	platform_packages_resources_devicesettings
 	platform_prebuilts_calyx
+	platform_prebuilts_tools-lineage
 	vendor_android-prepare-vendor
 	vendor_calyx
+	vendor_codeaurora_telephony
+	vendor_qcom_opensource_audio
+	vendor_qcom_opensource_data-ipa-cfg-mgr
+	vendor_qcom_opensource_dataservices
+	vendor_qcom_opensource_interfaces
+	vendor_qcom_opensource_power
+	vendor_xiaomi_sdm660-common
+	vendor_xiaomi_wayne
+# TODO: Handle repos with -caf/-caf-msm8998 and such branches
+#	device_qcom_sepolicy
+#	platform_hardware_qcom_audio
+#	platform_hardware_qcom_bt
+#	platform_hardware_qcom_display
+#	platform_hardware_qcom_media
+#	platform_hardware_qcom_wlan
 )
 
 # The list of apps we want to sign and update out of band
