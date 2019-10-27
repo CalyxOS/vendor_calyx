@@ -17,8 +17,8 @@ buildid[sargo]=qp1a.191005.007 # 2019-10-06
 
 branch=staging/q
 prev_branch=staging/q
-aosp_version=qd1a.190821.011.c4
-aosp_tag=android-10.0.0_r9
+aosp_version=qp1a.191005.007.a1
+aosp_tag=android-10.0.0_r5
 
 aosp_forks=(
 	device_common
