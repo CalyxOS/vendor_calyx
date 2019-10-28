@@ -92,7 +92,7 @@ independent=(
 apps=(
 	Chromium
 	GmsCore
-	Backup
+	Seedvault
 )
 
 # Mapping from build/tools/releasetools
@@ -107,7 +107,7 @@ keymap[platform]=platform
 declare -A appkey
 appkey[Chromium]=testkey
 appkey[GmsCore]=testkey
-appkey[Backup]=platform
+appkey[Seedvault]=platform
 
 # APEX keys
 apexes=(

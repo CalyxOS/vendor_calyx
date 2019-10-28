@@ -48,4 +48,5 @@ PRODUCT_PACKAGES += \
 	F-Droid \
 	F-DroidPrivilegedExtension \
 	Chromium \
-	Eleven
+	Eleven \
+	Seedvault
