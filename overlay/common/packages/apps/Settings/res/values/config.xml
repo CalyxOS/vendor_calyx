@@ -20,4 +20,10 @@
          as not all devices can support dynamic MAC address change.  -->
     <bool name="config_wifi_support_connected_mac_randomization">true</bool>
 
+    <!-- Package name and fully-qualified class name for the wallpaper picker activity. -->
+    <string name="config_wallpaper_picker_package" translatable="false">com.android.wallpaper</string>
+    <string name="config_wallpaper_picker_class" translatable="false">com.android.customization.picker.CustomizationPickerActivity</string>
+    <!-- Fully-qualified class name for the styles & wallpaper picker activity. -->
+    <string name="config_styles_and_wallpaper_picker_class" translatable="false">com.android.customization.picker.CustomizationPickerActivity</string>
+
 </resources>
