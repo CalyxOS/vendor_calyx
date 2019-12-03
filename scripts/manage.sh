@@ -47,7 +47,7 @@ for repo in "${aosp_forks[@]}"; do
   else
     git fetch aosp --tags || exit 1
 
-    git pull --rebase aosp $aosp_tag || wait_for_conflict $repo
+    git pull --rebase=interactive aosp $aosp_tag || wait_for_conflict $repo
     git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
     git push -f gitlab-priv $aosp_tag:refs/tags/$aosp_tag || exit 1
   fi
@@ -80,7 +80,7 @@ for kernel in "${!kernels[@]}"; do
       cd .. || exit 1
       continue
     fi
-    git rebase $kernel_tag || wait_for_conflict $kernel
+    git rebase --interactive $kernel_tag || wait_for_conflict $kernel
     git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
     git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
   fi
