@@ -47,6 +47,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	F-Droid \
 	F-DroidPrivilegedExtension \
-	Chromium \
+	TrichromeChrome \
+	TrichromeWebView \
 	Eleven \
 	Seedvault
