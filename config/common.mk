@@ -31,6 +31,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     Backgrounds \
     CalyxThemesStub \
+    CalyxBlackTheme \
     ThemePicker
 
 # Include {Lato,Rubik} fonts
