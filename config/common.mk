@@ -29,9 +29,16 @@ PRODUCT_PACKAGES += \
 
 # Themes
 PRODUCT_PACKAGES += \
+<<<<<<< HEAD   (844d4b Fetch our fork of sunfish kernel module fts_touch)
     Backgrounds \
     CalyxThemesStub \
     ThemePicker
+=======
+	Backgrounds \
+	CalyxThemesStub \
+	LineageBlackTheme \
+	ThemePicker
+>>>>>>> CHANGE (c677b6 overlays: Add black theme for dark mode)
 
 # Include {Lato,Rubik} fonts
 $(call inherit-product-if-exists, external/google-fonts/lato/fonts.mk)
