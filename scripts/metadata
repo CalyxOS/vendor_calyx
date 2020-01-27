@@ -5,6 +5,8 @@ devices=(
 	blueline
 	bonito
 	sargo
+	coral
+	flame
 )
 
 declare -A buildid
@@ -14,6 +16,8 @@ buildid[crosshatch]=qq2a.200405.005 # 2020-04-05
 buildid[blueline]=qq2a.200405.005 # 2020-04-05
 buildid[bonito]=qq2a.200405.005 # 2020-04-05
 buildid[sargo]=qq2a.200405.005 # 2020-04-05
+buildid[coral]=qq2a.200405.005 # 2020-04-05
+buildid[flame]=qq2a.200405.005 # 2020-04-05
 
 branch=android10
 prev_branch=android10
@@ -23,6 +27,7 @@ aosp_tag=android-10.0.0_r33
 aosp_forks=(
 	device_common
 	device_google_bonito
+	device_google_coral
 	device_google_crosshatch
 	device_google_muskie
 	device_google_taimen
@@ -52,6 +57,7 @@ aosp_forks=(
 declare -A kernels
 #kernels[google_wahoo]=android-10.0.0_r0.50 # 2020-04-05
 #kernels[google_msm-4.9]=android-10.0.0_r0.54 # 2020-04-05
+#kernels[google_coral]=android-10.0.0_r0.56 # 2020-04-05
 
 independent=(
 	platform_manifest
