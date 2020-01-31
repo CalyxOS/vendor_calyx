@@ -50,4 +50,5 @@ PRODUCT_PACKAGES += \
 	TrichromeChrome \
 	TrichromeWebView \
 	Eleven \
-	Seedvault
+	Seedvault \
+	Ripple
