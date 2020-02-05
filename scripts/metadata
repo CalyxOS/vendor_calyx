@@ -92,7 +92,6 @@ independent=(
 
 # The list of apps we want to sign and update out of band
 apps=(
-	Chromium
 	GmsCore
 	Seedvault
 )
@@ -107,7 +106,6 @@ keymap[platform]=platform
 
 # Key used by that particular app, default is testkey
 declare -A appkey
-appkey[Chromium]=testkey
 appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 
