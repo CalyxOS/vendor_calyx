@@ -1,6 +1,7 @@
 include vendor/calyx/config/version.mk
 
 PRODUCT_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
+PRODUCT_PACKAGE_OVERLAYS += vendor/calyx/overlay/dictionaries
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(filter-out sdk_phone_x86 sdk_phone_x86_64 coral flame sunfish redfin bramble barbet, $(VENDOR_DEVICE)),)
