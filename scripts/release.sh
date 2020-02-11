@@ -30,8 +30,8 @@ if [[ -z $2 ]] ; then
 else
   TARGET_FILES=$2
   # For usage with otatools.zip
-  RELEASETOOLS_PATH=.
-  EXTRA_RELEASETOOLS_ARGS="-p ."
+  RELEASETOOLS_PATH="$(pwd -P)"
+  EXTRA_RELEASETOOLS_ARGS="-p $RELEASETOOLS_PATH"
 fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
@@ -93,7 +93,7 @@ cd $OUT || exit 1
 if [ ! -z $ANDROID_BUILD_TOP ]; then
 	source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
 else
-	source ../../device/common/generate-factory-images-common.sh
+	source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
 fi
 
 mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD_NUMBER.zip
