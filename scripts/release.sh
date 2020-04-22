@@ -89,6 +89,11 @@ echo "Create OTA update zip"
 $RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
+if [ ! -z $OTA_ONLY ]; then
+  echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
+  exit 0
+fi
+
 echo "Creating factory images"
 $RELEASETOOLS_PATH/releasetools/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-img-$BUILD.zip || exit 1
