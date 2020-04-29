@@ -50,6 +50,7 @@ aosp_forks=(
 	platform_packages_apps_Launcher3
 	platform_packages_apps_Messaging
 	platform_packages_apps_Settings
+	platform_packages_apps_StorageManager
 	platform_packages_services_Telephony
 	platform_system_core
 )
