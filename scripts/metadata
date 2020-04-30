@@ -101,6 +101,7 @@ independent=(
 apps=(
 	GmsCore
 	Seedvault
+	StorageManager
 )
 
 # Mapping from build/tools/releasetools
@@ -115,6 +116,7 @@ keymap[platform]=platform
 declare -A appkey
 appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
+appkey[StorageManager]=testkey
 
 # APEX keys
 apexes=(
