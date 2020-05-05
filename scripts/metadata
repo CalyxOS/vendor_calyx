@@ -10,19 +10,19 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=qq2a.200405.005 # 2020-04-05
-buildid[walleye]=qq2a.200405.005 # 2020-04-05
-buildid[crosshatch]=qq2a.200405.005 # 2020-04-05
-buildid[blueline]=qq2a.200405.005 # 2020-04-05
-buildid[bonito]=qq2a.200405.005 # 2020-04-05
-buildid[sargo]=qq2a.200405.005 # 2020-04-05
-buildid[coral]=qq2a.200405.005 # 2020-04-05
-buildid[flame]=qq2a.200405.005 # 2020-04-05
+buildid[taimen]=qq2a.200501.001.b3 # 2020-05-05
+buildid[walleye]=qq2a.200501.001.b3 # 2020-05-05
+buildid[crosshatch]=qq2a.200501.001.b2 # 2020-05-05
+buildid[blueline]=qq2a.200501.001.b2 # 2020-05-05
+buildid[bonito]=qq2a.200501.001.b2 # 2020-05-05
+buildid[sargo]=qq2a.200501.001.b2 # 2020-05-05
+buildid[coral]=qq2a.200501.001.b2 # 2020-05-05
+buildid[flame]=qq2a.200501.001.b2 # 2020-05-05
 
 branch=android10
 prev_branch=android10
-aosp_version=qq2a.200405.005
-aosp_tag=android-10.0.0_r33
+aosp_version=qq2a.200501.001.b2
+aosp_tag=android-10.0.0_r35
 
 aosp_forks=(
 	device_common
@@ -56,9 +56,9 @@ aosp_forks=(
 )
 
 declare -A kernels
-#kernels[google_wahoo]=android-10.0.0_r0.50 # 2020-04-05
-#kernels[google_msm-4.9]=android-10.0.0_r0.54 # 2020-04-05
-#kernels[google_coral]=android-10.0.0_r0.56 # 2020-04-05
+#kernels[google_wahoo]=android-10.0.0_r0.60 # 2020-05-05
+#kernels[google_msm-4.9]=refs/heads/android-msm-bonito-4.9-android10 # 2020-05-05
+#kernels[google_coral]=refs/heads/android-msm-coral-4.14-android10 # 2020-05-05
 
 independent=(
 	platform_manifest
