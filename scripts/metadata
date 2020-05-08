@@ -41,6 +41,7 @@ aosp_forks=(
 	platform_frameworks_native
 	platform_frameworks_opt_telephony
 	platform_hardware_interfaces
+	platform_hardware_knowles_athletico_sound_trigger_hal
 	platform_hardware_libhardware
 	platform_hardware_libhardware_legacy
 	platform_hardware_qcom_audio
