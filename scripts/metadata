@@ -88,8 +88,6 @@ independent=(
 	vendor_qcom_opensource_dataservices
 	vendor_qcom_opensource_interfaces
 	vendor_qcom_opensource_power
-	vendor_xiaomi_sdm660-common
-	vendor_xiaomi_wayne
 # TODO: Handle repos with -caf/-caf-msm8998 and such branches
 #	device_qcom_sepolicy
 #	platform_hardware_qcom_audio
