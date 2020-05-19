@@ -23,6 +23,7 @@ PRODUCT_PACKAGES += \
 
 # Customization
 PRODUCT_PACKAGES += \
+    CalyxNavigationBarNoHint \
     NavigationBarMode2ButtonOverlay
 
 # Themes
