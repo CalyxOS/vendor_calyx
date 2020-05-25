@@ -29,7 +29,8 @@ $(foreach v,$(EXPORT_TO_SOONG),$(eval $(call addVar,$(v))))
 SOONG_CONFIG_NAMESPACES += calyxGlobalVars
 SOONG_CONFIG_calyxGlobalVars += \
     additional_gralloc_10_usage_bits \
-    inline_kernel_building
+    inline_kernel_building \
+    target_surfaceflinger_udfps_lib
 
 SOONG_CONFIG_NAMESPACES += calyxQcomVars
 SOONG_CONFIG_calyxQcomVars += \
@@ -51,9 +52,11 @@ SOONG_CONFIG_calyxQcomVars_uses_qti_camera_device := $(TARGET_USES_QTI_CAMERA_DE
 
 # Set default values
 TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS ?= 0
+TARGET_SURFACEFLINGER_UDFPS_LIB ?= surfaceflinger_udfps_lib
 
 # Soong value variables
 SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
+SOONG_CONFIG_calyxGlobalVars_target_surfaceflinger_udfps_lib := $(TARGET_SURFACEFLINGER_UDFPS_LIB)
 ifneq ($(filter $(QSSI_SUPPORTED_PLATFORMS),$(TARGET_BOARD_PLATFORM)),)
 SOONG_CONFIG_calyxQcomVars_qcom_display_headers_namespace := vendor/qcom/opensource/commonsys-intf/display
 else
