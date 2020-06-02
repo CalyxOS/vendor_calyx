@@ -89,6 +89,8 @@ echo "Create OTA update zip"
 $RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
+sha256sum $OUT/$DEVICE-ota_update-$BUILD.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum
+
 if [ ! -z $OTA_ONLY ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
@@ -107,3 +109,4 @@ else
 fi
 
 mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD_NUMBER.zip
+sha256sum $DEVICE-factory-$BUILD_NUMBER.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD_NUMBER.zip.sha256sum

@@ -25,3 +25,6 @@ $RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -
   -i archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip
+
+echo "Calculating sha256sum for incremental"
+sha256sum archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip | awk '{printf $1}' > archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum
