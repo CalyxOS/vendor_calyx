@@ -14,7 +14,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Google-specific version of Launcher3/res/xml/default_workspace.xml -->
+<!-- Calyx-specific version of Launcher3/res/xml/default_workspace.xml -->
 <favorites>
   <!-- Note: For any apps not included on the sytem or vendor partition, fallbacks
        should be provided by using the resolve tag -->
@@ -36,14 +36,14 @@
   	x="2"
   	y="0" >
   	<favorite packageName="com.fsck.k9" className="com.fsck.k9.activity.Accounts" />
-  	<favorite packageName="com.android.email" className="com.android.email.activity.Welcome"/>
+  	<favorite packageName="com.android.contacts" className="com.android.contacts.activities.PeopleActivity"/>
   </resolve>
   <resolve
     container="-101"
     screen="3"
     x="3"
     y="0" >
-    <favorite packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.app.launch.LaunchActivity"/>
+    <favorite packageName="com.duckduckgo.mobile.android" className="com.duckduckgo.app.launch.Launcher"/>
     <favorite packageName="org.chromium.chrome" className="com.google.android.apps.chrome.Main"/>
   </resolve>
   <favorite container="-101" screen="4" x="4" y="0" packageName="com.android.camera2" className="com.android.camera.CameraActivity"/>
