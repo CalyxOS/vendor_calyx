@@ -49,6 +49,7 @@ aosp_forks=(
 	platform_hardware_qcom_data_ipacfg-mgr
 	platform_packages_apps_Contacts
 	platform_packages_apps_DeskClock
+	platform_packages_apps_Dialer
 	platform_packages_apps_Launcher3
 	platform_packages_apps_Messaging
 	platform_packages_apps_Settings
