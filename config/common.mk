@@ -1,6 +1,7 @@
 include vendor/calyx/config/version.mk
 
 DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
+VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 PRODUCT_COPY_FILES += \
 	vendor/calyx/prebuilt/bootanimation.zip:system/media/bootanimation.zip
@@ -12,7 +13,7 @@ PRODUCT_PACKAGES += \
 endif
 
 # For Google Camera
-ifeq ($(filter-out taimen walleye crosshatch blueline bonito sargo coral flame, $(TARGET_DEVICE)),)
+ifeq ($(filter-out taimen walleye crosshatch blueline bonito sargo coral flame, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
 	vendor/calyx/prebuilt/google_experience.xml:system/etc/sysconfig/google_experience.xml
 endif
