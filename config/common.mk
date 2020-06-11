@@ -3,8 +3,13 @@ include vendor/calyx/config/version.mk
 DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
+ifeq ($(filter-out coral flame, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
-	vendor/calyx/prebuilt/bootanimation.zip:system/media/bootanimation.zip
+	vendor/calyx/prebuilt/bootanimation-9x19.zip:system/media/bootanimation.zip
+else
+PRODUCT_COPY_FILES += \
+	vendor/calyx/prebuilt/bootanimation-9x16.zip:system/media/bootanimation.zip
+endif
 
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
