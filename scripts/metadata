@@ -75,6 +75,7 @@ independent=(
 	platform_external_ant-wireless_antradio-library
 	platform_external_json-c
 	platform_hardware_qcom-caf_common
+	platform_hardware_qcom_thermal
 	platform_packages_apps_Eleven
 	platform_packages_apps_F-DroidPrivilegedExtension
 	platform_packages_apps_SetupWizard
