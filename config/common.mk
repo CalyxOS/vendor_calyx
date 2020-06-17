@@ -51,6 +51,7 @@ PRODUCT_PACKAGES += \
 
 # Apps
 PRODUCT_PACKAGES += \
+	Etar \
 	F-Droid \
 	F-DroidPrivilegedExtension \
 	TrichromeChrome \
