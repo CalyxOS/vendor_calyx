@@ -101,7 +101,10 @@ independent=(
 )
 
 # The list of apps we want to sign and update out of band
+# Also used for testing
 apps=(
+	Contacts
+	Dialer
 	GmsCore
 	Seedvault
 	StorageManager
@@ -117,6 +120,8 @@ keymap[platform]=platform
 
 # Key used by that particular app, default is testkey
 declare -A appkey
+appkey[Contacts]=shared
+appkey[Dialer]=shared
 appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
