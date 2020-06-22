@@ -31,9 +31,13 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	CalyxLayout
 
+# Accents
+PRODUCT_PACKAGES += \
+	AccentColorCalyxOverlay
+
 # Themes
 PRODUCT_PACKAGES += \
-	AccentColorCalyxOverlay \
+	CalyxThemesStub \
 	ThemePicker
 
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
