@@ -31,9 +31,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	CalyxLayout
 
-# Branding
+# Themes
 PRODUCT_PACKAGES += \
-	AccentColorCalyxOverlay
+	AccentColorCalyxOverlay \
+	ThemePicker
 
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
 	ro.boot.vendor.overlay.theme=org.calyxos.theme.android
