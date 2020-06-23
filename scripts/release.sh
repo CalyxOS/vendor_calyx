@@ -100,7 +100,7 @@ echo "Creating factory images"
 $RELEASETOOLS_PATH/releasetools/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-img-$BUILD.zip || exit 1
 
-cd $OUT || exit 1
+pushd $OUT || exit 1
 
 if [ ! -z $ANDROID_BUILD_TOP ]; then
 	source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
@@ -110,3 +110,17 @@ fi
 
 mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD_NUMBER.zip
 sha256sum $DEVICE-factory-$BUILD_NUMBER.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD_NUMBER.zip.sha256sum
+
+popd
+
+if [[ -n $OTATEST ]]; then
+OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
+echo "Creating OTA test update zip"
+$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest $OTATEST -o -d "$KEY_DIR" \
+  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+  $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
+
+$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
+  $OUT/$DEVICE-ota_update-$OTATEST.zip || exit 1
+sha256sum $OUT/$DEVICE-ota_update-$OTATEST.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum
+fi
