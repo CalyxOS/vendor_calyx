@@ -25,7 +25,7 @@ BUILD=$BUILD_NUMBER
 SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
 
 if [[ -z $2 ]] ; then
-  TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD_NUMBER.zip
+  TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD.zip
   RELEASETOOLS_PATH=build/tools
 else
   TARGET_FILES=$2
@@ -108,8 +108,8 @@ else
 	source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
 fi
 
-mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD_NUMBER.zip
-sha256sum $DEVICE-factory-$BUILD_NUMBER.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD_NUMBER.zip.sha256sum
+mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD.zip
+sha256sum $DEVICE-factory-$BUILD.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD.zip.sha256sum
 
 popd
 
