@@ -37,6 +37,7 @@ PRODUCT_PACKAGES += \
 
 # Themes
 PRODUCT_PACKAGES += \
+	Backgrounds \
 	CalyxThemesStub \
 	ThemePicker
 
