@@ -31,18 +31,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	CalyxLayout
 
-# Accents
-PRODUCT_PACKAGES += \
-	AccentColorCalyxOverlay
-
 # Themes
 PRODUCT_PACKAGES += \
 	Backgrounds \
 	CalyxThemesStub \
 	ThemePicker
-
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
-	ro.boot.vendor.overlay.theme=org.calyxos.theme.android
 
 # Local F-droid repo
 $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
