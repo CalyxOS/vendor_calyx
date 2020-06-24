@@ -2,9 +2,17 @@
 
 set -o errexit -o nounset -o pipefail
 
-source "$(dirname ${BASH_SOURCE[0]})/common.sh"
+SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
-[[ $# -ne 1 ]] && user_error "expected 1 argument (key directory)"
+source $SCRIPTPATH/metadata
+
+error() {
+    echo error: $1 >&2
+    echo "Usage: $0 key_dir"
+    exit 1
+}
+
+[[ $# -ne 1 ]] && error "expected 1 argument (key directory)"
 
 cd $1
 
@@ -27,21 +35,35 @@ trap "rm -rf \"$tmp\"" EXIT
 export password
 export new_password
 
-for key in releasekey platform shared media networkstack; do
+function encrypt_pk8() {
+    key="$1"
     if [[ -n $password ]]; then
         openssl pkcs8 -inform DER -in $key.pk8 -passin env:password | openssl pkcs8 -topk8 -outform DER -out "$tmp/$key.pk8" -passout env:new_password -scrypt
     else
         openssl pkcs8 -topk8 -inform DER -in $key.pk8 -outform DER -out "$tmp/$key.pk8" -passout env:new_password -scrypt
     fi
+}
+
+function encrypt_pem() {
+    key="$1"
+    if [[ -n $password ]]; then
+        openssl pkcs8 -topk8 -in $key.pem -passin env:password -out "$tmp/$key.pem" -passout env:new_password -scrypt
+    else
+        openssl pkcs8 -topk8 -in $key.pem -out "$tmp/$key.pem" -passout env:new_password -scrypt
+    fi
+}
+
+for key in releasekey platform shared media networkstack; do
+    encrypt_pk8 "$key"
 done
 
-if [[ -f avb.pem ]]; then
-    if [[ -n $password ]]; then
-        openssl pkcs8 -topk8 -in avb.pem -passin env:password -out "$tmp/avb.pem" -passout env:new_password -scrypt
-    else
-        openssl pkcs8 -topk8 -in avb.pem -out "$tmp/avb.pem" -passout env:new_password -scrypt
-    fi
-fi
+encrypt_pk8 "verity"
+encrypt_pem "avb"
+
+for apex in "${apexes[@]}"; do
+    encrypt_pk8 "${apex_container_key[$apex]}"
+    encrypt_pem "${apex_payload_key[$apex]}"
+done
 
 unset password
 unset new_password

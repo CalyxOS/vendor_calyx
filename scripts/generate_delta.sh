@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -o errexit -o pipefail
+
+SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
+
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device oldversion newversion"
@@ -9,9 +13,15 @@ error() {
 [[ $# -eq 3 ]] ||  error "incorrect number of arguments"
 
 DEVICE=$1
-KEY_DIR=keys/$DEVICE
+PERSISTENT_KEY_DIR=keys/$DEVICE
 OLD=$2
 NEW=$3
+
+# decrypt keys in advance for improved performance and modern algorithm support
+KEY_DIR=$(mktemp -d --tmpdir delta_keys.XXXXXXXXXX)
+trap "rm -rf \"$KEY_DIR\"" EXIT
+cp "$PERSISTENT_KEY_DIR"/* "$KEY_DIR"
+$SCRIPTPATH/decrypt_keys.sh "$KEY_DIR"
 
 if [[ -d build/tools/releasetools ]]; then
   RELEASETOOLS_PATH=build/tools
