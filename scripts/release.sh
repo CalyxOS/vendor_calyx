@@ -2,6 +2,8 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
+set -o pipefail
+
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source $SCRIPTPATH/metadata
@@ -19,10 +21,16 @@ source device/common/clear-factory-images-variables.sh
 
 DEVICE=$1
 PRODUCT=$1
-KEY_DIR=keys/$DEVICE
+PERSISTENT_KEY_DIR=keys/$DEVICE
 OUT=out/release-$DEVICE-$BUILD_NUMBER
 BUILD=$BUILD_NUMBER
 SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
+
+# decrypt keys in advance for improved performance and modern algorithm support
+KEY_DIR=$(mktemp -d /dev/shm/release_keys.XXXXXXXXXX) || exit 1
+trap "rm -rf \"$KEY_DIR\"" EXIT
+cp "$PERSISTENT_KEY_DIR"/* "$KEY_DIR" || exit 1
+$SCRIPTPATH/decrypt_keys.sh "$KEY_DIR" || exit 1
 
 if [[ -z $2 ]] ; then
   TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD.zip
@@ -67,7 +75,7 @@ fi
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish ]]; then
-  AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
+  AVB_PKMD="$KEY_DIR/avb_pkmd.bin"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
