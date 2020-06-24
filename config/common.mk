@@ -27,10 +27,6 @@ endif
 PRODUCT_PACKAGES += \
 	CalyxSetupWizard
 
-# Homescreen Layout
-PRODUCT_PACKAGES += \
-	CalyxLayout
-
 # Themes
 PRODUCT_PACKAGES += \
 	Backgrounds \
