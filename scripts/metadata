@@ -50,6 +50,7 @@ aosp_forks=(
 	platform_hardware_qcom_data_ipacfg-mgr
 	platform_packages_apps_Bluetooth
 	platform_packages_apps_Camera2
+	platform_packages_apps_CertInstaller
 	platform_packages_apps_Contacts
 	platform_packages_apps_DeskClock
 	platform_packages_apps_Dialer
@@ -57,6 +58,9 @@ aosp_forks=(
 	platform_packages_apps_Messaging
 	platform_packages_apps_Settings
 	platform_packages_apps_StorageManager
+	platform_packages_apps_ThemePicker
+	platform_packages_apps_WallpaperPicker2
+	platform_packages_inputmethods_LatinIME
 	platform_packages_services_Telephony
 	platform_prebuilts_build-tools
 	platform_system_core
@@ -79,6 +83,7 @@ independent=(
 	platform_external_json-c
 	platform_hardware_qcom-caf_common
 	platform_hardware_qcom_thermal
+	platform_packages_apps_Backgrounds
 	platform_packages_apps_Eleven
 	platform_packages_apps_Etar
 	platform_packages_apps_ExactCalculator
