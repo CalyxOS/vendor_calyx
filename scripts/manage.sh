@@ -14,7 +14,7 @@ wait_for_conflict() {
 
 error() {
   echo error: $1, please try again >&2
-  echo "Usage: $0 aosp/calyx/independent/kernel/lineage"
+  echo "Usage: `basename $0` aosp/calyx/independent/kernel/lineage"
   echo "       aosp includes kernels too"
   echo "       calyx == independent"
   exit 1
@@ -60,6 +60,9 @@ fi
 if [[ "kernel" == "$1" || "aosp" == "$1" ]]; then
 
 for kernel in "${!kernels[@]}"; do
+  if [[ "google_msmdash4dot9" == "$kernel" ]]; then
+    kernel="google_msm-4.9"
+  fi
   echo -e "\n>>> $(tput setaf 3)Handling kernel_$kernel$(tput sgr0)"
 
   cd kernel_$kernel || exit 1
@@ -68,13 +71,16 @@ for kernel in "${!kernels[@]}"; do
   git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
   git fetch aosp --tags || exit 1
+  if [[ "google_msm-4.9" == "$kernel" ]]; then
+    kernel="google_msmdash4dot9"
+  fi
   kernel_tag=${kernels[$kernel]}
   if [[ -z $kernel_tag ]]; then
     cd .. || exit 1
     continue
   fi
   git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git pull $GIT_ARGS --rebase=interactive $kernel_tag || wait_for_conflict $kernel
+  git pull $GIT_ARGS --rebase=interactive aosp $kernel_tag || wait_for_conflict $kernel
   git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
   git push $GIT_ARGS -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
 
@@ -88,7 +94,12 @@ for kernel in "${!kernels[@]}"; do
 done
 
 for kernel in "${!kernels[@]}"; do
-  for kernel_module in ${${kernels[$kernel]}[@]}; do
+  if [[ -v ${kernel[@]} ]]; then
+  kernel_modules="$kernel[@]"
+  for kernel_module in "${!kernel_modules}"; do
+    if [[ "google_msmdash4dot9" == "$kernel" ]]; then
+      kernel="google_msm-4.9"
+    fi
     echo -e "\n>>> $(tput setaf 3)Handling kernel_${kernel}_${kernel_module}$(tput sgr0)"
 
     cd kernel_${kernel}_${kernel_module} || exit 1
@@ -97,13 +108,16 @@ for kernel in "${!kernels[@]}"; do
     git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
     git fetch aosp --tags || exit 1
+    if [[ "google_msm-4.9" == "$kernel" ]]; then
+      kernel="google_msmdash4dot9"
+    fi
     kernel_tag=${kernels[$kernel]}
     if [[ -z $kernel_tag ]]; then
       cd .. || exit 1
       continue
     fi
     git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-    git pull $GIT_ARGS --rebase=interactive $kernel_tag || wait_for_conflict $kernel
+    git pull $GIT_ARGS --rebase=interactive aosp $kernel_tag || wait_for_conflict $kernel
     git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
     git push $GIT_ARGS -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
 
@@ -115,6 +129,7 @@ for kernel in "${!kernels[@]}"; do
 
     cd .. || exit 1
   done
+  fi
 done
 
 fi

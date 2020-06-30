@@ -69,12 +69,12 @@ aosp_forks=(
 
 declare -A kernels
 kernels[google_wahoo]=android-10.0.0_r0.64 # 2020-06-05
-kernels[google_msm-4.9]=android-10.0.0_r66 # 2020-06-05
-kernels[google_coral]=android-10.0.0_r67 # 2020-06-05
+kernels[google_msmdash4dot9]=android-10.0.0_r0.66 # 2020-06-05
+kernels[google_coral]=android-10.0.0_r0.67 # 2020-06-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
-google_msm-4.9=(
+google_msmdash4dot9=(
 	drivers_staging_qcacld-3.0
 	techpack_audio
 )
