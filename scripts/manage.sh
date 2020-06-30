@@ -14,7 +14,7 @@ wait_for_conflict() {
 
 error() {
   echo error: $1, please try again >&2
-  echo "Usage: $0 aosp/calyx/independent/lineage"
+  echo "Usage: $0 aosp/calyx/independent/kernel/lineage"
   echo "       aosp includes kernels too"
   echo "       calyx == independent"
   exit 1
@@ -43,6 +43,10 @@ for repo in "${aosp_forks[@]}"; do
   cd .. || exit 1
 done
 
+fi
+
+if [[ "kernel" == "$1" || "aosp" == "$1" ]]; then
+
 for kernel in "${!kernels[@]}"; do
   echo -e "\n>>> $(tput setaf 3)Handling kernel_$kernel$(tput sgr0)"
 
@@ -57,11 +61,34 @@ for kernel in "${!kernels[@]}"; do
     continue
   fi
   git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git rebase --interactive $kernel_tag || wait_for_conflict $kernel
+  git pull --rebase=interactive $kernel_tag || wait_for_conflict $kernel
   git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
   git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
 
   cd .. || exit 1
+done
+
+for kernel in "${!kernels[@]}"; do
+  for kernel_module in ${${kernels[$kernel]}[@]}; do
+    echo -e "\n>>> $(tput setaf 3)Handling kernel_${kernel}_${kernel_module}$(tput sgr0)"
+
+    cd kernel_${kernel}_${kernel_module} || exit 1
+    git fetch gitlab-priv
+    git checkout -b $branch gitlab-priv/$prev_branch || exit 1
+
+    git fetch aosp --tags || exit 1
+    kernel_tag=${kernels[$kernel]}
+    if [[ -z $kernel_tag ]]; then
+      cd .. || exit 1
+      continue
+    fi
+    git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+    git pull --rebase=interactive $kernel_tag || wait_for_conflict $kernel
+    git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+    git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
+
+    cd .. || exit 1
+  done
 done
 
 fi
