@@ -23,6 +23,11 @@ error() {
 [[ $# -ne 1 ]] && error "incorrect number of arguments"
 
 DATE=$(date --utc +%Y%m%d)
+GIT_ARGS=""
+
+if [[ -n $DRY_RUN ]]; then
+  GIT_ARGS="--dry-run"
+fi
 
 if [[ "aosp" == "$1" ]]; then
 
@@ -31,14 +36,21 @@ for repo in "${aosp_forks[@]}"; do
 
   cd $repo || exit 1
   git fetch gitlab-priv
-  git checkout -b $branch gitlab-priv/$prev_branch || #exit 1
+  git branch -m $branch ${branch}-${DATE} 2>/dev/null
+  git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
   git fetch aosp --tags || exit 1
 
-  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git pull --rebase=interactive aosp $aosp_tag || wait_for_conflict $repo
-  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
-  git push -f gitlab-priv $aosp_tag:refs/tags/$aosp_tag || exit 1
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+  git pull $GIT_ARGS --rebase=interactive aosp $aosp_tag || wait_for_conflict $repo
+  git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+  git push $GIT_ARGS -f gitlab-priv $aosp_tag:refs/tags/$aosp_tag || exit 1
+
+  if [[ -n $DRY_RUN ]]; then
+    git checkout gitlab-priv/$prev_branch
+    git branch -D $branch
+    git branch -m ${branch}-${DATE} $branch 2>/dev/null
+  fi
 
   cd .. || exit 1
 done
@@ -52,6 +64,7 @@ for kernel in "${!kernels[@]}"; do
 
   cd kernel_$kernel || exit 1
   git fetch gitlab-priv
+  git branch -m $branch ${branch}-${DATE} 2>/dev/null
   git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
   git fetch aosp --tags || exit 1
@@ -60,10 +73,16 @@ for kernel in "${!kernels[@]}"; do
     cd .. || exit 1
     continue
   fi
-  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git pull --rebase=interactive $kernel_tag || wait_for_conflict $kernel
-  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
-  git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+  git pull $GIT_ARGS --rebase=interactive $kernel_tag || wait_for_conflict $kernel
+  git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+  git push $GIT_ARGS -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
+
+  if [[ -n $DRY_RUN ]]; then
+    git checkout gitlab-priv/$prev_branch
+    git branch -D $branch
+    git branch -m ${branch}-${DATE} $branch 2>/dev/null
+  fi
 
   cd .. || exit 1
 done
@@ -74,6 +93,7 @@ for kernel in "${!kernels[@]}"; do
 
     cd kernel_${kernel}_${kernel_module} || exit 1
     git fetch gitlab-priv
+    git branch -m $branch ${branch}-${DATE} 2>/dev/null
     git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
     git fetch aosp --tags || exit 1
@@ -82,10 +102,16 @@ for kernel in "${!kernels[@]}"; do
       cd .. || exit 1
       continue
     fi
-    git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-    git pull --rebase=interactive $kernel_tag || wait_for_conflict $kernel
-    git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
-    git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
+    git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+    git pull $GIT_ARGS --rebase=interactive $kernel_tag || wait_for_conflict $kernel
+    git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+    git push $GIT_ARGS -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
+
+    if [[ -n $DRY_RUN ]]; then
+      git checkout gitlab-priv/$prev_branch
+      git branch -D $branch
+      git branch -m ${branch}-${DATE} $branch 2>/dev/null
+    fi
 
     cd .. || exit 1
   done
@@ -100,13 +126,20 @@ for repo in ${lineage_forks[@]}; do
 
   cd $repo || exit 1
   git fetch gitlab-priv
-  git checkout -b $branch gitlab-priv/$prev_branch || #exit 1
+  git branch -m $branch ${branch}-${DATE} 2>/dev/null
+  git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
   git fetch lineage
 
-  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git pull --rebase=interactive lineage $lineage_branch || wait_for_conflict $repo
-  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+  git pull $GIT_ARGS --rebase=interactive lineage $lineage_branch || wait_for_conflict $repo
+  git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+  if [[ -n $DRY_RUN ]]; then
+    git checkout gitlab-priv/$prev_branch
+    git branch -D $branch
+    git branch -m ${branch}-${DATE} $branch 2>/dev/null
+  fi
 
   cd .. || exit 1
 done
@@ -116,13 +149,20 @@ for repo in "${!!lineage_caf_forks[@]}"; do
 
   cd $repo || exit 1
   git fetch gitlab-priv
+  git branch -m $branch ${branch}-${DATE} 2>/dev/null
   git checkout -b $branch gitlab-priv/$prev_branch || #exit 1
 
   git fetch lineage
 
-  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-  git pull --rebase=interactive lineage ${lineage_caf_forks[$repo]} || wait_for_conflict $repo
-  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+  git pull $GIT_ARGS --rebase=interactive lineage ${lineage_caf_forks[$repo]} || wait_for_conflict $repo
+  git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+  if [[ -n $DRY_RUN ]]; then
+    git checkout gitlab-priv/$prev_branch
+    git branch -D $branch
+    git branch -m ${branch}-${DATE} $branch 2>/dev/null
+  fi
 
   cd .. || exit 1
 done
@@ -139,10 +179,17 @@ else
 
     cd $repo || exit 1
     git fetch gitlab-priv
+    git branch -m $branch ${branch}-${DATE} 2>/dev/null
     git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
-    git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-    git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+    git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
+    git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+    if [[ -n $DRY_RUN ]]; then
+      git checkout gitlab-priv/$prev_branch
+      git branch -D $branch
+      git branch -m ${branch}-${DATE} $branch 2>/dev/null
+    fi
 
     cd .. || exit 1
   done
