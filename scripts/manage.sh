@@ -48,8 +48,38 @@ for kernel in "${!kernels[@]}"; do
   cd .. || exit 1
 done
 
+for repo in ${lineage_forks[@]}; do
+  echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
+
+  cd $repo || exit 1
+  git fetch gitlab-priv
+  git checkout -b $branch gitlab-priv/$prev_branch || #exit 1
+
+  git fetch lineage
+
+  git pull --rebase=interactive lineage $lineage_branch || wait_for_conflict $repo
+  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+  cd .. || exit 1
+done
+
+for repo in "${!!lineage_caf_forks[@]}"; do
+  echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
+
+  cd $repo || exit 1
+  git fetch gitlab-priv
+  git checkout -b $branch gitlab-priv/$prev_branch || #exit 1
+
+  git fetch lineage
+
+  git pull --rebase=interactive lineage ${lineage_caf_forks[$repo]} || wait_for_conflict $repo
+  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+  cd .. || exit 1
+done
+
 if [[ "$branch" -ne "$prev_branch" ]]; then
-  for repo in ${independent[@]} ${lineage_forks[@]}; do
+  for repo in ${independent[@]}; do
     echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
     cd $repo || exit 1
