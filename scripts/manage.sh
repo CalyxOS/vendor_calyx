@@ -12,6 +12,18 @@ wait_for_conflict() {
   read
 }
 
+error() {
+  echo error: $1, please try again >&2
+  echo "Usage: $0 aosp/calyx/independent/lineage"
+  echo "       aosp includes kernels too"
+  echo "       calyx == independent"
+  exit 1
+}
+
+[[ $# -ne 1 ]] && error "incorrect number of arguments"
+
+if [[ "aosp" == "$1" ]]; then
+
 for repo in "${aosp_forks[@]}"; do
   echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
@@ -48,6 +60,10 @@ for kernel in "${!kernels[@]}"; do
   cd .. || exit 1
 done
 
+fi
+
+if [[ "lineage" == "$1" ]]; then
+
 for repo in ${lineage_forks[@]}; do
   echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
@@ -78,7 +94,13 @@ for repo in "${!!lineage_caf_forks[@]}"; do
   cd .. || exit 1
 done
 
-if [[ "$branch" -ne "$prev_branch" ]]; then
+fi
+
+if [[ "calyx" == "$1" || "independent" == "$1" ]]; then
+
+if [[ "$branch" == "$prev_branch" ]]; then
+  echo "Not handling any independent repos."
+else
   for repo in ${independent[@]}; do
     echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
@@ -90,6 +112,6 @@ if [[ "$branch" -ne "$prev_branch" ]]; then
 
     cd .. || exit 1
   done
-else
-  echo "Not handling any independent repos."
+fi
+
 fi
