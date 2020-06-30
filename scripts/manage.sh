@@ -48,14 +48,18 @@ for kernel in "${!kernels[@]}"; do
   cd .. || exit 1
 done
 
-for repo in ${independent[@]} ${lineage_forks[@]}; do
-  echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
+if [[ "$branch" -ne "$prev_branch" ]]; then
+  for repo in ${independent[@]} ${lineage_forks[@]}; do
+    echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
-  cd $repo || exit 1
-  git fetch gitlab-priv
-  git checkout -b $branch gitlab-priv/$prev_branch || exit 1
+    cd $repo || exit 1
+    git fetch gitlab-priv
+    git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
-  git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
+    git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
 
-  cd .. || exit 1
-done
+    cd .. || exit 1
+  done
+else
+  echo "Not handling any independent repos."
+fi
