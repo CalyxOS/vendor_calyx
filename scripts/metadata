@@ -23,6 +23,7 @@ branch=android10
 prev_branch=android10
 aosp_version=qq3a.200605.002
 aosp_tag=android-10.0.0_r38
+lineage_branch=lineage-17.1
 
 aosp_forks=(
 	device_common
@@ -81,7 +82,6 @@ independent=(
 )
 
 lineage_forks=(
-	device_qcom_sepolicy-legacy-um
 	device_xiaomi_jasmine_sprout
 	device_xiaomi_sdm660-common
 	device_xiaomi_wayne-common
@@ -90,13 +90,8 @@ lineage_forks=(
 	platform_external_ant-wireless_ant_service
 	platform_external_ant-wireless_antradio-library
 	platform_external_json-c
-	platform_hardware_qcom-caf_bt
 	platform_hardware_qcom-caf_common
-	platform_hardware_qcom-caf_msm8998_audio
-	platform_hardware_qcom-caf_msm8998_display
-	platform_hardware_qcom-caf_msm8998_media
 	platform_hardware_qcom_thermal
-	platform_hardware_qcom-caf_wlan
 	platform_packages_apps_Backgrounds
 	platform_packages_apps_Eleven
 	platform_packages_apps_Etar
@@ -111,6 +106,14 @@ lineage_forks=(
 	vendor_qcom_opensource_interfaces
 	vendor_qcom_opensource_power
 )
+
+declare -A lineage_caf_forks
+lineage_caf_forks[device_qcom_sepolicy-legacy-um]=${lineage_branch}-legacy-um
+lineage_caf_forks[platform_hardware_qcom-caf_bt]=${lineage_branch}-caf
+lineage_caf_forks[platform_hardware_qcom-caf_msm8998_audio]=${lineage_branch}-caf-msm8998
+lineage_caf_forks[platform_hardware_qcom-caf_msm8998_display]=${lineage_branch}-caf-msm8998
+lineage_caf_forks[platform_hardware_qcom-caf_msm8998_media]=${lineage_branch}-caf-msm8998
+lineage_caf_forks[platform_hardware_qcom-caf_wlan]=${lineage_branch}-caf
 
 # The list of apps we want to sign and update out of band
 # Also used for testing
