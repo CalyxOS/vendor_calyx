@@ -22,6 +22,8 @@ error() {
 
 [[ $# -ne 1 ]] && error "incorrect number of arguments"
 
+DATE=$(date --utc +%Y%m%d)
+
 if [[ "aosp" == "$1" ]]; then
 
 for repo in "${aosp_forks[@]}"; do
@@ -33,6 +35,7 @@ for repo in "${aosp_forks[@]}"; do
 
   git fetch aosp --tags || exit 1
 
+  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
   git pull --rebase=interactive aosp $aosp_tag || wait_for_conflict $repo
   git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
   git push -f gitlab-priv $aosp_tag:refs/tags/$aosp_tag || exit 1
@@ -53,6 +56,7 @@ for kernel in "${!kernels[@]}"; do
     cd .. || exit 1
     continue
   fi
+  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
   git rebase --interactive $kernel_tag || wait_for_conflict $kernel
   git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
   git push -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
@@ -73,6 +77,7 @@ for repo in ${lineage_forks[@]}; do
 
   git fetch lineage
 
+  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
   git pull --rebase=interactive lineage $lineage_branch || wait_for_conflict $repo
   git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
 
@@ -88,6 +93,7 @@ for repo in "${!!lineage_caf_forks[@]}"; do
 
   git fetch lineage
 
+  git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
   git pull --rebase=interactive lineage ${lineage_caf_forks[$repo]} || wait_for_conflict $repo
   git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
 
@@ -108,6 +114,7 @@ else
     git fetch gitlab-priv
     git checkout -b $branch gitlab-priv/$prev_branch || exit 1
 
+    git push gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
     git push -f gitlab-priv HEAD:refs/heads/$branch || exit 1
 
     cd .. || exit 1
