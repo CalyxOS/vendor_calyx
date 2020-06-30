@@ -83,6 +83,7 @@ google_coral=()
 independent=(
 	platform_manifest # Always handled manually!
 	platform_packages_apps_F-DroidPrivilegedExtension
+	platform_packages_apps_Ripple
 	platform_packages_apps_Updater
 	platform_prebuilts_calyx
 	vendor_android-prepare-vendor
