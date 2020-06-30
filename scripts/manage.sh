@@ -88,7 +88,7 @@ for kernel in "${!kernels[@]}"; do
   cd .. || exit 1
 done
 
-for repo in ${independent[@]}; do
+for repo in ${independent[@]} ${lineage_forks[@]}; do
   echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
   if [[ $repo == platform_manifest ]]; then

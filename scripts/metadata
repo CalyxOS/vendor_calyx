@@ -73,6 +73,14 @@ declare -A kernels
 
 independent=(
 	platform_manifest
+	platform_packages_apps_F-DroidPrivilegedExtension
+	platform_packages_apps_Updater
+	platform_prebuilts_calyx
+	vendor_android-prepare-vendor
+	vendor_calyx
+)
+
+lineage_forks=(
 	device_qcom_sepolicy-legacy-um
 	device_xiaomi_jasmine_sprout
 	device_xiaomi_sdm660-common
@@ -93,14 +101,9 @@ independent=(
 	platform_packages_apps_Eleven
 	platform_packages_apps_Etar
 	platform_packages_apps_ExactCalculator
-	platform_packages_apps_F-DroidPrivilegedExtension
 	platform_packages_apps_SetupWizard
-	platform_packages_apps_Updater
 	platform_packages_resources_devicesettings
-	platform_prebuilts_calyx
 	platform_prebuilts_tools-lineage
-	vendor_android-prepare-vendor
-	vendor_calyx
 	vendor_codeaurora_telephony
 	vendor_qcom_opensource_audio
 	vendor_qcom_opensource_data-ipa-cfg-mgr
