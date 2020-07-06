@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -o nounset
-
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source $SCRIPTPATH/metadata
