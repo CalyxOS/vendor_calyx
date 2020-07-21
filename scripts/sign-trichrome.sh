@@ -8,8 +8,8 @@ source $SCRIPTPATH/metadata
 KEY_DIR=keys
 APKSIGNER=bin/apksigner
 KEY=${KEY_DIR}/calyxos.keystore
-BUNDLETOOL="bundletool-all-0.12.0.jar"
-BUNDLETOOL_URL="https://github.com/google/bundletool/releases"
+BUNDLETOOL="bundletool-all-0.13.3.jar"
+AAPT2=aapt2
 
 error() {
   echo error: $1, please try again >&2
@@ -24,12 +24,13 @@ error() {
 [[ ! -e TrichromeChrome.aab ]] && error "TrichromeChrome.aab not found"
 [[ ! -e TrichromeLibrary.apk ]] && error "TrichromeLibrary.apk not found"
 [[ ! -e TrichromeWebView.apk ]] && error "TrichromeWebView.apk not found"
-[[ ! -e ${BUNDLETOOL} ]] && error "${BUNDLETOOL} not found. Get it from ${BUNDLETOOL_URL}"
+[[ ! -e ${BUNDLETOOL} ]] && error "${BUNDLETOOL} not found."
+[[ ! -e ${AAPT2} ]] && error "${AAPT2} not found."
 
 [[ -e TrichromeChrome.apks ]] && error "TrichromeChrome.apks already exists"
 [[ -e TrichromeChrome.apk ]] && error "TrichromeChrome.apk already exists"
 
-java -jar ${BUNDLETOOL} build-apks --bundle TrichromeChrome.aab --output TrichromeChrome.apks --mode=universal --ks ${KEY} --ks-key-alias calyxos
+java -jar ${BUNDLETOOL} build-apks --bundle TrichromeChrome.aab --output TrichromeChrome.apks --mode=universal --aapt2 $SCRIPTPATH/../../../$AAPT2 --ks ${KEY} --ks-key-alias calyxos
 unzip TrichromeChrome.apks universal.apk && mv universal.apk TrichromeChrome-signed.apk
 
 for APP in TrichromeLibrary TrichromeWebView; do
