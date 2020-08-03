@@ -10,19 +10,19 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=qq3a.200705.002 # 2020-07-05
-buildid[walleye]=qq3a.200705.002 # 2020-07-05
-buildid[crosshatch]=qq3a.200705.002 # 2020-07-05
-buildid[blueline]=qq3a.200705.002 # 2020-07-05
-buildid[bonito]=qq3a.200705.002 # 2020-07-05
-buildid[sargo]=qq3a.200705.002 # 2020-07-05
-buildid[coral]=qq3a.200705.002 # 2020-07-05
-buildid[flame]=qq3a.200705.002 # 2020-07-05
+buildid[taimen]=qq3a.200805.001 # 2020-08-05
+buildid[walleye]=qq3a.200805.001 # 2020-08-05
+buildid[crosshatch]=qq3a.200805.001 # 2020-08-05
+buildid[blueline]=qq3a.200805.001 # 2020-08-05
+buildid[bonito]=qq3a.200805.001 # 2020-08-05
+buildid[sargo]=qq3a.200805.001 # 2020-08-05
+buildid[coral]=qq3a.200805.001 # 2020-08-05
+buildid[flame]=qq3a.200805.001 # 2020-08-05
 
 branch=android10
 prev_branch=android10
-aosp_version=qq3a.200705.002
-aosp_tag=android-10.0.0_r40
+aosp_version=qq3a.200805.001
+aosp_tag=android-10.0.0_r41
 lineage_branch=lineage-17.1
 
 aosp_forks=(
@@ -77,9 +77,9 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_wahoo]=android-10.0.0_r0.71 # 2020-07-05
-kernels[google_msmdash4dot9]=android-10.0.0_r0.73 # 2020-07-05
-kernels[google_coral]=android-10.0.0_r0.74 # 2020-07-05
+kernels[google_wahoo]=android-10.0.0_r0.75 # 2020-08-05
+kernels[google_msmdash4dot9]=android-10.0.0_r0.79 # 2020-08-05
+kernels[google_coral]=android-10.0.0_r0.81 # 2020-08-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
