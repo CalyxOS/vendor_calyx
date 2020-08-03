@@ -115,7 +115,7 @@ for kernel in "${!kernels[@]}"; do
       continue
     fi
     git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/${prev_branch}-${DATE}
-    git pull $GIT_ARGS --rebase=interactive aosp $kernel_tag || wait_for_conflict $kernel
+    git pull $GIT_ARGS --rebase=interactive aosp $kernel_tag || wait_for_conflict ${kernel}_${kernel_module}
     git push $GIT_ARGS -f gitlab-priv HEAD:refs/heads/$branch || exit 1
     git push $GIT_ARGS -f gitlab-priv $kernel_tag:refs/tags/$kernel_tag || exit 1
 
