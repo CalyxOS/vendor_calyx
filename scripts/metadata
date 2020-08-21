@@ -143,6 +143,17 @@ apps=(
 	StorageManager
 )
 
+declare -A weblate_components
+weblate_components[calyxos/platform_frameworks_base]=platform_frameworks_base
+weblate_components[calyxos/platform_frameworks_base_systemui]=platform_frameworks_base
+weblate_components[calyxos/platform_packages_apps_contacts]=platform_packages_apps_Contacts
+weblate_components[calyxos/platform_packages_apps_dialer]=platform_packages_apps_Dialer
+weblate_components[calyxos/platform_packages_apps_panictrigger]=platform_packages_apps_Ripple
+weblate_components[calyxos/platform_packages_apps_settings]=platform_packages_apps_Settings
+weblate_components[calyxos/platform_packages_apps_setupwizard]=platform_packages_apps_SetupWizard
+weblate_components[calyxos/platform_packages_apps_updater]=platform_packages_apps_Updater
+weblate_components[calyxos/platform_packages_apps_updater_calyx]=platform_packages_apps_Updater
+
 # Mapping from build/tools/releasetools
 declare -A keymap
 keymap[devkey]=releasekey

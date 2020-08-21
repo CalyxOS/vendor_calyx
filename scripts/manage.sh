@@ -12,7 +12,7 @@ wait_for_conflict() {
 
 error() {
   echo error: $1, please try again >&2
-  echo "Usage: `basename $0` aosp/calyx/independent/kernel/lineage"
+  echo "Usage: `basename $0` aosp/calyx/independent/kernel/lineage/weblate"
   echo "       aosp includes kernels too"
   echo "       calyx == independent"
   exit 1
@@ -20,7 +20,7 @@ error() {
 
 [[ $# -ne 1 ]] && error "incorrect number of arguments"
 
-DATE=$(date --utc +%Y%m%d)
+DATE=$(date --utc +%Y%m%d-%H%M%S)
 GIT_ARGS=""
 
 if [[ -n $DRY_RUN ]]; then
@@ -207,5 +207,51 @@ else
     cd .. || exit 1
   done
 fi
+
+fi
+
+if [[ "weblate" == "$1" ]]; then
+
+for component in "${!weblate_components[@]}"; do
+  echo -e "\n>>> $(tput setaf 3)Locking $component$(tput sgr0)"
+  wlc lock $component || exit 1
+
+  if ! [[ -n $DRY_RUN ]]; then
+    echo -e "\n>>> $(tput setaf 3)Commiting $component$(tput sgr0)"
+    wlc commit $component || exit 1
+  fi
+
+  repo=${weblate_components[$component]}
+  echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
+
+  cd $repo || exit 1
+  git fetch gitlab-priv
+  git branch -m $branch weblate-${branch}-${DATE} 2>/dev/null
+  git checkout -b $branch gitlab-priv/$branch || exit 1
+
+  git fetch weblate || exit 1
+
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/backup/weblate-${branch}-${DATE}
+  if ! [[ -n $DRY_RUN ]]; then
+    git cherry-pick weblate/$branch || wait_for_conflict $repo
+  fi
+  git push $GIT_ARGS gitlab-priv HEAD:refs/heads/$branch || exit 1
+
+  if [[ -n $DRY_RUN ]]; then
+    git checkout gitlab-priv/$branch
+    git branch -D $branch
+    git branch -m weblate-${branch}-${DATE} $branch 2>/dev/null
+  fi
+
+  cd .. || exit 1
+
+  if ! [[ -n $DRY_RUN ]]; then
+    echo -e "\n>>> $(tput setaf 3)Resetting $component$(tput sgr0)"
+    wlc reset $component || exit 1
+  fi
+
+  echo -e "\n>>> $(tput setaf 3)Unlocking $component$(tput sgr0)"
+  wlc unlock $component || exit 1
+done
 
 fi
