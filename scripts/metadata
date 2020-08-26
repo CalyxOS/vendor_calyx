@@ -7,6 +7,7 @@ devices=(
 	sargo
 	coral
 	flame
+	sunfish
 )
 
 declare -A buildid
@@ -18,6 +19,7 @@ buildid[bonito]=qq3a.200805.001 # 2020-08-05
 buildid[sargo]=qq3a.200805.001 # 2020-08-05
 buildid[coral]=qq3a.200805.001 # 2020-08-05
 buildid[flame]=qq3a.200805.001 # 2020-08-05
+buildid[sunfish]=qd4a.200805.003 # 2020-08-05
 
 branch=staging/android10-d4
 prev_branch=android10
@@ -31,6 +33,7 @@ aosp_forks=(
 	device_google_coral
 	device_google_crosshatch
 	device_google_muskie
+	device_google_sunfish
 	device_google_taimen
 	device_google_wahoo
 	platform_bionic
@@ -80,6 +83,7 @@ declare -A kernels
 kernels[google_wahoo]=android-10.0.0_r0.75 # 2020-08-05
 kernels[google_msmdash4dot9]=android-10.0.0_r0.79 # 2020-08-05
 kernels[google_coral]=android-10.0.0_r0.81 # 2020-08-05
+kernels[google_sunfish]=android-10.0.0_r0.87 # 2020-08-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
@@ -88,6 +92,7 @@ google_msmdash4dot9=(
 	techpack_audio
 )
 google_coral=()
+google_sunfish=()
 
 independent=(
 	platform_manifest # Always handled manually!
