@@ -157,7 +157,7 @@ for repo in ${lineage_forks[@]}; do
   cd .. || exit 1
 done
 
-for repo in "${!!lineage_caf_forks[@]}"; do
+for repo in "${!lineage_caf_forks[@]}"; do
   echo -e "\n>>> $(tput setaf 3)Handling $repo$(tput sgr0)"
 
   cd $repo || exit 1
