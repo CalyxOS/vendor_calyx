@@ -19,10 +19,10 @@ buildid[sargo]=qq3a.200805.001 # 2020-08-05
 buildid[coral]=qq3a.200805.001 # 2020-08-05
 buildid[flame]=qq3a.200805.001 # 2020-08-05
 
-branch=android10
+branch=staging/android10-d4
 prev_branch=android10
-aosp_version=qq3a.200805.001
-aosp_tag=android-10.0.0_r41
+aosp_version=qd4a.200805.003
+aosp_tag=android-10.0.0_r45
 lineage_branch=lineage-17.1
 
 aosp_forks=(
