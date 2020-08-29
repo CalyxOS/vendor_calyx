@@ -29,6 +29,7 @@ PRODUCT_PACKAGES += \
 
 # Customization
 PRODUCT_PACKAGES += \
+    IconShapeRoundOverlay \
     IconShapeSquareOverlay \
     NavigationBarMode2ButtonOverlay
 
