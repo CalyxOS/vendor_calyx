@@ -36,6 +36,7 @@ aosp_forks=(
 	platform_bionic
 	platform_build
 	platform_build_soong
+	platform_external_sonivox
 	platform_external_tinycompress
 	platform_frameworks_av
 	platform_frameworks_base
@@ -73,8 +74,10 @@ aosp_forks=(
 	platform_packages_providers_MediaProvider
 	platform_packages_services_Telephony
 	platform_prebuilts_build-tools
+	platform_system_bt
 	platform_system_core
 	platform_system_netd
+	platform_system_sepolicy
 )
 
 declare -A kernels
