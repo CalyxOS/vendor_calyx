@@ -19,7 +19,7 @@ source device/common/clear-factory-images-variables.sh
 
 DEVICE=$1
 PRODUCT=$1
-KEY_DIR=keys
+KEY_DIR=keys/$DEVICE
 OUT=out/release-$DEVICE-$BUILD_NUMBER
 BUILD=$BUILD_NUMBER
 SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip

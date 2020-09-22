@@ -5,14 +5,15 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source $SCRIPTPATH/metadata
 
-KEY_DIR=keys
+DEVICE=$1
+KEY_DIR=keys/$DEVICE
 AAPT=bin/aapt
 SIGNAPK=framework/signapk.jar
 LIB=lib64
 
 error() {
   echo error: $1, please try again >&2
-  echo "Usage: $0 <app> file.apk"
+  echo "Usage: $0 <device> <app> file.apk"
   echo "Supported apps: ${apps[@]}"
   exit 1
 }
