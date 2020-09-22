@@ -46,8 +46,6 @@ for apex in "${apexes[@]}"; do
 	$AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
 done
 
-$SCRIPTPATH/mkkeystore.sh "calyxos" "$SUBJECT"
-
 popd
 
 echo "========================================================"
