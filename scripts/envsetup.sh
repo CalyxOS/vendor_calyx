@@ -71,3 +71,8 @@ function calyxremote()
     fi
     echo "Remote 'calyx' created"
 }
+
+function repopick() {
+    T=$(gettop)
+    $T/vendor/calyx/build/tools/repopick.py $@
+}
