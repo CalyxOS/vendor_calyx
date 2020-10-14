@@ -25,3 +25,28 @@ define addVar
 endef
 
 $(foreach v,$(EXPORT_TO_SOONG),$(eval $(call addVar,$(v))))
+
+SOONG_CONFIG_NAMESPACES += calyxGlobalVars
+SOONG_CONFIG_calyxGlobalVars += \
+    additional_gralloc_10_usage_bits
+
+SOONG_CONFIG_NAMESPACES += calyxQcomVars
+SOONG_CONFIG_calyxQcomVars += \
+    supports_extended_compress_format \
+    uses_qti_camera_device
+
+# Only create soong_namespace var if dealing with UM platforms to avoid breaking build for all other platforms
+ifneq ($(filter $(UM_PLATFORMS),$(TARGET_BOARD_PLATFORM)),)
+SOONG_CONFIG_calyxQcomVars += \
+    qcom_soong_namespace
+endif
+
+# Soong bool variables
+SOONG_CONFIG_calyxQcomVars_supports_extended_compress_format := $(AUDIO_FEATURE_ENABLED_EXTENDED_COMPRESS_FORMAT)
+SOONG_CONFIG_calyxQcomVars_uses_qti_camera_device := $(TARGET_USES_QTI_CAMERA_DEVICE)
+
+# Soong value variables
+SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
+ifneq ($(filter $(UM_PLATFORMS),$(TARGET_BOARD_PLATFORM)),)
+SOONG_CONFIG_calyxQcomVars_qcom_soong_namespace := $(QCOM_SOONG_NAMESPACE)
+endif
