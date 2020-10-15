@@ -11,21 +11,21 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=qq3a.200805.001 # 2020-08-05
-buildid[walleye]=qq3a.200805.001 # 2020-08-05
-buildid[crosshatch]=qq3a.200805.001 # 2020-08-05
-buildid[blueline]=qq3a.200805.001 # 2020-08-05
-buildid[bonito]=qq3a.200805.001 # 2020-08-05
-buildid[sargo]=qq3a.200805.001 # 2020-08-05
-buildid[coral]=qq3a.200805.001 # 2020-08-05
-buildid[flame]=qq3a.200805.001 # 2020-08-05
-buildid[sunfish]=qd4a.200805.003 # 2020-08-05
+buildid[taimen]=rp1a.201005.004 # 2020-10-05
+buildid[walleye]=rp1a.201005.004 # 2020-10-05
+buildid[crosshatch]=rp1a.201105.002 # 2020-11-05
+buildid[blueline]=rp1a.201105.002 # 2020-11-05
+buildid[bonito]=rp1a.201105.002 # 2020-11-05
+buildid[sargo]=rp1a.201105.002 # 2020-11-05
+buildid[coral]=rp1a.201105.002 # 2020-11-05
+buildid[flame]=rp1a.201105.002 # 2020-11-05
+buildid[sunfish]=rp1a.201105.002 # 2020-11-05
 
-branch=android10
-prev_branch=android10
-aosp_version=qq3a.200805.001
-aosp_tag=android-10.0.0_r41
-lineage_branch=lineage-17.1
+branch=android11
+prev_branch=android11
+aosp_version=rp1a.201105.002
+aosp_tag=android-11.0.0_r17
+lineage_branch=lineage-18.0
 
 aosp_forks=(
 	device_common
@@ -84,10 +84,10 @@ aosp_forks=(
 )
 
 declare -A kernels
-kernels[google_wahoo]=android-10.0.0_r0.75 # 2020-08-05
-kernels[google_msmdash4dot9]=android-10.0.0_r0.79 # 2020-08-05
-kernels[google_coral]=android-10.0.0_r0.81 # 2020-08-05
-kernels[google_sunfish]=android-10.0.0_r0.87 # 2020-08-05
+kernels[google_wahoo]=android-11.0.0_r0.6 # 2020-10-05
+kernels[google_msmdash4dot9]=android-11.0.0_r0.23 # 2020-11-05
+kernels[google_coral]=android-11.0.0_r0.24 # 2020-11-05
+kernels[google_sunfish]=android-11.0.0_r0.25 # 2020-11-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
