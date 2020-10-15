@@ -27,6 +27,10 @@ endif
 PRODUCT_PACKAGES += \
     CalyxSetupWizard
 
+# Customization
+PRODUCT_PACKAGES += \
+    NavigationBarMode2ButtonOverlay
+
 # Themes
 PRODUCT_PACKAGES += \
     Backgrounds \
