@@ -18,10 +18,10 @@ error() {
   exit 1
 }
 
-[[ $# -eq 2 ]] || error "incorrect number of arguments"
+[[ $# -eq 3 ]] || error "incorrect number of arguments"
 
-APP=${1}
-APK=${2}
+APP=${2}
+APK=${3}
 if [[ ! " ${apps[@]} " =~ " ${APP} " ]]; then
 	error "Unsupported app ${APP}"
 fi
@@ -30,4 +30,4 @@ APPKEY=${appkey[$APP]}
 KEY=$KEY_DIR/${keymap[$APPKEY]}
 SDK=$($AAPT dump badging $APK | grep sdkVersion | cut -d \' -f 2)
 
-java -Djava.library.path=${LIB} -jar $SIGNAPK --min-sdk-version ${SDK} ${KEY}.x509.pem ${KEY}.pk8 ${APK} ${APP}-signed.apk
+java -Djava.library.path=${LIB} -jar $SIGNAPK --min-sdk-version ${SDK} ${KEY}.x509.pem ${KEY}.pk8 ${APK} ${APP}-signed-${DEVICE}.apk
