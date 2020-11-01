@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<overlay>
+    <item target="bool/show_presidential_alerts_settings" value="true" />
+</overlay>
