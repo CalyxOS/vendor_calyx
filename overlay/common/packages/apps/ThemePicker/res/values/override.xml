@@ -17,6 +17,7 @@
 -->
 <resources>
     <string name="themes_stub_package" translatable="false">org.calyxos.customization</string>
+    <string name="clocks_stub_package" translatable="false">org.calyxos.customization</string>
 
     <!-- List of packages whose icons are used to preview the icon shape for a theme. -->
     <array name="icon_shape_preview_packages">
