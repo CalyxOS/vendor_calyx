@@ -76,6 +76,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
 
+# SystemUI plugins
+PRODUCT_PACKAGES += \
+    QuickAccessWallet
+
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     persist.security.deny_new_usb=dynamic
 
