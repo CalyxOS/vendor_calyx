@@ -72,6 +72,10 @@ PRODUCT_PACKAGES += \
     Seedvault \
     Ripple
 
+# Config
+PRODUCT_PACKAGES += \
+    SimpleDeviceConfig
+
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     persist.security.deny_new_usb=dynamic
 
