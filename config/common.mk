@@ -57,6 +57,7 @@ PRODUCT_PACKAGES += \
 # Apps
 PRODUCT_PACKAGES += \
 	Etar \
+	ExactCalculator \
 	F-Droid \
 	F-DroidPrivilegedExtension \
 	TrichromeChrome \
