@@ -5,33 +5,33 @@ VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(filter-out coral flame sunfish, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
-	vendor/calyx/prebuilt/bootanimation-9x19.zip:system/media/bootanimation.zip
+    vendor/calyx/prebuilt/bootanimation-9x19.zip:system/media/bootanimation.zip
 else
 PRODUCT_COPY_FILES += \
-	vendor/calyx/prebuilt/bootanimation-9x16.zip:system/media/bootanimation.zip
+    vendor/calyx/prebuilt/bootanimation-9x16.zip:system/media/bootanimation.zip
 endif
 
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
-	Updater
+    Updater
 endif
 
 # For Google Camera
 ifeq ($(filter-out taimen walleye crosshatch blueline bonito sargo coral flame sunfish, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
-	vendor/calyx/prebuilt/google_experience.xml:system/etc/sysconfig/google_experience.xml
+    vendor/calyx/prebuilt/google_experience.xml:system/etc/sysconfig/google_experience.xml
 endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
-	CalyxSetupWizard
+    CalyxSetupWizard
 
 # Themes
 PRODUCT_PACKAGES += \
-	Backgrounds \
-	CalyxThemesStub \
-	ThemePicker
+    Backgrounds \
+    CalyxThemesStub \
+    ThemePicker
 
 # Include {Lato,Rubik} fonts
 $(call inherit-product-if-exists, external/google-fonts/lato/fonts.mk)
@@ -39,29 +39,29 @@ $(call inherit-product-if-exists, external/google-fonts/rubik/fonts.mk)
 
 # Fonts
 PRODUCT_PACKAGES += \
-	fonts_customization.xml \
-	LineageLatoFont \
-	LineageRubikFont
+    fonts_customization.xml \
+    LineageLatoFont \
+    LineageRubikFont
 
 # Local F-droid repo
 $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
 
 # microG
 PRODUCT_PACKAGES += \
-	GmsCore \
-	FakeStore \
-	DejaVuLocationService \
-	MozillaNlpBackend \
-	NominatimNlpBackend
+    GmsCore \
+    FakeStore \
+    DejaVuLocationService \
+    MozillaNlpBackend \
+    NominatimNlpBackend
 
 # Apps
 PRODUCT_PACKAGES += \
-	Etar \
-	ExactCalculator \
-	F-Droid \
-	F-DroidPrivilegedExtension \
-	TrichromeChrome \
-	TrichromeWebView \
-	Eleven \
-	Seedvault \
-	Ripple
+    Etar \
+    ExactCalculator \
+    F-Droid \
+    F-DroidPrivilegedExtension \
+    TrichromeChrome \
+    TrichromeWebView \
+    Eleven \
+    Seedvault \
+    Ripple
