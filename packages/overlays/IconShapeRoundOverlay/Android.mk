@@ -28,4 +28,6 @@ LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res
 LOCAL_PACKAGE_NAME := IconShapeRoundOverlay
 LOCAL_SDK_VERSION := current
 
+LOCAL_OVERRIDES_PACKAGES := IconShapeRoundedRectOverlay
+
 include $(BUILD_RRO_PACKAGE)
