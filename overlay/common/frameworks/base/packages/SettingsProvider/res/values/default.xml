@@ -18,12 +18,6 @@
 -->
 <resources>
 
-    <!-- microG UnifiedNlp default backends
-        format: packagename/componentname/signature|pkg/cmp/sig|..
-        packages are taken from F-Droid with signatures kept intact -->
-    <string name="def_microg_location_backends">org.fitchfamily.android.dejavu/org.fitchfamily.android.dejavu.BackendService/12fe4eaf2a96d35d116f4f86101a04c69b033763|org.microg.nlp.backend.ichnaea/org.microg.nlp.backend.ichnaea.BackendService/49b6a079655eee3b350f4a989b6ffd020a1d3888</string>
-    <string name="def_microg_geocoder_backends">org.microg.nlp.backend.nominatim/org.microg.nlp.backend.nominatim.BackendService/c05c5eb7f96d30a7a54768c2d046ed3fefd55383</string>
-
     <bool name="def_backup_enabled">true</bool>
     <string name="def_backup_transport" translatable="false">com.stevesoltys.seedvault.transport.ConfigurableBackupTransport</string>
 
