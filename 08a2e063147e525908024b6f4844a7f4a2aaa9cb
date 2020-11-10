@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ff93854b_624e46ec",
+        "filename": "build/envsetup.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-11-10T20:14:05Z",
+      "side": 1,
+      "message": "TODO set only for calyx_*",
+      "revId": "08a2e063147e525908024b6f4844a7f4a2aaa9cb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0",
+      "unresolved": true
+    }
+  ]
+}
