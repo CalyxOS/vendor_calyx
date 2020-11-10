@@ -12,9 +12,8 @@ for device in ${devices[@]}; do
 	$APV/execute-all.sh -y --debugfs -d $device -b ${buildid[$device]} -o $APV || exit 1
 done
 
-rm -rf vendor/google_devices/*
-
 for device in ${devices[@]}; do
+	rm -rf vendor/google_devices/$device/*
 	cp -a $APV/$device/${buildid[$device]}/vendor/google_devices vendor/
 	rm -rf $APV/$device/${buildid[$device]}/vendor*
 done
