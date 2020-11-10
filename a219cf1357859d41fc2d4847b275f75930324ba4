@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6ff3baa4_996f8443",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-11-10T20:15:46Z",
+      "side": 1,
+      "message": "Oh man, this brings back memories.",
+      "revId": "a219cf1357859d41fc2d4847b275f75930324ba4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0",
+      "unresolved": true
+    }
+  ]
+}
