@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "12aa0c55_1dad0085",
+        "filename": "config/BoardConfigKernel.mk",
+        "patchSetId": 3
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-11-10T20:32:45Z",
+      "side": 1,
+      "message": "Same as AOSP kernels, kernel/google/*/build.config.common",
+      "revId": "c2557da7eab75c2db40223ccc313b05301cfb549",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0",
+      "unresolved": true
+    }
+  ]
+}
