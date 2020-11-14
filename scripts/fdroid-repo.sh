@@ -5,21 +5,21 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 DATE=$(date +%F)
 FDROIDREPOTMP=$(mktemp -d)
 JOBID=$(curl -sI https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/artifacts/master/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
+ANDROID_MK=Android.mk
+FDROID_MK=fdroid-repo.mk
 
-pushd $SCRIPTPATH/../../../prebuilts/calyx/
+pushd $SCRIPTPATH/../../../prebuilts/calyx/fdroid
 pushd $FDROIDREPOTMP
 curl -L https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download -o artifacts.zip || exit 1
 unzip artifacts.zip
 popd
-rm -rf fdroid/repo
-rm -rf fdroid/*.mk
-cp -a ${FDROIDREPOTMP}/public/fdroid/repo fdroid/
+rm -rf repo
+rm -rf $ANDROID_MK $FDROID_MK
+cp -a ${FDROIDREPOTMP}/public/fdroid/repo .
 # Temporary, due to copy-xml-file-checked TODO: Figure out a better solution, if possible
-rm -f fdroid/repo/icons*/*.xml
-ANDROID_MK=fdroid/Android.mk
-FDROID_MK=fdroid/fdroid-repo.mk
-FILES=$(find fdroid/repo/ -type f -not -name "*.apk" | sort)
-APKS=$(cd fdroid/repo/ && find . -type f -name "*.apk" -printf "%P\n" | sort)
+rm -f repo/icons*/*.xml
+FILES=$(find repo/ -type f -not -name "*.apk" | sort)
+APKS=$(cd repo/ && find . -type f -name "*.apk" -printf "%P\n" | sort)
 APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 
 {
@@ -69,7 +69,7 @@ done
 
 for f in $FILES; do
 	{
-		echo -e "    prebuilts/calyx/$f:\$(TARGET_COPY_OUT_PRODUCT)/$f \\"
+		echo -e "    prebuilts/calyx/fdroid/$f:\$(TARGET_COPY_OUT_PRODUCT)/$f \\"
 	} >> $FDROID_MK
 done
 
@@ -83,7 +83,7 @@ for app in $APPS; do
 	echo "    $app \\" >> $FDROID_MK
 done
 
-git add fdroid/repo fdroid/*.mk
+git add repo $ANDROID_MK $FDROID_MK
 git commit -m "Update fdroid repo to ${JOBID}"
 rm -rf ${FDROIDREPOTMP}
 
