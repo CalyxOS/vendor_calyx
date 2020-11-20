@@ -34,6 +34,5 @@ java -jar ${BUNDLETOOL} build-apks --bundle TrichromeChrome.aab --output Trichro
 unzip TrichromeChrome.apks universal.apk && mv universal.apk TrichromeChrome-signed.apk
 
 for APP in TrichromeLibrary TrichromeWebView; do
-	cp ${APP}.apk ${APP}-signed.apk
-	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos ${APP}-signed.apk
+	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
 done
