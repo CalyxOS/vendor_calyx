@@ -27,4 +27,4 @@ fi
 APPKEY=${appkey[$APP]}
 KEY=$KEY_DIR/${keymap[$APPKEY]}
 
-$APKSIGNER sign --key ${KEY}.pk8 --cert ${KEY}.x509.pem --in ${APK} --out ${APP}-signed-${DEVICE}.apk
+$APKSIGNER sign --v3-signing-enabled false --key ${KEY}.pk8 --cert ${KEY}.x509.pem --in ${APK} --out ${APP}-signed-${DEVICE}.apk
