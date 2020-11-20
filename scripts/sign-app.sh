@@ -7,9 +7,7 @@ source $SCRIPTPATH/metadata
 
 DEVICE=$1
 KEY_DIR=keys/$DEVICE
-AAPT=bin/aapt
-SIGNAPK=framework/signapk.jar
-LIB=lib64
+APKSIGNER=bin/apksigner
 
 error() {
   echo error: $1, please try again >&2
@@ -28,6 +26,5 @@ fi
 
 APPKEY=${appkey[$APP]}
 KEY=$KEY_DIR/${keymap[$APPKEY]}
-SDK=$($AAPT dump badging $APK | grep sdkVersion | cut -d \' -f 2)
 
-java -Djava.library.path=${LIB} -jar $SIGNAPK --min-sdk-version ${SDK} ${KEY}.x509.pem ${KEY}.pk8 ${APK} ${APP}-signed-${DEVICE}.apk
+$APKSIGNER sign --key ${KEY}.pk8 --cert ${KEY}.x509.pem --in ${APK} --out ${APP}-signed-${DEVICE}.apk
