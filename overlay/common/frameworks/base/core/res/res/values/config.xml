@@ -129,4 +129,7 @@
 
     <!-- Default component for QR code scanner -->
     <string name="config_defaultQrCodeComponent">com.android.camera2/org.lineageos.quickreader.ScannerActivity</string>
+
+    <!-- Remote server that can provide NTP responses. -->
+    <string translatable="false" name="config_ntpServer">2.android.pool.ntp.org</string>
 </resources>
