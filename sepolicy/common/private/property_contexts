@@ -1,2 +1,4 @@
+this should not compile
 sys.update.             u:object_r:shell_prop:s0
 security.deny_new_usb   u:object_r:system_prop:s0
+but yet it does, meaning this file isn't getting picked up for some reason
