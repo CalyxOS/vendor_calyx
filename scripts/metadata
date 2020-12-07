@@ -11,15 +11,15 @@ devices=(
 )
 
 declare -A buildid
-buildid[taimen]=rp1a.201005.004 # 2020-10-05
-buildid[walleye]=rp1a.201005.004 # 2020-10-05
-buildid[crosshatch]=rp1a.201105.002 # 2020-11-05
-buildid[blueline]=rp1a.201105.002 # 2020-11-05
-buildid[bonito]=rp1a.201105.002 # 2020-11-05
-buildid[sargo]=rp1a.201105.002 # 2020-11-05
-buildid[coral]=rp1a.201105.002 # 2020-11-05
-buildid[flame]=rp1a.201105.002 # 2020-11-05
-buildid[sunfish]=rp1a.201105.002 # 2020-11-05
+buildid[taimen]=
+buildid[walleye]=
+buildid[crosshatch]=rq1a.201205.003 # 2020-12-05
+buildid[blueline]=rq1a.201205.003 # 2020-12-05
+buildid[bonito]=rq1a.201205.003 # 2020-12-05
+buildid[sargo]=rq1a.201205.003 # 2020-12-05
+buildid[coral]=rq1a.201205.008 # 2020-12-05
+buildid[flame]=rq1a.201205.008 # 2020-12-05
+buildid[sunfish]=rq1a.201205.008 # 2020-12-05
 
 branch=android11
 prev_branch=android11
