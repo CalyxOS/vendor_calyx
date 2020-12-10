@@ -172,6 +172,9 @@ keymap[testkey]=releasekey
 keymap[media]=media
 keymap[shared]=shared
 keymap[platform]=platform
+keymap[networkstack]=networkstack
+keymap[com.android.hotspot2.osulogin]=com.android.hotspot2.osulogin
+keymap[com.android.wifi.resources]=com.android.wifi.resources
 
 # Key used by that particular app, default is testkey
 declare -A appkey
@@ -183,28 +186,76 @@ appkey[StorageManager]=testkey
 
 # APEX keys
 apexes=(
+	com.android.adbd.apex
+	com.android.art.release.apex
+	com.android.cellbroadcast.apex
 	com.android.conscrypt.apex
+	com.android.extservices.apex
+	com.android.i18n.apex
+	com.android.ipsec.apex
 	com.android.media.apex
+	com.android.mediaprovider.apex
 	com.android.media.swcodec.apex
+	com.android.neuralnetworks.apex
+	com.android.os.statsd.apex
+	com.android.permission.apex
 	com.android.resolv.apex
-	com.android.runtime.release.apex
+	com.android.runtime.apex
+	com.android.sdkext.apex
+	com.android.support.apexer.apex
+	com.android.telephony.apex
+	com.android.tethering.apex
 	com.android.tzdata.apex
+	com.android.vndk.current
+	com.android.wifi.apex
 )
 
 # Container: x509.pem & pk8
 declare -A apex_container_key
+apex_container_key[com.android.adbd.apex]=com.android.adbd
+apex_container_key[com.android.art.release.apex]=com.android.art
+apex_container_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_container_key[com.android.extservices.apex]=com.android.extservices
+apex_container_key[com.android.i18n.apex]=com.android.i18n
+apex_container_key[com.android.ipsec.apex]=com.android.ipsec
 apex_container_key[com.android.media.apex]=com.android.media
+apex_container_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_container_key[com.android.media.swcodec.apex]=com.android.media.swcodec
+apex_container_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
+apex_container_key[com.android.permission.apex]=com.android.permission
 apex_container_key[com.android.resolv.apex]=testcert
-apex_container_key[com.android.runtime.release.apex]=com.android.runtime.release
+apex_container_key[com.android.runtime.apex]=com.android.runtime
+apex_container_key[com.android.sdkext.apex]=com.android.sdkext
+apex_container_key[com.android.support.apexer.apex]=releasekey
+apex_container_key[com.android.telephony.apex]=com.android.telephony
+apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
+apex_container_key[com.android.vndk.current]=com.android.vndk.current
+apex_container_key[com.android.wifi.apex]=com.android.wifi
 
 # Payload: avbpubkey & pem
 declare -A apex_payload_key
+apex_payload_key[com.android.adbd.apex]=com.android.adbd
+apex_payload_key[com.android.art.release.apex]=com.android.art
+apex_payload_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_payload_key[com.android.extservices.apex]=com.android.extservices
+apex_payload_key[com.android.i18n.apex]=com.android.i18n
+apex_payload_key[com.android.ipsec.apex]=com.android.ipsec
 apex_payload_key[com.android.media.apex]=com.android.media
+apex_payload_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_payload_key[com.android.media.swcodec.apex]=com.android.media.swcodec
+apex_payload_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
+apex_payload_key[com.android.permission.apex]=com.android.permission
 apex_payload_key[com.android.resolv.apex]=com.android.resolv
-apex_payload_key[com.android.runtime.release.apex]=com.android.runtime
+apex_payload_key[com.android.runtime.apex]=com.android.runtime
+apex_payload_key[com.android.sdkext.apex]=com.android.sdkext
+apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
+apex_payload_key[com.android.telephony.apex]=com.android.telephony
+apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
+apex_payload_key[com.android.vndk.current]=com.android.vndk.current
+apex_payload_key[com.android.wifi.apex]=com.android.wifi

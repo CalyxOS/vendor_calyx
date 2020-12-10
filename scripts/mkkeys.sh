@@ -24,7 +24,7 @@ mkdir -p $KEY_DIR
 
 pushd $KEY_DIR
 
-for k in releasekey platform shared media networkstack; do
+for k in releasekey platform shared media networkstack com.android.hotspot2.osulogin com.android.wifi.resources; do
 	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
 
