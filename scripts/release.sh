@@ -81,6 +81,9 @@ if [[ $DEVICE == jasmine_sprout ]]; then
   done
 fi
 
+EXTRA_SIGNING_ARGS+=(-k frameworks/base/packages/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
+EXTRA_SIGNING_ARGS+=(-k frameworks/opt/net/wifi/service/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
+
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
   -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
