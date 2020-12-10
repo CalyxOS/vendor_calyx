@@ -47,7 +47,3 @@ for apex in "${apexes[@]}"; do
 done
 
 popd
-
-echo "========================================================"
-echo "Copy $KEY_DIR/verity_user.der.x509 to the kernel source."
-echo "========================================================"
