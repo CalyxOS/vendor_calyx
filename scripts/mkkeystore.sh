@@ -16,6 +16,8 @@ KEY_NAME=$1
 SUBJECT="$2"
 KEYTOOL=keytool
 
+[[ ! -e $(which ${KEYTOOL}) ]] && error "${KEYTOOL} not found in PATH."
+
 [[ -e ${KEY_NAME}.keystore ]] && error "key $KEY_NAME already exists"
 
 DNAME="$(echo $SUBJECT | tr -d "'" | sed "s#/#,#g")"

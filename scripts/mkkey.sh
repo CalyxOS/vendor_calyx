@@ -16,8 +16,9 @@ TOP="$SCRIPTPATH/../../.."
 KEY_NAME=$1
 SUBJECT="$2"
 MKKEY=$TOP/development/tools/make_key
-GENVERITYKEY=generate_verity_key
-AVBTOOL=avbtool
+
+[[ ! -e ${MKKEY} ]] && error "${MKKEY} not found"
+[[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
 
 [[ -e ${KEY_NAME}.pk8 ]] && error "key $KEY_NAME already exists"
 [[ -e ${KEY_NAME}.pem ]] && error "key $KEY_NAME already exists"
