@@ -16,8 +16,12 @@ source $SCRIPTPATH/metadata
 
 KEY_DIR=$1
 SUBJECT="$2"
-GENVERITYKEY=generate_verity_key
-AVBTOOL=avbtool
+GENVERITYKEY=$TOP/bin/generate_verity_key
+AVBTOOL=$TOP/bin/avbtool
+
+[[ ! -e ${GENVERITYKEY} ]] && error "${GENVERITYKEY} not found."
+[[ ! -e ${AVBTOOL} ]] && error "${AVBTOOL} not found."
+[[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
 
 [[ ! -d $KEY_DIR ]] && error "key directory does not exist"
 
