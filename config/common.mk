@@ -143,6 +143,13 @@ endif
 PRODUCT_PACKAGES += \
     QuickAccessWallet
 
+# TextClassifier
+PRODUCT_PACKAGES += \
+    libtextclassifier_annotator_en_model \
+    libtextclassifier_annotator_universal_model \
+    libtextclassifier_actions_suggestions_universal_model \
+    libtextclassifier_lang_id_model
+
 # Calyx-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
     vendor/calyx/config/permissions/calyx-sysconfig.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/calyx-sysconfig.xml
