@@ -206,7 +206,7 @@ apexes=(
 	com.android.telephony.apex
 	com.android.tethering.apex
 	com.android.tzdata.apex
-	com.android.vndk.current
+	com.android.vndk.current.apex
 	com.android.wifi.apex
 )
 
@@ -232,7 +232,7 @@ apex_container_key[com.android.support.apexer.apex]=releasekey
 apex_container_key[com.android.telephony.apex]=com.android.telephony
 apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
-apex_container_key[com.android.vndk.current]=com.android.vndk.current
+apex_container_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_container_key[com.android.wifi.apex]=com.android.wifi
 
 # Payload: avbpubkey & pem
@@ -257,5 +257,5 @@ apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
 apex_payload_key[com.android.telephony.apex]=com.android.telephony
 apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
-apex_payload_key[com.android.vndk.current]=com.android.vndk.current
+apex_payload_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_payload_key[com.android.wifi.apex]=com.android.wifi
