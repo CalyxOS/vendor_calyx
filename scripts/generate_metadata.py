@@ -30,7 +30,7 @@ with ZipFile(parser.parse_args().zip) as f:
                 print(incremental, data["post-timestamp"], build_id, file=output)
     elif "SYSTEM/build.prop" in f.namelist():
         data = LoadBuildProp(f, "SYSTEM/build.prop")
-        with open(data["ro.product.system.device"] + "-" + parser.parse_args().channel, "w") as output:
+        with open(data["ro.build.product"] + "-" + parser.parse_args().channel, "w") as output:
             build_id = data["ro.build.id"]
             incremental = data["ro.build.version.incremental"]
             timestamp = data["ro.build.date.utc"]
