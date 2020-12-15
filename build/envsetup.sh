@@ -7,8 +7,26 @@ Additional CalyxOS functions:
 EOF
 }
 
+# Find the output directory
+# From build/soong/scripts/microfactory.bash
+function _getoutdir
+{
+    local out_dir="${OUT_DIR-}"
+    if [ -z "${out_dir}" ]; then
+        if [ "${OUT_DIR_COMMON_BASE-}" ]; then
+            out_dir="${OUT_DIR_COMMON_BASE}/$(basename ${ANDROID_BUILD_TOP})"
+        else
+            out_dir="out"
+        fi
+    fi
+    if [[ "${out_dir}" != /* ]]; then
+        out_dir="${ANDROID_BUILD_TOP}/${out_dir}"
+    fi
+    echo "${out_dir}"
+}
+
 if [[ -n $OFFICIAL_BUILD ]]; then
-export BUILD_NUMBER=$(cat $OUT_DIR/build_number.txt 2>/dev/null || date --utc +%Y.%m.%d.%H)
+export BUILD_NUMBER=$(cat $(_getoutdir)/build_number.txt 2>/dev/null || date --utc +%Y.%m.%d.%H)
 echo "BUILD_NUMBER=$BUILD_NUMBER"
 export DISPLAY_BUILD_NUMBER=true
 else
