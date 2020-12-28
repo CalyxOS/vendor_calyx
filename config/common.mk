@@ -17,12 +17,6 @@ PRODUCT_PACKAGES += \
     Updater
 endif
 
-# For Google Camera
-ifeq ($(filter-out taimen walleye crosshatch blueline bonito sargo coral flame sunfish, $(VENDOR_DEVICE)),)
-PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/google_experience.xml:system/etc/sysconfig/google_experience.xml
-endif
-
 # SetupWizard
 PRODUCT_PACKAGES += \
     CalyxSetupWizard
