@@ -6,6 +6,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 source $SCRIPTPATH/metadata
 
 APV=vendor/android-prepare-vendor
+OUTPUT=${APV_OUT:-APV}
 ALL_DEVICES=${devices[@]}
 
 error() {
@@ -28,13 +29,13 @@ fi
 
 for device in ${apv_devices}; do
 	echo "Setting up vendor for $device ${buildid[$device]}"
-	echo "Running $APV/execute-all.sh -y --debugfs -d $device -b ${buildid[$device]} -o $APV"
-	$APV/execute-all.sh -y --debugfs -d $device -b ${buildid[$device]} -o $APV || exit 1
+	echo "Running $APV/execute-all.sh -y --debugfs -d $device -b ${buildid[$device]} -o $OUTPUT"
+	$APV/execute-all.sh -y --debugfs -d $device -b ${buildid[$device]} -o $OUTPUT || exit 1
 done
 
 for device in ${apv_devices}; do
 	rm -rf vendor/google_devices/$device/*
-	cp -a $APV/$device/${buildid[$device]}/vendor/google_devices vendor/
+	cp -a $OUTPUT/$device/${buildid[$device]}/vendor/google_devices vendor/
 	rm -rf $APV/$device/${buildid[$device]}/vendor*
 done
 
