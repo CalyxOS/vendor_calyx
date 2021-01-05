@@ -13,18 +13,18 @@ devices=(
 declare -A buildid
 buildid[taimen]=rp1a.201005.004.a1 # 2020-12-05
 buildid[walleye]=rp1a.201005.004.a1 # 2020-12-05
-buildid[crosshatch]=rq1a.201205.003 # 2020-12-05
-buildid[blueline]=rq1a.201205.003 # 2020-12-05
-buildid[bonito]=rq1a.201205.003 # 2020-12-05
-buildid[sargo]=rq1a.201205.003 # 2020-12-05
-buildid[coral]=rq1a.201205.008 # 2020-12-05
-buildid[flame]=rq1a.201205.008 # 2020-12-05
-buildid[sunfish]=rq1a.201205.008 # 2020-12-05
+buildid[crosshatch]=rq1a.210105.003 # 2021-01-05
+buildid[blueline]=rq1a.210105.003 # 2021-01-05
+buildid[bonito]=rq1a.210105.002 # 2021-01-05
+buildid[sargo]=rq1a.210105.002 # 2021-01-05
+buildid[coral]=rq1a.210105.003 # 2021-01-05
+buildid[flame]=rq1a.210105.003 # 2021-01-05
+buildid[sunfish]=rq1a.210105.002 # 2021-01-05
 
 branch=android11-qpr1
-prev_branch=android11
-aosp_version=rq1a.201205.008
-aosp_tag=android-11.0.0_r19
+prev_branch=android11-qpr1
+aosp_version=rq1a.210105.003
+aosp_tag=android-11.0.0_r27
 lineage_branch=lineage-18.1
 
 aosp_forks=(
@@ -85,9 +85,9 @@ aosp_forks=(
 
 declare -A kernels
 kernels[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
-kernels[google_msmdash4dot9]=android-11.0.0_r0.29 # 2020-12-05
-kernels[google_coral]=android-11.0.0_r0.30 # 2020-12-05
-kernels[google_sunfish]=android-11.0.0_r0.31 # 2020-12-05
+kernels[google_msmdash4dot9]=android-11.0.0_r0.43 # 2021-01-05
+kernels[google_coral]=android-11.0.0_r0.44 # 2021-01-05
+kernels[google_sunfish]=android-11.0.0_r0.45 # 2021-01-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
