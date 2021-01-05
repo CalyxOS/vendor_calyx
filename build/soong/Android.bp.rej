@@ -1,0 +1,11 @@
+--- build/soong/Android.bp
++++ build/soong/Android.bp
+@@ -434,7 +434,7 @@ soong_config_module_type {
+     name: "surfaceflinger_qcom_extensions",
+     module_type: "cc_defaults",
+     config_namespace: "lineageQcomVars",
+-    value_variables: ["qcom_soong_namespace"],
++    value_variables: ["qcom_display_headers_namespace"],
+     properties: [
+         "cppflags",
+         "header_libs",
