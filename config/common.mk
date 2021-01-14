@@ -3,7 +3,7 @@ include vendor/calyx/config/version.mk
 DEVICE_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
-ifeq ($(filter-out coral flame sunfish, $(VENDOR_DEVICE)),)
+ifeq ($(filter-out coral flame sunfish redfin bramble, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
     vendor/calyx/prebuilt/bootanimation-9x19.zip:system/media/bootanimation.zip
 else

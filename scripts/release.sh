@@ -38,7 +38,8 @@ VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -
 
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ||
 	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
-	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ]]; then
+	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
+  $DEVICE == redfin || $DEVICE == bramble ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine_sprout ]]; then
@@ -58,7 +59,8 @@ elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEV
   EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ]]; then
+elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
+  $DEVICE == redfin || $DEVICE == bramble ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
@@ -66,7 +68,7 @@ fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
-  $DEVICE == sunfish ]]; then
+  $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble ]]; then
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})

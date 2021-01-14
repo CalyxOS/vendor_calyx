@@ -8,6 +8,8 @@ devices=(
 	coral
 	flame
 	sunfish
+	redfin
+	bramble
 )
 
 declare -A buildid
@@ -20,6 +22,8 @@ buildid[sargo]=rq1a.210105.002 # 2021-01-05
 buildid[coral]=rq1a.210105.003 # 2021-01-05
 buildid[flame]=rq1a.210105.003 # 2021-01-05
 buildid[sunfish]=rq1a.210105.002 # 2021-01-05
+buildid[redfin]=rq1a.210105.003 # 2021-01-05
+buildid[bramble]=rq1a.210105.003 # 2021-01-05
 
 branch=android11-qpr1
 prev_branch=android11-qpr1
@@ -88,6 +92,7 @@ kernels[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
 kernels[google_msmdash4dot9]=android-11.0.0_r0.43 # 2021-01-05
 kernels[google_coral]=android-11.0.0_r0.44 # 2021-01-05
 kernels[google_sunfish]=android-11.0.0_r0.45 # 2021-01-05
+#kernels[google_redbull]=android-11.0.0_r0.46 # 2021-01-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
@@ -97,6 +102,7 @@ google_msmdash4dot9=(
 )
 google_coral=()
 google_sunfish=()
+#google_redbull=()
 
 independent=(
 	platform_manifest # Always handled manually!
