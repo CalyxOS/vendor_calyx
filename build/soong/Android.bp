@@ -1,5 +1,22 @@
 // Target platform agnostic config modules
 soong_config_module_type {
+    name: "inline_kernel_building",
+    module_type: "cc_defaults",
+    config_namespace: "calyxGlobalVars",
+    bool_variables: ["inline_kernel_building"],
+    properties: ["cppflags"],
+}
+
+inline_kernel_building {
+    name: "inline_kernel_building_defaults",
+    soong_config_variables: {
+        inline_kernel_building: {
+            cppflags: ["-DINLINE_KERNEL_BUILD"],
+        },
+    },
+}
+
+soong_config_module_type {
     name: "gralloc_10_usage_bits",
     module_type: "cc_defaults",
     config_namespace: "calyxGlobalVars",

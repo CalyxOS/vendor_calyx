@@ -28,7 +28,8 @@ $(foreach v,$(EXPORT_TO_SOONG),$(eval $(call addVar,$(v))))
 
 SOONG_CONFIG_NAMESPACES += calyxGlobalVars
 SOONG_CONFIG_calyxGlobalVars += \
-    additional_gralloc_10_usage_bits
+    additional_gralloc_10_usage_bits \
+    inline_kernel_building
 
 SOONG_CONFIG_NAMESPACES += calyxQcomVars
 SOONG_CONFIG_calyxQcomVars += \
@@ -43,6 +44,7 @@ SOONG_CONFIG_calyxQcomVars += \
 endif
 
 # Soong bool variables
+SOONG_CONFIG_calyxGlobalVars_inline_kernel_building := $(INLINE_KERNEL_BUILDING)
 SOONG_CONFIG_calyxQcomVars_supports_extended_compress_format := $(AUDIO_FEATURE_ENABLED_EXTENDED_COMPRESS_FORMAT)
 SOONG_CONFIG_calyxQcomVars_uses_pre_uplink_features_netmgrd := $(TARGET_USES_PRE_UPLINK_FEATURES_NETMGRD)
 SOONG_CONFIG_calyxQcomVars_uses_qti_camera_device := $(TARGET_USES_QTI_CAMERA_DEVICE)
