@@ -55,3 +55,10 @@ SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITI
 ifneq ($(filter $(UM_PLATFORMS),$(TARGET_BOARD_PLATFORM)),)
 SOONG_CONFIG_calyxQcomVars_qcom_soong_namespace := $(QCOM_SOONG_NAMESPACE)
 endif
+
+# Add generated headers or fake generated headers as needed
+ifeq ($(INLINE_KERNEL_BUILDING),false)
+    PRODUCT_SOONG_NAMESPACES += vendor/calyx/build/soong/headers
+else
+    PRODUCT_SOONG_NAMESPACES += vendor/calyx/build/soong/generator
+endif

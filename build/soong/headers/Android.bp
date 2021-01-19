@@ -1,0 +1,8 @@
+soong_namespace {
+}
+
+kernel_headers {
+    name: "generated_kernel_headers",
+    vendor: true,
+    recovery_available: true,
+}
