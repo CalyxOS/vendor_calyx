@@ -44,4 +44,13 @@
 
     <!-- Flag indicating which package name can access DeviceConfig table -->
     <string name="config_deviceConfiguratorPackageName" translatable="false">org.protonaosp.deviceconfig</string>
+
+    <!-- Configuration hook for the URL returned by ConnectivityManager#getCaptivePortalServerUrl.
+         If empty, the returned value is controlled by Settings.Global.CAPTIVE_PORTAL_HTTP_URL,
+         and if that value is empty, the framework will use a hard-coded default.
+         This is *NOT* a URL that will always be used by the system network validation to detect
+         captive portals: NetworkMonitor may use different strategies and will not necessarily use
+         this URL. NetworkMonitor behaviour should be configured with NetworkStack resource overlays
+         instead. -->
+    <string name="config_networkCaptivePortalServerUrl">https://connectivitycheck.gstatic.com/generate_204</string>
 </resources>
