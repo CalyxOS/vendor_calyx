@@ -49,6 +49,7 @@ $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
 # microG
 PRODUCT_PACKAGES += \
     GmsCore \
+    GsfProxy \
     FakeStore \
     DejaVuLocationService \
     MozillaNlpBackend \
