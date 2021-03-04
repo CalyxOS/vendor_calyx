@@ -64,6 +64,7 @@ PRODUCT_PACKAGES += \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
+    Firewall \
     Seedvault \
     Ripple
 
