@@ -43,7 +43,7 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   BOOTLOADER=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine_sprout ]]; then
-  : # TODO
+  MI_A2="true"
 else
   error "Unsupported device $DEVICE"
 fi
