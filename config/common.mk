@@ -80,3 +80,7 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
 
 PRODUCT_COPY_FILES += \
     vendor/calyx/prebuilt/deny_new_usb.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/deny_new_usb.rc
+
+# Sensitive Phone Numbers list
+PRODUCT_COPY_FILES += \
+    vendor/calyx/prebuilt/common/etc/sensitive_pn.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sensitive_pn.xml
