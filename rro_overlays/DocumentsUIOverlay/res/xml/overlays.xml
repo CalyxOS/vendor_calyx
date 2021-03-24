@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<overlay>
+    <item target="bool/show_documents_root" value="true" />
+    <item target="bool/config_default_show_device_root" value="true" />
+    <item target="string/default_root_uri" value="content://com.android.externalstorage.documents/root/primary" />
+</overlay>

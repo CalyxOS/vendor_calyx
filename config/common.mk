@@ -71,6 +71,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
 
+# Overlays
+PRODUCT_PACKAGES += \
+    DocumentsUIOverlay
+
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
