@@ -36,6 +36,7 @@ done
 for device in ${apv_devices}; do
 	rm -rf vendor/google_devices/$device/*
 	cp -a $OUTPUT/$device/${buildid[$device]}/vendor/google_devices vendor/
+	cp -a $OUTPUT/$device/${buildid[$device]}/vendor_overlay vendor/google_devices/$device/
 	rm -rf $APV/$device/${buildid[$device]}/vendor*
 done
 
