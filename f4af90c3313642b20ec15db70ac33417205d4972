@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ff057a5e_05a8ac26",
+        "filename": "overlay/common/packages/apps/CellBroadcastReceiver/res/values/config.xml",
+        "patchSetId": 4
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-03-26T13:59:57Z",
+      "side": 1,
+      "message": "This should be removed",
+      "revId": "f4af90c3313642b20ec15db70ac33417205d4972",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0",
+      "unresolved": true
+    }
+  ]
+}
