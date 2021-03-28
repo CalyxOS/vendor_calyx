@@ -15,21 +15,21 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/lineage_arm.mk \
-    $(LOCAL_DIR)/lineage_arm64.mk \
-    $(LOCAL_DIR)/lineage_x86.mk \
-    $(LOCAL_DIR)/lineage_x86_64.mk \
-    $(LOCAL_DIR)/lineage_arm_ab.mk \
-    $(LOCAL_DIR)/lineage_arm64_ab.mk \
-    $(LOCAL_DIR)/lineage_x86_ab.mk \
-    $(LOCAL_DIR)/lineage_x86_64_ab.mk
+    $(LOCAL_DIR)/calyx_arm.mk \
+    $(LOCAL_DIR)/calyx_arm64.mk \
+    $(LOCAL_DIR)/calyx_x86.mk \
+    $(LOCAL_DIR)/calyx_x86_64.mk \
+    $(LOCAL_DIR)/calyx_arm_ab.mk \
+    $(LOCAL_DIR)/calyx_arm64_ab.mk \
+    $(LOCAL_DIR)/calyx_x86_ab.mk \
+    $(LOCAL_DIR)/calyx_x86_64_ab.mk
 
 COMMON_LUNCH_CHOICES := \
-    lineage_arm-userdebug \
-    lineage_arm64-userdebug \
-    lineage_x86-userdebug \
-    lineage_x86_64-userdebug \
-    lineage_arm_ab-userdebug \
-    lineage_arm64_ab-userdebug \
-    lineage_x86_ab-userdebug \
-    lineage_x86_64_ab-userdebug
+    calyx_arm-userdebug \
+    calyx_arm64-userdebug \
+    calyx_x86-userdebug \
+    calyx_x86_64-userdebug \
+    calyx_arm_ab-userdebug \
+    calyx_arm64_ab-userdebug \
+    calyx_x86_ab-userdebug \
+    calyx_x86_64_ab-userdebug
