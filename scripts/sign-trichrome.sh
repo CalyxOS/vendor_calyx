@@ -8,7 +8,7 @@ source $SCRIPTPATH/metadata
 KEY_DIR=keys/common
 APKSIGNER=bin/apksigner
 KEY=${KEY_DIR}/calyxos.keystore
-BUNDLETOOL="bundletool-all-1.2.0.jar"
+BUNDLETOOL="bundletool-all-1.4.0.jar"
 AAPT2=aapt2
 
 error() {
