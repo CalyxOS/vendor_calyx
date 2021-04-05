@@ -15,20 +15,20 @@ devices=(
 declare -A buildid
 buildid[taimen]=rp1a.201005.004.a1 # 2020-12-05
 buildid[walleye]=rp1a.201005.004.a1 # 2020-12-05
-buildid[crosshatch]=rq2a.210305.006 # 2021-03-05
-buildid[blueline]=rq2a.210305.006 # 2021-03-05
-buildid[bonito]=rq2a.210305.006 # 2021-03-05
-buildid[sargo]=rq2a.210305.006 # 2021-03-05
-buildid[coral]=rq2a.210305.006 # 2021-03-05
-buildid[flame]=rq2a.210305.006 # 2021-03-05
-buildid[sunfish]=rq2a.210305.006 # 2021-03-05
-buildid[redfin]=rq2a.210305.006 # 2021-03-05
-buildid[bramble]=rq2a.210305.006 # 2021-03-05
+buildid[crosshatch]=rq2a.210405.005 # 2021-04-05
+buildid[blueline]=rq2a.210405.005 # 2021-04-05
+buildid[bonito]=rq2a.210405.005 # 2021-04-05
+buildid[sargo]=rq2a.210405.005 # 2021-04-05
+buildid[coral]=rq2a.210405.005 # 2021-04-05
+buildid[flame]=rq2a.210405.005 # 2021-04-05
+buildid[sunfish]=rq2a.210405.005 # 2021-04-05
+buildid[redfin]=rq2a.210405.005 # 2021-04-05
+buildid[bramble]=rq2a.210405.005 # 2021-04-05
 
 branch=android11-qpr1
 prev_branch=android11-qpr1
-aosp_version=rq2a.210305.006
-aosp_tag=android-11.0.0_r32
+aosp_version=rq2a.210405.005
+aosp_tag=android-11.0.0_r34
 lineage_branch=lineage-18.1
 
 aosp_forks=(
@@ -89,10 +89,10 @@ aosp_forks=(
 
 declare -A kernels
 kernels[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
-kernels[google_msmdash4dot9]=android-11.0.0_r0.60 # 2021-03-05
-kernels[google_coral]=android-11.0.0_r0.62 # 2021-03-05
-kernels[google_sunfish]=android-11.0.0_r0.64 # 2021-03-05
-#ernels[google_redbull]=android-11.0.0_r0.66 # 2021-03-05
+kernels[google_msmdash4dot9]=android-11.0.0_r0.73 # 2021-04-05
+kernels[google_coral]=android-11.0.0_r0.74 # 2021-04-05
+kernels[google_sunfish]=android-11.0.0_r0.75 # 2021-04-05
+#ernels[google_redbull]=android-11.0.0_r0.76 # 2021-04-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
