@@ -54,16 +54,16 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; 
   VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
                    --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
 elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096)
   EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096)
 elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
 fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
