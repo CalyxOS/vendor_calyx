@@ -1,2 +1,5 @@
 # Allow NFC service to be found
 allow platform_app nfc_service:service_manager find;
+
+# For Datura to set persist.sys.global.cleartext
+set_prop(platform_app, system_exported_cleartext_prop)
