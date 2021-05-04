@@ -101,7 +101,9 @@ google_msmdash4dot9=(
 	techpack_audio
 )
 google_coral=()
-google_sunfish=()
+google_sunfish=(
+	drivers_staging_fts
+)
 google_redbull=(
 	techpack_audio
 )
