@@ -66,6 +66,7 @@ done
 	echo "# Auto generated, do not edit."
 	echo
 	echo "PRODUCT_COPY_FILES += \\"
+	echo -e "    prebuilts/calyx/fdroid/fallback-icon.png:\$(TARGET_COPY_OUT_PRODUCT)/fdroid/repo/fallback-icon.png \\"
 } > $FDROID_MK
 
 for f in $FILES; do
