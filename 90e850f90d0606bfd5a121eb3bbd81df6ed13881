@@ -16,6 +16,23 @@
       "message": "Can\u0027t think of any other apps to add right now.\n\nShould also see what stock adds.",
       "revId": "90e850f90d0606bfd5a121eb3bbd81df6ed13881",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "29d22eab_ab834616",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2021-05-18T23:42:08Z",
+      "side": 1,
+      "message": "how can I easily check these days given that git rip was taken down?",
+      "revId": "90e850f90d0606bfd5a121eb3bbd81df6ed13881",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
