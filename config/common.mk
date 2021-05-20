@@ -14,7 +14,7 @@ endif
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
-    Updater
+    CalyxSystemUpdater
 endif
 
 # SetupWizard
