@@ -6,7 +6,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 source $SCRIPTPATH/metadata
 
 APV=vendor/android-prepare-vendor
-OUTPUT=${APV_OUT:-APV}
+OUTPUT=${APV_OUT:-$APV}
 ALL_DEVICES=${devices[@]}
 
 error() {
