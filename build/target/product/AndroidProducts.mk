@@ -22,7 +22,9 @@ PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/calyx_arm_ab.mk \
     $(LOCAL_DIR)/calyx_arm64_ab.mk \
     $(LOCAL_DIR)/calyx_x86_ab.mk \
-    $(LOCAL_DIR)/calyx_x86_64_ab.mk
+    $(LOCAL_DIR)/calyx_x86_64_ab.mk \
+    $(LOCAL_DIR)/calyx_sdk_phone_x86.mk \
+    $(LOCAL_DIR)/calyx_sdk_phone_x86_64.mk
 
 COMMON_LUNCH_CHOICES := \
     calyx_arm-userdebug \
@@ -32,4 +34,6 @@ COMMON_LUNCH_CHOICES := \
     calyx_arm_ab-userdebug \
     calyx_arm64_ab-userdebug \
     calyx_x86_ab-userdebug \
-    calyx_x86_64_ab-userdebug
+    calyx_x86_64_ab-userdebug \
+    calyx_sdk_phone_x86-userdebug \
+    calyx_sdk_phone_x86_64-userdebug

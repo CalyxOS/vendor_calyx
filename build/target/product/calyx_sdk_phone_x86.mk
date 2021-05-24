@@ -1,5 +1,4 @@
-#
-# Copyright (C) 2008 The Android Open Source Project
+# Copyright (C) 2021 The Calyx Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/calyx_sdk_phone_x86.mk
+$(call inherit-product, build/target/product/sdk_phone_x86.mk)
+
+$(call inherit-product, vendor/calyx/config/common.mk)
+
+# Overrides
+PRODUCT_NAME := calyx_sdk_phone_x86
+PRODUCT_MODEL := CalyxOS Android SDK built for x86
