@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1ed4bf29_f9bbe434",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-05-26T12:27:57Z",
+      "side": 1,
+      "message": "Builds, boots (according to logs) but display is glitched/doesn\u0027t show anything. Maybe it\u0027s just my pc/gpu?",
+      "revId": "f54d50d5b584de675edd2b5516ef3037806341fe",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
