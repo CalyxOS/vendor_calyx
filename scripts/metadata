@@ -162,6 +162,7 @@ apps=(
 	GmsCore
 	Seedvault
 	StorageManager
+	F-Droid
 )
 
 declare -A weblate_components
@@ -193,6 +194,12 @@ appkey[Dialer]=shared
 appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
+appkey[F-Droid]=org.calyxos.fdroid
+
+# Extra keys for apps we sign
+common_app_keys=(
+	org.calyxos.fdroid
+)
 
 # APEX keys
 apexes=(
