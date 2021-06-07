@@ -11,11 +11,11 @@ PRODUCT_COPY_FILES += \
     vendor/calyx/prebuilt/bootanimation-9x16.zip:system/media/bootanimation.zip
 endif
 
-ifeq ($(OFFICIAL_BUILD),true)
+#ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
     CalyxSystemUpdater
-endif
+#endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
