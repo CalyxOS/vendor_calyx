@@ -33,6 +33,12 @@ for k in releasekey platform shared media networkstack com.android.hotspot2.osul
 	fi
 done
 
+for k in "${app_keys[@]}"; do
+	if [[ ! -e ${k}.pk8 ]]; then
+		$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
+	fi
+done
+
 # Verified Boot (Pixel, Mi A2)
 if [[ ! -e verity.pk8 ]]; then
 	$SCRIPTPATH/mkkey.sh verity "$SUBJECT"

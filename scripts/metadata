@@ -194,6 +194,11 @@ appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
 
+# Extra keys for apps we sign
+app_keys=(
+	org.calyxos.fdroid
+)
+
 # APEX keys
 apexes=(
 	com.android.adbd.apex

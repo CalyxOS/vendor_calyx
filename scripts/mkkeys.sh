@@ -32,6 +32,10 @@ for k in releasekey platform shared media networkstack com.android.hotspot2.osul
 	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
 
+for k in "${app_keys[@]}"; do
+	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
+done
+
 # Verified Boot (Pixel, Mi A2)
 $SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
