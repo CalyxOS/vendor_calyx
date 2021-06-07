@@ -162,6 +162,7 @@ apps=(
 	GmsCore
 	Seedvault
 	StorageManager
+	F-Droid
 )
 
 declare -A weblate_components
@@ -185,6 +186,7 @@ keymap[platform]=platform
 keymap[networkstack]=networkstack
 keymap[com.android.hotspot2.osulogin]=com.android.hotspot2.osulogin
 keymap[com.android.wifi.resources]=com.android.wifi.resources
+keymap[org.calyxos.fdroid]=org.calyxos.fdroid
 
 # Key used by that particular app, default is testkey
 declare -A appkey
@@ -193,6 +195,12 @@ appkey[Dialer]=shared
 appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
+appkey[F-Droid]=org.calyxos.fdroid
+
+# Extra keys for apps we sign
+common_app_keys=(
+	org.calyxos.fdroid
+)
 
 # APEX keys
 apexes=(
