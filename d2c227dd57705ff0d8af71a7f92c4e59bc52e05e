@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6a540d52_7d94af64",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-06-07T21:01:38Z",
+      "side": 1,
+      "message": "I know I made this change, but for the initial build it\u0027s probably safer to keep the domain for the old app.",
+      "revId": "d2c227dd57705ff0d8af71a7f92c4e59bc52e05e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
