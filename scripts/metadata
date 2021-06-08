@@ -25,10 +25,11 @@ buildid[sunfish]=rq3a.210605.005 # 2021-06-05
 buildid[redfin]=rq3a.210605.005 # 2021-06-05
 buildid[bramble]=rq3a.210605.005 # 2021-06-05
 
-branch=android11-qpr1
 prev_branch=android11-qpr1
-aosp_version=rq3a.210605.005
+branch=android11-qpr1
+prev_aosp_tag=android-11.0.0_r37
 aosp_tag=android-11.0.0_r38
+aosp_version=rq3a.210605.005
 lineage_branch=lineage-18.1
 
 aosp_forks=(
@@ -87,12 +88,19 @@ aosp_forks=(
 	platform_system_sepolicy
 )
 
-declare -A kernels
-kernels[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
-kernels[google_msmdash4dot9]=android-11.0.0_r0.83 # 2021-06-05
-kernels[google_coral]=android-11.0.0_r0.84 # 2021-06-05
-kernels[google_sunfish]=android-11.0.0_r0.85 # 2021-06-05
-#ernels[google_redbull]=android-11.0.0_r0.86 # 2021-06-05
+declare -A prev_kernel_tags
+prev_kernel_tags[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
+prev_kernel_tags[google_msmdash4dot9]=android-11.0.0_r0.78 # 2021-05-05
+prev_kernel_tags[google_coral]=android-11.0.0_r0.79 # 2021-05-05
+prev_kernel_tags[google_sunfish]=android-11.0.0_r0.80 # 2021-05-05
+prev_kernel_tags[google_redbull]=android-11.0.0_r0.81 # 2021-05-05
+
+declare -A kernel_tags
+kernel_tags[google_wahoo]=android-11.0.0_r0.34 # 2020-12-05
+kernel_tags[google_msmdash4dot9]=android-11.0.0_r0.83 # 2021-06-05
+kernel_tags[google_coral]=android-11.0.0_r0.84 # 2021-06-05
+kernel_tags[google_sunfish]=android-11.0.0_r0.85 # 2021-06-05
+kernel_tags[google_redbull]=android-11.0.0_r0.86 # 2021-06-05
 
 # Modules, like calyxos/kernel_google_msm-4.9_techpack_audio
 google_wahoo=()
