@@ -87,6 +87,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     QuickAccessWallet
 
+# Providers
+PRODUCT_PACKAGES += \
+    CrossProfileProvider
+
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     persist.security.deny_new_usb=dynamic
 
