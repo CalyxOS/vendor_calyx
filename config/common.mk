@@ -5,10 +5,10 @@ VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(filter-out coral flame sunfish redfin bramble, $(VENDOR_DEVICE)),)
 PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/bootanimation-9x19.zip:system/media/bootanimation.zip
+    vendor/calyx/prebuilt/bootanimation-9x19.zip:$(TARGET_COPY_OUT_PRODUCT)/media/bootanimation.zip
 else
 PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/bootanimation-9x16.zip:system/media/bootanimation.zip
+    vendor/calyx/prebuilt/bootanimation-9x16.zip:$(TARGET_COPY_OUT_PRODUCT)/media/bootanimation.zip
 endif
 
 ifeq ($(OFFICIAL_BUILD),true)
