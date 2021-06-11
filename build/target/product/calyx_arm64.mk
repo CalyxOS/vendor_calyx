@@ -19,6 +19,8 @@ $(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_NO_KERNEL_OVERRIDE := true
 
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 # These apps require access to hidden API so they need to stay in /system
 PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
     system/app/Firewall/oat/arm64/Firewall.odex \

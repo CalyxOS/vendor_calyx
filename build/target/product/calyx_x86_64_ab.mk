@@ -16,6 +16,8 @@ $(call inherit-product, build/target/product/aosp_x86_64_ab.mk)
 
 $(call inherit-product, vendor/calyx/config/common.mk)
 
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_x86_64_ab
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := $(LOCAL_PATH)/source.properties
