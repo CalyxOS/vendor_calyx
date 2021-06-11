@@ -14,7 +14,7 @@
 
 $(call inherit-product, build/target/product/aosp_arm64_ab.mk)
 
-include vendor/calyx/build/target/product/calyx_generic_target.mk
+$(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_NO_KERNEL_OVERRIDE := true
 
