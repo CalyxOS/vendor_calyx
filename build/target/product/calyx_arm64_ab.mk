@@ -18,4 +18,6 @@ include vendor/calyx/build/target/product/calyx_generic_target.mk
 
 TARGET_NO_KERNEL_OVERRIDE := true
 
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_arm64_ab

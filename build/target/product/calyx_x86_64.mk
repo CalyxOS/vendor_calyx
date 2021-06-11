@@ -17,6 +17,8 @@ $(call inherit-product, build/target/product/gsi_release.mk)
 
 include vendor/calyx/build/target/product/calyx_generic_target.mk
 
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_x86_64
 
 PRODUCT_SDK_ADDON_NAME := calyx

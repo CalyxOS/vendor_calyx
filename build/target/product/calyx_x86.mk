@@ -19,6 +19,8 @@ include vendor/calyx/build/target/product/calyx_generic_target.mk
 
 TARGET_USES_64_BIT_BINDER := true
 
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_x86
 
 PRODUCT_SDK_ADDON_NAME := calyx
