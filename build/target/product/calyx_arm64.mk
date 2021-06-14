@@ -19,4 +19,11 @@ $(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_NO_KERNEL_OVERRIDE := true
 
+# These apps require access to hidden API so they need to stay in /system
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/app/Firewall/oat/arm64/Firewall.odex \
+    system/app/Firewall/oat/arm64/Firewall.vdex \
+    system/priv-app/Seedvault/oat/arm64/Seedvault.odex \
+    system/priv-app/Seedvault/oat/arm64/Seedvault.vdex
+
 PRODUCT_NAME := calyx_arm64

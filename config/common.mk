@@ -87,6 +87,13 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     QuickAccessWallet
 
+# These apps require access to hidden API so they need to stay in /system
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/app/Firewall/Firewall.apk \
+    system/etc/permissions/permissions_com.stevesoltys.seedvault.xml \
+    system/etc/sysconfig/whitelist_com.stevesoltys.seedvault.xml \
+    system/priv-app/Seedvault/Seedvault.apk
+
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.security.deny_new_usb=dynamic
 
