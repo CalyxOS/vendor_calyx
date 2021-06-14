@@ -59,6 +59,13 @@ PRODUCT_PACKAGES += \
     Seedvault \
     Ripple
 
+# These apps require access to hidden API so they need to stay in /system
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/app/Firewall/Firewall.apk
+    system/etc/permissions/permissions_com.stevesoltys.seedvault.xml \
+    system/etc/sysconfig/whitelist_com.stevesoltys.seedvault.xml \
+    system/priv-app/Seedvault/Seedvault.apk
+
 # Config
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
@@ -82,6 +89,11 @@ PRODUCT_PRODUCT_PROPERTIES += \
 # Calyx-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
     vendor/calyx/config/permissions/calyx-sysconfig.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/calyx-sysconfig.xml
+
+# AOSP has no support of loading framework resources from /system_ext
+# so the SDK has to stay in /system for now
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/etc/sysconfig/calyx-sysconfig.xml
 
 # Calyx SDK
 include vendor/calyx/config/calyx_sdk_common.mk
