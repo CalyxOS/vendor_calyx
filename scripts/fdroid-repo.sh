@@ -39,7 +39,7 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e "LOCAL_MODULE := fdroid-repo"
 	echo -e "LOCAL_MODULE_CLASS := ETC"
 	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/org.fdroid.fdroid'
+	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/org.calyxos.fdroid'
 	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
 	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
 	echo -e 'include $(BUILD_PREBUILT)'
