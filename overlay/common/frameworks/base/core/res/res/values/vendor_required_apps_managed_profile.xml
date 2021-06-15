@@ -22,7 +22,7 @@
     <string-array translatable="false" name="vendor_required_apps_managed_profile">
         <item>com.stevesoltys.seedvault</item>
         <item>org.chromium.chrome</item>
-        <item>org.fdroid.fdroid</item>
+        <item>org.calyxos.fdroid</item>
         <item>com.google.android.gms</item>
         <item>com.google.android.gsf</item>
         <item>com.android.vending</item>

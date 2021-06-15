@@ -22,6 +22,6 @@
     <string-array translatable="false" name="vendor_required_apps_managed_device">
         <item>com.stevesoltys.seedvault</item>
         <item>org.chromium.chrome</item>
-        <item>org.fdroid.fdroid</item>
+        <item>org.calyxos.fdroid</item>
     </string-array>
 </resources>
