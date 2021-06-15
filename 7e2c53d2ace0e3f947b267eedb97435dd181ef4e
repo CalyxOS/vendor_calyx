@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0d4da84f_1525a3b2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-06-15T16:04:01Z",
+      "side": 1,
+      "message": "Keeping both names in to handle upgrades.",
+      "revId": "7e2c53d2ace0e3f947b267eedb97435dd181ef4e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
