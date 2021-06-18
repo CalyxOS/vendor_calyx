@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "797e5878_9cc6ee10",
+        "filename": "build/target/product/calyx_arm64.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-06-18T09:42:56Z",
+      "side": 1,
+      "message": "Why are these only needed here and not also for devices?",
+      "revId": "aa482c2be683819cae51fa9830d71a08681b2f8f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
