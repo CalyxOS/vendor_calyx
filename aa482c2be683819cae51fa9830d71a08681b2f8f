@@ -70,6 +70,24 @@
       "parentUuid": "2f60b34d_8cd96e31",
       "revId": "aa482c2be683819cae51fa9830d71a08681b2f8f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0a2e8dbf_13d5fd7e",
+        "filename": "build/target/product/calyx_arm64.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-06-18T17:46:35Z",
+      "side": 1,
+      "message": "We may just need to create an additional file and include that from devices then.",
+      "parentUuid": "0fd73237_f1c36434",
+      "revId": "aa482c2be683819cae51fa9830d71a08681b2f8f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
