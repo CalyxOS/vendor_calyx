@@ -52,6 +52,24 @@
       "parentUuid": "5fad37e7_16130f36",
       "revId": "aa482c2be683819cae51fa9830d71a08681b2f8f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0fd73237_f1c36434",
+        "filename": "build/target/product/calyx_arm64.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-06-18T17:40:35Z",
+      "side": 1,
+      "message": "I tried moving it to the main config but it needs to be arch specific and TARGET_ARCH doesn\u0027t work in these makefiles",
+      "parentUuid": "2f60b34d_8cd96e31",
+      "revId": "aa482c2be683819cae51fa9830d71a08681b2f8f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
