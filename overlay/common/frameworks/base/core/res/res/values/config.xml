@@ -59,4 +59,7 @@
 
     <!-- Flag indicating whether round icons should be parsed from the application manifest. -->
     <bool name="config_useRoundIcon">true</bool>
+
+    <!-- Grant Launcher3 the wellbeing permission group -->
+    <string name="config_defaultWellbeingPackage" translatable="false">com.android.launcher3</string>
 </resources>
