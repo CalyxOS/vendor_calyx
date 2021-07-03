@@ -53,4 +53,7 @@
          correctly use them when installed on your device.  Otherwise, keep this disabled
          so that applications can still use their own mechanisms. -->
     <bool name="config_enableAutoPowerModes">true</bool>
+
+    <!-- Grant Launcher3 the wellbeing permission group -->
+    <string name="config_defaultWellbeingPackage" translatable="false">com.android.launcher3</string>
 </resources>
