@@ -172,6 +172,7 @@ apps=(
 	Seedvault
 	StorageManager
 	F-Droid
+	AuroraStorePrivilegedExtension
 )
 
 declare -A weblate_components
@@ -205,6 +206,7 @@ appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
 appkey[F-Droid]=org.calyxos.fdroid
+appkey[AuroraStorePrivilegedExtension]=testkey
 
 # Extra keys for apps we sign
 common_app_keys=(
