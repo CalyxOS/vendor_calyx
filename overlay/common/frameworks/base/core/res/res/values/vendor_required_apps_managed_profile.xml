@@ -21,5 +21,11 @@
             Takes precedence over the disallowed apps lists. -->
     <string-array translatable="false" name="vendor_required_apps_managed_profile">
         <item>org.fdroid.fdroid</item>
+        <item>com.google.android.gms</item>
+        <item>com.google.android.gsf</item>
+        <item>com.android.vending</item>
+        <item>org.fitchfamily.android.dejavu</item>
+        <item>org.microg.nlp.backend.ichnaea</item>
+        <item>org.microg.nlp.backend.nominatim</item>
     </string-array>
 </resources>
