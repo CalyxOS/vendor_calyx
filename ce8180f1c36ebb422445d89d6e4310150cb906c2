@@ -16,6 +16,24 @@
       "message": "This would also affect managed profiles",
       "revId": "ce8180f1c36ebb422445d89d6e4310150cb906c2",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e878ab8_1f690aed",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-07-15T00:41:17Z",
+      "side": 1,
+      "message": "And they wouldn\u0027t have SetupWizard to disable.\n\nThey can still disable it via the usual mechanisms.\n\nI think this is fine.\n\nIt is much easier to disable microG, which basically makes all the other apps pointless, they wouldn\u0027t really do anything without it.\n\nIt\u0027s a lot harder to enable 6 apps - users won\u0027t even know that they need this, even for managed profiles.",
+      "parentUuid": "7b5e630f_76e53264",
+      "revId": "ce8180f1c36ebb422445d89d6e4310150cb906c2",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
