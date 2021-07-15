@@ -26,4 +26,7 @@
     <!-- Fully-qualified class name for the styles & wallpaper picker activity. -->
     <string name="config_styles_and_wallpaper_picker_class" translatable="false">com.android.customization.picker.CustomizationPickerActivity</string>
 
+    <!-- Whether wallpaper attribution should be shown or not. -->
+    <bool name="config_show_wallpaper_attribution">false</bool>
+
 </resources>
