@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1360bac2_af302f6e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2021-08-11T02:37:06Z",
+      "side": 1,
+      "message": "This is all that remains to be done for this patch. Looking into data restrictions next",
+      "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
