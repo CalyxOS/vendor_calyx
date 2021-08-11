@@ -34,6 +34,23 @@
       "parentUuid": "1360bac2_af302f6e",
       "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "77b0a286_43165fc2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2021-08-11T14:55:24Z",
+      "side": 1,
+      "message": "Sure, I don\u0027t find it \"clean\" but functionality-wise it does seem to be doing its job as expected",
+      "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
