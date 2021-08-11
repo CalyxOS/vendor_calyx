@@ -16,6 +16,24 @@
       "message": "This is all that remains to be done for this patch. Looking into data restrictions next",
       "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5588660d_f389fa30",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-08-11T12:34:18Z",
+      "side": 1,
+      "message": "In theory we could leave it as-is, I don\u0027t see any denials.\n\nIf so I\u0027ll check the fwmark rules to make sure they make sense for netdl oo.",
+      "parentUuid": "1360bac2_af302f6e",
+      "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
