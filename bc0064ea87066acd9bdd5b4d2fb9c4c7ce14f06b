@@ -51,6 +51,23 @@
       "message": "Sure, I don\u0027t find it \"clean\" but functionality-wise it does seem to be doing its job as expected",
       "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "65d70bd2_7109328c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-08-25T18:25:45Z",
+      "side": 1,
+      "message": "Own socket causes denials, this is fine for now. It still works, but still.\n\nI com.android.bluetooth: type\u003d1400 audit(0.0:286): avc: denied { write } for comm\u003d4144422D4A44575020436F6E6E6563 name\u003d\"netdl\" dev\u003d\"tmpfs\" ino\u003d16080 scontext\u003du:r:bluetooth:s0 tcontext\u003du:object_r:netdl_socket:s0 tclass\u003dsock_file permissive\u003d1",
+      "revId": "bc0064ea87066acd9bdd5b4d2fb9c4c7ce14f06b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
