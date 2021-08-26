@@ -39,9 +39,12 @@ case ${KERNEL} in
 	redbull)
 		BUILD_CONFIG=google/redbull/build.config.redbull.calyx
 		;;
+	barbet)
+		BUILD_CONFIG=google/redbull/build.config.barbet.calyx
+		;;
 	*)
 		echo "Unsupported kernel $KERNEL"
-		echo "Support kernels: wahoo crosshatch bonito coral sunfish redbull"
+		echo "Support kernels: wahoo crosshatch bonito coral sunfish redbull barbet"
 		exit
 		;;
 esac
