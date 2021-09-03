@@ -41,8 +41,9 @@ $SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
 openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
 
-if [[ $KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven || $KEY_DIR =~ FP4 ]]; then
-# AVB 2.0 (Pixel 5a, 6, 6 pro, Fairphone 4)
+if [[ $KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven || $KEY_DIR =~ FP4 ||
+  $KEY_DIR == kebab ]]; then
+# AVB 2.0 (Pixel 5a, 6, 6 pro, Fairphone 4, OnePlus 8T)
 openssl genrsa -out avb.pem 4096
 $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 else
