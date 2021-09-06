@@ -37,9 +37,15 @@ $SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
 openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
 
+if [[ $KEY_DIR == barbet ]]; then
+# AVB 2.0 (Pixel 5a)
+openssl genrsa -out avb.pem 4096
+$AVBTOOL extract_public_key --key avb.pem --output avb_pkmd.bin
+else
 # AVB 2.0 (Pixel 2)
 openssl genrsa -out avb.pem 2048
 $AVBTOOL extract_public_key --key avb.pem --output avb_pkmd.bin
+fi
 
 for apex in "${apexes[@]}"; do
 	$SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
