@@ -16,16 +16,16 @@ devices=(
 declare -A buildid
 buildid[taimen]=rp1a.201005.004.a1 # 2020-12-05
 buildid[walleye]=rp1a.201005.004.a1 # 2020-12-05
-buildid[crosshatch]=rq3a.210805.001.a1 # 2021-08-05
-buildid[blueline]=rq3a.210805.001.a1 # 2021-08-05
-buildid[bonito]=rq3a.210805.001.a1 # 2021-08-05
-buildid[sargo]=rq3a.210805.001.a1 # 2021-08-05
-buildid[coral]=rq3a.210805.001.a1 # 2021-08-05
-buildid[flame]=rq3a.210805.001.a1 # 2021-08-05
-buildid[sunfish]=rq3a.210805.001.a1 # 2021-08-05
-buildid[redfin]=rq3a.210805.001.a1 # 2021-08-05
-buildid[bramble]=rq3a.210805.001.a1 # 2021-08-05
-buildid[barbet]=rd2a.210605.007 # 2021-06-05
+buildid[crosshatch]=rq3a.210905.001 # 2021-09-05
+buildid[blueline]=rq3a.210905.001 # 2021-09-05
+buildid[bonito]=rq3a.210905.001 # 2021-09-05
+buildid[sargo]=rq3a.210905.001 # 2021-09-05
+buildid[coral]=rq3a.210905.001 # 2021-09-05
+buildid[flame]=rq3a.210905.001 # 2021-09-05
+buildid[sunfish]=rq3a.210905.001 # 2021-09-05
+buildid[redfin]=rq3a.210905.001 # 2021-09-05
+buildid[bramble]=rq3a.210905.001 # 2021-09-05
+buildid[barbet]=rd2a.210905.002 # 2021-09-05
 
 prev_branch=android11-qpr1
 branch=android11-qpr1
