@@ -44,7 +44,7 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   RADIO=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
 elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
-elif [[ $DEVICE == kebab ]]; then
+elif [[ $DEVICE == kebab || $DEVICE == lemonade ]]; then
   : # Do nothing, for now.
 else
   error "Unsupported device $DEVICE"
@@ -70,7 +70,7 @@ elif [[ $DEVICE == barbet ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == kebab ]]; then
+elif [[ $DEVICE == kebab || $DEVICE == lemonade ]]; then
   # TODO check stock
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
@@ -80,7 +80,7 @@ fi
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == kebab ]]; then
+  $DEVICE == kebab || $DEVICE == lemonade ]]; then
   AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
