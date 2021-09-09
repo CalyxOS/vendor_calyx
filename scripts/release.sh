@@ -49,7 +49,7 @@ elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
-elif [[ $DEVICE == kebab ]]; then
+elif [[ $DEVICE == kebab || $DEVICE == lemonade ]]; then
   : # Do nothing, for now.
 else
   error "Unsupported device $DEVICE"
@@ -71,7 +71,7 @@ elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab ]]; then
+elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -86,7 +86,7 @@ fi
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == FP4 || $DEVICE == kebab ]]; then
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
