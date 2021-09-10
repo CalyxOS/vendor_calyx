@@ -76,7 +76,8 @@ PRODUCT_PACKAGES += \
 
 # Overlays
 PRODUCT_PACKAGES += \
-    CellBroadcastReceiverOverlay
+    CellBroadcastReceiverOverlay \
+    F-DroidPrivilegedExtensionOverlay
 
 # Sensitive Phone Numbers list
 PRODUCT_PACKAGES += \

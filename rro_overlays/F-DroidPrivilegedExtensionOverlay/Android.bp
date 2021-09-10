@@ -1,0 +1,4 @@
+runtime_resource_overlay {
+    name: "F-DroidPrivilegedExtensionOverlay",
+    product_specific: true,
+}
