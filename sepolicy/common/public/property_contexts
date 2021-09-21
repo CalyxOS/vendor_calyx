@@ -1,0 +1,2 @@
+ro.vendor.firmware.security_patch u:object_r:vendor_security_patch_level_prop:s0 exact string
+ro.vendor.kernel.security_patch u:object_r:vendor_security_patch_level_prop:s0 exact string
