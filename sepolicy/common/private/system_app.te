@@ -1,2 +1,5 @@
 # Allow Settings to read ro.vendor.build.security_patch
 get_prop(system_app, vendor_security_patch_level_prop)
+
+# Allow Settings to write persist.sys.global.cleartext
+set_prop(system_app, system_exported_cleartext_prop)
