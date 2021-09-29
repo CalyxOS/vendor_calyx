@@ -175,11 +175,17 @@ lineage_caf_forks[platform_hardware_qcom-caf_wlan]=${lineage_branch}-caf
 apps=(
 	Contacts
 	Dialer
-	GmsCore
 	Seedvault
 	StorageManager
 	F-Droid
 	AuroraStorePrivilegedExtension
+	GCamPhotosPreview
+	GmsCore
+	GsfProxy
+	FakeStore
+	DejaVuLocationService
+	MozillaNlpBackend
+	NominatimNlpBackend
 )
 
 declare -A weblate_components
@@ -204,20 +210,36 @@ keymap[networkstack]=networkstack
 keymap[com.android.hotspot2.osulogin]=com.android.hotspot2.osulogin
 keymap[com.android.wifi.resources]=com.android.wifi.resources
 keymap[org.calyxos.fdroid]=org.calyxos.fdroid
+keymap[com.google.android.photos]=com.google.android.photos
+keymap[microg]=microg
+keymap[org.calyxos.nlp.dejavu]=org.calyxos.nlp.dejavu
+keymap[org.calyxos.nlp.ichnaea]=org.calyxos.nlp.ichnaea
+keymap[org.calyxos.nlp.nominatim]=org.calyxos.nlp.nominatim
 
 # Key used by that particular app, default is testkey
 declare -A appkey
 appkey[Contacts]=shared
 appkey[Dialer]=shared
-appkey[GmsCore]=testkey
 appkey[Seedvault]=platform
 appkey[StorageManager]=testkey
 appkey[F-Droid]=org.calyxos.fdroid
 appkey[AuroraStorePrivilegedExtension]=testkey
+appkey[GCamPhotosPreview]=com.google.android.apps.photos
+appkey[GmsCore]=microg
+appkey[GsfProxy]=microg
+appkey[FakeStore]=microg
+appkey[DejaVuLocationService]=org.calyxos.nlp.dejavu
+appkey[MozillaNlpBackend]=org.calyxos.nlp.ichnaea
+appkey[NominatimNlpBackend]=org.calyxos.nlp.nominatim
 
 # Extra keys for apps we sign
 common_app_keys=(
+	com.google.android.apps.photos
+	microg
 	org.calyxos.fdroid
+	org.calyxos.nlp.dejavu
+	org.calyxos.nlp.ichnaea
+	org.calyxos.nlp.nominatim
 )
 
 # APEX keys
