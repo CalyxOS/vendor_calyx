@@ -46,6 +46,16 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e "LOCAL_PRODUCT_MODULE := true"
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
+	echo -e 'include $(CLEAR_VARS)'
+	echo -e 'LOCAL_MODULE := client_whitelist.xml'
+	echo -e 'LOCAL_MODULE_CLASS := ETC'
+	echo -e 'LOCAL_MODULE_TAGS := optional'
+	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.fdroid.privileged'
+	echo -e 'LOCAL_SRC_FILES := $(LOCAL_MODULE)'
+	echo -e 'LOCAL_PRODUCT_MODULE := true'
+	echo -e 'include $(BUILD_PREBUILT)'
+	echo
+
 } > $ANDROID_MK
 
 for app in $APPS; do
@@ -81,6 +91,7 @@ done
 	echo
 	echo "PRODUCT_PACKAGES += \\"
 	echo "    fdroid-repo \\"
+	echo "    client_whitelist.xml \\"
 } >> $FDROID_MK
 
 for app in $APPS; do
