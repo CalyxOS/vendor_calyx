@@ -16,22 +16,22 @@ devices=(
 declare -A buildid
 buildid[taimen]=rp1a.201005.004.a1 # 2020-12-05
 buildid[walleye]=rp1a.201005.004.a1 # 2020-12-05
-buildid[crosshatch]=rq3a.210905.001 # 2021-09-05
-buildid[blueline]=rq3a.210905.001 # 2021-09-05
-buildid[bonito]=rq3a.210905.001 # 2021-09-05
-buildid[sargo]=rq3a.210905.001 # 2021-09-05
-buildid[coral]=rq3a.210905.001 # 2021-09-05
-buildid[flame]=rq3a.210905.001 # 2021-09-05
-buildid[sunfish]=rq3a.210905.001 # 2021-09-05
-buildid[redfin]=rq3a.210905.001 # 2021-09-05
-buildid[bramble]=rq3a.210905.001 # 2021-09-05
-buildid[barbet]=rd2a.210905.002 # 2021-09-05
+buildid[crosshatch]=rq3a.211001.001 # 2021-10-01
+buildid[blueline]=rq3a.211001.001 # 2021-10-01
+buildid[bonito]=rq3a.211001.001 # 2021-10-01
+buildid[sargo]=rq3a.211001.001 # 2021-10-01
+buildid[coral]=rq3a.211001.001 # 2021-10-01
+buildid[flame]=rq3a.211001.001 # 2021-10-01
+buildid[sunfish]=rq3a.211001.001 # 2021-10-01
+buildid[redfin]=rq3a.211001.001 # 2021-10-01
+buildid[bramble]=rq3a.211001.001 # 2021-10-01
+buildid[barbet]=rd2a.211001.002 # 2021-10-01
 
 prev_branch=android11-qpr1
 branch=android11-qpr1
 prev_aosp_tag=android-11.0.0_r40
 aosp_tag=android-11.0.0_r43
-aosp_version=rq3a.210905.001
+aosp_version=rq3a.211001.001
 lineage_branch=lineage-18.1
 
 aosp_forks=(
