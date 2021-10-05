@@ -1,2 +1,2 @@
-ADDITIONAL_BUILD_PROPERTIES += \
-	ro.calyxos.version=$(CALYXOS_VERSION)
+ADDITIONAL_SYSTEM_PROPERTIES += \
+    ro.calyxos.version=$(CALYXOS_VERSION)
