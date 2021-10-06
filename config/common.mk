@@ -33,7 +33,7 @@ PRODUCT_PACKAGES += \
     ThemePicker
 
 # Local F-droid repo
-$(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
+#$(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
 
 # microG
 PRODUCT_PACKAGES += \
