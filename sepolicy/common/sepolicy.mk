@@ -3,8 +3,8 @@
 # inherit from Calyx
 #
 
-BOARD_PLAT_PRIVATE_SEPOLICY_DIR += \
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \
     vendor/calyx/sepolicy/common/private
 
-BOARD_PLAT_PUBLIC_SEPOLICY_DIR += \
+SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += \
     vendor/calyx/sepolicy/common/public
