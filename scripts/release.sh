@@ -89,6 +89,7 @@ fi
 
 EXTRA_SIGNING_ARGS+=(-k frameworks/base/packages/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
 EXTRA_SIGNING_ARGS+=(-k frameworks/opt/net/wifi/service/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
+EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
 
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
