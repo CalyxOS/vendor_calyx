@@ -63,6 +63,11 @@
     <!-- Grant Launcher3 the wellbeing permission group -->
     <string name="config_defaultWellbeingPackage" translatable="false">com.android.launcher3</string>
 
+    <!-- Wallpaper cropper package. Used as the default cropper if the active launcher doesn't
+         handle wallpaper cropping.
+    -->
+    <string name="config_wallpaperCropperPackage" translatable="false">com.android.wallpaper</string>
+
     <!-- Control the behavior when the user long presses the power button.
             0 - Nothing
             1 - Global actions menu
