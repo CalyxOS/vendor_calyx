@@ -16,6 +16,23 @@
       "message": "Hold for now, depending on how we do things it might not be needed for 12.",
       "revId": "688569123cde56ae19f93a1d6f70582672847697",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "612238dc_1f3d7f7c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000034
+      },
+      "writtenOn": "2021-10-12T14:14:52Z",
+      "side": 1,
+      "message": "I\u0027d rather this be a Setting, prop interfaces aren\u0027t that good",
+      "revId": "688569123cde56ae19f93a1d6f70582672847697",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
