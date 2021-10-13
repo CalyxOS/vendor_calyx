@@ -51,6 +51,24 @@
       "parentUuid": "612238dc_1f3d7f7c",
       "revId": "688569123cde56ae19f93a1d6f70582672847697",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4d97ce1e_8e10fff1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000034
+      },
+      "writtenOn": "2021-10-13T11:22:59Z",
+      "side": 1,
+      "message": "Ah, I didn\u0027t know it was part of StrictMode",
+      "parentUuid": "9388f2ee_43f8b5db",
+      "revId": "688569123cde56ae19f93a1d6f70582672847697",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
