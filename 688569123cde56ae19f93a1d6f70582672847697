@@ -33,6 +33,24 @@
       "message": "I\u0027d rather this be a Setting, prop interfaces aren\u0027t that good",
       "revId": "688569123cde56ae19f93a1d6f70582672847697",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9388f2ee_43f8b5db",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-10-13T11:12:32Z",
+      "side": 1,
+      "message": "It is a Setting everywhere else, however this has to read from StrictMode where prop was the only option.\n\nSee 2702: fw/b: allow per-uid cleartext allowlisting | https://review.calyxos.org/c/CalyxOS/platform_frameworks_base/+/2702\n\nIt\u0027s needed to not let apps bypass the global cleartext toggle since it piggy backs on the same StrictMode implementation in netd.",
+      "parentUuid": "612238dc_1f3d7f7c",
+      "revId": "688569123cde56ae19f93a1d6f70582672847697",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
