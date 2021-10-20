@@ -4,7 +4,7 @@
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 DATE=$(date +%F)
 FDROIDREPOTMP=$(mktemp -d)
-JOBID=$(curl -sI https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/artifacts/master/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
+JOBID=$(curl -sI https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/artifacts/main/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
 ANDROID_MK=Android.mk
 FDROID_MK=fdroid-repo.mk
 
