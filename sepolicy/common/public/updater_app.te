@@ -1,5 +1,0 @@
-###
-### A domain for the OTA Updater
-###
-
-type updater_app, domain;

@@ -1,6 +1,0 @@
-sys.update.                    u:object_r:shell_prop:s0
-persist.sys.global.cleartext   u:object_r:system_exported_cleartext_prop:s0 exact bool
-
-# Security patch
-ro.vendor.firmware.security_patch   u:object_r:vendor_security_patch_level_prop:s0 exact string
-ro.vendor.kernel.security_patch     u:object_r:vendor_security_patch_level_prop:s0 exact string
