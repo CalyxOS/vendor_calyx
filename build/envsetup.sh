@@ -34,6 +34,30 @@ echo "NOT an official build"
 fi
 export CALYX_BUILD=true
 
+function breakfast()
+{
+    target=$1
+    local variant=$2
+
+    if [ $# -eq 0 ]; then
+        # No arguments, so let's have the full menu
+        lunch
+    else
+        if [[ "$target" =~ -(user|userdebug|eng)$ ]]; then
+            # A buildtype was specified, assume a full device name
+            lunch $target
+        else
+            # This is probably just the Calyx model name
+            if [ -z "$variant" ]; then
+                variant="userdebug"
+            fi
+
+            lunch calyx_$target-$variant
+        fi
+    fi
+    return $?
+}
+
 function aospremote()
 {
     if ! git rev-parse --git-dir &> /dev/null
