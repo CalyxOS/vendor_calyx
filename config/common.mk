@@ -74,9 +74,3 @@ PRODUCT_PACKAGES += \
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
-
-PRODUCT_PRODUCT_PROPERTIES += \
-    persist.security.deny_new_usb=dynamic
-
-PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/deny_new_usb.rc:$(TARGET_COPY_OUT_PRODUCT)/etc/init/deny_new_usb.rc
