@@ -89,3 +89,9 @@ include vendor/calyx/config/calyx_sdk_common.mk
 PRODUCT_PACKAGES += \
     CalyxParts \
     CalyxSettingsProvider
+
+# Artifact path allowlist, contains anything we cannot move
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/etc/permissions/permissions_com.stevesoltys.seedvault.xml \
+    system/etc/sysconfig/whitelist_com.stevesoltys.seedvault.xml \
+    system/priv-app/Seedvault/Seedvault.apk
