@@ -74,3 +74,9 @@ PRODUCT_PACKAGES += \
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
+
+# Artifact path allowlist
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+	system/etc/permissions/permissions_com.stevesoltys.seedvault.xml \
+	system/etc/sysconfig/whitelist_com.stevesoltys.seedvault.xml \
+	system/priv-app/Seedvault/Seedvault.apk
