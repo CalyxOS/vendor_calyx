@@ -78,3 +78,9 @@ PRODUCT_PACKAGES += \
 # One-handed mode
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.support_one_handed_mode=true
+
+# Artifact path allowlist, contains anything we cannot move
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/etc/permissions/permissions_com.stevesoltys.seedvault.xml \
+    system/etc/sysconfig/whitelist_com.stevesoltys.seedvault.xml \
+    system/priv-app/Seedvault/Seedvault.apk
