@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "20729394_bd033db3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-11-11T20:30:00Z",
+      "side": 1,
+      "message": "Charging ripple looks nice. Now only if our off mode charger was as beautiful.",
+      "revId": "a0938d4a42cfe8798794bd0337c3d82b878f977d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
