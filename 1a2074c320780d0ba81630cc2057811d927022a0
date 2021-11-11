@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e69bd96e_792c753f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-11-11T20:37:35Z",
+      "side": 1,
+      "message": "Need to handle dark mode.\n\nI was thinking for now it\u0027d be easier to just disable that in frameworks.",
+      "revId": "1a2074c320780d0ba81630cc2057811d927022a0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
