@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fdfca601_790027c5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-11-12T17:46:11Z",
+      "side": 1,
+      "message": "I guess this will break any other potential devices with prebuilt kernel (they will have to copy it themselves), but we don\u0027t support such devices yet",
+      "revId": "a976022f7e16c78eda9912e1fe9288e208efe7c8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
