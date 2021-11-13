@@ -19,4 +19,7 @@ $(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_NO_KERNEL_OVERRIDE := true
 
+# Enable mainline checking
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_arm64

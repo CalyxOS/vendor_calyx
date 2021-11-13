@@ -16,6 +16,9 @@ $(call inherit-product, build/target/product/sdk_phone_x86.mk)
 
 $(call inherit-product, vendor/calyx/config/common.mk)
 
+# Enable mainline checking
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 # Overrides
 PRODUCT_NAME := calyx_sdk_phone_x86
 PRODUCT_MODEL := CalyxOS Android SDK built for x86

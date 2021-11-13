@@ -19,6 +19,9 @@ $(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_USES_64_BIT_BINDER := true
 
+# Enable mainline checking
+PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
+
 PRODUCT_NAME := calyx_x86
 
 PRODUCT_SDK_ADDON_NAME := calyx
