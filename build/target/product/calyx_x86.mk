@@ -16,6 +16,7 @@ $(call inherit-product, build/target/product/aosp_x86.mk)
 $(call inherit-product, build/target/product/gsi_release.mk)
 
 $(call inherit-product, vendor/calyx/config/common.mk)
+$(call inherit-product, vendor/calyx/config/arch/x86.mk)
 
 TARGET_USES_64_BIT_BINDER := true
 

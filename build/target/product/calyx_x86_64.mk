@@ -16,6 +16,7 @@ $(call inherit-product, build/target/product/aosp_x86_64.mk)
 $(call inherit-product, build/target/product/gsi_release.mk)
 
 $(call inherit-product, vendor/calyx/config/common.mk)
+$(call inherit-product, vendor/calyx/config/arch/x86_64.mk)
 
 # Enable mainline checking
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed

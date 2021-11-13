@@ -15,6 +15,7 @@
 $(call inherit-product, build/target/product/sdk_phone_x86_64.mk)
 
 $(call inherit-product, vendor/calyx/config/common.mk)
+$(call inherit-product, vendor/calyx/config/arch/x86_64.mk)
 
 # Enable mainline checking
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
