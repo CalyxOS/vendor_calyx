@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5e368505_fd4c5054",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-11-13T23:35:13Z",
+      "side": 1,
+      "message": "Creates -dark symlink as well, should handle all bootanimation cases now.",
+      "revId": "f01080a45890d88596b35a0b64fc25d75c4cdf61",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
