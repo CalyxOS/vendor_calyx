@@ -10,7 +10,3 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     org.lineageos.platform-res \
     org.lineageos.platform
-
-# JNI Libraries
-PRODUCT_PACKAGES += \
-    liblineage-sdk_platform_jni
