@@ -81,7 +81,7 @@ PRODUCT_PRODUCT_PROPERTIES += \
 
 # Calyx-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
-    vendor/calyx/config/permissions/calyx-sysconfig.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/calyx-sysconfig.xml
+    vendor/calyx/config/permissions/calyx-sysconfig.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/calyx-sysconfig.xml
 
 # Calyx SDK
 include vendor/calyx/config/calyx_sdk_common.mk
