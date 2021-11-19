@@ -21,7 +21,7 @@ else
   EXTRA_RELEASETOOLS_ARGS="-p ."
 fi
 
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" \
+$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" \
   -i archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip

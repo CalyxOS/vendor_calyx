@@ -91,12 +91,12 @@ EXTRA_SIGNING_ARGS+=(-k frameworks/base/packages/OsuLogin/certs/com.android.hots
 EXTRA_SIGNING_ARGS+=(-k frameworks/opt/net/wifi/service/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
 
 echo "Creating signed targetfiles zip"
-$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
+$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
   -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
+$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
 
 sha256sum $OUT/$DEVICE-ota_update-$BUILD.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum
@@ -107,7 +107,7 @@ if [ ! -z $OTA_ONLY ]; then
 fi
 
 echo "Creating factory images"
-$RELEASETOOLS_PATH/releasetools/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
+$RELEASETOOLS_PATH/bin/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-img-$BUILD.zip || exit 1
 
 pushd $OUT || exit 1
@@ -126,11 +126,11 @@ popd
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
-$RELEASETOOLS_PATH/releasetools/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest $OTATEST -o -d "$KEY_DIR" \
+$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest $OTATEST -o -d "$KEY_DIR" \
   -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
 
-$RELEASETOOLS_PATH/releasetools/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
+$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$OTATEST.zip || exit 1
 sha256sum $OUT/$DEVICE-ota_update-$OTATEST.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum
 fi
