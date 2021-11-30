@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0c9bb18b_cfc91621",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-11-30T09:36:02Z",
+      "side": 1,
+      "message": "The part that\u0027s not handled by the python script and needs to be sorted out is how do we handle check in.\n\nThe prebuilts repository is only updated right before we make a build, to avoid increasing the repo size and also to always have a known-good / tested version in there (far easier to test once a month then on every single app update)",
+      "revId": "2be89e24b227d3c572914169227d161da4029087",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
