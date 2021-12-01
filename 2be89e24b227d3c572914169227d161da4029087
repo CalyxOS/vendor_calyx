@@ -52,6 +52,24 @@
       "parentUuid": "e5a388b7_bedcf70e",
       "revId": "2be89e24b227d3c572914169227d161da4029087",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9ad7989c_37bc1b26",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000021
+      },
+      "writtenOn": "2021-12-01T14:20:28Z",
+      "side": 1,
+      "message": "I think the commit process could be scheduled to do this:\n* force reset prebuilts/calyx/fdroid to the origin remote\n* run the fdroid-repo-setupwizard/update process\n* commit all the changes\n\nThen when you\u0027re ready to use it, you pull or push that existing commit.",
+      "parentUuid": "756b2ae1_17ed76c1",
+      "revId": "2be89e24b227d3c572914169227d161da4029087",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
