@@ -16,6 +16,24 @@
       "message": "The part that\u0027s not handled by the python script and needs to be sorted out is how do we handle check in.\n\nThe prebuilts repository is only updated right before we make a build, to avoid increasing the repo size and also to always have a known-good / tested version in there (far easier to test once a month then on every single app update)",
       "revId": "2be89e24b227d3c572914169227d161da4029087",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e5a388b7_bedcf70e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000021
+      },
+      "writtenOn": "2021-12-01T10:34:48Z",
+      "side": 1,
+      "message": "I think the committing can be easily automated once the prebuilts/calyx/fdroid Makefiles are properly quoted and can handle any file name.  Then fdroid-repo-setupwizard can just rsync the whole state, generate the Makefiles, and commit everything.  That does mean that the .gitignore needs to be maintained, but I don\u0027t think that\u0027s much work.",
+      "parentUuid": "0c9bb18b_cfc91621",
+      "revId": "2be89e24b227d3c572914169227d161da4029087",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
