@@ -34,6 +34,24 @@
       "parentUuid": "0c9bb18b_cfc91621",
       "revId": "2be89e24b227d3c572914169227d161da4029087",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "756b2ae1_17ed76c1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-12-01T10:46:18Z",
+      "side": 1,
+      "message": "The thing is this won\u0027t be committed every single time there\u0027s a repo update.\n\nThis should only be committed when we want it to be, so it\u0027d have to be some form of a manual trigger.\n\nHowever with the old repo what I had it do was still create the repo every night - that way if there a breakage in repo creation / apk download we know that early.\n\nOld setup:\n* GitLab CI creates repo nightly, stores output as artifact zip\n* Above script downloads said zip and creates makefiles when needed, manually triggered.\n\nNew setup:\n* Server creates repo, and also makefiles along with it. Nightly?\n* Somehow it has to be committed to git manually / only when we want.",
+      "parentUuid": "e5a388b7_bedcf70e",
+      "revId": "2be89e24b227d3c572914169227d161da4029087",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
