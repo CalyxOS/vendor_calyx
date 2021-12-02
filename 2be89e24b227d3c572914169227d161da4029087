@@ -88,6 +88,24 @@
       "parentUuid": "9ad7989c_37bc1b26",
       "revId": "2be89e24b227d3c572914169227d161da4029087",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b9af6d76_3e0cc255",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000021
+      },
+      "writtenOn": "2021-12-02T15:45:58Z",
+      "side": 1,
+      "message": "https://review.calyxos.org/c/CalyxOS/fdroid-repo-setupwizard/+/6949",
+      "parentUuid": "35ab98dc_8cc6f954",
+      "revId": "2be89e24b227d3c572914169227d161da4029087",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
