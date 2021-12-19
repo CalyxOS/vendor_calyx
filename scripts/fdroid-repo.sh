@@ -34,6 +34,7 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e 'LOCAL_CERTIFICATE := PRESIGNED'
 	echo -e 'LOCAL_MODULE_CLASS := APPS'
 	echo -e "LOCAL_PRODUCT_MODULE := true"
+	echo -e "LOCAL_ENFORCE_USES_LIBRARIES := false"
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
 	echo -e 'include $(CLEAR_VARS)'
@@ -59,6 +60,7 @@ for app in $APPS; do
 	echo -e "LOCAL_DEX_PREOPT := false"
 	echo -e "LOCAL_NO_STANDARD_LIBRARIES := true"
 	echo -e 'LOCAL_REPLACE_PREBUILT_APK_INSTALLED := $(LOCAL_PATH)/repo/$(LOCAL_MODULE).apk'
+	echo -e "LOCAL_ENFORCE_USES_LIBRARIES := false"
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
 	} >> $ANDROID_MK
