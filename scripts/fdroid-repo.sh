@@ -59,6 +59,7 @@ for app in $APPS; do
 	echo -e "LOCAL_DEX_PREOPT := false"
 	echo -e "LOCAL_NO_STANDARD_LIBRARIES := true"
 	echo -e 'LOCAL_REPLACE_PREBUILT_APK_INSTALLED := $(LOCAL_PATH)/repo/$(LOCAL_MODULE).apk'
+	echo -e "LOCAL_ENFORCE_USES_LIBRARIES := false"
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
 	} >> $ANDROID_MK
