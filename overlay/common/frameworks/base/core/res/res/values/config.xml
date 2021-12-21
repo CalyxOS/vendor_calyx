@@ -63,6 +63,9 @@
     <!-- Grant Launcher3 the wellbeing permission group -->
     <string name="config_defaultWellbeingPackage" translatable="false">com.android.launcher3</string>
 
+    <!-- The name of the package that will hold the wellbeing role. -->
+    <string name="config_systemWellbeing" translatable="false">com.android.launcher3</string>
+
     <!-- Wallpaper cropper package. Used as the default cropper if the active launcher doesn't
          handle wallpaper cropping.
     -->
