@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e00cace5_c9ffa54c",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-12-21T23:58:36Z",
+      "side": 1,
+      "message": "Maybe put it up here?",
+      "revId": "adc35fd61d22bbdd553dbbd5bf5849c024610801",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
