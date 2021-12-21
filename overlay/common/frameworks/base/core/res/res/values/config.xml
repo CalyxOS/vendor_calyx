@@ -89,4 +89,7 @@
     <bool name="config_supportsMicToggle">true</bool>
     <!-- Whether this device is supporting the camera toggle -->
     <bool name="config_supportsCamToggle">true</bool>
+
+    <!-- The name of the package that will hold the wellbeing role. -->
+    <string name="config_systemWellbeing" translatable="false">com.android.launcher3</string>
 </resources>
