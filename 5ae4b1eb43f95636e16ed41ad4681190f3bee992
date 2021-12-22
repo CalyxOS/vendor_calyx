@@ -16,6 +16,23 @@
       "message": "Upgrades: org.fdroid.fdroid\nNew installs: org.calyxos.fdroid\n\nAny existing users creating a profile would need the old package name.\n\nWe should keep that in then I think.\n\nTwo questions\n1. Do the packages in here have to be system apps?\n2. What happens if a package is listed here but doesn\u0027t actually exist on the system?",
       "revId": "5ae4b1eb43f95636e16ed41ad4681190f3bee992",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0a59e429_987a9d7c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-12-22T13:50:09Z",
+      "side": 1,
+      "message": "Should probably keep old name in overlay, if we still keep the overlay.",
+      "revId": "5ae4b1eb43f95636e16ed41ad4681190f3bee992",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
