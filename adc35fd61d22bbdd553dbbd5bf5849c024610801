@@ -16,6 +16,24 @@
       "message": "Maybe put it up here?",
       "revId": "adc35fd61d22bbdd553dbbd5bf5849c024610801",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7a253366_7a229d9d",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 65,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-12-22T14:09:11Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e00cace5_c9ffa54c",
+      "revId": "adc35fd61d22bbdd553dbbd5bf5849c024610801",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
