@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c065d641_7dc2612a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-12-29T23:52:30Z",
+      "side": 1,
+      "message": "LatinIME.apk\n\nBefore: 18M\nAfter: 63M 😭\n\nThat was with the keyboard commit, somehow it\u0027s not working with this.",
+      "revId": "07f39b852fd5efd38488836a4d5c1eec47178d31",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
