@@ -16,6 +16,23 @@
       "message": "LatinIME.apk\n\nBefore: 18M\nAfter: 63M 😭\n\nThat was with the keyboard commit, somehow it\u0027s not working with this.",
       "revId": "07f39b852fd5efd38488836a4d5c1eec47178d31",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4a9a5ea3_d336b5c1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2021-12-30T09:24:48Z",
+      "side": 1,
+      "message": "This means vendor/calyx overlays aren\u0027t working properly",
+      "revId": "07f39b852fd5efd38488836a4d5c1eec47178d31",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
