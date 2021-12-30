@@ -33,6 +33,24 @@
       "message": "This means vendor/calyx overlays aren\u0027t working properly",
       "revId": "07f39b852fd5efd38488836a4d5c1eec47178d31",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be9e85c9_341ba551",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2021-12-30T11:08:32Z",
+      "side": 1,
+      "message": "Other overlays are fine though afaict.",
+      "parentUuid": "4a9a5ea3_d336b5c1",
+      "revId": "07f39b852fd5efd38488836a4d5c1eec47178d31",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
