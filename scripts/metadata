@@ -207,8 +207,10 @@ keymap[media]=media
 keymap[shared]=shared
 keymap[platform]=platform
 keymap[networkstack]=networkstack
+keymap[com.android.connectivity.resources]=com.android.connectivity.resources
 keymap[com.android.hotspot2.osulogin]=com.android.hotspot2.osulogin
 keymap[com.android.wifi.resources]=com.android.wifi.resources
+# Common
 keymap[org.calyxos.fdroid]=org.calyxos.fdroid
 keymap[com.google.android.apps.photos]=com.google.android.apps.photos
 keymap[microg]=microg
@@ -245,7 +247,8 @@ common_app_keys=(
 # APEX keys
 apexes=(
 	com.android.adbd.apex
-	com.android.art.release.apex
+	com.android.appsearch.apex
+	com.android.art.apex
 	com.android.cellbroadcast.apex
 	com.android.conscrypt.apex
 	com.android.extservices.apex
@@ -259,11 +262,14 @@ apexes=(
 	com.android.permission.apex
 	com.android.resolv.apex
 	com.android.runtime.apex
+	com.android.scheduling.apex
 	com.android.sdkext.apex
 	com.android.support.apexer.apex
 	com.android.telephony.apex
 	com.android.tethering.apex
 	com.android.tzdata.apex
+	com.android.vibrator.drv2624.apex # bonito, sargo
+	com.android.vibrator.sunfish.apex
 	com.android.vndk.current.apex
 	com.android.wifi.apex
 )
@@ -271,7 +277,8 @@ apexes=(
 # Container: x509.pem & pk8
 declare -A apex_container_key
 apex_container_key[com.android.adbd.apex]=com.android.adbd
-apex_container_key[com.android.art.release.apex]=com.android.art
+apex_container_key[com.android.appsearch.apex]=com.android.appsearch
+apex_container_key[com.android.art.apex]=com.android.art
 apex_container_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_container_key[com.android.extservices.apex]=com.android.extservices
@@ -285,18 +292,22 @@ apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_container_key[com.android.permission.apex]=com.android.permission
 apex_container_key[com.android.resolv.apex]=testcert
 apex_container_key[com.android.runtime.apex]=com.android.runtime
+apex_container_key[com.android.scheduling.apex]=releasekey
 apex_container_key[com.android.sdkext.apex]=com.android.sdkext
 apex_container_key[com.android.support.apexer.apex]=releasekey
 apex_container_key[com.android.telephony.apex]=com.android.telephony
 apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
+apex_container_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
+apex_container_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
 apex_container_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_container_key[com.android.wifi.apex]=com.android.wifi
 
 # Payload: avbpubkey & pem
 declare -A apex_payload_key
 apex_payload_key[com.android.adbd.apex]=com.android.adbd
-apex_payload_key[com.android.art.release.apex]=com.android.art
+apex_payload_key[com.android.appsearch.apex]=com.android.appsearch
+apex_payload_key[com.android.art.apex]=com.android.art
 apex_payload_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_payload_key[com.android.extservices.apex]=com.android.extservices
@@ -310,10 +321,13 @@ apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_payload_key[com.android.permission.apex]=com.android.permission
 apex_payload_key[com.android.resolv.apex]=com.android.resolv
 apex_payload_key[com.android.runtime.apex]=com.android.runtime
+apex_payload_key[com.android.scheduling.apex]=com.android.scheduling
 apex_payload_key[com.android.sdkext.apex]=com.android.sdkext
 apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
 apex_payload_key[com.android.telephony.apex]=com.android.telephony
 apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
+apex_payload_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
+apex_payload_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
 apex_payload_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_payload_key[com.android.wifi.apex]=com.android.wifi
