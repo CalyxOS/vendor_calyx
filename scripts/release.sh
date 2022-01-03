@@ -54,27 +54,63 @@ mkdir -p $OUT || exit 1
 if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; then
   VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
                    --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
-elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
-  EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
 elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
-  $DEVICE == redfin || $DEVICE == bramble ]]; then
+elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA2048
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
+                   --avb_extra_custom_image_key system_ext="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm system_ext=SHA256_RSA2048
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key product="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm product=SHA256_RSA2048
+                   --avb_vendor_key "$KEY_DIR/avb.pem" --avb_vendor_algorithm SHA256_RSA2048)
+  EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
+elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA2048
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA2048
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key system_ext="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm system_ext=SHA256_RSA2048
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key product="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm product=SHA256_RSA2048
+                   --avb_vendor_key "$KEY_DIR/avb.pem" --avb_vendor_algorithm SHA256_RSA2048)
+elif [[ $DEVICE == redfin || $DEVICE == bramble ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA2048
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA2048
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key system_ext="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm system_ext=SHA256_RSA2048
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key product="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm product=SHA256_RSA2048
+                   --avb_vendor_key "$KEY_DIR/avb.pem" --avb_vendor_algorithm SHA256_RSA2048
+                   --avb_extra_custom_image_key vendor_boot="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm vendor_boot=SHA256_RSA2048)
 elif [[ $DEVICE == barbet ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
+                   --avb_extra_custom_image_key system_ext="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm system_ext=SHA256_RSA4096
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key product="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm product=SHA256_RSA4096
+                   --avb_vendor_key "$KEY_DIR/avb.pem" --avb_vendor_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key vendor_boot="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm vendor_boot=SHA256_RSA4096)
 elif [[ $DEVICE == oriole || $DEVICE == raven ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key system_ext="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm system_ext=SHA256_RSA4096
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key product="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm product=SHA256_RSA4096
+                   --avb_vendor_key "$KEY_DIR/avb.pem" --avb_vendor_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key vendor_boot="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm vendor_boot=SHA256_RSA4096
+                   --avb_extra_custom_image_key vendor_dlkm="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm vendor_dlkm=SHA256_RSA4096)
 fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
