@@ -16,6 +16,23 @@
       "message": "Now seems like a good time to do this.",
       "revId": "7b30f014e13613635ebbe6254d7de56eb16949c7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "86178ec3_37d0f207",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-03T13:03:06Z",
+      "side": 1,
+      "message": "Actually I think we shouldn\u0027t do this here.\n\nIt\u0027ll change the default for everyone, including existing users.\n\nWe should not do that, instead only change it for new users. Can do that from SetupWizard",
+      "revId": "7b30f014e13613635ebbe6254d7de56eb16949c7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
