@@ -17,7 +17,8 @@ VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
-    Updater
+    CalyxSystemUpdater \
+    UpdaterStub
 endif
 
 # SetupWizard
