@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "30131d31_191a9457",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-03T16:57:32Z",
+      "side": 1,
+      "message": "May not need to do this, but I had it in my mind ever since we came up with this plan",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4aabba54_b9262322",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-03T16:57:32Z",
+      "side": 1,
+      "message": "I\u0027d like to leave in a stub for the first few builds with the new Updater just in case we have some issues.\n\nStub means we can push out old app temporarily through F-Droid repos if needed.",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
