@@ -87,12 +87,14 @@ if [[ $DEVICE == jasmine_sprout ]]; then
   done
 fi
 
-EXTRA_SIGNING_ARGS+=(-k frameworks/base/packages/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
-EXTRA_SIGNING_ARGS+=(-k frameworks/opt/net/wifi/service/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
+EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
 
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
-  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
 echo "Create OTA update zip"
@@ -127,7 +129,7 @@ if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 $RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest $OTATEST -o -d "$KEY_DIR" \
-  -k "build/target/product/security/networkstack=$KEY_DIR/networkstack" "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+ "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
 
 $RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
