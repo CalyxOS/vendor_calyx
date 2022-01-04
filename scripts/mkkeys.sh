@@ -40,11 +40,11 @@ openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
 if [[ $KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven ]]; then
 # AVB 2.0 (Pixel 5a, 6, 6 pro)
 openssl genrsa -out avb.pem 4096
-$AVBTOOL extract_public_key --key avb.pem --output avb_pkmd.bin
+$AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 else
 # AVB 2.0 (Pixel 2, 2 xl, 3, 3 xl, 3a, 3a xl, 4, 4 xl, 4a, 5, 4a 5g)
 openssl genrsa -out avb.pem 2048
-$AVBTOOL extract_public_key --key avb.pem --output avb_pkmd.bin
+$AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 fi
 
 for apex in "${apexes[@]}"; do

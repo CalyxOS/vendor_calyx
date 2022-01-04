@@ -41,8 +41,10 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
 	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.bootloader=" | cut -d = -f 2)
-  RADIO=$(unzip -c $TARGET_FILES VENDOR/build.prop | grep "ro.build.expect.baseband=" | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
+  RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
+  RADIOSRC=radio-${DEVICE}-${RADIO,,}.img
 elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 else
@@ -81,7 +83,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven ]]; then
-  AVB_PKMD="$PWD/$KEY_DIR/avb_pkmd.bin"
+  AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
