@@ -52,6 +52,10 @@ if [[ ! -e avb.pem ]]; then
 	fi
 fi
 
+if [[ -e avb_pkmd.bin ]]; then
+	mv avb_pkmd.bin avb_custom_key.img
+fi
+
 # Migration from 10 to 11
 # ART apex was renamed, and bionic runtime was split out into a new apex
 [[ -e com.android.runtime.release.pk8 ]] && mv com.android.runtime.release.pk8 com.android.runtime.pk8
