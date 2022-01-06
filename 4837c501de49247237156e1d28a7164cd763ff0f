@@ -16,6 +16,24 @@
       "message": "Do we go to 13 for Jan ASB?\n\nAlso gotta figure out BUILD NUMBER.\n\nLast: 202112110\nNew format for 12: 22300000",
       "revId": "4837c501de49247237156e1d28a7164cd763ff0f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "02ce9a01_3a1b87aa",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-06T03:34:49Z",
+      "side": 1,
+      "message": "Historically / co-incidentally the middle version lined up, and it will continue.\n\n3.0.0 -\u003e dec 21\n3.1.0 -\u003e jan 22",
+      "parentUuid": "dc768376_39457847",
+      "revId": "4837c501de49247237156e1d28a7164cd763ff0f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
