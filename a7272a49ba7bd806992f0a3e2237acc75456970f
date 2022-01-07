@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "78f6c418_e04e0072",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-01-07T17:37:37Z",
+      "side": 1,
+      "message": "Now what about bootanimation 😊",
+      "revId": "a7272a49ba7bd806992f0a3e2237acc75456970f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
