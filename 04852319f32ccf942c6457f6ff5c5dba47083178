@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "81137861_67a95707",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-12T21:23:45Z",
+      "side": 1,
+      "message": "2.13",
+      "revId": "04852319f32ccf942c6457f6ff5c5dba47083178",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d5dc29cb_ccc5728b",
+        "filename": "config/version.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-12T21:23:45Z",
+      "side": 1,
+      "message": "jan22: 2.13.0 -\u003e 22213000",
+      "revId": "04852319f32ccf942c6457f6ff5c5dba47083178",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
