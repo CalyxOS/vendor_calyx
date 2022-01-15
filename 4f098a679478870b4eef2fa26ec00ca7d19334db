@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "adf73381_3b1491b9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-15T18:57:39Z",
+      "side": 1,
+      "message": "It\u0027s fine.",
+      "revId": "4f098a679478870b4eef2fa26ec00ca7d19334db",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "afd4d767_acb7a82f",
+        "filename": "config/version.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-15T18:57:39Z",
+      "side": 1,
+      "message": "nbd but I didn\u0027t change these intentionally to avoid confusion since we shipped 2.0.0 and 2.1.0 with a different build number already.",
+      "revId": "4f098a679478870b4eef2fa26ec00ca7d19334db",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
