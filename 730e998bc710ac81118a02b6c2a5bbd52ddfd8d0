@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e0593c3a_eb207df0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-01-17T22:23:16Z",
+      "side": 1,
+      "message": "\nsigning: UwbService.apk                                        (keys/raven/com.qorvo.uwb)",
+      "revId": "730e998bc710ac81118a02b6c2a5bbd52ddfd8d0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
