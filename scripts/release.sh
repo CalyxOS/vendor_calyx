@@ -102,6 +102,10 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivit
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
 
+if [[ $DEVICE == raven ]]; then
+  EXTRA_SIGNING_ARGS+=(-k device/google/gs101-sepolicy/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
+fi
+
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
