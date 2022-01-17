@@ -33,6 +33,12 @@ for k in releasekey platform shared media networkstack com.android.connectivity.
 	fi
 done
 
+if [[ $KEY_DIR =~ raven ]]; then
+	if [[ ! -e com.qorvo.uwb.pk8 ]]; then
+		$SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
+	fi
+fi
+
 # Verified Boot (Pixel, Mi A2)
 if [[ ! -e verity.pk8 ]]; then
 	$SCRIPTPATH/mkkey.sh verity "$SUBJECT"

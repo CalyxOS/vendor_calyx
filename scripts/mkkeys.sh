@@ -32,6 +32,10 @@ for k in releasekey platform shared media networkstack com.android.connectivity.
 	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
 
+if [[ $KEY_DIR =~ raven ]]; then
+	$SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
+fi
+
 # Verified Boot (Pixel, Mi A2)
 $SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
