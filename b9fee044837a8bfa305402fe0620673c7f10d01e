@@ -16,6 +16,24 @@
       "message": "Change wallpaper to*\n\nAlso, scroll to the left to get the exact same position as stock.",
       "revId": "b9fee044837a8bfa305402fe0620673c7f10d01e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bc20259e_89a0d633",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-01-18T22:33:57Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "c806af15_794158a6",
+      "revId": "b9fee044837a8bfa305402fe0620673c7f10d01e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
