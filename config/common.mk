@@ -1,6 +1,10 @@
 include vendor/calyx/config/version.mk
 
-PRODUCT_PACKAGE_OVERLAYS += vendor/calyx/overlay/common
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/calyx/overlay/no-rro
+PRODUCT_PACKAGE_OVERLAYS += \
+    vendor/calyx/overlay/common \
+    vendor/calyx/overlay/no-rro
+
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(filter-out sdk_phone_x86 sdk_phone_x86_64 coral flame sunfish redfin bramble barbet, $(VENDOR_DEVICE)),)
