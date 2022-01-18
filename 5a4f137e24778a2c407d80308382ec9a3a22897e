@@ -16,6 +16,24 @@
       "message": "We\u0027re still shipping this",
       "revId": "5a4f137e24778a2c407d80308382ec9a3a22897e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7dca0409_04d7c2b6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-01-18T22:25:19Z",
+      "side": 1,
+      "message": "packages/apps/Updater$ grep app_name res/values/strings.xml\n    \u003cstring name\u003d\"app_name\"\u003eSystem updater\u003c/string\u003e",
+      "parentUuid": "9ff5cb1b_ee8bd29e",
+      "revId": "5a4f137e24778a2c407d80308382ec9a3a22897e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
