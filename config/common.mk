@@ -28,6 +28,7 @@ PRODUCT_PACKAGES += \
 # Customization
 PRODUCT_PACKAGES += \
     CalyxNavigationBarNoHint \
+    IconShapeSquareOverlay \
     NavigationBarMode2ButtonOverlay
 
 # Themes
@@ -36,6 +37,16 @@ PRODUCT_PACKAGES += \
     CalyxThemesStub \
     CalyxBlackTheme \
     ThemePicker
+
+# Include {Lato,Rubik} fonts
+$(call inherit-product-if-exists, external/google-fonts/lato/fonts.mk)
+$(call inherit-product-if-exists, external/google-fonts/rubik/fonts.mk)
+
+# Fonts
+PRODUCT_PACKAGES += \
+    fonts_customization.xml \
+    FontLatoOverlay \
+    FontRubikOverlay
 
 # Local F-droid repo
 $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
