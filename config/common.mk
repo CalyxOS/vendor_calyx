@@ -28,7 +28,13 @@ PRODUCT_PACKAGES += \
 # Customization
 PRODUCT_PACKAGES += \
     CalyxNavigationBarNoHint \
+    IconShapePebbleOverlay \
+    IconShapeRoundedRectOverlay \
     IconShapeSquareOverlay \
+    IconShapeSquircleOverlay \
+    IconShapeTaperedRectOverlay \
+    IconShapeTeardropOverlay \
+    IconShapeVesselOverlay \
     NavigationBarMode2ButtonOverlay
 
 # Themes
