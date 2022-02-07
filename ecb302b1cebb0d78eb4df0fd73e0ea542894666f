@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7947713a_241cbebb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-07T22:00:07Z",
+      "side": 1,
+      "message": "Sadly looks worse with this\n\nBefore: Cut off camera entirely\nNow: Cut off camera partially.\n\nWe\u0027ll need 20:9",
+      "revId": "ecb302b1cebb0d78eb4df0fd73e0ea542894666f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
