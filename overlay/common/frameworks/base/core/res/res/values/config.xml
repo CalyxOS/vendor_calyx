@@ -42,6 +42,13 @@
         <item>com.google.android.gms</item>
     </string-array>
 
+    <string-array name="config_locationExtraPackageNames" translatable="false">
+        <!-- DejaVuLocationService -->
+        <item>org.fitchfamily.android.dejavu</item>
+        <!-- MozillaNlpBackend -->
+        <item>org.microg.nlp.backend.ichnaea</item>
+    </string-array>    
+
     <!-- Flag indicating which package name can access DeviceConfig table -->
     <string name="config_deviceConfiguratorPackageName" translatable="false">org.protonaosp.deviceconfig</string>
 
