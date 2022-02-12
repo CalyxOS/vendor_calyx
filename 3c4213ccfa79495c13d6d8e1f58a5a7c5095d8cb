@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c89a516d_ba2cec92",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-12T10:36:15Z",
+      "side": 1,
+      "message": "I think this is ok to do by default.",
+      "revId": "3c4213ccfa79495c13d6d8e1f58a5a7c5095d8cb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
