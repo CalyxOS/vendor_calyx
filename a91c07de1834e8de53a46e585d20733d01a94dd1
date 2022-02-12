@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0dd88805_a4b7bbe4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-12T10:36:04Z",
+      "side": 1,
+      "message": "Think this might enable the toggle in Settings -\u003e System -\u003e Multiple Users. Otherwise you have to turn that off first.\n\nOne step less to do for the user.",
+      "revId": "a91c07de1834e8de53a46e585d20733d01a94dd1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
