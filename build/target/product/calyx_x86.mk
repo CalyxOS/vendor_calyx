@@ -18,6 +18,7 @@ $(call inherit-product, build/target/product/gsi_release.mk)
 $(call inherit-product, vendor/calyx/config/common.mk)
 
 TARGET_USES_64_BIT_BINDER := true
+TARGET_NO_KERNEL_OVERRIDE := true
 
 # Enable mainline checking
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
