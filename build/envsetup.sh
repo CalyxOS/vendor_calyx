@@ -118,6 +118,32 @@ function calyxremote()
     echo "Remote 'calyx' created"
 }
 
+function lineageremote()
+{
+    if ! git rev-parse --git-dir &> /dev/null
+    then
+        echo ".git directory not found. Please run this from the root directory of the Android repository you wish to set up."
+        return 1
+    fi
+    git remote rm lineage 2> /dev/null
+
+    if [ -f ".gitupstream-lineage" ]; then
+        local REMOTE=$(cat .gitupstream-lineage | cut -d ' ' -f 1)
+        git remote add lineage ${REMOTE}
+    else
+        local REMOTE=$(git config --get remote.gitlab.projectname)
+        if [ -z "$REMOTE" ]
+        then
+            REMOTE=$(git config --get remote.gitlab-priv.projectname)
+        fi
+
+        local PROJECT=$(echo $REMOTE | sed -e "s#CalyxOS/##g; s#platform_#android_#g; s#vendor_#android_vendor_#g;")
+
+        git remote add lineage https://github.com/LineageOS/$PROJECT
+    fi
+    echo "Remote 'lineage' created"
+}
+
 function repopick() {
     T=$(gettop)
     $T/vendor/calyx/build/tools/repopick.py $@
