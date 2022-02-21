@@ -68,6 +68,7 @@ PRODUCT_PACKAGES += \
 
 # Apps
 PRODUCT_PACKAGES += \
+    AudioFX \
     AuroraStorePrivilegedExtension \
     EtarPrebuilt \
     ExactCalculator \
