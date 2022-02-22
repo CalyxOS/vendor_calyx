@@ -27,6 +27,13 @@ AVBTOOL=$TOP/bin/avbtool
 
 pushd $KEY_DIR
 
+if [[ $KEY_DIR =~ common ]]; then
+	if [[ ! -e ${k}.pk8 ]]; then
+		$SCRIPTPATH/mkkey.sh "microg" "$SUBJECT"
+		exit 0
+	fi
+fi
+
 for k in releasekey platform shared media networkstack com.android.connectivity.resources com.android.hotspot2.osulogin com.android.wifi.resources; do
 	if [[ ! -e ${k}.pk8 ]]; then
 		$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"

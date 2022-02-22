@@ -28,6 +28,11 @@ mkdir -p $KEY_DIR
 
 pushd $KEY_DIR
 
+if [[ $KEY_DIR =~ common ]]; then
+	$SCRIPTPATH/mkkey.sh "microg" "$SUBJECT"
+	exit 0
+fi
+
 for k in releasekey platform shared media networkstack com.android.connectivity.resources com.android.hotspot2.osulogin com.android.wifi.resources; do
 	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
