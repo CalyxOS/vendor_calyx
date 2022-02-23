@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e300a3c4_4bb29958",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-23T12:40:58Z",
+      "side": 1,
+      "message": "LGTM otherwise",
+      "revId": "88cec6e980b77df61194cc7ce7363424f38a3ab3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b79a9817_8eeba37b",
+        "filename": "scripts/mkkeys.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-23T12:40:58Z",
+      "side": 1,
+      "message": "Shouldn\u0027t we keep it lowercase / fp4 ?",
+      "revId": "88cec6e980b77df61194cc7ce7363424f38a3ab3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
