@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "51f3e7fa_0a49b356",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-23T12:40:06Z",
+      "side": 1,
+      "message": "vendor/calyx/scripts/mkcommonkeys.sh",
+      "revId": "a238af6c936312671ea58cab32cbdc38f8334dd1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
