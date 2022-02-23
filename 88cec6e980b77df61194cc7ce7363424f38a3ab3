@@ -33,6 +33,24 @@
       "message": "Shouldn\u0027t we keep it lowercase / fp4 ?",
       "revId": "88cec6e980b77df61194cc7ce7363424f38a3ab3",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "58034393_01883b6a",
+        "filename": "scripts/mkkeys.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-02-23T13:38:12Z",
+      "side": 1,
+      "message": "device name is uppercase",
+      "parentUuid": "b79a9817_8eeba37b",
+      "revId": "88cec6e980b77df61194cc7ce7363424f38a3ab3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
