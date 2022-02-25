@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0e47c1c5_605c35cb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-02-25T21:49:27Z",
+      "side": 1,
+      "message": "Given that it\u0027s a Developer Option, no reason not to add this.",
+      "revId": "408063f4ab1c4b1a08fe84eba2bcfb1625b9192c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
