@@ -109,6 +109,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     persist.wm.enable_remote_keyguard_animation=0
 
+# Default sounds
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.config.alarm_alert=Oxygen.ogg \
+    ro.config.notification_sound=Iapetus.ogg \
+    ro.config.ringtone=Umbriel.ogg
+
 # One-handed mode
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.support_one_handed_mode=true
