@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "458b15b1_7df0d34e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-03-04T19:07:54Z",
+      "side": 1,
+      "message": "Easy test: Long press power when off, it now brings up power menu (without setting enabled)",
+      "revId": "f2c13dbfaee5f08d1323f5ca94fcc841570aecfb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
