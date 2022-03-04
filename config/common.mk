@@ -98,6 +98,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     QuickAccessWallet
 
+# Default sounds
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.config.alarm_alert=Oxygen.ogg \
+    ro.config.notification_sound=Iapetus.ogg \
+    ro.config.ringtone=Umbriel.ogg
+
 # One-handed mode
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.support_one_handed_mode=true
