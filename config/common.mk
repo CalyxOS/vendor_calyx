@@ -1,9 +1,11 @@
 include vendor/calyx/config/version.mk
 
-PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/calyx/overlay/no-rro
+# Overlays
 PRODUCT_PACKAGE_OVERLAYS += \
-    vendor/calyx/overlay/common \
-    vendor/calyx/overlay/no-rro
+    vendor/calyx/overlay/common
+
+PRODUCT_PACKAGES += \
+    Launcher3Overlay
 
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
