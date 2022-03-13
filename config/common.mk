@@ -70,7 +70,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     AudioFX \
     AuroraStorePrivilegedExtension \
-    EtarPrebuilt \
+    Etar \
     ExactCalculator \
     F-Droid \
     F-DroidPrivilegedExtension \
