@@ -47,7 +47,7 @@ PRODUCT_PACKAGES += \
 # Apps
 PRODUCT_PACKAGES += \
     AuroraStorePrivilegedExtension \
-    EtarPrebuilt \
+    Etar \
     ExactCalculator \
     F-Droid \
     F-DroidPrivilegedExtension \
