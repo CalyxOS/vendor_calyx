@@ -30,7 +30,10 @@ SOONG_CONFIG_NAMESPACES += calyxGlobalVars
 SOONG_CONFIG_calyxGlobalVars += \
     additional_gralloc_10_usage_bits \
     inline_kernel_building \
-    target_surfaceflinger_udfps_lib
+    target_surfaceflinger_udfps_lib \
+    target_trust_usb_control_path \
+    target_trust_usb_control_enable \
+    target_trust_usb_control_disable
 
 SOONG_CONFIG_NAMESPACES += calyxQcomVars
 SOONG_CONFIG_calyxQcomVars += \
@@ -53,10 +56,16 @@ SOONG_CONFIG_calyxQcomVars_uses_qti_camera_device := $(TARGET_USES_QTI_CAMERA_DE
 # Set default values
 TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS ?= 0
 TARGET_SURFACEFLINGER_UDFPS_LIB ?= surfaceflinger_udfps_lib
+TARGET_TRUST_USB_CONTROL_PATH ?= /proc/sys/kernel/deny_new_usb
+TARGET_TRUST_USB_CONTROL_ENABLE ?= 1
+TARGET_TRUST_USB_CONTROL_DISABLE ?= 0
 
 # Soong value variables
 SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
 SOONG_CONFIG_calyxGlobalVars_target_surfaceflinger_udfps_lib := $(TARGET_SURFACEFLINGER_UDFPS_LIB)
+SOONG_CONFIG_calyxGlobalVars_target_trust_usb_control_path := $(TARGET_TRUST_USB_CONTROL_PATH)
+SOONG_CONFIG_calyxGlobalVars_target_trust_usb_control_enable := $(TARGET_TRUST_USB_CONTROL_ENABLE)
+SOONG_CONFIG_calyxGlobalVars_target_trust_usb_control_disable := $(TARGET_TRUST_USB_CONTROL_DISABLE)
 ifneq ($(filter $(QSSI_SUPPORTED_PLATFORMS),$(TARGET_BOARD_PLATFORM)),)
 SOONG_CONFIG_calyxQcomVars_qcom_display_headers_namespace := vendor/qcom/opensource/commonsys-intf/display
 else
