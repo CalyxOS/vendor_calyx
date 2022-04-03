@@ -7,6 +7,10 @@ PRODUCT_PACKAGE_OVERLAYS += \
 PRODUCT_PACKAGES += \
     Launcher3Overlay
 
+# Translations
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/crowdin/overlay
+PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
+
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(filter-out sdk_phone_x86 sdk_phone_x86_64 coral flame sunfish redfin bramble barbet, $(VENDOR_DEVICE)),)
