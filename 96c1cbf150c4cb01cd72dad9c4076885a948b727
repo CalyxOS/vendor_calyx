@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3029ac98_4af058d1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-04-08T11:02:58Z",
+      "side": 1,
+      "message": "We should sync GSI targets with lineage instead of this",
+      "revId": "96c1cbf150c4cb01cd72dad9c4076885a948b727",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
