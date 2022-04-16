@@ -5,6 +5,7 @@ PRODUCT_PACKAGE_OVERLAYS += \
     vendor/calyx/overlay/common
 
 PRODUCT_PACKAGES += \
+    CellBroadcastReceiverOverlay \
     Launcher3Overlay
 
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
@@ -87,10 +88,6 @@ PRODUCT_PACKAGES += \
 # Config
 PRODUCT_PACKAGES += \
     SimpleDeviceConfig
-
-# Overlays
-PRODUCT_PACKAGES += \
-    CellBroadcastReceiverOverlay
 
 # Charger
 PRODUCT_PACKAGES += \
