@@ -123,3 +123,6 @@ include vendor/calyx/config/calyx_sdk_common.mk
 PRODUCT_PACKAGES += \
     CalyxParts \
     CalyxSettingsProvider
+
+# Audio
+include vendor/calyx/config/audio.mk
