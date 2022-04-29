@@ -1,10 +1,9 @@
-# Default to old audio, new audio is opt in
-OLD_AUDIO ?= true
-NEW_AUDIO ?= false
+# Default to new audio, compat audio is opt in
+COMPAT_AUDIO ?= false
 
-ifeq ($(OLD_AUDIO),true)
-$(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
-else ifeq ($(NEW_AUDIO),true)
+ifeq ($(COMPAT_AUDIO),true)
+$(call inherit-product-if-exists, vendor/calyx/config/AudioPackage14Compat.mk)
+else
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AudioPackage14.mk)
 endif
 
