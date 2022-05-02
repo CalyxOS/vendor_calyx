@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "82127caf_5eaea350",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-05-02T15:07:19Z",
+      "side": 1,
+      "message": "Checked all devices with `get_build_var COMPAT_AUDIO`",
+      "revId": "121929b9d561ae6f22fca797537b83801654926d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
