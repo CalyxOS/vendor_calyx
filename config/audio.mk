@@ -1,6 +1,8 @@
-# Default to material audio, compat audio is opt in
-COMPAT_AUDIO ?= false
+ifeq ($(filter-out crosshatch blueline bonito sargo coral flame sunfish redfin bramble barbet oriole raven, $(VENDOR_DEVICE)),)
+COMPAT_AUDIO := true
+endif
 
+# Default to material audio, compat audio is opt in
 ifeq ($(COMPAT_AUDIO),true)
 $(call inherit-product-if-exists, vendor/calyx/config/AudioPackage14Compat.mk)
 else
