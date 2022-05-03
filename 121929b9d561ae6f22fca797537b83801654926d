@@ -33,6 +33,23 @@
       "message": "We could ship these two and be done with this topic.",
       "revId": "121929b9d561ae6f22fca797537b83801654926d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "280d15a2_db299e84",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-05-03T11:51:50Z",
+      "side": 1,
+      "message": "Tested on basically all devices, working fine.",
+      "revId": "121929b9d561ae6f22fca797537b83801654926d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
