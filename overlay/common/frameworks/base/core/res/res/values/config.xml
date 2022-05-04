@@ -42,8 +42,9 @@
         <item>com.google.android.gms</item>
     </string-array>
 
-    <!-- Update device/google/raviole whenever this is updated -->
-    <string-array name="config_locationExtraPackageNames" translatable="false">
+    <!-- Packages exempt from status bar location indicator.
+         Update device/google/raviole whenever this is updated -->
+    <string-array name="config_locationIndicatorExemptPkgNames" translatable="false">
         <!-- DejaVuLocationService -->
         <item>org.fitchfamily.android.dejavu</item>
         <!-- MozillaNlpBackend -->
