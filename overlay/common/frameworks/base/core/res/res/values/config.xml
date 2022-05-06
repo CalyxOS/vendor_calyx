@@ -52,6 +52,8 @@
         <item>com.android.phone</item>
         <!-- ImsService, raviole -->
         <item>com.shannon.imsservice</item>
+        <!-- CneApp, QC -->
+        <item>com.qualcomm.qti.cne</item>
     </string-array>
 
     <!-- Flag indicating which package name can access DeviceConfig table -->
