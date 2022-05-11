@@ -127,3 +127,6 @@ include vendor/calyx/config/audio.mk
 # SystemUI
 PRODUCT_DEXPREOPT_SPEED_APPS += \
     SystemUI
+
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+    dalvik.vm.systemuicompilerfilter=speed
