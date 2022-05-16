@@ -37,6 +37,7 @@
             <item value="20821" />
             <item value="20888" />
         </string-array>
+        <string name="feature_flag_name">vvm_carrier_flag_20820</string>
         <int name="vvm_port_number_int" value="5499" />
         <string name="vvm_destination_number_string">22344</string>
         <string name="vvm_type_string">vvm_type_omtp</string>
@@ -159,6 +160,9 @@
             <item value="310640" />
             <item value="310660" />
             <item value="310800" />
+            <item value="311660" />
+            <item value="311882" />
+            <item value="312250" />
         </string-array>
         <int name="vvm_port_number_int" value="1808" />
         <int name="vvm_ssl_port_number_int" value="993" />
@@ -412,6 +416,24 @@
         <string-array name="mccmnc">
             <item value="311480?gid1=BA00040000000000" />
             <item value="311850" />
+        </string-array>
+        <string name="vvm_type_string">vvm_type_disabled</string>
+    </pbundle_as_map>
+    <pbundle_as_map>
+        <string-array name="mccmnc">
+            <item value="310240?gid1=6D38" />
+            <item value="310260?gid1=6D38" />
+            <item value="00101?gid1=6D38" />
+            <item value="310160?gid1=6D38" />
+            <item value="310200?gid1=6D38" />
+            <item value="310210?gid1=6D38" />
+            <item value="310220?gid1=6D38" />
+            <item value="310230?gid1=6D38" />
+            <item value="310250?gid1=6D38" />
+            <item value="310270?gid1=6D38" />
+            <item value="310490?gid1=6D38" />
+            <item value="310660?gid1=6D38" />
+            <item value="310800?gid1=6D38" />
         </string-array>
         <string name="vvm_type_string">vvm_type_disabled</string>
     </pbundle_as_map>
