@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f8fbe5c2_7e46ff7d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-05-17T23:31:22Z",
+      "side": 1,
+      "message": "I\u0027m ok with light everything\n\nFTR Pixel 4a May 2022 has light SuW",
+      "revId": "74825bc0d5baf7b3767ac8a1043c3ac012115407",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
