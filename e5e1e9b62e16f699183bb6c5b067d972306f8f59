@@ -16,6 +16,23 @@
       "message": "Seen on FP4.\n\nReported on OP too I think.\n\nIt\u0027s present on Pixels as well but no reports from that",
       "revId": "e5e1e9b62e16f699183bb6c5b067d972306f8f59",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d2958671_5b54bdf5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-05-18T09:13:11Z",
+      "side": 1,
+      "message": "We should also do com.android.bluetooth, Torsten noticed it a few days ago.",
+      "revId": "e5e1e9b62e16f699183bb6c5b067d972306f8f59",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
