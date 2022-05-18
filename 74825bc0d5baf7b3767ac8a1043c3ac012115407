@@ -34,6 +34,24 @@
       "parentUuid": "f8fbe5c2_7e46ff7d",
       "revId": "74825bc0d5baf7b3767ac8a1043c3ac012115407",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e00ca94d_fdb4196b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-05-18T00:44:02Z",
+      "side": 1,
+      "message": "Fixed\n\nhttps://review.calyxos.org/c/CalyxOS/platform_packages_apps_SetupWizard/+/10993 Fix navigation bar color when in light mode",
+      "parentUuid": "949a1926_5736520c",
+      "revId": "74825bc0d5baf7b3767ac8a1043c3ac012115407",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
