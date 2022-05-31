@@ -48,6 +48,8 @@
         <item>org.fitchfamily.android.dejavu</item>
         <!-- MozillaNlpBackend -->
         <item>org.microg.nlp.backend.ichnaea</item>
+        <!-- Bluetooth -->
+        <item>com.android.bluetooth</item>
         <!-- Phone Services -->
         <item>com.android.phone</item>
         <!-- CneApp, QC -->
