@@ -17,12 +17,11 @@
  */
 -->
 <resources>
-
     <bool name="def_bluetooth_on">false</bool>
     <bool name="def_backup_enabled">true</bool>
     <string name="def_backup_transport" translatable="false">com.stevesoltys.seedvault.transport.ConfigurableBackupTransport</string>
+    <integer name="def_location_mode">0</integer>
 
     <!-- Set the automatic brightness mode on by default -->
     <bool name="def_screen_brightness_automatic_mode">true</bool>
-
 </resources>
