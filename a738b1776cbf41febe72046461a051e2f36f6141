@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "eefa44be_8cbd2921",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-06-01T15:32:56Z",
+      "side": 1,
+      "message": "Should make sure this plays nice with SuW",
+      "revId": "a738b1776cbf41febe72046461a051e2f36f6141",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
