@@ -53,8 +53,8 @@ fi
 if [[ ! -e avb.pem ]]; then
 	if [[ $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ||
 		$KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven || $KEY_DIR =~ bluejay ||
-		$KEY_DIR =~ FP4 || $KEY_DIR =~ kebab || $KEY_DIR =~ lemonade || $KEY_DIR =~ lemonadep ]]; then
-	# AVB 2.0 (Pixel 7, 7 pro, 5a, 6, 6 pro, 6a, Fairphone 4, OnePlus 8T, 9, 9 Pro)
+		$KEY_DIR =~ FP4 || $KEY_DIR =~ kebab || $KEY_DIR =~ lemonade || $KEY_DIR =~ lemonadep || KEY_DIR =~ axolotl ]]; then
+	# AVB 2.0 (Pixel 7, 7 pro, 5a, 6, 6 pro, 6a, Fairphone 4, OnePlus 8T, 9, 9 Pro, SHIFT6mq)
 	openssl genrsa -out avb.pem 4096
 	$AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 	else
