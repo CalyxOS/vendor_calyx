@@ -33,6 +33,24 @@
       "message": "We should also do com.android.bluetooth, Torsten noticed it a few days ago.",
       "revId": "e5e1e9b62e16f699183bb6c5b067d972306f8f59",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "77221fc2_0d09fc00",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-06-03T18:02:24Z",
+      "side": 1,
+      "message": "https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/11217",
+      "parentUuid": "d2958671_5b54bdf5",
+      "revId": "e5e1e9b62e16f699183bb6c5b067d972306f8f59",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
