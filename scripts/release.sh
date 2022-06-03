@@ -50,6 +50,8 @@ elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
+elif [[ $DEVICE == axolotl ]]; then
+  AXOLOTL="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   : # Do nothing, for now.
 else
@@ -76,6 +78,11 @@ elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == le
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
+elif [[ $DEVICE == axolotl ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096)
 elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
