@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "830a5587_26ae987b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2022-06-06T16:08:25Z",
+      "side": 1,
+      "message": "Alternatively, some packages can also be installed directly by our DPC",
+      "revId": "2c351842666bf6748c8212a26f20dbe4e4494400",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
