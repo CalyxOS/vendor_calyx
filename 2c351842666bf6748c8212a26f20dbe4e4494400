@@ -16,6 +16,23 @@
       "message": "Alternatively, some packages can also be installed directly by our DPC",
       "revId": "2c351842666bf6748c8212a26f20dbe4e4494400",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "91f9ad8a_e8c0d28b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-06-14T14:21:10Z",
+      "side": 1,
+      "message": "Let\u0027s keep this, and drop microG if SuW is able to handle it fine.",
+      "revId": "2c351842666bf6748c8212a26f20dbe4e4494400",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
