@@ -31,7 +31,7 @@ else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH="$(pwd -P)"
-  EXTRA_RELEASETOOLS_ARGS="-p $RELEASETOOLS_PATH"
+  EXTRA_RELEASETOOLS_ARGS="-p $RELEASETOOLS_PATH -v"
 fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
