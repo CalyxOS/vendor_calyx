@@ -14,6 +14,12 @@ apps=(
 	DejaVuLocationService
 	MozillaNlpBackend
 	NominatimNlpBackend
+	TrichromeChrome
+	universal
+	TrichromeLibrary
+	TrichromeLibrary6432
+	TrichromeWebView
+	TrichromeWebView6432
 )
 
 # Mapping from build/tools/releasetools
@@ -34,6 +40,7 @@ keymap[microg]=microg
 keymap[org.calyxos.nlp.dejavu]=org.calyxos.nlp.dejavu
 keymap[org.calyxos.nlp.ichnaea]=org.calyxos.nlp.ichnaea
 keymap[org.calyxos.nlp.nominatim]=org.calyxos.nlp.nominatim
+keymap[chromium]=chromium
 
 # Key used by that particular app, default is testkey
 declare -A appkey
@@ -50,6 +57,12 @@ appkey[FakeStore]=microg
 appkey[DejaVuLocationService]=org.calyxos.nlp.dejavu
 appkey[MozillaNlpBackend]=org.calyxos.nlp.ichnaea
 appkey[NominatimNlpBackend]=org.calyxos.nlp.nominatim
+appkey[TrichromeChrome]=chromium
+appkey[universal]=chromium
+appkey[TrichromeLibrary]=chromium
+appkey[TrichromeLibrary6432]=chromium
+appkey[TrichromeWebView]=chromium
+appkey[TrichromeWebView6432]=chromium
 
 # Extra keys for apps we sign
 common_app_keys=(
@@ -59,6 +72,7 @@ common_app_keys=(
 	org.calyxos.nlp.dejavu
 	org.calyxos.nlp.ichnaea
 	org.calyxos.nlp.nominatim
+	chromium
 )
 
 # APEX keys

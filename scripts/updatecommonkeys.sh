@@ -23,10 +23,6 @@ SUBJECT="$2"
 
 pushd $KEY_DIR
 
-if [[ ! -e calyxos.keystore ]]; then
-  $SCRIPTPATH/mkkeystore.sh calyxos "$SUBJECT"
-fi
-
 for k in "${common_app_keys[@]}"; do
   if [[ ! -e ${k}.pk8 ]]; then
     $SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
