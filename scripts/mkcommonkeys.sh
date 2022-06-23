@@ -24,8 +24,6 @@ mkdir -p $KEY_DIR
 
 pushd $KEY_DIR
 
-$SCRIPTPATH/mkkeystore.sh calyxos "$SUBJECT"
-
 for k in "${common_app_keys[@]}"; do
   $SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
