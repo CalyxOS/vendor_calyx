@@ -22,3 +22,6 @@ PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 # Overrides
 PRODUCT_NAME := calyx_sdk_phone_x86
 PRODUCT_MODEL := CalyxOS Android SDK built for x86
+
+PRODUCT_SDK_ADDON_NAME := calyx
+PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := $(LOCAL_PATH)/source.properties
