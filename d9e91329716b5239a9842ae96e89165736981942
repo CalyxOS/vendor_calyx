@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "14972d48_ed22caf0",
+        "filename": "scripts/metadata",
+        "patchSetId": 3
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-06-24T14:06:47Z",
+      "side": 1,
+      "message": "This isn\u0027t the best but it\u0027ll do for now, pending future rework.\n\nAllows doing something like\n\n`for i in *.apk; do sign-app.sh ${i%.apk} ${i}; done`",
+      "revId": "d9e91329716b5239a9842ae96e89165736981942",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
