@@ -20,4 +20,7 @@
          delivery restrictions. -->
     <allow-implicit-broadcast action="lineageos.intent.action.INITIALIZE_LINEAGE_HARDWARE" />
 
+    <!-- Apps that are currently exempted from doze restrictions. -->
+    <allow-in-power-save package="org.calyxos.etar" />
+
 </config>
