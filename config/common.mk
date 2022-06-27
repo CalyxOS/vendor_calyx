@@ -22,7 +22,8 @@ endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
-    CalyxSetupWizard
+    CalyxSetupWizard \
+    LupinInstaller
 
 # Customization
 PRODUCT_PACKAGES += \
