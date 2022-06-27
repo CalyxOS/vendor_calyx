@@ -30,7 +30,8 @@ endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
-    CalyxSetupWizard
+    CalyxSetupWizard \
+    Lupin
 
 # Customization
 PRODUCT_PACKAGES += \
