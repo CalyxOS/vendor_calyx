@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1c0c7061_c962560c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-06-27T21:20:29Z",
+      "side": 1,
+      "message": "We usually just do it directly in the repo.\n\ne.g. https://gitlab.com/CalyxOS/platform_packages_apps_Seedvault/-/blob/android12L/whitelist_com.stevesoltys.seedvault.xml",
+      "revId": "99fe778dc3502d48a80736ce048ebd500ef3e6f2",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
