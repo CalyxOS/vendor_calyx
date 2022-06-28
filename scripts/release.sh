@@ -71,7 +71,7 @@ elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -81,6 +81,14 @@ elif [[ $DEVICE == oriole || $DEVICE == raven ]]; then
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
+elif [[ $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096
+                   --avb_dtbo_key "$KEY_DIR/avb.pem" --avb_dtbo_algorithm SHA256_RSA4096
+                   --avb_extra_custom_image_key vendor_boot="$KEY_DIR/avb.pem" --avb_extra_custom_image_algorithm vendor_boot=SHA256_RSA4096)
 fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
