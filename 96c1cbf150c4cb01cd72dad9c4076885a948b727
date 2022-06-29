@@ -16,6 +16,23 @@
       "message": "We should sync GSI targets with lineage instead of this",
       "revId": "96c1cbf150c4cb01cd72dad9c4076885a948b727",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "23bbbc4e_37c296e3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-06-29T16:58:28Z",
+      "side": 1,
+      "message": "Let\u0027s get emulator working again",
+      "revId": "96c1cbf150c4cb01cd72dad9c4076885a948b727",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
