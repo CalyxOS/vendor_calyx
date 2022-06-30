@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "30b8ebcb_4d6a3baf",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-06-30T16:17:37Z",
+      "side": 1,
+      "message": "Works on lemonade",
+      "revId": "ccf0d0b94b2967c040276a8462701eeb94752601",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
