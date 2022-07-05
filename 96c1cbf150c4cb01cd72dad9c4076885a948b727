@@ -33,6 +33,24 @@
       "message": "Let\u0027s get emulator working again",
       "revId": "96c1cbf150c4cb01cd72dad9c4076885a948b727",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b7a0a8bd_282b8331",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-07-05T11:06:28Z",
+      "side": 1,
+      "message": "Chain: https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/11533",
+      "parentUuid": "3029ac98_4af058d1",
+      "revId": "96c1cbf150c4cb01cd72dad9c4076885a948b727",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
