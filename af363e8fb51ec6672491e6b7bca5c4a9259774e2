@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4315c5e5_5eca9562",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-07-14T17:29:51Z",
+      "side": 1,
+      "message": "Works on crosshatch \u0026 FP4",
+      "revId": "af363e8fb51ec6672491e6b7bca5c4a9259774e2",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
