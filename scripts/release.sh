@@ -40,7 +40,7 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
 	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
 	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven ]]; then
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
@@ -75,7 +75,7 @@ elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == le
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == oriole || $DEVICE == raven ]]; then
+elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
@@ -86,8 +86,8 @@ fi
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade ||
-  $DEVICE == lemonadep ]]; then
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE ==bluejay || $DEVICE == FP4 ||
+  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
