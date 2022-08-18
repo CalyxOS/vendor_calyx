@@ -86,9 +86,9 @@ PRODUCT_PACKAGES += \
     TrichromeWebView \
     Eleven \
     Recorder \
-    Seedvault \
     Ripple
 #    Firewall \
+#    Seedvault \
 
 # Config
 PRODUCT_PACKAGES += \
