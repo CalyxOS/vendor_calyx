@@ -29,8 +29,8 @@ PRODUCT_PACKAGES += \
 endif
 
 # SetupWizard
-PRODUCT_PACKAGES += \
-    CalyxSetupWizard
+#PRODUCT_PACKAGES += \
+#    CalyxSetupWizard
 
 # Customization
 PRODUCT_PACKAGES += \
