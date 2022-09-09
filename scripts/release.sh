@@ -107,6 +107,12 @@ EXTRA_SIGNING_ARGS+=(-k external/calyx/chromium/certs/chromium=$KEY_DIR/../commo
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/AdServices/adservices/apk/com.android.adservices.api=$KEY_DIR/com.android.adservices.api)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Bluetooth/android/app/certs/com.android.bluetooth=$KEY_DIR/com.android.bluetooth)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources=$KEY_DIR/com.android.safetycenter.resources)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog=$KEY_DIR/com.android.wifi.dialog)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
 
 if [[ $DEVICE == raven ]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs101-sepolicy/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
