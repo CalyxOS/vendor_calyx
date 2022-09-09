@@ -27,7 +27,11 @@ AVBTOOL=$TOP/bin/avbtool
 
 pushd $KEY_DIR
 
-for k in releasekey platform shared media networkstack com.android.connectivity.resources com.android.hotspot2.osulogin com.android.wifi.resources; do
+for k in releasekey platform shared media networkstack sdk_sandbox \
+		com.android.connectivity.resources \
+		com.android.hotspot2.osulogin com.android.wifi.resources com.android.adservices.api \
+		com.android.bluetooth com.android.safetycenter.resources com.android.wifi.dialog \
+		com.android.uwb.resources com.android.nearby.halfsheet; do
 	if [[ ! -e ${k}.pk8 ]]; then
 		$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 	fi
