@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1ca48fba_9f3f41fc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-12T17:09:48Z",
+      "side": 1,
+      "message": "Can\u0027t test use this yet with Bromite 104\n\nWill need to wait for something like https://github.com/bromite/bromite/pull/2308",
+      "revId": "bbf6ffbdc4abed6a02132ec3970b2a4955dbcfc7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
