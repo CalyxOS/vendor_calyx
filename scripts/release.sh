@@ -114,6 +114,7 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/WifiDialog/certs/com.android.wifi.
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
 
 if [[ $DEVICE == raven ]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs101-sepolicy/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
