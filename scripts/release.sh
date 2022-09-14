@@ -120,7 +120,7 @@ if [[ $DEVICE == raven ]]; then
 fi
 
 echo "Creating signed targetfiles zip"
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
+$RELEASETOOLS_PATH/bin/sign_target_files_apks -v $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
