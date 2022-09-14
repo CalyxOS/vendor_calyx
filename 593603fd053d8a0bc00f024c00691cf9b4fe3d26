@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "06938ed9_925acf0a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-14T18:22:31Z",
+      "side": 1,
+      "message": "Hold https://android.googlesource.com/platform/build/+/a2411e4b6895572acd36b41f8384fe8f8b8c2e5a",
+      "revId": "593603fd053d8a0bc00f024c00691cf9b4fe3d26",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
