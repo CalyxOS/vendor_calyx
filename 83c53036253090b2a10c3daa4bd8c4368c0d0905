@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b9424cf6_5b7185a3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-14T20:38:35Z",
+      "side": 1,
+      "message": "\u003e 2022-09-15 02:04:36 - common.py - INFO    :   Running: \"java -Xmx2048m -Djava.library.path\u003d/mnt/scratch/sign/13/bluejay6/lib64 -jar /mnt/scratch/sign/13/bluejay6/framework/signapk.jar --min-sdk-version 33 keys/bluejay/sdk_sandbox.x509.pem keys/bluejay/sdk_sandbox.pk8 /tmp/tmpbdycwrca /tmp/tmp8a25xrky/./app/SdkSandbox@TP1A.220905.004.A2/SdkSandbox.apk\"",
+      "revId": "83c53036253090b2a10c3daa4bd8c4368c0d0905",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
