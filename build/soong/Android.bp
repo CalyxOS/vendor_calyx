@@ -160,6 +160,23 @@ trust_usb_control {
     },
 }
 
+soong_config_module_type {
+    name: "gralloc_handle_reserved_size",
+    module_type: "cc_defaults",
+    config_namespace: "calyxGlobalVars",
+    bool_variables: ["gralloc_handle_has_reserved_size"],
+    properties: ["cppflags"],
+}
+
+gralloc_handle_reserved_size {
+    name: "gralloc_handle_has_reserved_size_defaults",
+    soong_config_variables: {
+        gralloc_handle_has_reserved_size: {
+            cppflags: ["-DGRALLOC_HANDLE_HAS_RESERVED_SIZE"],
+        },
+    },
+}
+
 // QCOM specific config modules
 soong_config_module_type {
     name: "librmnetctl_pre_uplink",
