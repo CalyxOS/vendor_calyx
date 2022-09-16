@@ -122,4 +122,7 @@
 
     <!--  Maximum number of supported users -->
     <integer name="config_multiuserMaximumUsers">4</integer>
+
+    <!-- Maximum number of users we allow to be running at a time -->
+    <integer name="config_multiuserMaxRunningUsers">16</integer>
 </resources>
