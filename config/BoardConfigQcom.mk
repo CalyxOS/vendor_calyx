@@ -77,6 +77,8 @@ ifneq ($(filter $(UM_4_9_FAMILY) $(UM_4_14_FAMILY) $(UM_4_19_FAMILY) $(UM_5_4_FA
     TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS += | (1 << 27)
 endif
 
+TARGET_GRALLOC_HANDLE_HAS_RESERVED_SIZE ?= false
+
 # List of targets that use master side content protection
 MASTER_SIDE_CP_TARGET_LIST := msm8996 $(UM_4_4_FAMILY) $(UM_4_9_FAMILY) $(UM_4_14_FAMILY) $(UM_4_19_FAMILY)
 
