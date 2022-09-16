@@ -16,6 +16,24 @@
       "message": "Does everything work fine on FP4 with this?",
       "revId": "76887d01006395858b206572042b1b52cf258828",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cd238021_18bf2dc7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-09-16T17:41:32Z",
+      "side": 1,
+      "message": "Yes",
+      "parentUuid": "a45e8467_4b269ecb",
+      "revId": "76887d01006395858b206572042b1b52cf258828",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
