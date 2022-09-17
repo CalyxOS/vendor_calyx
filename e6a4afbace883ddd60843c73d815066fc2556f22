@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b19f886b_40a419f8",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-17T00:28:52Z",
+      "side": 1,
+      "message": "I actually thought we were talking about this. We should bump this first, 8 might be a good start. Maybe 16?",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a763979b_c37a8986",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 127,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-17T00:28:52Z",
+      "side": 1,
+      "message": "I don\u0027t know if this will be a good idea, at least on some of the older phones / devices with less RAM.\n\nSorry for the confusion earlier.",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
