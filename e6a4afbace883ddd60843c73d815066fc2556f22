@@ -36,6 +36,23 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "e9b338a3_cf7be906",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-09-17T01:26:20Z",
+      "side": 1,
+      "message": "I haven\u0027t actually tested this yet so can\u0027t for-sure verify or unverify, but come to think of it, because max running users also affects users (somehow I wasn\u0027t thinking of that) and I believe is related to whether Android decides to stop backgrounded secondary users, this might not be the best way to approach this. I agree on the memory usage front, and secondary users can\u0027t be easily stopped by the user currently either, without the End Session patch.\n\nMy change here is the one I have used for a while, and it has the benefit of not impacting secondary user behavior at all: https://review.calyxos.org/c/CalyxOS/platform_frameworks_base/+/13382/1/services/core/java/com/android/server/am/UserController.java",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b19f886b_40a419f8",
