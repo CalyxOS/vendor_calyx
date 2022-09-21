@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "afaaae5a_8ec25b6d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-09-21T17:58:40Z",
+      "side": 1,
+      "message": "Doesn\u0027t work yet, complains about resources being private. I\u0027m sure I need to change the ids or something.",
+      "revId": "d76cef7970113ddcd98eb643ce5fd4125b694d98",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
