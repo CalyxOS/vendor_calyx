@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<user-types>
+    <profile-type
+        name='android.os.usertype.profile.MANAGED'
+        max-profile-per-parent='2'
+        icon-badge='?android:drawable/ic_corp_icon_badge_case'
+        badge-plain='?android:drawable/ic_corp_badge_case'
+        badge-no-background='?android:drawable/ic_corp_badge_no_background' >
+        <badge-labels>
+            <item res='?android:string/managed_profile_label_badge' />
+            <item res='?android:string/managed_profile_label_badge_2' />
+            <item res='?android:string/managed_profile_label_badge_3' />
+            <item res='@string/managed_profile_label_badge_4' />
+            <item res='@string/managed_profile_label_badge_5' />
+            <item res='@string/managed_profile_label_badge_6' />
+            <item res='@string/managed_profile_label_badge_7' />
+            <item res='@string/managed_profile_label_badge_8' />
+            <item res='@string/managed_profile_label_badge_9' />
+            <item res='@string/managed_profile_label_badge_10' />
+            <item res='@string/managed_profile_label_badge_11' />
+            <item res='@string/managed_profile_label_badge_12' />
+            <item res='@string/managed_profile_label_badge_13' />
+            <item res='@string/managed_profile_label_badge_14' />
+            <item res='@string/managed_profile_label_badge_15' />
+            <item res='@string/managed_profile_label_badge_16' />
+        </badge-labels>
+        <badge-colors>
+            <item res='?android:color/profile_badge_1' />
+            <item res='?android:color/profile_badge_2' />
+            <item res='?android:color/profile_badge_3' />
+            <item res="#ff8213f4" />
+            <item res="#ffb51258" />
+            <item res="#ff587700" />
+            <item res="#ff8213f4" />
+            <item res="#ffa63100" />
+            <item res="#ff148e00" />
+            <item res="#ffaf0fbe" />
+            <item res="#ff825300" />
+            <item res="#ff008846" />
+            <item res="#ffc6efff" />
+            <item res="#fffee9ac" />
+            <item res="#ffcfff81" />
+            <item res="#ffc7c7c7" />
+        </badge-colors>
+        <badge-colors-dark>
+            <item res='?android:color/profile_badge_1_dark' />
+            <item res='?android:color/profile_badge_2_dark' />
+            <item res='?android:color/profile_badge_3_dark' />
+            <item res="#ff370087" />
+            <item res="#ff5a0009" />
+            <item res="#ff113600" />
+            <item res="#ff370087" />
+            <item res="#ffa63100" />
+            <item res="#ff004500" />
+            <item res="#ff590058" />
+            <item res="#ff311a00" />
+            <item res="#ff003c14" />
+            <item res="#ff60afff" />
+            <item res="#ffe4a210" />
+            <item res="#ff70e800" />
+            <item res="#ff6e6e6e" />
+        </badge-colors-dark>
+    </profile-type>
+</user-types>
