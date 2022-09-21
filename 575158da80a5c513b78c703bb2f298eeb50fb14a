@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "13751380_0c61570f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-09-21T18:11:19Z",
+      "side": 1,
+      "message": "[Low-prio] Question from other review (abandoned)...\n\nYou mentioned putting the strings and colors directly in config_user_types.xml. The strings have embedded labels; is it possible to define these types of strings directly? Here\u0027s one of the AOSP strings the others are based on: \u003cstring name\u003d\"managed_profile_label_badge_3\"\u003e3rd Work \u003cxliff:g id\u003d\"label\" example\u003d\"Email\"\u003e%1$s\u003c/xliff:g\u003e\u003c/string\u003e",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
