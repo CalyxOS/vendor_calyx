@@ -51,6 +51,23 @@
       "parentUuid": "13751380_0c61570f",
       "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fd73e6a9_9815ba3f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-09-22T02:26:03Z",
+      "side": 1,
+      "message": "Any ideas welcome, but this remains low priority of course.\n\nI got errors for the strings when compiling using `@android` so took a hint from elsewhere in `vendor/calyx` and wrote `?android` instead, which was likely a mistake, because currently nothing is working at all. No badges for icons, no customized strings when tapping icons in Overview, nothing — obviously a major regression from AOSP since differentiating main user apps from profile apps is impossible at a glance.",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
