@@ -86,6 +86,24 @@
       "parentUuid": "c2c88c0c_bb535f0f",
       "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "04b4bb32_35ce4b28",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-22T15:35:54Z",
+      "side": 1,
+      "message": "Yep!\n\noverlay just changes the location of our modifications. It still ends up in the same \"app\", in this case, framework-res.apk\n\nThere\u0027s this fancy RRO now which is it\u0027s own apk but at the end of the day it still ends up counting as that app\u0027s resources, which for frameworks we cannot alter.\n\nI don\u0027t know how hard it would be to switch over to lineage sdk for everything, that\u0027d be the last thing to do if nothing else were feasible.",
+      "parentUuid": "e33a186c_f9b1217f",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
