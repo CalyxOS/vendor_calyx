@@ -9,8 +9,8 @@ PRODUCT_PACKAGES += \
     Launcher3Overlay
 
 # Translations
-#PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/crowdin/overlay
-#PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/crowdin/overlay
+PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
 
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
