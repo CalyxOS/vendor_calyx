@@ -55,6 +55,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "5e92dc2e_e39c1f2c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2022-09-29T09:35:08Z",
+      "side": 1,
+      "message": "I think we should allow to create as many users as we feel comfortable having run simultaneously and keep that as the hard cap. We could test with whatever device we support that has the least RAM at this time and observe when things start breaking.",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "b19f886b_40a419f8",
         "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
         "patchSetId": 2
