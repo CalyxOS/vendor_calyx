@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "aaea393c_32bb6f32",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2022-09-29T08:42:07Z",
+      "side": 1,
+      "message": "Can be abandoned since we don\u0027t make use of this mechanism since Bellis?",
+      "revId": "7ab433ea6d9296aaad8704fba513174cb469d847",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
