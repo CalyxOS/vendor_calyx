@@ -72,6 +72,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "28162235_815df2ca",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-09-29T11:28:15Z",
+      "side": 1,
+      "message": "I\u0027d say sunfish might be a good target device. We also don\u0027t want to worsen the UX on the flagships.\n\nIt\u0027s mid-range and quite old by now.",
+      "parentUuid": "5e92dc2e_e39c1f2c",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "b19f886b_40a419f8",
         "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
         "patchSetId": 2
