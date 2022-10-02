@@ -23,7 +23,7 @@ PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 # Require all requested packages to exist
-$(call enforce-product-packages-exist-internal,$(wildcard device/*/$(VENDOR_DEVICE)/$(TARGET_PRODUCT).mk),product_manifest.xml rild)
+$(call enforce-product-packages-exist-internal,$(wildcard device/*/$(VENDOR_DEVICE)/$(TARGET_PRODUCT).mk),product_manifest.xml rild Calendar)
 
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
