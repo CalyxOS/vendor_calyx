@@ -122,4 +122,7 @@
 
     <!--  Maximum number of supported users -->
     <integer name="config_multiuserMaximumUsers">4</integer>
+
+    <!-- Default component for QR code scanner -->
+    <string name="config_defaultQrCodeComponent">com.android.camera2/org.lineageos.quickreader.ScannerActivity</string>
 </resources>
