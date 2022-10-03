@@ -75,6 +75,7 @@ PRODUCT_PACKAGES += \
 
 # Apps
 PRODUCT_PACKAGES += \
+    Aperture \
     AudioFX \
     AuroraStorePrivilegedExtension \
     Bellis \
