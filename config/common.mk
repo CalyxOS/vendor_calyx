@@ -77,6 +77,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     AudioFX \
     AuroraStorePrivilegedExtension \
+    BatteryStatsViewer \
     Bellis \
     Etar \
     ExactCalculator \
