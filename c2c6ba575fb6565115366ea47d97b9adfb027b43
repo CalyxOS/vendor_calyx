@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b797cdf6_ddbbe71d",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-10-14T22:20:51Z",
+      "side": 1,
+      "message": "gs101",
+      "range": {
+        "startLine": 123,
+        "startChar": 40,
+        "endLine": 123,
+        "endChar": 45
+      },
+      "revId": "c2c6ba575fb6565115366ea47d97b9adfb027b43",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
