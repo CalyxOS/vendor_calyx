@@ -40,7 +40,8 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
 	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
 	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
+  $DEVICE == panther || $DEVICE == cheetah ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
@@ -81,12 +82,20 @@ elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
+elif [[ $DEVICE == cheetah || $DEVICE == panther ]]; then
+  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
+                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
+                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
+                   --avb_vbmeta_system_key "$KEY_DIR/avb_vbmeta_system.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
+                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
 fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay || $DEVICE == FP4 ||
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
+  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == FP4 ||
   $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
@@ -116,8 +125,8 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
 
-if [[ $DEVICE == raven ]]; then
-  EXTRA_SIGNING_ARGS+=(-k device/google/gs101-sepolicy/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
+if [[ $DEVICE == raven || $DEVICE == cheetah ]]; then
+  EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 fi
 
 echo "Creating signed targetfiles zip"
