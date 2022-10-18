@@ -57,6 +57,11 @@ openssl genrsa -out avb.pem 2048
 $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 fi
 
+# Pixel 7, 7 pro
+if [[ $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ]]; then
+	openssl genrsa -out avb_vbmeta_system.pem 4096
+fi
+
 for apex in "${apexes[@]}"; do
 	$SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
 done

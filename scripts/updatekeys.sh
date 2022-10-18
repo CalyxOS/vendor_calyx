@@ -64,6 +64,13 @@ if [[ ! -e avb.pem ]]; then
 	fi
 fi
 
+# Pixel 7, 7 pro
+if [[ $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ]]; then
+	if [[ ! -e avb_vbmeta_system.pem ]]; then
+	openssl genrsa -out avb_vbmeta_system.pem 4096
+	fi
+fi
+
 if [[ -e avb_pkmd.bin ]]; then
 	mv avb_pkmd.bin avb_custom_key.img
 fi
