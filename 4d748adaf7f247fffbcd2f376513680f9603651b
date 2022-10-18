@@ -33,6 +33,24 @@
       "message": "`avbtool info_image --image $img` https://zifb.in/b5DyLfVahc ",
       "revId": "4d748adaf7f247fffbcd2f376513680f9603651b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b6c824b5_96c1bd6e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T20:37:42Z",
+      "side": 1,
+      "message": "https://zifb.in/yeXlAr68Ea",
+      "parentUuid": "bf77e666_0f1ad096",
+      "revId": "4d748adaf7f247fffbcd2f376513680f9603651b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
