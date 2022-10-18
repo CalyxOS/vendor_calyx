@@ -35,6 +35,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1301b929_56a331b1",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T20:43:33Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "06353cac_7bac88e9",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3086ca5a_a8c94d4e",
@@ -48,6 +66,24 @@
       "writtenOn": "2022-10-18T00:20:22Z",
       "side": 1,
       "message": "and a third key here",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8bf6d8bf_3527a8b8",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T20:43:33Z",
+      "side": 1,
+      "message": "Nope, turns out it\u0027s the same.",
+      "parentUuid": "3086ca5a_a8c94d4e",
       "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
