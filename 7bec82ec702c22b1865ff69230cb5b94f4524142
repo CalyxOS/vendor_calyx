@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "386ac1d4_80270c5e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T00:20:22Z",
+      "side": 1,
+      "message": "`avbtool info_image --image $img`\n\ncalyxos: https://zifb.in/BtE9yBBJKv\nstock https://zifb.in/zbFoNqwrfk",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "06353cac_7bac88e9",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T00:20:22Z",
+      "side": 1,
+      "message": "stock has a different key here",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3086ca5a_a8c94d4e",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T00:20:22Z",
+      "side": 1,
+      "message": "and a third key here",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ee3ce23d_b36d21d7",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T00:20:22Z",
+      "side": 1,
+      "message": "avb_init_boot is new but also seems to be missing on stock given the public key looks like testkey",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
