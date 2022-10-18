@@ -16,6 +16,23 @@
       "message": "Should be squashed but seems to work",
       "revId": "4d748adaf7f247fffbcd2f376513680f9603651b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bf77e666_0f1ad096",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T20:11:22Z",
+      "side": 1,
+      "message": "`avbtool info_image --image $img` https://zifb.in/b5DyLfVahc ",
+      "revId": "4d748adaf7f247fffbcd2f376513680f9603651b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
