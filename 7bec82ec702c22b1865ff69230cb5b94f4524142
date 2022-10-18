@@ -67,6 +67,24 @@
       "message": "avb_init_boot is new but also seems to be missing on stock given the public key looks like testkey",
       "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "355a89a1_660d075d",
+        "filename": "scripts/release.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-18T00:49:56Z",
+      "side": 1,
+      "message": "Seems to be intentional. `avb_init_boot_key` is not even a thing.",
+      "parentUuid": "ee3ce23d_b36d21d7",
+      "revId": "7bec82ec702c22b1865ff69230cb5b94f4524142",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
