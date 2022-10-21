@@ -16,6 +16,23 @@
       "message": "Can\u0027t test use this yet with Bromite 104\n\nWill need to wait for something like https://github.com/bromite/bromite/pull/2308",
       "revId": "bbf6ffbdc4abed6a02132ec3970b2a4955dbcfc7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5b5c6f07_70a5f21e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-10-21T19:16:35Z",
+      "side": 1,
+      "message": "Works with https://github.com/bromite/bromite/releases/tag/106.0.5249.72\n",
+      "revId": "bbf6ffbdc4abed6a02132ec3970b2a4955dbcfc7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
