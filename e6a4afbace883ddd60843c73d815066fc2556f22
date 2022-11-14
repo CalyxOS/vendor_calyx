@@ -105,6 +105,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "64740f36_57b08425",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-11-14T14:23:06Z",
+      "side": 1,
+      "message": "I\u0027m pretty sure we\u0027ve talked about doing a custom user type before.\n\nThe linked page also lists that this is supported for upgrades which\u0027d make things easier for us.",
+      "parentUuid": "1e107209_f78670b6",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b19f886b_40a419f8",
