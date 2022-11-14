@@ -88,6 +88,23 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1e107209_f78670b6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2022-11-14T13:56:32Z",
+      "side": 1,
+      "message": "From external experience, it seems that unsetting the value of max-allowed-per-parent\u003d\u00272\u0027 (which effectively sets it to -1) allows to create and run an unlimited amount of managed profiles\n\nSee https://source.android.com/docs/devices/admin/custom-user-types#modify\n",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b19f886b_40a419f8",
