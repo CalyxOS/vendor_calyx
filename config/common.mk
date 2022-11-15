@@ -14,14 +14,6 @@ PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
 
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
-ifeq ($(filter-out sdk_phone_x86 sdk_phone_x86_64 coral flame sunfish redfin bramble barbet, $(VENDOR_DEVICE)),)
-PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/bootanimation-9x19.zip:$(TARGET_COPY_OUT_PRODUCT)/media/bootanimation.zip
-else
-PRODUCT_COPY_FILES += \
-    vendor/calyx/prebuilt/bootanimation-9x16.zip:$(TARGET_COPY_OUT_PRODUCT)/media/bootanimation.zip
-endif
-
 ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
