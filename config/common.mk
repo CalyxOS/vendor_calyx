@@ -90,7 +90,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     charger_res_images
 
-ifneq ($(WITH_LINEAGE_CHARGER),false)
+ifeq ($(WITH_LINEAGE_CHARGER),true)
 PRODUCT_PACKAGES += \
     lineage_charger_animation \
     lineage_charger_animation_vendor
