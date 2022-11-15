@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "381222f6_6360b0ce",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-11-15T15:51:29Z",
+      "side": 1,
+      "message": "If we ship stock charger on fp4 too then we won\u0027t need this yet, but might soon.",
+      "revId": "7ca7bc5755cdd5aced4667363d54d9ec6204c2b6",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
