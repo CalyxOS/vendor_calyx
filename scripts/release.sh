@@ -36,9 +36,8 @@ fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ||
-	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
-	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
+if [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
+  $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah ]]; then
@@ -46,33 +45,24 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
   RADIOSRC=radio-${DEVICE}-${RADIO,,}.img
-elif [[ $DEVICE == jasmine_sprout ]]; then
-  MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
-elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
-  : # Do nothing, for now.
 else
   error "Unsupported device $DEVICE"
 fi
 
 mkdir -p $OUT || exit 1
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; then
-  VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
-                   --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
-elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
+if [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
   EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
-elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
 elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   $DEVICE == redfin || $DEVICE == bramble ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+elif [[ $DEVICE == barbet || $DEVICE == FP4 ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -91,20 +81,13 @@ elif [[ $DEVICE == cheetah || $DEVICE == panther ]]; then
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
 fi
 
-if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
-  $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
-  $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
+if [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
+  $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
+  $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
-  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == FP4 ||
-  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+  $DEVICE == panther || $DEVICE == cheetah ||
+  $DEVICE == FP4 ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
-  for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
-  done
-fi
-
-if [[ $DEVICE == jasmine_sprout ]]; then
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
