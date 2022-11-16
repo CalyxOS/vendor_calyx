@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f77ff6a8_51025604",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-11-16T12:56:48Z",
+      "side": 1,
+      "message": "Let\u0027s avoid touching this entirely, I\u0027ll keep working on 11633: New signing scripts | https://review.calyxos.org/c/CalyxOS/scripts/+/11633 as I find time.",
+      "revId": "8cde0735de705194226ef4db4f4ea8e7b8ffcd3c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
