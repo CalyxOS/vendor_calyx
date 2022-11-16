@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "acde33eb_f3b5c2fb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-11-16T23:20:41Z",
+      "side": 1,
+      "message": "Ideally this is where we\u0027d CleanSpec to not have to installclean, but we do it anyways.",
+      "revId": "d6539b5172899995fcf6894081e24e5b99b75286",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
