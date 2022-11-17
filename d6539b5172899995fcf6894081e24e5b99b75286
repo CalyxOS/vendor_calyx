@@ -16,6 +16,23 @@
       "message": "Ideally this is where we\u0027d CleanSpec to not have to installclean, but we do it anyways.",
       "revId": "d6539b5172899995fcf6894081e24e5b99b75286",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cfc80c33_cfb1eaa6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-11-17T00:38:14Z",
+      "side": 1,
+      "message": "Looks good on bramble",
+      "revId": "d6539b5172899995fcf6894081e24e5b99b75286",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
