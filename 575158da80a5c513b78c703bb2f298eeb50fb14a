@@ -104,6 +104,23 @@
       "parentUuid": "e33a186c_f9b1217f",
       "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "021463b8_bc548aae",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-11-23T20:57:50Z",
+      "side": 1,
+      "message": "We don\u0027t even support two profiles right now, let alone more than three. This commit isn\u0027t acceptable at the moment, and I\u0027m likely going to need help figuring this out if/when the time comes. (Besides, this patch makes some choices about colors that haven\u0027t been well-evaluated and shouldn\u0027t be made by me alone.) I\u0027m thinking it should be abandoned?",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
