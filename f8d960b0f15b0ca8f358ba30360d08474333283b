@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5b21c447_c8223892",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-11-25T17:50:41Z",
+      "side": 1,
+      "message": "I have not been able to get the preference to show up, but there is a user tip that is supposed to show up at \u003c30% per [SmartBatteryDetector.java](https://cs.android.com/android/platform/superproject/+/android-13.0.0_r8:packages/apps/Settings/src/com/android/settings/fuelgauge/batterytip/detectors/SmartBatteryDetector.java;l\u003d55) and say, \"Improve battery life\" \"Turn on Battery Manager\". I\u0027ll let my phone get there and see what happens.\n\nThis is also connected to these, and I\u0027ve enabled both for testing: GLOBAL.ADAPTIVE_BATTERY_MANAGEMENT_ENABLED and GLOBAL.APP_STANDBY_ENABLED. https://cs.android.com/android/platform/superproject/+/android-13.0.0_r8:frameworks/base/core/java/android/provider/Settings.java;l\u003d13980",
+      "revId": "f8d960b0f15b0ca8f358ba30360d08474333283b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
