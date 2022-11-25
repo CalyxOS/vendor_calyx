@@ -123,6 +123,23 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "e07890e5_326d511e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-11-25T17:08:32Z",
+      "side": 1,
+      "message": "Also see: 10180: Add support for multiple managed profiles | https://review.calyxos.org/c/CalyxOS/platform_frameworks_base/+/10180",
+      "revId": "e6a4afbace883ddd60843c73d815066fc2556f22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b19f886b_40a419f8",
