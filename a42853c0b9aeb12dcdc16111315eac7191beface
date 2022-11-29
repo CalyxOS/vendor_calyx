@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "175bca35_7f44d729",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2022-11-29T22:03:31Z",
+      "side": 1,
+      "message": "\u003cstring name\u003d\"config_batterySaverScheduleProvider\"\u003ecom.google.android.apps.turbo\u003c/string\u003e\n\nDepends on turbo prebuilt apk on pixels to actually do anything.",
+      "revId": "a42853c0b9aeb12dcdc16111315eac7191beface",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
