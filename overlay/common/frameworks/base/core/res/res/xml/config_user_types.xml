@@ -3,6 +3,6 @@
     <!-- see https://source.android.com/docs/devices/admin/custom-user-types -->
     <profile-type
         name='android.os.usertype.profile.MANAGED'
-        max-allowed-per-parent='1' >
+        max-allowed-per-parent='3' >
     </profile-type>
 </user-types>
