@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<user-types version='0'>
+    <!-- see https://source.android.com/docs/devices/admin/custom-user-types -->
+    <profile-type
+        name='android.os.usertype.profile.MANAGED'
+        max-allowed-per-parent='3' >
+    </profile-type>
+</user-types>
