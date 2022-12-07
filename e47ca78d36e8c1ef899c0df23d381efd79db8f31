@@ -16,6 +16,24 @@
       "message": "Used KeePassDX with a test entry for GitLab. Tested autofill for CalyxOS Chromium, Brave, Edge, Firefox, Opera -- worked everywhere except Opera (not very concerned about fixing that). All were installed from Aurora Store (except CalyxOS Chromium), not that it should matter.\n\nI tried DuckDuckGo as well, which as expected did not work, since it isn\u0027t on the list. Do we want to try including DuckDuckGo too?",
       "revId": "e47ca78d36e8c1ef899c0df23d381efd79db8f31",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "61cf2e57_185a53a8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-07T21:55:56Z",
+      "side": 1,
+      "message": "I\u0027m happy to start with this list, stock + our browser.",
+      "parentUuid": "e2504175_a2bb4276",
+      "revId": "e47ca78d36e8c1ef899c0df23d381efd79db8f31",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
