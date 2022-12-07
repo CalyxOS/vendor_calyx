@@ -33,6 +33,24 @@
       "message": "The reason to do this here instead of the Global setting `autofill_compat_mode_allowed_packages` is that it has been deprecated since Android 13 (see [Settings.java](https://cs.android.com/android/platform/superproject/+/android-13.0.0_r16:frameworks/base/core/java/android/provider/Settings.java;l\u003d15704-15723)). They now recommend using `DEVICE_CONFIG_AUTOFILL_COMPAT_MODE_ALLOWED_PACKAGES`.\n\nHere\u0027s where they read from it: [AutofillManagerService.java](https://cs.android.com/android/platform/superproject/+/android-13.0.0_r16:frameworks/base/services/autofill/java/com/android/server/autofill/AutofillManagerService.java;l\u003d730-733)",
       "revId": "ee3d7d27d357309043f6da213aca6d2cf896bb68",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "292ab667_ab733708",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-07T21:58:33Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1c085fce_091d7e83",
+      "revId": "ee3d7d27d357309043f6da213aca6d2cf896bb68",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
