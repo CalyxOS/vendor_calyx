@@ -16,6 +16,24 @@
       "message": "Need to add our package name - `org.chromium.chrome`\n\nPerhaps Bromite too? Although that has it\u0027s own autofill patch.",
       "revId": "064947fe718b8253ce31fee36b7882d0ee4447cd",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7bff1bf3_0c273c19",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-07T18:15:29Z",
+      "side": 1,
+      "message": "Oh right, good catch. Maybe we should skip Bromite, in case users turn off the native autofill on purpose and then wonder why autofill is still happening?",
+      "parentUuid": "a49b8a1b_07d7c3cf",
+      "revId": "064947fe718b8253ce31fee36b7882d0ee4447cd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
