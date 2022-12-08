@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6cd426d8_6c6e811c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-08T12:52:56Z",
+      "side": 1,
+      "message": "This is what I\u0027ve been doing, but I don\u0027t know if it\u0027s the right way or if there are repercussions. Low-prio, uploaded because I\u0027ve been manually adding apps like these for a while",
+      "revId": "373588554414966bb0283baead564c9e37d889ab",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
