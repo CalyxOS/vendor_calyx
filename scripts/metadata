@@ -20,6 +20,8 @@ apps=(
 	TrichromeLibrary6432
 	TrichromeWebView
 	TrichromeWebView6432
+	Etar
+	Launcher3QuickStep
 )
 
 # Mapping from build/tools/releasetools
@@ -70,6 +72,8 @@ appkey[TrichromeLibrary]=chromium
 appkey[TrichromeLibrary6432]=chromium
 appkey[TrichromeWebView]=chromium
 appkey[TrichromeWebView6432]=chromium
+appkey[Etar]=testkey
+appkey[Launcher3QuickStep]=testkey
 
 # Extra keys for apps we sign
 common_app_keys=(
