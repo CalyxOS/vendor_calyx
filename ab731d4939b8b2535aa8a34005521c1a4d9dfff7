@@ -16,6 +16,23 @@
       "message": "Not yet tested",
       "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "527bd2d2_11e30e5a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-09T21:52:40Z",
+      "side": 1,
+      "message": "Okay, this results in there being no badge icon at all, or labels, for work profiles - just like before, apparently: https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/13507/comments/fd73e6a9_9815ba3f\n\nThe problem might be the question mark resource references, not sure",
+      "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
