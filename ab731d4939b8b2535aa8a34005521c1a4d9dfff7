@@ -69,6 +69,24 @@
       "parentUuid": "e6e5b6fd_a0547e8d",
       "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c9d96a51_79ef4acc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-09T22:55:29Z",
+      "side": 1,
+      "message": "Can confirm with `apktool d` there\u0027s no file in either of those rro apks containing \"badge\" in its name or contents. :( But also it looks like we might not need to mess with any of it right now. Looks like they have default values. Will verify",
+      "parentUuid": "0aa9b672_14c0bb0c",
+      "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
