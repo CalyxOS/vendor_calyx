@@ -51,6 +51,24 @@
       "parentUuid": "527bd2d2_11e30e5a",
       "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0aa9b672_14c0bb0c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-12-09T22:04:38Z",
+      "side": 1,
+      "message": "Unfortunately @android does not work here:\n`vendor/calyx/overlay/common/frameworks/base/core/res/res/xml/config_user_types.xml:4: error: resource android:drawable/ic_corp_badge_no_background is private`\n\n...and the same for every other resource brought in.",
+      "parentUuid": "e6e5b6fd_a0547e8d",
+      "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
