@@ -33,6 +33,24 @@
       "message": "Okay, this results in there being no badge icon at all, or labels, for work profiles - just like before, apparently: https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/13507/comments/fd73e6a9_9815ba3f\n\nThe problem might be the question mark resource references, not sure",
       "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e6e5b6fd_a0547e8d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-09T21:55:06Z",
+      "side": 1,
+      "message": "Does @android work here?\n\nYou can also build and verify this in the RRO\n\nYou can run `apktool d` on:\n* `$OUT/vendor/overlay/framework-res__auto_generated_rro_vendor.apk`\n* `$OUT/product/overlay/framework-res__auto_generated_rro_product.apk`",
+      "parentUuid": "527bd2d2_11e30e5a",
+      "revId": "ab731d4939b8b2535aa8a34005521c1a4d9dfff7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
