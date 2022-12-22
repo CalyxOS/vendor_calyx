@@ -16,6 +16,23 @@
       "message": "We\u0027ll still want this for prod.",
       "revId": "2f10cc890295179cc8e1e54d7c0252d2cc7e1feb",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2eefb4f0_cfb405a8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-22T18:13:30Z",
+      "side": 1,
+      "message": "Only for prod later. For now, 15047: Label persist.calyx.multiple_profiles | https://review.calyxos.org/c/CalyxOS/device_calyx_sepolicy/+/15047",
+      "revId": "2f10cc890295179cc8e1e54d7c0252d2cc7e1feb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ],
   "submitRequirementResults": [
