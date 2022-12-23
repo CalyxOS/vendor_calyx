@@ -156,6 +156,40 @@
       "message": "Probably worth adding this to commit message https://source.android.com/docs/devices/admin/custom-user-types#modify\nAlso, we can handle max allowed profiles per parent here rather Java",
       "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "68af5528_2118c204",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-23T17:09:42Z",
+      "side": 1,
+      "message": "At least the string changes a",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "623fb7e0_ee651b4c",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/strings.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-23T17:09:42Z",
+      "side": 1,
+      "message": "Entire file isn\u0027t needed anymore given we\u0027re only allowing 3 work profiles.\n\nNo need of a 4th.",
+      "revId": "575158da80a5c513b78c703bb2f298eeb50fb14a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
