@@ -33,6 +33,24 @@
       "message": "Only for prod later. For now, 15047: Label persist.calyx.multiple_profiles | https://review.calyxos.org/c/CalyxOS/device_calyx_sepolicy/+/15047",
       "revId": "2f10cc890295179cc8e1e54d7c0252d2cc7e1feb",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "90d4c370_160fe5d9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2022-12-23T22:52:39Z",
+      "side": 1,
+      "message": "Ship 15070: Revert \"Allow creating multiple work profiles via sysprop\" | https://review.calyxos.org/c/CalyxOS/platform_frameworks_base/+/15070 together.",
+      "parentUuid": "2eefb4f0_cfb405a8",
+      "revId": "2f10cc890295179cc8e1e54d7c0252d2cc7e1feb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ],
   "submitRequirementResults": [
