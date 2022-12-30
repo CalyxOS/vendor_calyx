@@ -71,6 +71,7 @@ PRODUCT_PACKAGES += \
     AudioFX \
     AuroraStorePrivilegedExtension \
     Bellis \
+    Camera2Icon \
     Etar \
     ExactCalculator \
     F-Droid \
