@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="managed_profile_label_badge"><xliff:g id="profileName" example="Work Profile">%3$s</xliff:g> (<xliff:g id="profileIndex" example="1">%2$d</xliff:g>): <xliff:g id="label" example="Email">%1$s</xliff:g></string>
+    <string name="managed_profile_label_badge_2">@string/managed_profile_label_badge</string>
+    <string name="managed_profile_label_badge_3">@string/managed_profile_label_badge</string>
+</resources>
