@@ -16,6 +16,23 @@
       "message": "TODO: See if 30 is ok, and document what isn\u0027t 30, fixing where possible.\n\nAlso, not sure if this works from here, but I figured let\u0027s have a gerrit change up (just as the ticket got created)",
       "revId": "9e7ae79564001bfbe665825d0366b7faab623444",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "05ccd000_e4ad1d12",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-01-02T17:07:04Z",
+      "side": 1,
+      "message": "`vendor/calyx/config/common.mk:134: error: cannot assign to readonly variable: PLATFORM_MIN_SUPPORTED_TARGET_SDK_VERSION `",
+      "revId": "9e7ae79564001bfbe665825d0366b7faab623444",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
