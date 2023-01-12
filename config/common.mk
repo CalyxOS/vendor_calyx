@@ -108,6 +108,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.support_one_handed_mode=true
 
+# Log buffer size
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.logd.size=1M
+
 # Calyx-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
     vendor/calyx/config/permissions/calyx-sysconfig.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/calyx-sysconfig.xml
