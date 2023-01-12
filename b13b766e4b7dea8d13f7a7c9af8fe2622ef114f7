@@ -16,6 +16,23 @@
       "message": "Let\u0027s just edit directly rather than open this rabbit hole of re-allowing custom config.",
       "revId": "b13b766e4b7dea8d13f7a7c9af8fe2622ef114f7",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "efeba1ca_0c66cccb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-01-12T20:57:37Z",
+      "side": 1,
+      "message": "Let\u0027s just edit directly rather than open this rabbit hole of re-allowing custom config.\n\n15073: Double default log size, to 512K | https://review.calyxos.org/c/CalyxOS/platform_system_logging/+/15073",
+      "revId": "b13b766e4b7dea8d13f7a7c9af8fe2622ef114f7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
