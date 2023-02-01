@@ -104,7 +104,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == FP4 ||
-  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep || $DEVICE == axolotl ]]; then
+  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
@@ -112,7 +112,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   done
 fi
 
-if [[ $DEVICE == jasmine_sprout ]]; then
+if [[ $DEVICE == jasmine_sprout || $DEVICE == axolotl ]]; then
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
