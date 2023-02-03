@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b6f99fb7_a7351a96",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-03T09:32:24Z",
+      "side": 1,
+      "message": "15441: radio: abl: 5.0.20230203-calyx (user) | https://review.calyxos.org/c/CalyxOS/proprietary_vendor_shift_axolotl/+/15441",
+      "revId": "932fe6954a32b55cf1007fee40b072268baddb05",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
