@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1989be6b_ed96c431",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-17T20:33:42Z",
+      "side": 1,
+      "message": "It uses the same key as the rest on stock\n\nPublic key (sha1):        572d31e590179862f896f8d71b93a39e93403d5f",
+      "revId": "552b6a6fca9a9c12f210e4e58193fe201c412784",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
