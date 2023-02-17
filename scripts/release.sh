@@ -96,7 +96,8 @@ elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx ]]; then
                    --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb_vbmeta_system.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
+                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096
+                   --avb_init_boot_key "$KEY_DIR/avb.pem" --avb_init_boot_algorithm SHA256_RSA4096)
 fi
 
 if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
