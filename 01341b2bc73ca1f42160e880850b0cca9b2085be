@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "39f50434_073202de",
+        "filename": "overlay/common/frameworks/libs/systemui/iconloaderlib/res/values/config.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-17T18:00:39Z",
+      "side": 1,
+      "message": "`org.calyxos.etar`",
+      "revId": "01341b2bc73ca1f42160e880850b0cca9b2085be",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
