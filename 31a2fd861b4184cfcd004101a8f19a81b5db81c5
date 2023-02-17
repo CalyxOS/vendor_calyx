@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "12db5788_05e5f0fe",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-17T18:00:10Z",
+      "side": 1,
+      "message": "What does this do? Should ideally be in the commit message, next time given that it\u0027s merged.",
+      "revId": "31a2fd861b4184cfcd004101a8f19a81b5db81c5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
