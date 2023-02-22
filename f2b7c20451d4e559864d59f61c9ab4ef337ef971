@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "52eecbb7_58f72fd7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-22T23:31:32Z",
+      "side": 1,
+      "message": "` sign_target_files_apks.py - WARNING : Failed to find com.android.telephony.apex in target_files; Ignored`",
+      "revId": "f2b7c20451d4e559864d59f61c9ab4ef337ef971",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
