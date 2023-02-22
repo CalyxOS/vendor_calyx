@@ -112,7 +112,6 @@ apexes=(
 	com.android.scheduling.apex
 	com.android.sdkext.apex
 	com.android.support.apexer.apex
-	com.android.telephony.apex
 	com.android.tethering.apex
 	com.android.tzdata.apex
 	com.android.uwb.apex
@@ -149,7 +148,6 @@ apex_container_key[com.android.runtime.apex]=com.android.runtime
 apex_container_key[com.android.scheduling.apex]=releasekey
 apex_container_key[com.android.sdkext.apex]=com.android.sdkext
 apex_container_key[com.android.support.apexer.apex]=releasekey
-apex_container_key[com.android.telephony.apex]=com.android.telephony
 apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
 apex_container_key[com.android.uwb.apex]=com.android.uwb
@@ -185,7 +183,6 @@ apex_payload_key[com.android.runtime.apex]=com.android.runtime
 apex_payload_key[com.android.scheduling.apex]=com.android.scheduling
 apex_payload_key[com.android.sdkext.apex]=com.android.sdkext
 apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
-apex_payload_key[com.android.telephony.apex]=com.android.telephony
 apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
 apex_payload_key[com.android.uwb.apex]=com.android.uwb
