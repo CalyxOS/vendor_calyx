@@ -58,7 +58,6 @@ $(call enforce-product-packages-exist-internal,$(lastword $(_include_stack)),pro
 endif
 
 ifeq ($(OFFICIAL_BUILD),true)
-# OTA Updater
 PRODUCT_PACKAGES += \
     Updater
 endif
@@ -114,6 +113,7 @@ PRODUCT_PACKAGES += \
     Etar \
     ExactCalculator \
     Glimpse \
+    LupinUpdater \
     Talkback \
     TrichromeChrome \
     TrichromeWebView \
