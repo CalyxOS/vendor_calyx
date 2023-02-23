@@ -15,7 +15,6 @@ PRODUCT_PACKAGE_OVERLAYS += vendor/crowdin/overlay
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifeq ($(OFFICIAL_BUILD),true)
-# OTA Updater
 PRODUCT_PACKAGES += \
     Updater
 endif
@@ -77,6 +76,7 @@ PRODUCT_PACKAGES += \
     ExactCalculator \
     F-Droid \
     F-DroidPrivilegedExtension \
+    LupinUpdater \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
