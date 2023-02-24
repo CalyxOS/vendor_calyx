@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6c1a3e9f_7bad2f2f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-24T23:13:16Z",
+      "side": 1,
+      "message": "Not sure if needed. Uploaded just in case it\u0027s needed for some app, so that we have the syntax.\n\nUntested but should work",
+      "revId": "ed815de2c453389a1bd06630cfefd0b592dd156c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
