@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ff1ce451_fb7a10e3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-02-25T00:21:47Z",
+      "side": 1,
+      "message": "This should be able to update some apps (say Signal) even on unofficial builds.\n\nSome do unofficial builds with official APKs for things such as Trichrome.\n\nAnywho, given that we would have signature checks here, it should be fine to include on all builds. Will certainly make testing easier.",
+      "revId": "c04f15116b2855751fd9620006fe043145d5725c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
