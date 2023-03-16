@@ -28,4 +28,10 @@
 
     <!-- This is disabled by default, but turned on in SetupWizard -->
     <bool name="assisted_gps_enabled">false</bool>
+
+    <!-- Initial value for the Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS setting,
+         which is a comma separated list of packages that no longer need confirmation
+         for immersive mode.
+         Override to disable immersive mode confirmation for certain packages. -->
+    <string name="def_immersive_mode_confirmations" translatable="false">confirmed</string>
 </resources>
