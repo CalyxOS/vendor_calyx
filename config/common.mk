@@ -34,8 +34,7 @@ PRODUCT_PACKAGES += \
     IconShapeSquircleOverlay \
     IconShapeTaperedRectOverlay \
     IconShapeTeardropOverlay \
-    IconShapeVesselOverlay \
-    NavigationBarMode2ButtonOverlay
+    IconShapeVesselOverlay
 
 # Themes
 PRODUCT_PACKAGES += \
