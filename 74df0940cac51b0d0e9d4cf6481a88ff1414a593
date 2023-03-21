@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b0d0072a_3160e8e9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-03-21T16:18:54Z",
+      "side": 1,
+      "message": "raven:\n$ adb shell cmd overlay lookup android android:string/config_displayLightSensorType\ncom.google.sensor.auto_brightness",
+      "revId": "74df0940cac51b0d0e9d4cf6481a88ff1414a593",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
