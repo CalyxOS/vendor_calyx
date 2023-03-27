@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "00422c2b_cfebb006",
+        "filename": "build/target/product/source.properties",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-03-27T21:51:55Z",
+      "side": 1,
+      "message": "We should variable this but that\u0027s for a later date / separate commit.",
+      "revId": "d3ec291a555aee2362523de3676325f730cc385d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
