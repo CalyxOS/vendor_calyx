@@ -15,3 +15,5 @@
 
 # Rules for QCOM targets
 include $(TOPDIR)vendor/calyx/build/core/qcom_target.mk
+
+CALYXOS_BUILD_NUMBER := $(shell echo $(BUILD_NUMBER_FROM_FILE))
