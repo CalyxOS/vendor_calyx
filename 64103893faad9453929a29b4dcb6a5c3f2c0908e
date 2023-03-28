@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "66dbdc8a_ca1a71ef",
+        "filename": "build/core/config.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-03-28T00:02:20Z",
+      "side": 1,
+      "message": "This doesn\u0027t work in version.mk due to include order.",
+      "revId": "64103893faad9453929a29b4dcb6a5c3f2c0908e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
