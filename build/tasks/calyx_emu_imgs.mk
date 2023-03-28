@@ -19,8 +19,6 @@ SDK_SYSIMG_XSD := \
 define mk-sdk-repo-xml
 $(1): $$(XMLLINT) development/build/tools/mk_sdk_repo_xml.sh $(2) $(3)
 	XMLLINT=$$(XMLLINT) OFFICIAL_BUILD=$$(OFFICIAL_BUILD) development/build/tools/mk_sdk_repo_xml.sh $$@ $(2) $(4)
-
-$$(call dist-for-goals,emu_img_zip,$(1))
 endef
 
 # -----------------------------------------------------------------
