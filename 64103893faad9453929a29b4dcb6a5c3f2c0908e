@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "940429b1_63a235db",
+        "filename": "build/tasks/calyx_emu_imgs.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-03-28T21:06:18Z",
+      "side": 0,
+      "message": "https://cs.android.com/android/platform/superproject/+/master:build/make/core/distdir.mk;l\u003d27;drc\u003d93b9846426df20846945d47498d3391d12181487\n\nThis\u0027d make `m dist` not include the zip. Not too bad.\n\nIt could be under a different if perhaps - like check for sdk_phone",
+      "revId": "64103893faad9453929a29b4dcb6a5c3f2c0908e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
