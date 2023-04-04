@@ -57,6 +57,8 @@ elif [[ $DEVICE == FP4 ]]; then
 elif [[ $DEVICE == axolotl ]]; then
   AXOLOTL="true"
   FASTBOOT_PRODUCT="sdm845"
+elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
+  MOTO="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   : # Do nothing, for now.
 else
@@ -79,7 +81,8 @@ elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
+  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -110,7 +113,8 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
   $DEVICE == FP4 ||
-  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
+  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
+  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
