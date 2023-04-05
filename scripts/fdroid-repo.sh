@@ -4,13 +4,13 @@
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 DATE=$(date +%F)
 FDROIDREPOTMP=$(mktemp -d)
-JOBID=$(curl -sI https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/artifacts/main/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
+JOBID=$(curl -sI https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/artifacts/main/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
 ANDROID_MK=Android.mk
 FDROID_MK=fdroid-repo.mk
 
 pushd $SCRIPTPATH/../../../prebuilts/calyx/fdroid
 pushd $FDROIDREPOTMP
-curl -L https://gitlab.com/calyxos/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download -o artifacts.zip || exit 1
+curl -L https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download -o artifacts.zip || exit 1
 unzip artifacts.zip
 popd
 rm -rf repo
