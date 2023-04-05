@@ -34,6 +34,7 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e 'LOCAL_CERTIFICATE := PRESIGNED'
 	echo -e 'LOCAL_MODULE_CLASS := APPS'
 	echo -e "LOCAL_PRODUCT_MODULE := true"
+	echo -e "LOCAL_OPTIONAL_USES_LIBRARIES := androidx.window.extensions androidx.window.sidecar"
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
 	echo -e 'include $(CLEAR_VARS)'
