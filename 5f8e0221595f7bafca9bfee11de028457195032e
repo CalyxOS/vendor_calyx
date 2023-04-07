@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3badc833_7573f4f2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-04-07T23:14:56Z",
+      "side": 1,
+      "message": "P.S. I really didn\u0027t want a helper script, but there\u0027s just no way to do what we need in the Android Init Language otherwise, apart from just giving up to a worse user experience... unless there is some other way to get USB devices connected properly without consulting the type-C role and acting conditionally, but I\u0027m not aware of one.",
+      "revId": "5f8e0221595f7bafca9bfee11de028457195032e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
