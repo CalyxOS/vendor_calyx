@@ -132,3 +132,7 @@ PRODUCT_DEXPREOPT_SPEED_APPS += \
 
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
     dalvik.vm.systemuicompilerfilter=speed
+
+# Helper script for enabling USB data based on the current type-C role
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/vendor_bin/init.enable_usb_data.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.enable_usb_data.sh
