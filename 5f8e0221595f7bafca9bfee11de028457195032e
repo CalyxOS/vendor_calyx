@@ -33,6 +33,24 @@
       "message": "We need to make sure we do nothing here when there is no USB device plugged in. Otherwise, there are quirks... Reproducible on demand as follows:\n\n1. Connect a flash drive.\n2. Set Restrict USB to deny new devices.\n3. Disconnect the flash drive.\n4. Set Restrict USB to allow new devices.\n5. Plug in to a computer.\n6. The device is not detected.\n7. Unplug and plug in to a computer.\n8. The device is still not detected.\n\nOr, wherever it says flash drive and computer, reverse it. Same issue.",
       "revId": "5f8e0221595f7bafca9bfee11de028457195032e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9b04fbdb_032caaa9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-04-11T21:58:43Z",
+      "side": 1,
+      "message": "Should have said, do nothing with the modes when there is no USB device plugged in. Looks like that\u0027s what caused weirdness.",
+      "parentUuid": "3a52049b_34e12a2d",
+      "revId": "5f8e0221595f7bafca9bfee11de028457195032e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
