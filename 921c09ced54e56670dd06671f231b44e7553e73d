@@ -16,6 +16,24 @@
       "message": "Some custom settings do not appear. Migration required",
       "revId": "921c09ced54e56670dd06671f231b44e7553e73d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5e75c0f4_c8c42df8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-04-11T13:13:26Z",
+      "side": 1,
+      "message": "I think you resolved this?",
+      "parentUuid": "3d0c57f2_c91ca081",
+      "revId": "921c09ced54e56670dd06671f231b44e7553e73d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
