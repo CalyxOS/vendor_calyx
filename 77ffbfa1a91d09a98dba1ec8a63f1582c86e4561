@@ -16,6 +16,23 @@
       "message": "All of these things could be found in search before, but can\u0027t now:\n- Security section, Privacy section (combined section can\u0027t be found)\n- Screen lock\n- Fingerprint\n- Permission manager\n- Privacy Controls\n    - Microphone access\n    - Camera access\n    - Clipboard access\n\nRelatively minor, and I think it\u0027s probably an upstream issue technically. The \"More privacy settings\" and \"More security settings\" sections and their items *can* be found via search.",
       "revId": "77ffbfa1a91d09a98dba1ec8a63f1582c86e4561",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6c576c79_f065f5f1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-04-18T16:52:27Z",
+      "side": 1,
+      "message": "Let\u0027s wait till we have APEX updates. Stock has that, and it looks like that\u0027s needed to make things gel.",
+      "revId": "77ffbfa1a91d09a98dba1ec8a63f1582c86e4561",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
