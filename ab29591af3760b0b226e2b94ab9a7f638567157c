@@ -16,6 +16,24 @@
       "message": "Need to see what it does on update if you had bromite selected.\n\nMy guess (and hope) is that it just falls back to the default, which\u0027ll be great.\n\nShould\u0027ve done this a while ago but better late than never.",
       "revId": "ab29591af3760b0b226e2b94ab9a7f638567157c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aff36838_eade4073",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-04-29T00:23:43Z",
+      "side": 1,
+      "message": "It falls back, confirmed using `System WebView Shell`",
+      "parentUuid": "e4699aef_c592ca1d",
+      "revId": "ab29591af3760b0b226e2b94ab9a7f638567157c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
