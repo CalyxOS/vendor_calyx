@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "dbc352fa_1eef3aa6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-03T13:26:52Z",
+      "side": 1,
+      "message": "Would you mind \n\n1. Directly submitting to LineageOS, as that\u0027s where we get the list from - https://review.lineageos.org/q/sensitive_pn\n2. providing some more info on the source of all of these numbers.",
+      "revId": "162bd71e9c3058cf6555cde58a5759e3a6c66ea5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
