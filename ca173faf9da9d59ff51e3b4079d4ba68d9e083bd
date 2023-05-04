@@ -34,6 +34,24 @@
       "parentUuid": "5664ffd7_070e1d2c",
       "revId": "ca173faf9da9d59ff51e3b4079d4ba68d9e083bd",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6528bb38_2cd4db1a",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-04T23:08:07Z",
+      "side": 1,
+      "message": "Makes sense.\n\nFor cell and other radios, yeah, as long as we head an obvious way for users to turn it on.\n\nFor the SetupWizard, I meant something else - but I\u0027ll directly comment on the linked change.",
+      "parentUuid": "1fcdd80e_09f7e996",
+      "revId": "ca173faf9da9d59ff51e3b4079d4ba68d9e083bd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
