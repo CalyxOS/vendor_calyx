@@ -16,6 +16,24 @@
       "message": "Why?\n\nHow well does this work with the SetupWizard page?",
       "revId": "ca173faf9da9d59ff51e3b4079d4ba68d9e083bd",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1fcdd80e_09f7e996",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2023-05-04T20:19:18Z",
+      "side": 1,
+      "message": "Similar to bluetooth defaulting off. Limit signals coming out of the device on first boot I guess. Ideally the same could apply to cell and other radios?\n\nSetupWizard requires its own change since it enables it automatically programatically\nhttps://review.calyxos.org/c/CalyxOS/platform_packages_apps_SetupWizard/+/17084",
+      "parentUuid": "5664ffd7_070e1d2c",
+      "revId": "ca173faf9da9d59ff51e3b4079d4ba68d9e083bd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
