@@ -24,4 +24,7 @@
 
     <!-- Set the automatic brightness mode on by default -->
     <bool name="def_screen_brightness_automatic_mode">true</bool>
+
+    <!-- This is disabled by default, but turned on in SetupWizard -->
+    <bool name="assisted_gps_enabled">false</bool>
 </resources>
