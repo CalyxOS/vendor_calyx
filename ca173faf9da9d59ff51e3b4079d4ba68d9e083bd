@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5664ffd7_070e1d2c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-04T19:25:22Z",
+      "side": 1,
+      "message": "Why?\n\nHow well does this work with the SetupWizard page?",
+      "revId": "ca173faf9da9d59ff51e3b4079d4ba68d9e083bd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
