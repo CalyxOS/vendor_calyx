@@ -31,6 +31,13 @@ SOONG_CONFIG_calyxGlobalVars += \
     additional_gralloc_10_usage_bits \
     gralloc_handle_has_reserved_size \
     inline_kernel_building \
+    target_health_charging_control_charging_path \
+    target_health_charging_control_charging_enabled \
+    target_health_charging_control_charging_disabled \
+    target_health_charging_control_deadline_path \
+    target_health_charging_control_supports_bypass \
+    target_health_charging_control_supports_deadline \
+    target_health_charging_control_supports_toggle \
     target_init_vendor_lib \
     target_surfaceflinger_udfps_lib \
     target_trust_usb_control_path \
@@ -57,6 +64,11 @@ SOONG_CONFIG_calyxQcomVars_uses_pre_uplink_features_netmgrd := $(TARGET_USES_PRE
 # Set default values
 TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS ?= 0
 TARGET_GRALLOC_HANDLE_HAS_RESERVED_SIZE ?= false
+TARGET_HEALTH_CHARGING_CONTROL_CHARGING_ENABLED ?= 1
+TARGET_HEALTH_CHARGING_CONTROL_CHARGING_DISABLED ?= 0
+TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_BYPASS ?= true
+TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_DEADLINE ?= false
+TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE ?= true
 TARGET_INIT_VENDOR_LIB ?= vendor_init
 TARGET_SURFACEFLINGER_UDFPS_LIB ?= surfaceflinger_udfps_lib
 TARGET_TRUST_USB_CONTROL_PATH ?= /proc/sys/kernel/deny_new_usb
@@ -65,6 +77,13 @@ TARGET_TRUST_USB_CONTROL_DISABLE ?= 0
 
 # Soong value variables
 SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_path := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_PATH)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_enabled := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_ENABLED)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_disabled := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_DISABLED)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_deadline_path := $(TARGET_HEALTH_CHARGING_CONTROL_DEADLINE_PATH)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_supports_bypass := $(TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_BYPASS)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_supports_deadline := $(TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_DEADLINE)
+SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_supports_toggle := $(TARGET_HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE)
 SOONG_CONFIG_calyxGlobalVars_target_init_vendor_lib := $(TARGET_INIT_VENDOR_LIB)
 SOONG_CONFIG_calyxGlobalVars_target_surfaceflinger_udfps_lib := $(TARGET_SURFACEFLINGER_UDFPS_LIB)
 SOONG_CONFIG_calyxGlobalVars_target_trust_usb_control_path := $(TARGET_TRUST_USB_CONTROL_PATH)
