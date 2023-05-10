@@ -33,6 +33,24 @@
       "message": "I\u0027d like to leave in a stub for the first few builds with the new Updater just in case we have some issues.\n\nStub means we can push out old app temporarily through F-Droid repos if needed.",
       "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "257e73fc_705a6a6e",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-10T13:07:05Z",
+      "side": 1,
+      "message": "Actually we could just leave the app as-is.\n\nIt won\u0027t do anything unless there\u0027s a newer file on the server, which we simply won\u0027t put (SystemUpdater has a different metadata format).\n\nThen, if there\u0027s some SystemUpdater easier, we can easily put the metadata file for that. In fact, this would be a super easy way to get this shipping.",
+      "parentUuid": "4aabba54_b9262322",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
