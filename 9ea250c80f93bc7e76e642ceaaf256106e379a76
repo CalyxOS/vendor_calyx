@@ -16,6 +16,24 @@
       "message": "I\u0027ve seen this with Jelly, but has this been reported to be broken with other apps too?\n\nI guess it won\u0027t be too bad to default given most users would know to try and go back anyways.",
       "revId": "9ea250c80f93bc7e76e642ceaaf256106e379a76",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ae85a2e6_bbaa2b5b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-05-10T14:03:39Z",
+      "side": 1,
+      "message": "I\u0027ve seen it in a couple other apps, it was a while a go though so I don\u0027t remember them anymore.",
+      "parentUuid": "2795e735_0a526b4b",
+      "revId": "9ea250c80f93bc7e76e642ceaaf256106e379a76",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
