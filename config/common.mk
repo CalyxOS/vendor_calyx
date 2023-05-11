@@ -142,3 +142,47 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.init.trust_restrict_usb=0
 endif
+
+# Temporarily work around dexpreopting error with prebuilt APEX modules
+DISABLE_DEXPREOPT_CHECK := true
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
+    system/apex/com.android.adbd.apex \
+    system/apex/com.android.adservices.apex \
+    system/apex/com.android.art.apex \
+    system/apex/com.android.cellbroadcast.apex \
+    system/apex/com.android.conscrypt.apex \
+    system/apex/com.android.extservices.apex \
+    system/apex/com.android.ipsec.apex \
+    system/apex/com.android.media.swcodec.apex \
+    system/apex/com.android.media.apex \
+    system/apex/com.android.mediaprovider.apex \
+    system/apex/com.android.neuralnetworks.apex \
+    system/apex/com.android.permission.apex \
+    system/apex/com.android.resolv.apex \
+    system/apex/com.android.tethering.apex \
+    system/apex/com.android.uwb.apex \
+    system/apex/com.android.wifi.apex \
+
+PRODUCT_PACKAGES += \
+    com.android.adbd.prebuilt \
+    com.android.adservices.prebuilt \
+    com.android.appsearch.prebuilt \
+    com.android.art.prebuilt \
+    com.android.cellbroadcast.prebuilt \
+    com.android.conscrypt.prebuilt \
+    com.android.extservices.prebuilt \
+    com.android.ipsec.prebuilt \
+    com.android.media.swcodec.prebuilt \
+    com.android.media.prebuilt \
+    com.android.mediaprovider.prebuilt \
+    com.android.neuralnetworks.prebuilt \
+    com.android.os.statsd.prebuilt \
+    com.android.permission.prebuilt \
+    com.android.resolv.prebuilt \
+    com.android.scheduling.prebuilt \
+    com.android.sdkext.prebuilt \
+    com.android.tethering.prebuilt \
+    com.android.tzdata.prebuilt \
+    com.android.uwb.prebuilt \
+    com.android.wifi.prebuilt \
