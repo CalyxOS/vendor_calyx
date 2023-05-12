@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a72b3e2d_f77903e9",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-12T21:10:21Z",
+      "side": 1,
+      "message": "TODO double check",
+      "revId": "8ce7baf6f02e98d21426265f9fe7002f11c84df5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
