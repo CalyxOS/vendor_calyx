@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3c3cbf57_72aa7da1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-16T23:34:49Z",
+      "side": 1,
+      "message": "Tested upgrade on lynx, works fine.\n\nGoogle did it too, should be fine.",
+      "revId": "43ef8cfbdf1b8d8308df2f49696200de93da6cfd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
