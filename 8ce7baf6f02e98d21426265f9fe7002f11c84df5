@@ -16,6 +16,24 @@
       "message": "TODO double check",
       "revId": "8ce7baf6f02e98d21426265f9fe7002f11c84df5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6bcee1fa_251fe2b9",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-16T23:34:54Z",
+      "side": 1,
+      "message": "init_boot.img differs as expected, see 15627: release: cloudripper: Sign init_boot with our key | https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/15627",
+      "parentUuid": "a72b3e2d_f77903e9",
+      "revId": "8ce7baf6f02e98d21426265f9fe7002f11c84df5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
