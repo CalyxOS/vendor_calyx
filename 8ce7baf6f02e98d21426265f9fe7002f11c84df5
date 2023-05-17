@@ -34,6 +34,24 @@
       "parentUuid": "a72b3e2d_f77903e9",
       "revId": "8ce7baf6f02e98d21426265f9fe7002f11c84df5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "50e7ec6a_023a15a5",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-17T13:26:44Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6bcee1fa_251fe2b9",
+      "revId": "8ce7baf6f02e98d21426265f9fe7002f11c84df5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
