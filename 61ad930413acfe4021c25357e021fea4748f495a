@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "47bff772_17a0973b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-26T19:11:05Z",
+      "side": 1,
+      "message": "This is a bit harder than expected.",
+      "revId": "61ad930413acfe4021c25357e021fea4748f495a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a280a068_c548a96e",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-26T19:11:05Z",
+      "side": 1,
+      "message": "AGPS already depends on Location toggle in general in the first place - which means this is moot, as location is off by default.",
+      "revId": "61ad930413acfe4021c25357e021fea4748f495a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
