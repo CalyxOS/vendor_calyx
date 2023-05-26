@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f854787d_b2ec2759",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-26T19:02:11Z",
+      "side": 1,
+      "message": "Works on lynx",
+      "revId": "c5867affa49d15b108bca8ca8c587df9e92e5176",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
