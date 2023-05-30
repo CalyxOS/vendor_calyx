@@ -44,10 +44,6 @@
 
     <!-- Packages exempt from status bar location indicator. -->
     <string-array name="config_locationExtraPackageNames" translatable="false">
-        <!-- DejaVuLocationService -->
-        <item>org.fitchfamily.android.dejavu</item>
-        <!-- MozillaNlpBackend -->
-        <item>org.microg.nlp.backend.ichnaea</item>
         <!-- Bluetooth -->
         <item>com.android.bluetooth</item>
         <!-- Phone Services -->
