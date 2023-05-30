@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "03033f42_4560c745",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-30T22:56:09Z",
+      "side": 1,
+      "message": "Wait for F-Droid to build new version, us to include and test it.",
+      "revId": "0a5edd4478604f9d91338aeab5bd2585df7b29b3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
