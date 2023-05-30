@@ -86,10 +86,7 @@ $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
 PRODUCT_PACKAGES += \
     GmsCore \
     GsfProxy \
-    FakeStore \
-    DejaVuLocationService \
-    MozillaNlpBackend \
-    NominatimNlpBackend
+    FakeStore
 
 # Apps
 PRODUCT_PACKAGES += \
