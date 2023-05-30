@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7c493d19_efe24105",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-05-30T20:08:04Z",
+      "side": 1,
+      "message": "Verified against stock? `avbtool info_image`",
+      "revId": "63d154966fe0bf9adcb951076670d44767fea134",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
