@@ -16,6 +16,24 @@
       "message": "Verified against stock? `avbtool info_image`",
       "revId": "63d154966fe0bf9adcb951076670d44767fea134",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ba7e1cca_4b07d1dc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-06-02T08:17:23Z",
+      "side": 1,
+      "message": "Yes",
+      "parentUuid": "7c493d19_efe24105",
+      "revId": "63d154966fe0bf9adcb951076670d44767fea134",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
