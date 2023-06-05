@@ -16,6 +16,24 @@
       "message": "Maybe also drop arm targets?",
       "revId": "2d9ee1bace83bec5d4e1e950426b6095199dca7b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6a56772a_42abb9c3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-05T13:29:15Z",
+      "side": 1,
+      "message": "Done.",
+      "parentUuid": "54c59d47_405e401b",
+      "revId": "2d9ee1bace83bec5d4e1e950426b6095199dca7b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
