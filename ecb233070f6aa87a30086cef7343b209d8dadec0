@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "447dce30_57778047",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-05T19:24:51Z",
+      "side": 1,
+      "message": "```\n$ ./calyx/scripts/release/version.sh\n23410000\n```\n\nEnough to go upto 4.99.9 (or even 4.99.99 for that matter if need be)",
+      "revId": "ecb233070f6aa87a30086cef7343b209d8dadec0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
