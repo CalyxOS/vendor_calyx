@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5cf17dc5_79ae1d2f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2023-06-07T21:46:42Z",
+      "side": 1,
+      "message": "Better link https://httptoolkit.com/docs/guides/android/#adb-interception",
+      "revId": "cd5dd7f664f8408113cd3aa12793389c4461d87e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
