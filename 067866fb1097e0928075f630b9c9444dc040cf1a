@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "af6184ae_5bbe32c0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-06-07T21:37:50Z",
+      "side": 1,
+      "message": "WARNING: This is for TLS decryption using HTTP Toolkit, for testing, debugging, and reverse-engineering only. It compromises TLS security by design, and it should never be merged for production or for daily driver device use. (The CR-2 is there for a reason!)",
+      "revId": "067866fb1097e0928075f630b9c9444dc040cf1a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
