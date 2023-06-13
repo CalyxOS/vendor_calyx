@@ -102,6 +102,7 @@ PRODUCT_PACKAGES += \
     ExactCalculator \
     F-Droid \
     F-DroidPrivilegedExtension \
+    Panic \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
