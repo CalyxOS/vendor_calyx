@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "7c2e3069_12e3d1d6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-22T12:57:57Z",
+      "side": 1,
+      "message": "This is something I wanted to merge right away regardless of whether that is merged.",
+      "parentUuid": "ce176b25_bcfbbb6d",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9ba87c21_5ec8fc6f",
@@ -49,6 +67,24 @@
       "side": 1,
       "message": "This represents the value to write to `HEALTH_CHARGING_CONTROL_CHARGING_PATH` when charging should be enabled in `TOGGLE` mode, so this should stay as `1`.\n\nhardware/calyx/interfaces/health/aidl/default/ChargingControl.cpp:\n```\n#ifdef HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE\nstatic const std::vector\u003cChargingEnabledNode\u003e kChargingEnabledNodes \u003d {\n        {HEALTH_CHARGING_CONTROL_CHARGING_PATH, HEALTH_CHARGING_CONTROL_CHARGING_ENABLED,\n         HEALTH_CHARGING_CONTROL_CHARGING_DISABLED},   \n        {\"/sys/class/power_supply/battery/charging_enabled\", \"1\", \"0\"},\n        {\"/sys/class/power_supply/battery/input_suspend\", \"0\", \"1\"},\n        {\"/sys/class/qcom-battery/input_suspend\", \"0\", \"1\"},\n};\n```",
       "parentUuid": "9ba87c21_5ec8fc6f",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "41266e7f_ba40e4a8",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-22T12:57:57Z",
+      "side": 1,
+      "message": "Ah ok, so this is the value.",
+      "parentUuid": "92ae247c_6857e5c8",
       "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
