@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1574e80e_c991e581",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-06-22T13:14:06Z",
+      "side": 1,
+      "message": "This doesn\u0027t do anything if you are not building the HAL, it\u0027s useless",
+      "revId": "207b1288510b89b427e60fff69727b2a51c395d8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
