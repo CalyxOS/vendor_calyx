@@ -1,6 +1,23 @@
 {
   "comments": [
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ce176b25_bcfbbb6d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-06-22T12:42:23Z",
+      "side": 1,
+      "message": "The other changes should do what you want for devices that don\u0027t already have the support values specified in their own BoardConfig-calyx.mk.\n\nbonito, coral, crosshatch, gs101, gs201, redbull, sunfish all set DEADLINE true and TOGGLE false already.",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9ba87c21_5ec8fc6f",
@@ -14,6 +31,24 @@
       "writtenOn": "2023-06-22T09:40:45Z",
       "side": 1,
       "message": "Not sure if changing this to 0 is right.",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "92ae247c_6857e5c8",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-06-22T12:42:23Z",
+      "side": 1,
+      "message": "This represents the value to write to `HEALTH_CHARGING_CONTROL_CHARGING_PATH` when charging should be enabled in `TOGGLE` mode, so this should stay as `1`.\n\nhardware/calyx/interfaces/health/aidl/default/ChargingControl.cpp:\n```\n#ifdef HEALTH_CHARGING_CONTROL_SUPPORTS_TOGGLE\nstatic const std::vector\u003cChargingEnabledNode\u003e kChargingEnabledNodes \u003d {\n        {HEALTH_CHARGING_CONTROL_CHARGING_PATH, HEALTH_CHARGING_CONTROL_CHARGING_ENABLED,\n         HEALTH_CHARGING_CONTROL_CHARGING_DISABLED},   \n        {\"/sys/class/power_supply/battery/charging_enabled\", \"1\", \"0\"},\n        {\"/sys/class/power_supply/battery/input_suspend\", \"0\", \"1\"},\n        {\"/sys/class/qcom-battery/input_suspend\", \"0\", \"1\"},\n};\n```",
+      "parentUuid": "9ba87c21_5ec8fc6f",
       "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
