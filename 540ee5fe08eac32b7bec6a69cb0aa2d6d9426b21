@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9ba87c21_5ec8fc6f",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-22T09:40:45Z",
+      "side": 1,
+      "message": "Not sure if changing this to 0 is right.",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be4eec97_a2aa86e9",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-22T09:40:45Z",
+      "side": 1,
+      "message": "Hopefully it works fine / just doesn\u0027t do anything with all of these set to `false`.",
+      "revId": "540ee5fe08eac32b7bec6a69cb0aa2d6d9426b21",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
