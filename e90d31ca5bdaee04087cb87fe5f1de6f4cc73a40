@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "91b645bb_27003b7b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-23T13:16:40Z",
+      "side": 1,
+      "message": "359116: Aperture: Inherit aapt_version_code_defaults | https://review.lineageos.org/c/LineageOS/android_packages_apps_Aperture/+/359116 will get pulled in with merge.\n\nWe could use it for other apps too.",
+      "revId": "e90d31ca5bdaee04087cb87fe5f1de6f4cc73a40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c6c7cf2b_4960e0e9",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-23T13:16:40Z",
+      "side": 1,
+      "message": "We could change this to match calyx version, or I wonder if we can call version.sh",
+      "revId": "e90d31ca5bdaee04087cb87fe5f1de6f4cc73a40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
