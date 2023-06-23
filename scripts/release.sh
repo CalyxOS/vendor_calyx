@@ -46,6 +46,9 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
   RADIOSRC=radio-${DEVICE}-${RADIO,,}.img
+elif [[ $DEVICE == tangorpro ]]; then
+  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
 elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
@@ -90,7 +93,7 @@ elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx ]]; then
+elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx || $DEVICE == tangorpro ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
@@ -104,7 +107,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
   $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
-  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == FP4 ||
+  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == FP4 ||
   $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
