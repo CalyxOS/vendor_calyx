@@ -124,17 +124,9 @@ PRODUCT_PACKAGES += \
     lineage_charger_animation_vendor
 endif
 
-# Sensitive Phone Numbers list
-PRODUCT_PACKAGES += \
-    sensitive_pn.xml
-
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
-
-# One-handed mode
-PRODUCT_PRODUCT_PROPERTIES += \
-    ro.support_one_handed_mode=true
 
 # Calyx-specific broadcast actions whitelist
 PRODUCT_COPY_FILES += \
