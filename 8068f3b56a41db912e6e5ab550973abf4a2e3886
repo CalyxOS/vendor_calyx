@@ -22,6 +22,30 @@
       },
       "revId": "8068f3b56a41db912e6e5ab550973abf4a2e3886",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f34cbb0b_4b1bf4ae",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-26T17:12:10Z",
+      "side": 1,
+      "message": "Will do, but FWIW it got set to empty and thus the actual zip turned out fine.",
+      "parentUuid": "f70dba1f_9017f5bb",
+      "range": {
+        "startLine": 48,
+        "startChar": 0,
+        "endLine": 49,
+        "endChar": 41
+      },
+      "revId": "8068f3b56a41db912e6e5ab550973abf4a2e3886",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
