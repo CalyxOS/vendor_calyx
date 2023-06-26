@@ -52,7 +52,7 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e "LOCAL_MODULE_CLASS := ETC"
 	echo -e "LOCAL_MODULE_TAGS := optional"
 	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/com.aurora.store'
-	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
+	echo -e "LOCAL_MODULE_STEM := blacklist.xml"
 	echo -e "LOCAL_SRC_FILES := aurora-store-blacklist.xml"
 	echo -e "LOCAL_PRODUCT_MODULE := true"
 	echo -e 'include $(BUILD_PREBUILT)'
