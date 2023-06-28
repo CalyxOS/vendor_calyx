@@ -1,0 +1,18 @@
+prebuilt_etc {
+    name: "privapp_permissions_com.google.android.projection.gearhead",
+    product_specific: true,
+    sub_dir: "permissions",
+    src: "permissions_com.google.android.projection.gearhead.xml",
+    filename_from_src: true,
+}
+
+android_app_import {
+    name: "AndroidAutoStubPrebuilt",
+    apk: "AndroidAutoStubPrebuilt.apk",
+    presigned: true,
+    privileged: true,
+    product_specific: true,
+    required: [
+        "privapp_permissions_com.google.android.projection.gearhead"
+    ],
+}
