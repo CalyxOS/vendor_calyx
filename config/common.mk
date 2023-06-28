@@ -1,5 +1,10 @@
 include vendor/calyx/config/version.mk
 
+ifneq ($(OFFICIAL_BUILD),true)
+PRODUCT_PACKAGES += \
+    AndroidAutoStubPrebuilt
+endif
+
 # Overlays
 PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/calyx/overlay/no-rro
 PRODUCT_PACKAGE_OVERLAYS += \
