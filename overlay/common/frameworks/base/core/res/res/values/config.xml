@@ -24,6 +24,9 @@
      entries do not follow the convention, but all new entries should. -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The names of the packages that will hold the automotive projection role. -->
+    <string name="config_systemAutomotiveProjection" translatable="false">com.google.android.projection.gearhead</string>
+
     <!-- IP address of the dns server to use if nobody else suggests one -->
     <string name="config_default_dns_server" translatable="false">1.1.1.1</string>
 
