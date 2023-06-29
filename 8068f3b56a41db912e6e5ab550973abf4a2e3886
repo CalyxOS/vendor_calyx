@@ -46,6 +46,30 @@
       },
       "revId": "8068f3b56a41db912e6e5ab550973abf4a2e3886",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e6efa592_fe5ff4d8",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-06-29T18:21:34Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f34cbb0b_4b1bf4ae",
+      "range": {
+        "startLine": 48,
+        "startChar": 0,
+        "endLine": 49,
+        "endChar": 41
+      },
+      "revId": "8068f3b56a41db912e6e5ab550973abf4a2e3886",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
