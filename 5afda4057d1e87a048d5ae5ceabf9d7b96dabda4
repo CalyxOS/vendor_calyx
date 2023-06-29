@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "388d773b_ffe10056",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-29T16:07:03Z",
+      "side": 1,
+      "message": "`java.lang.SecurityException: Application must hold android.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION to associate with a device with android.app.role.SYSTEM_AUTOMOTIVE_PROJECTION profile.`",
+      "revId": "5afda4057d1e87a048d5ae5ceabf9d7b96dabda4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
