@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fe172cbd_de979ecc",
+        "filename": "prebuilt/aa/permissions_com.google.android.projection.gearhead.xml",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-06-29T20:36:41Z",
+      "side": 1,
+      "message": "s/\\t/    /\n\nThe disadvantage with this approach is that you have to grant every single permission here, as otherwise devices won\u0027t boot due to privileged permission enforcement.",
+      "revId": "d03db423c4d006303a42fe8596b526172a3d5a80",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
