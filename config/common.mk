@@ -95,6 +95,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     Aperture \
     AudioFX \
+    AuroraStorePrivilegedExtension \
     BatteryStatsViewer \
     Bellis \
     Etar \
