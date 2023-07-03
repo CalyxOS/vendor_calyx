@@ -16,6 +16,24 @@
       "message": "s/\\t/    /\n\nThe disadvantage with this approach is that you have to grant every single permission here, as otherwise devices won\u0027t boot due to privileged permission enforcement.",
       "revId": "d03db423c4d006303a42fe8596b526172a3d5a80",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "68232b5e_5db3e3fc",
+        "filename": "prebuilt/aa/permissions_com.google.android.projection.gearhead.xml",
+        "patchSetId": 3
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-03T20:24:34Z",
+      "side": 1,
+      "message": "Actually, `deny-permission` is a thing (Thanks Verizon!), and could work the same here.\n\nNeed to get Desktop Head Unit (DHU) working for easier testing, can just start with all denied, or rather look at the list in that frameworks patch.",
+      "parentUuid": "fe172cbd_de979ecc",
+      "revId": "d03db423c4d006303a42fe8596b526172a3d5a80",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
