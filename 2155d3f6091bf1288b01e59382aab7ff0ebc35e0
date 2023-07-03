@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "56997fec_87a2b6f1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-03T20:08:50Z",
+      "side": 1,
+      "message": "https://cs.android.com/search?q\u003dcom.android.telephony.apex",
+      "revId": "2155d3f6091bf1288b01e59382aab7ff0ebc35e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
