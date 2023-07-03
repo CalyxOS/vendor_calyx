@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a09a7c0c_5a37e7bf",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-03T20:53:40Z",
+      "side": 1,
+      "message": "Also need to figure out seamless updates due to the whole `installerPackageName` situation.",
+      "revId": "3db9658c542da8852fe6289a8dc8c12c10992acf",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
