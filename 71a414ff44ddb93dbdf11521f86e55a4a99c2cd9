@@ -16,6 +16,24 @@
       "message": "Not sure how we feel about the strings... e.g. \"Work Profile (1): Chromium\" is a lot longer than \"Work Chromium\".",
       "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "59584318_35e5e1c6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-05T18:35:57Z",
+      "side": 1,
+      "message": "Examples of what it looks like with other work profile providers:\nBellis:\n```Work Profile (1): Files```\n\nInsular (the Island app on the work side allows it to be renamed arbitrarily, too; there is always an extra space on the end of the name though):\n```Island  (2): Files```\n\nShelter:\n```Work profile (3): Files```",
+      "parentUuid": "47ac62b0_76043f94",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
