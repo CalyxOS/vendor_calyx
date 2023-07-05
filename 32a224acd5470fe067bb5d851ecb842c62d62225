@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "99c08822_5585ec5c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-05T15:12:59Z",
+      "side": 1,
+      "message": "Testing with packet capture.\n\nOn qcom devices like bramble, `time.google.com` is used in association with Location lookups when the A-GPS toggle is turned on (which, for us, also means that xtra-daemon is on). This change doesn\u0027t change that. With our A-GPS toggle turned off, it doesn\u0027t happen.\n\nOtherwise, `2.android.pool.ntp.org` is properly used.\n\nI have not tested Tensor yet.",
+      "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
