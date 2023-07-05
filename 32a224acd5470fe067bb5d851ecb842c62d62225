@@ -16,6 +16,41 @@
       "message": "Testing with packet capture.\n\nOn qcom devices like bramble, `time.google.com` is used in association with Location lookups when the A-GPS toggle is turned on (which, for us, also means that xtra-daemon is on). This change doesn\u0027t change that. With our A-GPS toggle turned off, it doesn\u0027t happen.\n\nOtherwise, `2.android.pool.ntp.org` is properly used.\n\nI have not tested Tensor yet.",
       "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "efb3eebf_3b0ad15d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-05T16:23:07Z",
+      "side": 1,
+      "message": "Marking unresolved until we have a change or issue or plan to point to, to handle this (or not handle it; it only seems to affect A-GPS enabled, so maybe it\u0027s not worth handling).",
+      "parentUuid": "99c08822_5585ec5c",
+      "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "777e4f7a_16f45207",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-05T16:23:07Z",
+      "side": 1,
+      "message": "Tensor (bluejay) appears to respect this change for NTP, with or without A-GPS.",
+      "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
