@@ -28,11 +28,10 @@ function _getoutdir
 if [[ -n $OFFICIAL_BUILD ]]; then
 export BUILD_NUMBER=$(cat $(_getoutdir)/build_number.txt 2>/dev/null || "${ANDROID_BUILD_TOP}/calyx/scripts/release/version.sh")
 echo "BUILD_NUMBER=$BUILD_NUMBER"
+export DISPLAY_BUILD_NUMBER=true
 else
-export BUILD_NUMBER=$("${ANDROID_BUILD_TOP}/calyx/scripts/release/version.sh")
 echo "NOT an official build"
 fi
-export DISPLAY_BUILD_NUMBER=true
 export CALYX_BUILD=true
 
 function breakfast()
