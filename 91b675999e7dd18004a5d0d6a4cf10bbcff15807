@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "12b769ad_89abda7a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-06T17:54:18Z",
+      "side": 1,
+      "message": "Issue properly fixed by 18247: fixup! Rename APKs to match gradle build output | https://review.calyxos.org/c/CalyxOS/platform_prebuilts_calyx_microg/+/18247",
+      "revId": "91b675999e7dd18004a5d0d6a4cf10bbcff15807",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
