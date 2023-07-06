@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "eb09f32e_e35ec787",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-06T22:32:04Z",
+      "side": 1,
+      "message": "Environment variable BUILD_NUMBER was modified (eng.23411000 \u003d\u003e ), regenerating... ",
+      "revId": "400c77fbb9a2a24bf7ed81687f0d1f8faae6d104",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
