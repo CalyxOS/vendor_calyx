@@ -133,6 +133,9 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resourc
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
+EXTRA_SIGNING_ARGS+=(-e GsfProxy.apk=$KEY_DIR/../common/microg)
+EXTRA_SIGNING_ARGS+=(-e FakeStore.apk=$KEY_DIR/../common/microg)
+EXTRA_SIGNING_ARGS+=(-e GmsCore.apk=$KEY_DIR/../common/microg)
 
 if [[ $DEVICE == raven || $DEVICE == cheetah ]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
