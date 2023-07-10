@@ -16,6 +16,24 @@
       "message": "This matches lineage telephony setup. Alternative: Move messaging from aosp_product.mk to telephony_product.mk, but we prefer not touching aosp makefiles.",
       "revId": "49f36b3c123bfc59bfbc990ee763cc970f42ef20",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f1908880_753d2756",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-10T19:54:19Z",
+      "side": 1,
+      "message": "This is fine.",
+      "parentUuid": "b1fbfdbf_94c645bd",
+      "revId": "49f36b3c123bfc59bfbc990ee763cc970f42ef20",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
