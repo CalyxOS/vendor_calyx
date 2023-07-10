@@ -52,6 +52,24 @@
       "parentUuid": "fa31f2c2_3089dd57",
       "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a57d4366_2b55c433",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-10T13:37:47Z",
+      "side": 1,
+      "message": "I don\u0027t have a tablet, remember? But ok, I\u0027ll revert.",
+      "parentUuid": "1d02504a_6e546b0b",
+      "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
