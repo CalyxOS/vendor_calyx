@@ -2,6 +2,11 @@
 PRODUCT_PACKAGES += \
     sensitive_pn.xml
 
+# Telephony packages
+PRODUCT_PACKAGES += \
+    messaging \
+    Stk
+
 # Default ringtone
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.config.ringtone=Umbriel.ogg
