@@ -16,6 +16,24 @@
       "message": "Looks ok for now, but we need a different default wallpaper in general that is more abstract, because of the shift caused after SUW and not being centered with all the different screen sizes.",
       "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fa31f2c2_3089dd57",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-10T13:24:51Z",
+      "side": 1,
+      "message": "I tried to center it. Looks like the size halved 😞",
+      "parentUuid": "f0887444_7ab7b91b",
+      "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
