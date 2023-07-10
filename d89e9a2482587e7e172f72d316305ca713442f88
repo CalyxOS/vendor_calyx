@@ -34,6 +34,24 @@
       "parentUuid": "f0887444_7ab7b91b",
       "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1d02504a_6e546b0b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-07-10T13:36:54Z",
+      "side": 1,
+      "message": "Centering won\u0027t work. Rotate your tablet to portrait and see what happens...",
+      "parentUuid": "fa31f2c2_3089dd57",
+      "revId": "d89e9a2482587e7e172f72d316305ca713442f88",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
