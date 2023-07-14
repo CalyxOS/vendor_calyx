@@ -33,6 +33,24 @@
       "message": "We could change this to match calyx version, or I wonder if we can call version.sh",
       "revId": "e90d31ca5bdaee04087cb87fe5f1de6f4cc73a40",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9337bed3_d543597e",
+        "filename": "config/BoardConfigSoong.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-14T21:22:23Z",
+      "side": 1,
+      "message": "Can do that in a followup if we want.",
+      "parentUuid": "c6c7cf2b_4960e0e9",
+      "revId": "e90d31ca5bdaee04087cb87fe5f1de6f4cc73a40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
