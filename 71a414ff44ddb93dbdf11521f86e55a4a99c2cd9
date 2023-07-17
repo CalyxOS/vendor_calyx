@@ -52,6 +52,24 @@
       "parentUuid": "59584318_35e5e1c6",
       "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b53e0133_c6e2dac3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-17T16:39:43Z",
+      "side": 1,
+      "message": "(\"Core\" is centered on the second line though.)",
+      "parentUuid": "6540f1ec_f6067566",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
