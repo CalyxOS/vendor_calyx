@@ -34,6 +34,24 @@
       "parentUuid": "47ac62b0_76043f94",
       "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6540f1ec_f6067566",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-17T16:38:04Z",
+      "side": 1,
+      "message": "On bramble, even microG Settings (`microG Services Core`) extends to two lines when tapping its icon in Overview. I don\u0027t necessarily care one way or another, just something to consider.\n\n```\nWork Profile (1): microG Services\nCore\n```",
+      "parentUuid": "59584318_35e5e1c6",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
