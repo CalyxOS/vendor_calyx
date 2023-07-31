@@ -51,6 +51,24 @@
       "parentUuid": "4aabba54_b9262322",
       "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "757f2f2c_543cab60",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-07-31T14:29:14Z",
+      "side": 1,
+      "message": "Bump, sounds like this comment thread has an easy resolution, but I\u0027m not sure I fully understand what to do, so can one of you (Chirayu, Aayush) go for the \"super easy way to get this shipping\"?",
+      "parentUuid": "257e73fc_705a6a6e",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
