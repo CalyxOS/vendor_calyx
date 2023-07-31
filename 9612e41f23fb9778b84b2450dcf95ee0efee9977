@@ -69,6 +69,24 @@
       "parentUuid": "257e73fc_705a6a6e",
       "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b1383b0b_27cad16b",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000065
+      },
+      "writtenOn": "2023-07-31T15:22:11Z",
+      "side": 1,
+      "message": "I think this is pending because we want to ship it in a separate update to ensure we don\u0027t break anything. I might be wrong though.",
+      "parentUuid": "757f2f2c_543cab60",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
