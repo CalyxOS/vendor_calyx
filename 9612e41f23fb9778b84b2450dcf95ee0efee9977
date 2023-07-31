@@ -87,6 +87,24 @@
       "parentUuid": "757f2f2c_543cab60",
       "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "19654596_6e08509f",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-07-31T17:31:09Z",
+      "side": 1,
+      "message": "It will be safe to leave it as \"Updater\" and just ship it for some builds. No Stubs.\n\nUpdater will check for $device-stable5 (and so on)\n\nCalyxSystemUpdater will check at a new location, so we\u0027ll just update files accordingly and that\u0027ll avoid a conflict and thus both can co-exist for a bit.\n\nThen, if we find a bug in CalyxSystemUpdater and it fails, we still have the Updater as a fallback for now.\n\nOnce we\u0027ve done a couple updates we can drop it, which would be in a separate commit later.",
+      "parentUuid": "b1383b0b_27cad16b",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
