@@ -56,6 +56,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "6e18ce76_d19c21c4",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-08-01T10:59:02Z",
+      "side": 1,
+      "message": "Ack, you are right, by now I totally forgot it has 2nd Work and 3rd Work already (even though I mention it in the commit message). So, yes, if you only have 3 profiles, there isn\u0027t strictly any accessibility issue solved by this, and 3 is the max we are considering allowing right now. Customizing the work profile name (which can easily be done with Shelter and/or Insular already) could make it easier to distinguish than remembering Work vs 2nd Work vs 3rd Work, but that\u0027s the only benefit.\n\nAre there some other issues you\u0027ve thought of re: distinguishing n work profile apps? Did you know that if you have 3 work profiles and an app only installed in the 3rd one, it will always show \"3rd Work [whatever]\" (even though it\u0027s the only one)?\n\n(Also note that I only list 3 strings here, but the system will just uses the 3rd string for anything higher-numbered, at least if that\u0027s all we give it.)",
+      "parentUuid": "66810fa2_5d5083e9",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "47ac62b0_76043f94",
         "filename": "/PATCHSET_LEVEL",
         "patchSetId": 3
