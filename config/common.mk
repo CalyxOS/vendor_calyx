@@ -100,7 +100,6 @@ PRODUCT_PACKAGES += \
     Bellis \
     Etar \
     ExactCalculator \
-    F-Droid \
     F-DroidPrivilegedExtension \
     Panic \
     TrichromeChrome \
