@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "379eb101_45e5c4ce",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-08-23T20:32:21Z",
+      "side": 0,
+      "message": "https://review.calyxos.org/c/CalyxOS/platform_prebuilts_calyx_fdroid/+/18816/1/fdroid-repo.mk",
+      "revId": "1e5694d24e0638170352baec7c4bdb28377998a0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "886f1353_1057dd1a",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-08-23T20:32:21Z",
+      "side": 0,
+      "message": "https://review.calyxos.org/c/CalyxOS/platform_prebuilts_calyx_fdroid/+/10858/11/Android.mk",
+      "revId": "1e5694d24e0638170352baec7c4bdb28377998a0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
