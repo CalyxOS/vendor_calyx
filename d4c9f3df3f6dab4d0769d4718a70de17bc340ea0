@@ -16,6 +16,24 @@
       "message": "Why?",
       "revId": "d4c9f3df3f6dab4d0769d4718a70de17bc340ea0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cc813350_b09ba110",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-08-25T12:09:55Z",
+      "side": 1,
+      "message": "Because of the commit right after, d\u0027oh.\n\n18833: kernel: Don\u0027t try to do math on empty kernel version | https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/18833",
+      "parentUuid": "eae40d34_55bb9314",
+      "revId": "d4c9f3df3f6dab4d0769d4718a70de17bc340ea0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
