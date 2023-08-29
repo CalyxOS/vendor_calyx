@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "828b197e_e0cb3162",
+        "filename": "config/common.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 147,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-08-29T19:09:11Z",
+      "side": 1,
+      "message": "The dexpreopt thing is not just an error, we actually want dexpreopting to prevent slow startup after fresh install or updates... so ultimately we don\u0027t want to disable the check, we want a real fix.\n\nBut I can\u0027t remember, is this *not* an issue for updates done by the regular updater, meaning that this would mostly impact fresh installs or people who sideloaded updates for some reason (not worried about that)?",
+      "revId": "eed61b5959ec2f1da046c64a2868db1347f57815",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
