@@ -16,6 +16,23 @@
       "message": "It is too bad that it is http-only but can\u0027t help that",
       "revId": "c7de0eee75271d5ad287e50d6cad3e93eee36153",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4f7b5344_4f027ebe",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2023-08-31T23:51:44Z",
+      "side": 1,
+      "message": "Consider sending upstream if not done already",
+      "revId": "c7de0eee75271d5ad287e50d6cad3e93eee36153",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
