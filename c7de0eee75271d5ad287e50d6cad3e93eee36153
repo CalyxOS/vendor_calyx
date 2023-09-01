@@ -33,6 +33,24 @@
       "message": "Consider sending upstream if not done already",
       "revId": "c7de0eee75271d5ad287e50d6cad3e93eee36153",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "48b65137_76e223a0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-01T16:53:05Z",
+      "side": 1,
+      "message": "Done already, 360495: sensitive_pn: Add website for AASRA, India | https://review.lineageos.org/c/LineageOS/android_vendor_lineage/+/360495\n\nYou can click the \"| Lineage | AOSP\" buttons in the Change-Id to quickly check, and then set hashtag \u0027send-upstream\u0027 if not sent.",
+      "parentUuid": "4f7b5344_4f027ebe",
+      "revId": "c7de0eee75271d5ad287e50d6cad3e93eee36153",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
