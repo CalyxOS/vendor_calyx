@@ -16,6 +16,24 @@
       "message": "The dexpreopt thing is not just an error, we actually want dexpreopting to prevent slow startup after fresh install or updates... so ultimately we don\u0027t want to disable the check, we want a real fix.\n\nBut I can\u0027t remember, is this *not* an issue for updates done by the regular updater, meaning that this would mostly impact fresh installs or people who sideloaded updates for some reason (not worried about that)?",
       "revId": "eed61b5959ec2f1da046c64a2868db1347f57815",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5fa1a3c3_944013e3",
+        "filename": "config/common.mk",
+        "patchSetId": 2
+      },
+      "lineNbr": 147,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-01T21:29:59Z",
+      "side": 1,
+      "message": "Dexpreopt would only affect first installs, yes.\n\nFor those, the files are stored in the \"system_other\" partition, which is read to make first boot not too slow.\n\nFor updates, installation does dexopting for all apps. Not sure if that\u0027d handle apex, though. However, dexopt during update install is what makes it take so long to install, and thus also scales with the number of apps installed.",
+      "parentUuid": "828b197e_e0cb3162",
+      "revId": "eed61b5959ec2f1da046c64a2868db1347f57815",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
