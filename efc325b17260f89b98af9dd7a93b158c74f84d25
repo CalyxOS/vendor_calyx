@@ -16,6 +16,41 @@
       "message": "Commit message needs some work...",
       "revId": "efc325b17260f89b98af9dd7a93b158c74f84d25",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "42816916_3dca8209",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-01T21:31:20Z",
+      "side": 1,
+      "message": "It was a quick PoC after a discussion, doesn\u0027t even work, going to need a lot more work to have something useful here.\n\nThis program wipes encryption keys, phone keeps working, until you reboot.",
+      "parentUuid": "ffba718e_d16f39b9",
+      "revId": "efc325b17260f89b98af9dd7a93b158c74f84d25",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ae772657_f3737675",
+        "filename": "test/wipe.cpp",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-01T21:31:20Z",
+      "side": 1,
+      "message": "This kept failing, likely because it was already open by some other program while booted into Android?\n\nCode copied from recovery.",
+      "revId": "efc325b17260f89b98af9dd7a93b158c74f84d25",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
