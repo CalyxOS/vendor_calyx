@@ -16,6 +16,23 @@
       "message": "Make sure this works with cleartext restriction",
       "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a29f2101_3bd25e51",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-06T17:11:35Z",
+      "side": 1,
+      "message": "Not a blocker: our own pool",
+      "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
