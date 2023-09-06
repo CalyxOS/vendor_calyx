@@ -1,0 +1,92 @@
+{
+  "comments": [],
+  "submitRequirementResults": [
+    {
+      "submitRequirement": {
+        "name": "Builds",
+        "description": {
+          "value": "Make sure it builds. A minimum vote is blocking."
+        },
+        "applicabilityExpression": {},
+        "submittabilityExpression": {
+          "expressionString": "label:Builds\u003dMAX AND -label:Builds\u003dMIN"
+        },
+        "overrideExpression": {
+          "value": {
+            "expressionString": "label:Builds\u003d0 AND (label:Works\u003dMAX OR label:Bypass-Verification\u003dMAX)"
+          }
+        },
+        "allowOverrideInChildProjects": true
+      },
+      "applicabilityExpressionResult": {},
+      "submittabilityExpressionResult": {
+        "value": {"expression":{"expressionString":"label:Builds=MAX AND -label:Builds=MIN"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":[],"failingAtoms":["label:Builds=MAX","label:Builds=MIN"]}
+      },
+      "overrideExpressionResult": {
+        "value": {"expression":{"expressionString":"label:Builds=0 AND (label:Works=MAX OR label:Bypass-Verification=MAX)"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Bypass-Verification=MAX","label:Builds=0"],"failingAtoms":["label:Works=MAX"]}
+      },
+      "patchSetCommitId": "72c4fa6306413548169b05e334849a2864acbd64",
+      "legacy": {
+        "value": false
+      },
+      "forced": {},
+      "hidden": {}
+    },
+    {
+      "submitRequirement": {
+        "name": "Code-Review",
+        "description": {
+          "value": "A maximum vote is required for the \u0027Code-Review\u0027 label. A minimum vote is blocking."
+        },
+        "applicabilityExpression": {},
+        "submittabilityExpression": {
+          "expressionString": "label:Code-Review\u003dMAX AND -label:Code-Review\u003dMIN"
+        },
+        "overrideExpression": {},
+        "allowOverrideInChildProjects": false
+      },
+      "applicabilityExpressionResult": {},
+      "submittabilityExpressionResult": {
+        "value": {"expression":{"expressionString":"label:Code-Review=MAX AND -label:Code-Review=MIN"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Code-Review=MAX"],"failingAtoms":["label:Code-Review=MIN"]}
+      },
+      "overrideExpressionResult": {},
+      "patchSetCommitId": "72c4fa6306413548169b05e334849a2864acbd64",
+      "legacy": {
+        "value": false
+      },
+      "forced": {},
+      "hidden": {}
+    },
+    {
+      "submitRequirement": {
+        "name": "Works",
+        "description": {
+          "value": "Make sure it works. A minimum vote is blocking."
+        },
+        "applicabilityExpression": {},
+        "submittabilityExpression": {
+          "expressionString": "label:Works\u003dMAX AND -label:Works\u003dMIN"
+        },
+        "overrideExpression": {
+          "value": {
+            "expressionString": "label:Works\u003d0 AND label:Bypass-Verification\u003dMAX"
+          }
+        },
+        "allowOverrideInChildProjects": true
+      },
+      "applicabilityExpressionResult": {},
+      "submittabilityExpressionResult": {
+        "value": {"expression":{"expressionString":"label:Works=MAX AND -label:Works=MIN"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":[],"failingAtoms":["label:Works=MAX","label:Works=MIN"]}
+      },
+      "overrideExpressionResult": {
+        "value": {"expression":{"expressionString":"label:Works=0 AND label:Bypass-Verification=MAX"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Bypass-Verification=MAX","label:Works=0"],"failingAtoms":[]}
+      },
+      "patchSetCommitId": "72c4fa6306413548169b05e334849a2864acbd64",
+      "legacy": {
+        "value": false
+      },
+      "forced": {},
+      "hidden": {}
+    }
+  ]
+}
