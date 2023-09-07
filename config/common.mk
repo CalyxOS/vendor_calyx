@@ -95,6 +95,7 @@ PRODUCT_PACKAGES += \
     AuroraStorePrivilegedExtension \
     BatteryStatsViewer \
     Bellis \
+    Datura \
     Etar \
     ExactCalculator \
     F-DroidPrivilegedExtension \
@@ -102,7 +103,6 @@ PRODUCT_PACKAGES += \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
-    Firewall \
     Recorder \
     Seedvault \
     Ripple
