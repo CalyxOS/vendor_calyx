@@ -176,6 +176,9 @@ sha256sum $DEVICE-factory-$BUILD.zip | awk '{printf $1}' > $DEVICE-factory-$BUIL
 
 popd
 
+echo "Removing intermediate file after factory image generation: $DEVICE-img-$BUILD.zip"
+rm $OUT/$DEVICE-img-$BUILD.zip
+
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
