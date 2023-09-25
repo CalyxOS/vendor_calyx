@@ -169,3 +169,6 @@ endif
 # Include AOSP initial package stopped states.
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
+
+# Use mainline module prebuilts
+$(call inherit-product-if-exists, prebuilts/calyx/aml/aml.mk)
