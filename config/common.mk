@@ -159,3 +159,6 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.init.trust_restrict_usb=0
 endif
+
+# Use mainline module prebuilts
+$(call inherit-product-if-exists, prebuilts/calyx/aml/aml.mk)
