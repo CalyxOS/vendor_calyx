@@ -121,6 +121,10 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks ${apex/.apex/.prebuilt.apex}=$KEY_DIR/${apex_container_key[$apex]})
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key ${apex/.apex/.prebuilt.apex}=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks ${apex/.apex/_compressed.apex}=$KEY_DIR/${apex_container_key[$apex]})
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key ${apex/.apex/_compressed.apex}=$KEY_DIR/${apex_payload_key[$apex]}.pem)
   done
 fi
 
@@ -128,6 +132,10 @@ if [[ $DEVICE == jasmine_sprout || $DEVICE == axolotl ]]; then
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks ${apex/.apex/.prebuilt.apex}=$KEY_DIR/${apex_container_key[$apex]})
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key ${apex/.apex/.prebuilt.apex}=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks ${apex/.apex/_compressed.apex}=$KEY_DIR/${apex_container_key[$apex]})
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key ${apex/.apex/_compressed.apex}=$KEY_DIR/${apex_payload_key[$apex]}.pem)
   done
 fi
 
