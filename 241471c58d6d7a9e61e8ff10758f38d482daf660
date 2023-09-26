@@ -121,6 +121,24 @@
       "parentUuid": "d27c0790_d8a85019",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6d45d732_8843f9a9",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-09-26T18:31:14Z",
+      "side": 1,
+      "message": "Missing lines from apexkeys.txt vs source-built:\n```\nname\u003d\"com.android.art.apex\" public_key\u003d\"art/build/apex/com.android.art.avbpubkey\" private_key\u003d\"art/build/apex/com.android.art.pem\" container_certificate\u003d\"art/build/apex/com.android.art.x509.pem\" container_private_key\u003d\"art/build/apex/com.android.art.pk8\" partition\u003d\"system_ext\"\n\nname\u003d\"com.android.art.debug.apex\" public_key\u003d\"art/build/apex/com.android.art.avbpubkey\" private_key\u003d\"art/build/apex/com.android.art.pem\" container_certificate\u003d\"art/build/apex/com.android.art.x509.pem\" container_private_key\u003d\"art/build/apex/com.android.art.pk8\" partition\u003d\"system_ext\"\n\nname\u003d\"com.android.art.host.apex\" public_key\u003d\"art/build/apex/com.android.art.avbpubkey\" private_key\u003d\"art/build/apex/com.android.art.pem\" container_certificate\u003d\"build/make/target/product/security/testkey.x509.pem\" container_private_key\u003d\"build/make/target/product/security/testkey.pk8\" partition\u003d\"system\"\n\nname\u003d\"com.android.art.testing.apex\" public_key\u003d\"art/build/apex/com.android.art.avbpubkey\" private_key\u003d\"art/build/apex/com.android.art.pem\" container_certificate\u003d\"art/build/apex/com.android.art.x509.pem\" container_private_key\u003d\"art/build/apex/com.android.art.pk8\" partition\u003d\"system_ext\"\n```\n\nEverything else is the additions of the entries for _compressed.apex and .prebuilt.apex, all of which are marked as PRESIGNED here.\n\n---\n\nMissing lines from apkcerts.txt vs source-built:\n```\nname\u003d\"odsign_e2e_test_app.apk\" certificate\u003d\"build/make/target/product/security/testkey.x509.pem\" private_key\u003d\"build/make/target/product/security/testkey.pk8\" partition\u003d\"data\"\n```\n\nThe others are NetworkStack.prebuilt and CaptivePortalLogin.prebuilt, which are not currently even included (turned off via flags), but show up here anyway.\n\nOn-device, this all appears to be working. I flashed a signed build and even upgraded from a non-prebuilts build and it worked. (Won\u0027t boot with NetworkStack included yet due to permissions, so it\u0027s not included right now, but should be an easy fix.)",
+      "parentUuid": "f76f6b4e_e5cbb1c4",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
