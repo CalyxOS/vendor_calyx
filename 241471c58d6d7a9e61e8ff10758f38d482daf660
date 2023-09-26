@@ -103,6 +103,24 @@
       "parentUuid": "e652f8fb_9236d5f0",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f76f6b4e_e5cbb1c4",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-09-26T18:10:59Z",
+      "side": 1,
+      "message": "apksigner has the same results for source-built and prebuilt apex target files, so I think at minimum the apex containers are being signed.\n\n(This creates a certs.txt with verbose output and cert info for every apex and then compares between target files, and comes up with an empty diff.)\n\n```\nsigndir\u003d\"$(pwd)\"\nunzip archive/release-bramble-23413040/bramble-target_files-23413040.zip META/\\* SYSTEM/apex/\\* -d source_signed\n\nunzip archive/release-bramble-23413040.03/bramble-target_files-23413040.03.zip META/\\* SYSTEM/apex/\\* -d prebuilts_signed\n\nfor d in source_signed prebuilts_signed; do\n  pushd \"$d\"\n  for a in SYSTEM/apex/*apex; do\n    name\u003d\"$(basename -s .apex \"${a/.capex/_compressed.apex}\")\"\n    name\u003d\"${name/.prebuilt/}\"\n    echo \"${name/_compressed/}\"\n    \"$signdir/bin/apksigner\" verify --print-certs --verbose \"$a\"\n  done | tee certs.txt\n  popd\ndone\n\necho Differences:\ndiff -Nau {source_signed,prebuilts_signed}/certs.txt\n```",
+      "parentUuid": "d27c0790_d8a85019",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
