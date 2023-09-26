@@ -175,6 +175,24 @@
       "parentUuid": "4822f82b_38898983",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a6131efe_26180066",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-09-26T20:53:53Z",
+      "side": 1,
+      "message": "\u003e As far as signing is concerned, that\u0027s irrelevant because in theory keys can be changed on upgrade.\n\nRight, and I confirmed that earlier by intentionally changing the keys in a new build, and there was no problem. Switching to common keys instead of device-specific ones will of course be useful when we get to the point of distributing prebuilt APEX outside of system updates.",
+      "parentUuid": "070e0b0f_f3a99870",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
