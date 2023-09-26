@@ -16,6 +16,57 @@
       "message": "Fairly sloppy proof-of-concept. Still verifying if it works.",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f72e56de_4237a73d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-26T07:55:11Z",
+      "side": 1,
+      "message": "Compare the two things noted below between \n1. prod builds, outdated AOSP apex built inline, i.e. 4.13.0\n2. your apex changes, updated apex prebuilts\n\nand it should likely be all we need to know about signing. hopefully.",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f85b80f7_f7cb2636",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-26T07:55:11Z",
+      "side": 1,
+      "message": "`EXTRA_RELEASETOOLS_ARGS\u003d\"-p $RELEASETOOLS_PATH -v\"` will help when debugging.",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e652f8fb_9236d5f0",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-26T07:55:11Z",
+      "side": 1,
+      "message": "Also, once this is done, look for `META/apexkeys.txt` and `META/apkkeys.txt` in the signed target-files zip.",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
