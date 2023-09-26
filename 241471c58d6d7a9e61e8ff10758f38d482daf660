@@ -157,6 +157,24 @@
       "parentUuid": "6d45d732_8843f9a9",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "070e0b0f_f3a99870",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-09-26T20:11:46Z",
+      "side": 1,
+      "message": "Ahh that\u0027s a perfect idea. And it worked fine, so the signing must be okay, I think.\n\nCaveats:\n* Connectivity didn\u0027t work, because my non-prebuilts build accidentally didn\u0027t have topic:mainline-connectivity, so that led to crashing at boot trying to call the missing setUidsAllowedTransports; this interestingly resolved itself after a reboot or two (rolled back on its own apparently, using APEX rollback I guess?).\n* `adb install` does not support compressed APEX files, showing `Error [-22] [apexd verification failed : Cannot verify ApexVerity of compressed APEX]`. The code itself confirms it\u0027s not a verification error, just an actual lack of support for compressed APEX. You need to unzip the compressed APEX, rename original_apex to original.apex, and then install that, which works fine.",
+      "parentUuid": "4822f82b_38898983",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
