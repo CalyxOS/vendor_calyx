@@ -139,6 +139,24 @@
       "parentUuid": "f76f6b4e_e5cbb1c4",
       "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4822f82b_38898983",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-26T19:17:50Z",
+      "side": 1,
+      "message": "\u003e I flashed a signed build and even upgraded from a non-prebuilts build and it worked.\n\nAs far as signing is concerned, that\u0027s irrelevant because in theory keys can be changed on upgrade.\n\nHowever,\n1. Install non-prebuilts build\n2. Sign a prebuilts build, but don\u0027t install it\n3. Extract prebuilts build, adb install each apex\n\nMight be another way to check.\n\nHowever, the rest of the checks look ok.",
+      "parentUuid": "6d45d732_8843f9a9",
+      "revId": "241471c58d6d7a9e61e8ff10758f38d482daf660",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
