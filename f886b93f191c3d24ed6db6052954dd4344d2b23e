@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "dd94e52a_66b0c5a3",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-09-28T09:38:03Z",
+      "side": 1,
+      "message": "This means we\u0027d need a prebuilts_calyx_aml repo, and then have it `gitignore` all the repos underneath.",
+      "revId": "f886b93f191c3d24ed6db6052954dd4344d2b23e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
