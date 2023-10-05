@@ -2,4 +2,4 @@
 host=review.calyxos.org
 port=29418
 project=CalyxOS/vendor_calyx
-defaultbranch=android13
+defaultbranch=android14
