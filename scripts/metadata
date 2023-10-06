@@ -96,8 +96,12 @@ apexes=(
 	com.android.btservices.apex
 	com.android.cellbroadcast.apex
 	com.android.compos.apex
+	com.android.configinfrastructure.apex
 	com.android.conscrypt.apex
+	com.android.devicelock.apex
 	com.android.extservices.apex
+	com.android.hardware.wifi.apex
+	com.android.healthfitness.apex
 	com.android.i18n.apex
 	com.android.ipsec.apex
 	com.android.media.apex
@@ -108,10 +112,12 @@ apexes=(
 	com.android.os.statsd.apex
 	com.android.permission.apex
 	com.android.resolv.apex
+	com.android.rkpd.apex
 	com.android.runtime.apex
 	com.android.scheduling.apex
 	com.android.sdkext.apex
 	com.android.support.apexer.apex
+	com.android.telephonymodules.apex
 	com.android.tethering.apex
 	com.android.tzdata.apex
 	com.android.uwb.apex
@@ -120,6 +126,7 @@ apexes=(
 	com.android.virt.apex
 	com.android.vndk.current.apex
 	com.android.wifi.apex
+	com.google.pixel.vibrator.hal
 )
 
 # Container: x509.pem & pk8
@@ -132,8 +139,12 @@ apex_container_key[com.android.bluetooth.apex]=com.android.btservices
 apex_container_key[com.android.btservices.apex]=com.android.btservices
 apex_container_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_container_key[com.android.compos.apex]=com.android.compos
+apex_container_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_container_key[com.android.devicelock.apex]=com.android.devicelock
 apex_container_key[com.android.extservices.apex]=com.android.extservices
+apex_container_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
+apex_container_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_container_key[com.android.i18n.apex]=com.android.i18n
 apex_container_key[com.android.ipsec.apex]=com.android.ipsec
 apex_container_key[com.android.media.apex]=com.android.media
@@ -144,10 +155,12 @@ apex_container_key[com.android.ondevicepersonalization.apex]=releasekey
 apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_container_key[com.android.permission.apex]=com.android.permission
 apex_container_key[com.android.resolv.apex]=testcert
+apex_container_key[com.android.rkpd.apex]=com.android.rkpd
 apex_container_key[com.android.runtime.apex]=com.android.runtime
 apex_container_key[com.android.scheduling.apex]=releasekey
 apex_container_key[com.android.sdkext.apex]=com.android.sdkext
 apex_container_key[com.android.support.apexer.apex]=releasekey
+apex_container_key[com.android.telephonymodules.apex]=com.android.telephonymodules
 apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
 apex_container_key[com.android.uwb.apex]=com.android.uwb
@@ -156,6 +169,7 @@ apex_container_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfi
 apex_container_key[com.android.virt.apex]=com.android.virt
 apex_container_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_container_key[com.android.wifi.apex]=com.android.wifi
+apex_container_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
 
 # Payload: avbpubkey & pem
 declare -A apex_payload_key
@@ -167,8 +181,12 @@ apex_payload_key[com.android.bluetooth.apex]=com.android.btservices
 apex_payload_key[com.android.btservices.apex]=com.android.btservices
 apex_payload_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_payload_key[com.android.compos.apex]=com.android.compos
+apex_payload_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_payload_key[com.android.devicelock.apex]=com.android.devicelock
 apex_payload_key[com.android.extservices.apex]=com.android.extservices
+apex_payload_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
+apex_payload_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_payload_key[com.android.i18n.apex]=com.android.i18n
 apex_payload_key[com.android.ipsec.apex]=com.android.ipsec
 apex_payload_key[com.android.media.apex]=com.android.media
@@ -179,10 +197,12 @@ apex_payload_key[com.android.ondevicepersonalization.apex]=com.android.ondevicep
 apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_payload_key[com.android.permission.apex]=com.android.permission
 apex_payload_key[com.android.resolv.apex]=com.android.resolv
+apex_payload_key[com.android.rkpd.apex]=com.android.rkpd
 apex_payload_key[com.android.runtime.apex]=com.android.runtime
 apex_payload_key[com.android.scheduling.apex]=com.android.scheduling
 apex_payload_key[com.android.sdkext.apex]=com.android.sdkext
 apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
+apex_payload_key[com.android.telephonymodules.apex]=com.android.telephonymodules
 apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
 apex_payload_key[com.android.uwb.apex]=com.android.uwb
@@ -191,3 +211,4 @@ apex_payload_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
 apex_payload_key[com.android.virt.apex]=com.android.virt
 apex_payload_key[com.android.vndk.current.apex]=com.android.vndk.current
 apex_payload_key[com.android.wifi.apex]=com.android.wifi
+apex_payload_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
