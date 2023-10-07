@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4ed82354_f242a771",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000054
+      },
+      "writtenOn": "2023-10-07T15:36:22Z",
+      "side": 1,
+      "message": "looks like \\\" instead of \\\\\" is the correct json syntax\nI just changed the subst to $$(subst \",\",$$($1)) - so actually nothing for testing and seems to work. soong.variables is correct json then\nI am no expert in make syntax so maybe you can figure out the better way :)",
+      "revId": "bff1db04524f02454dde6b4f1c20a6aeea02843b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
