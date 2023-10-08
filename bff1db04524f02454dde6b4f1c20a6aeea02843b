@@ -16,6 +16,24 @@
       "message": "looks like \\\" instead of \\\\\" is the correct json syntax\nI just changed the subst to $$(subst \",\",$$($1)) - so actually nothing for testing and seems to work. soong.variables is correct json then\nI am no expert in make syntax so maybe you can figure out the better way :)",
       "revId": "bff1db04524f02454dde6b4f1c20a6aeea02843b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d8211fad_35056cf5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-10-08T00:58:52Z",
+      "side": 1,
+      "message": "I just did a quick hack to get things going, given one of our launch devices rely on these makefiles.\n\nAnother patch I\u0027ve seen is https://katb.in/uculucunago",
+      "parentUuid": "4ed82354_f242a771",
+      "revId": "bff1db04524f02454dde6b4f1c20a6aeea02843b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
