@@ -16,6 +16,24 @@
       "message": "Actually, Android 13 had 600000, so this is even a bit higher to make it less likely that users run into this problem.",
       "revId": "090d608036fb45fff14a50935656e435a01faf63",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "992e657b_d0c11c4f",
+        "filename": "overlay/common/packages/apps/SimpleDeviceConfig/res/values/config.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 59,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-10-12T14:51:04Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "5e2a8e6f_dee764c9",
+      "revId": "090d608036fb45fff14a50935656e435a01faf63",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
