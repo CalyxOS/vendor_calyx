@@ -126,7 +126,7 @@ apexes=(
 	com.android.virt.apex
 	com.android.vndk.current.apex
 	com.android.wifi.apex
-	com.google.pixel.vibrator.hal
+	com.google.pixel.vibrator.hal.apex
 )
 
 # Container: x509.pem & pk8
