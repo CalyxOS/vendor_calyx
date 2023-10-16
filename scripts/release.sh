@@ -142,10 +142,9 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resourc
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
+# Only used by raven, cheetah, felix and tangorpro
+EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 
-if [[ $DEVICE == raven || $DEVICE == cheetah ]]; then
-  EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
-fi
 
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
