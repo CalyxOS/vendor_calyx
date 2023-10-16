@@ -143,7 +143,7 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
 
-if [[ $DEVICE == raven || $DEVICE == cheetah ]]; then
+if [[ $DEVICE == raven || $DEVICE == cheetah || $DEVICE == tangorpro || $DEVICE == felix ]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 fi
 
