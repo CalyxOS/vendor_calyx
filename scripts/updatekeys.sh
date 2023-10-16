@@ -37,7 +37,7 @@ for k in releasekey platform shared media networkstack sdk_sandbox \
 	fi
 done
 
-if [[ $KEY_DIR =~ raven || $KEY_DIR =~ cheetah ]]; then
+if [[ $KEY_DIR =~ raven || $KEY_DIR =~ cheetah || $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix ]]; then
 	if [[ ! -e com.qorvo.uwb.pk8 ]]; then
 		$SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
 	fi
