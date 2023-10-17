@@ -57,5 +57,8 @@
         <!-- For SeedVault Backup -->
         <item>backup_and_restore/backup_transport_future_timeout_millis=900000</item>
         <item>backup_and_restore/backup_transport_callback_timeout_millis=900000</item>
+
+        <!-- Disable uwb on first boot until the user explicitly toggles UWB on for the first time. -->
+        <item>uwb/uwb_disabled_until_first_toggle=true</item>
     </string-array>
 </resources>
