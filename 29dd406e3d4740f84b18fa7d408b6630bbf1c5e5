@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a3de9d49_d68d5746",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-10-18T23:32:30Z",
+      "side": 1,
+      "message": "signing: UwbVendorService.apk                                (keys/tangorpro/com.qorvo.uwb)",
+      "revId": "29dd406e3d4740f84b18fa7d408b6630bbf1c5e5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
