@@ -7,6 +7,3 @@ endef
 
 # Include board/platform macros
 include vendor/calyx/build/core/utils.mk
-
-# Include vendor platform definitions
-include vendor/calyx/build/core/vendor/*.mk
