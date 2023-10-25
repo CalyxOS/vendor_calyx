@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "75d8c14b_1cd818b1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-10-25T15:38:00Z",
+      "side": 1,
+      "message": "https://android.googlesource.com/platform/frameworks/base/+/5fbc899581c6b912fdd4288a8109a7f53fc3c3d7\n\nTest: atest KeyguardBottomAreaViewModelTest",
+      "revId": "a4081504bca25700b90c0d43dd60fb7c6a39fa5e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
