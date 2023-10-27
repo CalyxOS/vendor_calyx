@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c1980e71_428fcb67",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-10-27T02:39:16Z",
+      "side": 1,
+      "message": "Ahh we can just run this on stock. Might be easier than extracting all files.",
+      "revId": "0b6558ade1aca85de3fd129ee664ea50803ab2c1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
