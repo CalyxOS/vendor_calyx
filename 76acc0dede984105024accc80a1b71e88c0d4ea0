@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "28504492_1361f62b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2023-11-01T18:59:53Z",
+      "side": 1,
+      "message": "We still don\u0027t ship this charger on anything, but it works after manually enabling it. We can enable it on 14 for all devices now that it has percentage",
+      "revId": "76acc0dede984105024accc80a1b71e88c0d4ea0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
