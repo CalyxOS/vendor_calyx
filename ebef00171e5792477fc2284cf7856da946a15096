@@ -16,6 +16,24 @@
       "message": "Works on userdebug, not tested elsewhere (only -user builds actually check the signature).\n\nAnd not clear if we even want this.",
       "revId": "ebef00171e5792477fc2284cf7856da946a15096",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b336a48c_a63514a0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-06T18:58:57Z",
+      "side": 1,
+      "message": "It\u0027s fine, we do.",
+      "parentUuid": "3fdca05f_ea7a0d5b",
+      "revId": "ebef00171e5792477fc2284cf7856da946a15096",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
