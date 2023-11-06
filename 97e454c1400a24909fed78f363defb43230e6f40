@@ -16,6 +16,23 @@
       "message": "This should be fine.",
       "revId": "97e454c1400a24909fed78f363defb43230e6f40",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2b93029d_5f712f13",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-06T19:00:04Z",
+      "side": 1,
+      "message": "FTR, https://gitlab.com/CalyxOS/vendor_calyx/-/commit/3b31726f1d51667720bdea2fd3793811e434b845\n\nPredates gerrit, even 😊",
+      "revId": "97e454c1400a24909fed78f363defb43230e6f40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
