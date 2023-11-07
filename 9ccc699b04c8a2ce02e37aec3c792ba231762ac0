@@ -52,6 +52,24 @@
       "parentUuid": "c0120134_e8a9e405",
       "revId": "9ccc699b04c8a2ce02e37aec3c792ba231762ac0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "199dcc45_9b3e4db8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-07T17:59:48Z",
+      "side": 1,
+      "message": "Couldn\u0027t find an issue so I made one here: https://gitlab.com/CalyxOS/calyxos/-/issues/1943",
+      "parentUuid": "723b8056_bbbae143",
+      "revId": "9ccc699b04c8a2ce02e37aec3c792ba231762ac0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
