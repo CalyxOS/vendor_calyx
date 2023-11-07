@@ -16,6 +16,24 @@
       "message": "Is my reason for revert even accurate, are we ready?",
       "revId": "9ccc699b04c8a2ce02e37aec3c792ba231762ac0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c0120134_e8a9e405",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-07T17:43:45Z",
+      "side": 1,
+      "message": "It\u0027s a lie, we are not.\n\nThe issue is with installerPackageName, I think there was a gitlab ticket about it.\n\nWe need to deal with it for fdroid too.\n\nBasically, today if you have privext, that\u0027s what set as installerpackage name for your apps\n\nIf you upgrade and don\u0027t have it anymore, you\u0027ll have to manually confirm every single app update.",
+      "parentUuid": "d4067ed4_308d5515",
+      "revId": "9ccc699b04c8a2ce02e37aec3c792ba231762ac0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
