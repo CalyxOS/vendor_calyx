@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d4067ed4_308d5515",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-07T17:41:19Z",
+      "side": 1,
+      "message": "Is my reason for revert even accurate, are we ready?",
+      "revId": "9ccc699b04c8a2ce02e37aec3c792ba231762ac0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
