@@ -51,6 +51,24 @@
       "parentUuid": "2b93029d_5f712f13",
       "revId": "97e454c1400a24909fed78f363defb43230e6f40",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "57c9388d_8840eb35",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-08T16:23:14Z",
+      "side": 1,
+      "message": "This linked commit didn\u0027t have an `\u003d` at the end of the signature, for some reason.\n\nI know you marked this as working, so it\u0027s fine, but I noticed it and had to point it out.",
+      "parentUuid": "b36ac8b3_5c8815b3",
+      "revId": "97e454c1400a24909fed78f363defb43230e6f40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
