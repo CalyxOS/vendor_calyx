@@ -3,6 +3,23 @@
     {
       "unresolved": false,
       "key": {
+        "uuid": "8d2f61c2_c5b47549",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-08T19:11:46Z",
+      "side": 1,
+      "message": "\u003e Patch Set 1: Code-Review-2\n\u003e \n\u003e We should not be using the default pool though - waiting to get our own vendor pool.\n\u003e \n\u003e Also needs testing, and making sure this is being used / there\u0027s no other places which need changing.\n\nWe did hear back about this a bit, but I don\u0027t think we have a pool ready yet 😭",
+      "revId": "75022700d3fbd60dbf9ab5e6f8c8df0597be9a03",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
         "uuid": "e2e2853c_8d49a80a",
         "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
         "patchSetId": 7
