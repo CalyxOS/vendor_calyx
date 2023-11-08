@@ -69,6 +69,24 @@
       "parentUuid": "b36ac8b3_5c8815b3",
       "revId": "97e454c1400a24909fed78f363defb43230e6f40",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "16c85133_be504d64",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-08T17:42:07Z",
+      "side": 1,
+      "message": "Interesting, yeah for both in this chain I just used a command recommended here to get these: https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/aosp-system-integration.md#Configuring-the-Android-framework\n\n`build/android/apk_operations.py print-certs --full-cert --apk-path file.apk`\n\nwhere file.apk was the given WebView (Google\u0027s here).",
+      "parentUuid": "57c9388d_8840eb35",
+      "revId": "97e454c1400a24909fed78f363defb43230e6f40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
