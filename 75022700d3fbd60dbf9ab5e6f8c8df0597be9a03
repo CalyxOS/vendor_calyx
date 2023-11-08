@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e2e2853c_8d49a80a",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-08T19:09:51Z",
+      "side": 1,
+      "message": "(In case anyone was wondering, yes, \"ntp\" is the only supported protocol here right now. There\u0027s not some secure variant that can be used instead.)",
+      "revId": "75022700d3fbd60dbf9ab5e6f8c8df0597be9a03",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
