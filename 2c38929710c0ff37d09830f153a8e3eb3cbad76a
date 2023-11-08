@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "337ef07f_dc71bd8b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-08T16:25:27Z",
+      "side": 1,
+      "message": "https://github.com/Divested-Mobile/DivestOS-Build/commit/6e75c0dbd35e49318b747d5413f64eec9472ba82\n\nSignature in the commit matches",
+      "revId": "2c38929710c0ff37d09830f153a8e3eb3cbad76a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
