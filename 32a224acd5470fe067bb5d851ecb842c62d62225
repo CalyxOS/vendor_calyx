@@ -51,6 +51,24 @@
       "message": "Tensor (bluejay) appears to respect this change for NTP, with or without A-GPS.",
       "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "28ec2838_5459414b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-08T19:08:47Z",
+      "side": 1,
+      "message": "It\u0027s fine on Pixel 6a. This issue for qcom is tracked in calyxos#1951",
+      "parentUuid": "efb3eebf_3b0ad15d",
+      "revId": "32a224acd5470fe067bb5d851ecb842c62d62225",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
