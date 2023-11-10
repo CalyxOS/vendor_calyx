@@ -45,11 +45,12 @@ $SCRIPTPATH/mkkey.sh verity "$SUBJECT"
 $GENVERITYKEY -convert verity.x509.pem verity_key
 openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
 
-if [[ $KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ||
+if [[ $KEY_DIR =~ husky || $KEY_DIR =~ shiba ||
+	$KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ||
 	$KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven || $KEY_DIR =~ bluejay ||
 	$KEY_DIR =~ FP4 || $KEY_DIR =~ kebab || $KEY_DIR =~ lemonade || $KEY_DIR =~ lemonadep ||
 	$KEY_DIR =~ axolotl || $KEY_DIR =~ devon || $KEY_DIR =~ hawao || $KEY_DIR =~ rhode ]]; then
-# AVB 2.0 (Pixel Fold, Tablet, 7a, 7, 7 pro, 5a, 6, 6 pro, 6a, Fairphone 4, OnePlus 8T, 9, 9 Pro, SHIFT6mq, moto g32, g42, g52)
+# AVB 2.0 (Pixel 8, 8 Pro, Fold, Tablet, 7a, 7, 7 pro, 5a, 6, 6 pro, 6a, Fairphone 4, OnePlus 8T, 9, 9 Pro, SHIFT6mq, moto g32, g42, g52)
 openssl genrsa -out avb.pem 4096
 $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 else
@@ -58,8 +59,9 @@ openssl genrsa -out avb.pem 2048
 $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
 fi
 
-# Pixel Fold, Tablet, 7a, 7, 7 pro
-if [[ $KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ]]; then
+# Pixel 8, 8 Pro, Fold, Tablet, 7a, 7, 7 pro
+if [[ $KEY_DIR =~ husky || $KEY_DIR =~ shiba ||
+      $KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ]]; then
 	openssl genrsa -out avb_vbmeta_system.pem 4096
 fi
 
