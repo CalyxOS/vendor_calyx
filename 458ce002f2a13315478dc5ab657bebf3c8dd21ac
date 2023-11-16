@@ -34,6 +34,24 @@
       "parentUuid": "20a75ade_5f055d1c",
       "revId": "458ce002f2a13315478dc5ab657bebf3c8dd21ac",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "595ea24c_8998d89b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2023-11-16T19:51:59Z",
+      "side": 1,
+      "message": "Yes icon has to be fixed in calyx-fdroid-repo\n\nI can handle that once this topic is merged.",
+      "parentUuid": "629d13e1_18dc3371",
+      "revId": "458ce002f2a13315478dc5ab657bebf3c8dd21ac",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
