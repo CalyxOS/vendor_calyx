@@ -16,6 +16,24 @@
       "message": "Would be nice to fix the icon stuff, if it\u0027s not already fixed (need to check)",
       "revId": "458ce002f2a13315478dc5ab657bebf3c8dd21ac",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "629d13e1_18dc3371",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2023-11-16T16:24:53Z",
+      "side": 1,
+      "message": "Icon still an empty Android icon for F-Droid Basic, but it\u0027s very minor. It looks like this maybe needs to be addressed in calyx-fdroid-repo, but since I\u0027m not sure, I\u0027ll leave this unresolved here for now.",
+      "parentUuid": "20a75ade_5f055d1c",
+      "revId": "458ce002f2a13315478dc5ab657bebf3c8dd21ac",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
