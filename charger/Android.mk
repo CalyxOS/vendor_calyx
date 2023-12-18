@@ -16,7 +16,7 @@
 
 LOCAL_PATH := $(call my-dir)
 
-ifeq ($(WITH_LINEAGE_CHARGER),true)
+ifneq ($(WITH_LINEAGE_CHARGER),false)
 
 # Set lineage_charger_density to the density bucket of the device.
 lineage_charger_density := mdpi
