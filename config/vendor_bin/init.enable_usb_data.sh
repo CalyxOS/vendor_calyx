@@ -1,10 +1,11 @@
 #!/vendor/bin/sh
-# Helper script for enabling USB data based on the current type-C role
+# Helper script for enabling USB data based on the current type-C role,
+# or for enabling or disabling USB data unconditionally.
 
 set -euo pipefail
 
 syntax() {
-    echo "Syntax: $0 [usb-data-enabled-path] [value] [type-c-data-partner-path] [type-c-data-role-path] [find-for-host] ([other-path-to-change] [value-for-host-role] [value-for-other])..."
+    echo "Syntax: $0 <usb-data-enabled-path> <value> [type-c-data-partner-path] [type-c-data-role-path] [find-for-host] ([other-path-to-change] [value-for-host-role] [value-for-other])..."
     echo
     echo "For example: $0 usb_data_enabled 1 partner role [host] mode host peripheral"
     echo "This first writes the value '1' is to the file 'usb_data_enabled' regardless of the role or whether a device is connected."
@@ -24,11 +25,27 @@ main() {
         ;;
     esac
 
+    if [ $# -lt 2 ]; then
+        loge "Missing usb data enabled path and/or value."
+        return $err
+    fi
+
     local data_enabled_path="$1"
     local data_enabled_value="$2"
 
-    # Enable USB data.
+    # Enable or disable USB data.
     write "$data_enabled_path" "$data_enabled_value"
+    local err=$?
+
+    if [ $# -eq 2 ]; then
+        # We only needed to write a value; can exit now.
+        return $err
+    fi
+
+    if [ $# -lt 5 ]; then
+        loge "Missing arguments (got $#, expected 5+)"
+        return 1
+    fi
 
     # Stop if no device connected. Wait a bit to be sure. (Necessary in early boot...)
     local partner_path="$3"
