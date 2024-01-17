@@ -165,3 +165,8 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.init.trust_restrict_usb=0
 endif
+
+$(call inherit-product, packages/modules/Virtualization/apex/product_packages.mk)
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.boot.hypervisor.vm.supported=1 \
+    ro.boot.hypervisor.protected_vm.supported=1
