@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6bcc972_ebe1f15e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-01-22T20:23:04Z",
+      "side": 1,
+      "message": "Won\u0027t work across the board.\n\nWill need bootloader unlock and manual command to enable on Pixel 6.\n\nShould work on Pixel 7 and newer, unused by us at the moment however.",
+      "revId": "330aed709e4a447fe1b7574019f5648e97316418",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
