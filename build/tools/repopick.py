@@ -34,9 +34,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import cmp_to_key, partial
 from xml.etree import ElementTree
 
-# Default to CalyxOS Gerrit
-DEFAULT_GERRIT = "https://review.calyxos.org"
-
 
 # cmp() is not available in Python 3, define it manually
 # See https://docs.python.org/3.0/whatsnew/3.0.html#ordering-comparisons
@@ -187,6 +184,11 @@ def is_closed(status):
     return status not in ("OPEN", "NEW", "DRAFT")
 
 
+def is_calyx_gerrit(remote_url):
+    p = urllib.parse.urlparse(remote_url)
+    return p.hostname == "review.calyxos.org"
+
+
 def commit_exists(project_path, revision):
     return (
         subprocess.call(
@@ -285,7 +287,7 @@ def main():
     parser.add_argument(
         "-g",
         "--gerrit",
-        default=DEFAULT_GERRIT,
+        default="https://review.calyxos.org",
         metavar="",
         help="Gerrit Instance to use. Form proto://[user@]host[:port]",
     )
@@ -635,8 +637,8 @@ def do_git_fetch_pull(args, item):
         cmd.append("--quiet")
     cmd.extend(["", item["fetch"][method]["ref"]])
 
-    # Try fetching from GitLab first if using default gerrit
-    if args.gerrit == DEFAULT_GERRIT:
+    # Try fetching from GitLab first if using calyx gerrit
+    if is_calyx_gerrit(args.gerrit):
         if args.verbose:
             print("Trying to fetch the change from GitLab")
 
@@ -649,9 +651,9 @@ def do_git_fetch_pull(args, item):
             return
         print("ERROR: git command failed")
 
-    # If not using the default gerrit or gitlab failed, fetch from gerrit.
+    # If not using the calyx gerrit or gitlab failed, fetch from gerrit.
     if args.verbose:
-        if args.gerrit == DEFAULT_GERRIT:
+        if is_calyx_gerrit(args.gerrit):
             print(
                 "Fetching from GitLab didn't work, trying to fetch the change from Gerrit"
             )
