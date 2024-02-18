@@ -123,9 +123,6 @@
     <!--  Maximum number of supported users -->
     <integer name="config_multiuserMaximumUsers">16</integer>
 
-    <!-- Default component for QR code scanner -->
-    <string name="config_defaultQrCodeComponent" translatable="false">com.android.camera2/org.lineageos.aperture.QrScannerActivity</string>
-
     <!-- Name of the font family to use in the default lockscreen clock -->
     <string name="config_clockFontFamily" translatable="false" />
 
