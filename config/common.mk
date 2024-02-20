@@ -33,6 +33,10 @@ PRODUCT_PACKAGES += \
     CalyxSetupWizard \
     LupinInstaller
 
+PRODUCT_PRODUCT_PROPERTIES += \
+    setupwizard.theme=glif_v4 \
+    setupwizard.feature.day_night_mode_enabled=true
+
 # Customization
 PRODUCT_PACKAGES += \
     CalyxNavigationBarNoHint \
