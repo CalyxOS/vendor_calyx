@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "caced344_fff42fc3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-02-22T22:43:26Z",
+      "side": 1,
+      "message": "Can somebody else try? It could be something local, still weird that this breaks it.",
+      "revId": "07e55e8a3463dd17eb257765a5a0427d952e5beb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
