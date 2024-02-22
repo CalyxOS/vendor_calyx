@@ -16,6 +16,24 @@
       "message": "I still have +2 fyi",
       "revId": "5d6163f170eed52de5ea0d1ed27fabab4ceda922",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cb8f1cee_41bcfeba",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-02-22T16:04:50Z",
+      "side": 1,
+      "message": "\"Fixed\"",
+      "parentUuid": "352c01c5_8e7ec223",
+      "revId": "5d6163f170eed52de5ea0d1ed27fabab4ceda922",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
