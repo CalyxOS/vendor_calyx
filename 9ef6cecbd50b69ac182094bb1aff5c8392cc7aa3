@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e247ca7e_9f89506c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-02-23T01:51:46Z",
+      "side": 1,
+      "message": "This affects prebuilts/calyx/aml.mk, but I don\u0027t have a repo for it on Gerrit yet and want to track this somewhere useful (the APEX issue is too cluttered):\n\nI am seeing this issue when building for bramble. It wasn\u0027t happening with cheetah.\n```\nwarning: device/google/bramble/calyx_bramble.mk includes redundant artifact path requirement allowed list entries.\nOffending entries:\nsystem/framework/%.oat\n```",
+      "revId": "9ef6cecbd50b69ac182094bb1aff5c8392cc7aa3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
