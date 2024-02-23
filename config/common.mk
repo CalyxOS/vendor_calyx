@@ -114,6 +114,7 @@ PRODUCT_PACKAGES += \
     Etar \
     ExactCalculator \
     F-DroidPrivilegedExtension \
+    Gallery2Editor \
     Glimpse \
     Panic \
     TrichromeChrome \
