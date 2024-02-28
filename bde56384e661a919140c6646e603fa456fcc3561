@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "09e3f23d_7540dc8e",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-02-28T19:38:27Z",
+      "side": 1,
+      "message": "Does this match stock?\n\n`avbtool info_image --image all-images-one-by-one.img` is what I usually do to check, comparing output between a calyx signed build and stock. Only thing that should differ is the actual hashes.",
+      "revId": "bde56384e661a919140c6646e603fa456fcc3561",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
