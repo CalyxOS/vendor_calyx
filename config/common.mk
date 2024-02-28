@@ -165,3 +165,7 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.init.trust_restrict_usb=0
 endif
+
+# Include AOSP initial package stopped states.
+PRODUCT_PACKAGES += \
+    initial-package-stopped-states-aosp.xml
