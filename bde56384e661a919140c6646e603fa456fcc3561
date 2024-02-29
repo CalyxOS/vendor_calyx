@@ -16,6 +16,24 @@
       "message": "Does this match stock?\n\n`avbtool info_image --image all-images-one-by-one.img` is what I usually do to check, comparing output between a calyx signed build and stock. Only thing that should differ is the actual hashes.",
       "revId": "bde56384e661a919140c6646e603fa456fcc3561",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "627071c0_2a79e1cd",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-02-29T20:05:28Z",
+      "side": 1,
+      "message": "It matches stock",
+      "parentUuid": "09e3f23d_7540dc8e",
+      "revId": "bde56384e661a919140c6646e603fa456fcc3561",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
