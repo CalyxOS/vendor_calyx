@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6c3a9be9_ca2eb5bd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-02-29T14:15:30Z",
+      "side": 1,
+      "message": "This change appears to fix this issue which was resulting in repopick being broken for standard picks:\n```\n  File \"[...]/vendor/calyx/build/tools/repopick.py\", line 649, in apply_change\n    [\"git\", \"cherry-pick\", \"--ff\", item[\"revision\"]],\n                                   ~~~~^^^^^^^^^^^^\n```\n\nAfter applying this change, `repopick 24513` (the next one), and the following, applied fine without that error.\n\nI guess the main downside is that if there are errors picking changes, it\u0027s harder to see them and repopick still returns a 0 exit code. But it\u0027s nice and fast, and it\u0027s not broken.",
+      "revId": "83040fba3795780a8ea7bcb820269130e9077fef",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
