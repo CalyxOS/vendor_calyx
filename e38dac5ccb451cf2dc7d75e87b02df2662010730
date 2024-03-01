@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b570514a_327811eb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-01T10:29:58Z",
+      "side": 1,
+      "message": "Should be fine, but assuming it isn\u0027t until we verify signed locked builds on moto, FP4 and axolotl, just in case.",
+      "revId": "e38dac5ccb451cf2dc7d75e87b02df2662010730",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
