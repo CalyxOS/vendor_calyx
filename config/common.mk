@@ -30,7 +30,6 @@ endif
 
 # SetupWizard
 PRODUCT_PACKAGES += \
-    CalyxSetupWizard \
     LupinInstaller
 
 # Customization
@@ -105,12 +104,10 @@ PRODUCT_PACKAGES += \
     Etar \
     ExactCalculator \
     F-DroidPrivilegedExtension \
-    Panic \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
     Recorder \
-    Seedvault \
     Ripple
 
 # Config
