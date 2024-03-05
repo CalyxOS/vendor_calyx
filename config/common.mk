@@ -110,7 +110,6 @@ PRODUCT_PACKAGES += \
     TrichromeWebView \
     Eleven \
     Recorder \
-    Seedvault \
     Ripple
 
 # Config
