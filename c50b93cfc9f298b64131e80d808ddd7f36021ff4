@@ -16,6 +16,23 @@
       "message": "OK to use the same key for `com.android.vndk.current.apex` and `com.android.vndk.current.on_vendor.apex`? I\u0027m assuming they\u0027re the same thing?",
       "revId": "c50b93cfc9f298b64131e80d808ddd7f36021ff4",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "121e55f2_4fddc3cf",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-06T23:45:11Z",
+      "side": 1,
+      "message": "Working with bluejay (including with locked bootloader)",
+      "revId": "c50b93cfc9f298b64131e80d808ddd7f36021ff4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
