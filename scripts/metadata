@@ -42,6 +42,7 @@ keymap[com.android.safetycenter.resources]=com.android.safetycenter.resources
 keymap[com.android.wifi.dialog]=com.android.wifi.dialog
 keymap[com.android.uwb.resources]=com.android.uwb.resources
 keymap[com.android.nearby.halfsheet]=com.android.nearby.halfsheet
+keymap[com.android.graphics.pdf]=com.android.graphics.pdf
 # Common
 keymap[org.calyxos.fdroid]=org.calyxos.fdroid
 keymap[com.google.android.apps.photos]=com.google.android.apps.photos
@@ -100,6 +101,8 @@ apexes=(
 	com.android.conscrypt.apex
 	com.android.devicelock.apex
 	com.android.extservices.apex
+	com.android.hardware.biometrics.fingerprint.virtual.apex
+	com.android.hardware.cas.apex
 	com.android.hardware.wifi.apex
 	com.android.healthfitness.apex
 	com.android.i18n.apex
@@ -108,6 +111,7 @@ apexes=(
 	com.android.mediaprovider.apex
 	com.android.media.swcodec.apex
 	com.android.neuralnetworks.apex
+	com.android.nfcservices.apex
 	com.android.ondevicepersonalization.apex
 	com.android.os.statsd.apex
 	com.android.permission.apex
@@ -125,6 +129,7 @@ apexes=(
 	com.android.vibrator.sunfish.apex
 	com.android.virt.apex
 	com.android.vndk.current.apex
+	com.android.vndk.current.on_vendor.apex
 	com.android.wifi.apex
 	com.google.pixel.vibrator.hal.apex
 )
@@ -143,6 +148,8 @@ apex_container_key[com.android.configinfrastructure.apex]=com.android.configinfr
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_container_key[com.android.devicelock.apex]=com.android.devicelock
 apex_container_key[com.android.extservices.apex]=com.android.extservices
+apex_container_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
+apex_container_key[com.android.hardware.cas.apex]=com.android.hardware
 apex_container_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
 apex_container_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_container_key[com.android.i18n.apex]=com.android.i18n
@@ -151,6 +158,7 @@ apex_container_key[com.android.media.apex]=com.android.media
 apex_container_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_container_key[com.android.media.swcodec.apex]=com.android.media.swcodec
 apex_container_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_container_key[com.android.nfcservices.apex]=com.android.nfcservices
 apex_container_key[com.android.ondevicepersonalization.apex]=releasekey
 apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_container_key[com.android.permission.apex]=com.android.permission
@@ -168,6 +176,7 @@ apex_container_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv26
 apex_container_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
 apex_container_key[com.android.virt.apex]=com.android.virt
 apex_container_key[com.android.vndk.current.apex]=com.android.vndk.current
+apex_container_key[com.android.vndk.current.on_vendor.apex]=com.android.vndk.current
 apex_container_key[com.android.wifi.apex]=com.android.wifi
 apex_container_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
 
@@ -185,6 +194,8 @@ apex_payload_key[com.android.configinfrastructure.apex]=com.android.configinfras
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_payload_key[com.android.devicelock.apex]=com.android.devicelock
 apex_payload_key[com.android.extservices.apex]=com.android.extservices
+apex_payload_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
+apex_payload_key[com.android.hardware.cas.apex]=com.android.hardware
 apex_payload_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
 apex_payload_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_payload_key[com.android.i18n.apex]=com.android.i18n
@@ -193,6 +204,7 @@ apex_payload_key[com.android.media.apex]=com.android.media
 apex_payload_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_payload_key[com.android.media.swcodec.apex]=com.android.media.swcodec
 apex_payload_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_payload_key[com.android.nfcservices.apex]=com.android.nfcservices
 apex_payload_key[com.android.ondevicepersonalization.apex]=com.android.ondevicepersonalization
 apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_payload_key[com.android.permission.apex]=com.android.permission
@@ -210,5 +222,6 @@ apex_payload_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624
 apex_payload_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
 apex_payload_key[com.android.virt.apex]=com.android.virt
 apex_payload_key[com.android.vndk.current.apex]=com.android.vndk.current
+apex_payload_key[com.android.vndk.current.on_vendor.apex]=com.android.vndk.current
 apex_payload_key[com.android.wifi.apex]=com.android.wifi
 apex_payload_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
