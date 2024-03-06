@@ -16,6 +16,24 @@
       "message": "```\napex_utils.ApexSigningError: Failed to sign APEX payload /tmp/user/4004/apex-payload-w00po9u8/apex_payload.img with packages/modules/vndk/apex/com.android.vndk.pem:\nFailed to run command \u0027[\u0027avbtool\u0027, \u0027add_hashtree_footer\u0027, \u0027--do_not_generate_fec\u0027, \u0027--algorithm\u0027, \u0027SHA256_RSA4096\u0027, \u0027--key\u0027, \u0027packages/modules/vndk/apex/com.android.vndk.pem\u0027, \u0027--prop\u0027, \u0027apex.key:com.android.vndk\u0027, \u0027--image\u0027, \u0027/tmp/user/4004/apex-payload-w00po9u8/apex_payload.img\u0027, \u0027--salt\u0027, \u0027395bf23958f33facd6288e53eb45b1a5d969356e6572374df081485b22a9a644\u0027, \u0027--hash_algorithm\u0027, \u0027sha256\u0027]\u0027 (exit code 1):\n/ZFS/calyxos/twebb/android_old/calyxos/signing-FOR-TESTING-ONLY/bin/avbtool: Adding hashtree_footer failed: Error getting public key: b\u0027 public key from packages/modules/vndk/apex/com.android.vndk.pem\\n40372A613F7F0000:error:16000069:STORE routines:ossl_store_get0_loader_int:unregistered scheme:../crypto/store/store_register.c:237:scheme\u003dfile\\n40372A613F7F0000:error:80000002:system library:file_open:No such file or directory:../providers/implementations/storemgmt/file_store.c:267:calling stat(packages/modules/vndk/apex/com.android.vndk.pem)\\n\u0027.\n```",
       "revId": "959ee2dae64d4b7d5bcf1369ddedddb52d1fc62e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "dfb6e454_1d0aef7c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-06T23:23:33Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9e7cce28_18bb8574",
+      "revId": "959ee2dae64d4b7d5bcf1369ddedddb52d1fc62e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
