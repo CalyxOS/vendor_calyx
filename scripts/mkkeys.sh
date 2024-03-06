@@ -32,7 +32,7 @@ for k in releasekey platform shared media networkstack sdk_sandbox \
 		com.android.connectivity.resources \
 		com.android.hotspot2.osulogin com.android.wifi.resources com.android.adservices.api \
 		com.android.bluetooth com.android.safetycenter.resources com.android.wifi.dialog \
-		com.android.uwb.resources com.android.nearby.halfsheet; do
+		com.android.uwb.resources com.android.nearby.halfsheet com.android.graphics.pdf; do
 	$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
 done
 
