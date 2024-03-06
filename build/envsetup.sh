@@ -52,7 +52,7 @@ function breakfast()
                 variant="userdebug"
             fi
 
-            lunch calyx_$target-$variant
+            lunch calyx_$target-ap1a-$variant
         fi
     fi
     return $?
