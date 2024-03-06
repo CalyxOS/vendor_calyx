@@ -39,6 +39,8 @@ function breakfast()
     target=$1
     local variant=$2
 
+    source "${ANDROID_BUILD_TOP}/calyx/scripts/vars/common"
+
     if [ $# -eq 0 ]; then
         # No arguments, so let's have the full menu
         lunch
@@ -52,7 +54,7 @@ function breakfast()
                 variant="userdebug"
             fi
 
-            lunch calyx_$target-$variant
+            lunch calyx_$target-$aosp_target_release-$variant
         fi
     fi
     return $?
