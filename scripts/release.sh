@@ -144,6 +144,7 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/Permission/SafetyCenter/Resources/com.a
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog=$KEY_DIR/com.android.wifi.dialog)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
+EXTRA_SIGNING_ARGS+=(-k packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf=$KEY_DIR/com.android.graphics.pdf)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
 
