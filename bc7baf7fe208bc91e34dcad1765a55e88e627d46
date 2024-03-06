@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a4f9a09e_63b750f3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-06T13:28:45Z",
+      "side": 1,
+      "message": "Not the best solution but it works and will do for now.\n\nIdeally we try to pick the local commit / rev directly given that it exists",
+      "revId": "bc7baf7fe208bc91e34dcad1765a55e88e627d46",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
