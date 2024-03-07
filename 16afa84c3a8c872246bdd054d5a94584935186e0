@@ -16,6 +16,23 @@
       "message": "Looks ok at first glance but I\u0027m going to have another look in the morning",
       "revId": "16afa84c3a8c872246bdd054d5a94584935186e0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6157e7e8_a2feb696",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-07T15:43:58Z",
+      "side": 1,
+      "message": "Not working yet for actually-updated vendor on bluejay. Missing key for this step:\n\n```\n    signing: com.android.hardware.biometrics.fingerprint.virtual.apex             container (hardware/interfaces/apexkey/com.android.hardware)\n           : com.android.hardware.biometrics.fingerprint.virtual.apex             payload   (hardware/interfaces/apexkey/com.android.hardware.pem)\n```",
+      "revId": "16afa84c3a8c872246bdd054d5a94584935186e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
