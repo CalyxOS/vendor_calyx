@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "64b8b299_d38c1cb9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T00:03:21Z",
+      "side": 1,
+      "message": "Looks ok at first glance but I\u0027m going to have another look in the morning",
+      "revId": "16afa84c3a8c872246bdd054d5a94584935186e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
