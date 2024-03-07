@@ -33,6 +33,24 @@
       "message": "Working with bluejay (including with locked bootloader)",
       "revId": "c50b93cfc9f298b64131e80d808ddd7f36021ff4",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "289dde5a_82a18cfc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T16:37:37Z",
+      "side": 1,
+      "message": "Yes they use the same keys\n\n$OUT/obj/PACKAGING/target_files_intermediates/META/apexkeys.txt (also present in the target-files zip)\n\nFrom qpr2 build:\n`name\u003d\"com.android.vndk.current.on_vendor.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"vendor\"`\n\nFrom previous release:\n```\n$ grep vndk calyx_bluejay-target_files-24503000/META/apexkeys.txt\nname\u003d\"com.android.vndk.current.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\nname\u003d\"com.android.vndk.current.on_vendor.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"vendor\"\nname\u003d\"com.android.vndk.v29.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\nname\u003d\"com.android.vndk.v30.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\nname\u003d\"com.android.vndk.v31.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\nname\u003d\"com.android.vndk.v32.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\nname\u003d\"com.android.vndk.v33.apex\" public_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pubkey\" private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pem\" container_certificate\u003d\"packages/modules/vndk/apex/com.android.vndk.x509.pem\" container_private_key\u003d\"packages/modules/vndk/apex/com.android.vndk.pk8\" partition\u003d\"system_ext\"\n```",
+      "parentUuid": "7a0afa5c_b7ff4076",
+      "revId": "c50b93cfc9f298b64131e80d808ddd7f36021ff4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
