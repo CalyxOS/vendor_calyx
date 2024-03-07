@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "306f55ed_782e3fa6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 6
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T19:53:31Z",
+      "side": 1,
+      "message": "Thank you very much!",
+      "revId": "ea36018b33a1231b59a750eb71711bbd02055446",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b7a6bf65_a3dd42c6",
+        "filename": "scripts/metadata",
+        "patchSetId": 6
+      },
+      "lineNbr": 161,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T19:53:31Z",
+      "side": 1,
+      "message": "Dropped this because I don\u0027t find any mentions of it in any devices\u0027 apexkeys.txt to verify that the setup is right.",
+      "revId": "ea36018b33a1231b59a750eb71711bbd02055446",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1a23ad68_21e576e5",
+        "filename": "scripts/metadata",
+        "patchSetId": 6
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T19:53:31Z",
+      "side": 1,
+      "message": "This is fine.\n\nI named the key above it incorrectly initially, shouldn\u0027t have had a .current in it - but that\u0027s nbd, the main part is that this and the above are signed with the same key to have it match stock.",
+      "revId": "ea36018b33a1231b59a750eb71711bbd02055446",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}

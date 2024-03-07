@@ -33,6 +33,24 @@
       "message": "Not working yet for actually-updated vendor on bluejay. Missing key for this step:\n\n```\n    signing: com.android.hardware.biometrics.fingerprint.virtual.apex             container (hardware/interfaces/apexkey/com.android.hardware)\n           : com.android.hardware.biometrics.fingerprint.virtual.apex             payload   (hardware/interfaces/apexkey/com.android.hardware.pem)\n```",
       "revId": "16afa84c3a8c872246bdd054d5a94584935186e0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b72bf2ab_d7f36ad4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-07T19:53:31Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6157e7e8_a2feb696",
+      "revId": "16afa84c3a8c872246bdd054d5a94584935186e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
