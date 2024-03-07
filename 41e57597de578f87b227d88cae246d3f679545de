@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6ff6c368_68fc95ca",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-07T14:02:43Z",
+      "side": 1,
+      "message": "Without this, `repopick -g ssh://[...] -p` does not work, so private changes / repos cannot be pulled.\n\nWith it, it still tries to pull from \u0027gitlab\u0027 first, but then tries ssh and succeeds.",
+      "revId": "41e57597de578f87b227d88cae246d3f679545de",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
