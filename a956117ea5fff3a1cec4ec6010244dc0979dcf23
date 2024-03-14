@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "32e1703c_c1f38875",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-14T14:10:51Z",
+      "side": 1,
+      "message": "How I\u0027m using this:\n\n```\n# 1.\nmkdir -m0700 /dev/shm/calyx-testing\nsource $ANDROID_BUILD_TOP/calyx/scripts/vars/devices\n\n# 2.\n# Pick no changes or desired changes for device/common\n\n# 3.\ncd /dev/shm/calyx-testing\nfor device in \"${devices[@]}\"; do\n  $ANDROID_BUILD_TOP/vendor/calyx/scripts/test-generate-factory.sh \"$device\"\ndone\n# possibly fix PATH manually if find complains\nfind /dev/shm/calyx-testing -name \u0027*.zip\u0027 -execdir unzip \"{}\" \\;\nfind /dev/shm/calyx-testing -name \u0027*.zip\u0027 -delete\n\n# 4.\nmv out out-$y  # (e.g. -0, or -1, or -2)\n\n# 5.\n# Repeat 2-4 above with changes, but move out to a new dir.\n\n# 6.\ngit diff out-$x out-$y\n```",
+      "revId": "a956117ea5fff3a1cec4ec6010244dc0979dcf23",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
