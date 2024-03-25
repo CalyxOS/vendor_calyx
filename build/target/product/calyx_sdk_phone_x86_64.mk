@@ -1,4 +1,5 @@
 # Copyright (C) 2021 The Calyx Institute
+# Copyright (C) 2021-2024 The LineageOS Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,3 +26,7 @@ PRODUCT_MODEL := CalyxOS Android SDK built for x86_64
 
 PRODUCT_SDK_ADDON_NAME := calyx
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := $(LOCAL_PATH)/source.properties
+
+# Increase Partition size: 8G+8M
+BOARD_SUPER_PARTITION_SIZE ?= 8598323200
+BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE ?= 8589934592
