@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "37b50ecf_4e69a2e7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-25T20:01:11Z",
+      "side": 1,
+      "message": "Test. Goal is to make DeviceLock unusable. As a basic check, `pm list features` should no longer list `android.software.device_lock`.",
+      "revId": "9e9346da82a37be07fbdc5b82f4d174d786eb3e6",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
