@@ -5,7 +5,8 @@ PRODUCT_COPY_FILES += \
     vendor/calyx/config/permissions/org.lineageos.health.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.health.xml \
     vendor/calyx/config/permissions/org.lineageos.livedisplay.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.livedisplay.xml \
     vendor/calyx/config/permissions/org.lineageos.settings.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.settings.xml \
-    vendor/calyx/config/permissions/org.lineageos.trust.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.trust.xml
+    vendor/calyx/config/permissions/org.lineageos.trust.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.trust.xml \
+    vendor/calyx/config/permissions/unavailable_features.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/unavailable_features.xml \
 
 # Calyx Platform Library
 PRODUCT_PACKAGES += \
