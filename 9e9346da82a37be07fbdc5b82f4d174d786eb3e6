@@ -34,6 +34,24 @@
       "parentUuid": "37b50ecf_4e69a2e7",
       "revId": "9e9346da82a37be07fbdc5b82f4d174d786eb3e6",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "437b71e0_a96bc7fe",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-03-25T20:14:32Z",
+      "side": 1,
+      "message": "Maybe: `atest --no-metrics CtsDeviceLockTestCases`? I suppose in this case we wouldn\u0027t want it to succeed...?",
+      "parentUuid": "61dd7dfd_2e683d14",
+      "revId": "9e9346da82a37be07fbdc5b82f4d174d786eb3e6",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
