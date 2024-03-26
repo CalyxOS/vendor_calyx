@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "adee1fc6_1dda82a5",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-03-26T21:14:40Z",
+      "side": 1,
+      "message": "There\u0027s also\n\n`com.android.hardware.biometrics.face.virtual.apex`\n\nBut we don\u0027t have any users yet.",
+      "revId": "f8cded96161ca67a330306a579ebee44b6fb9ab5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
