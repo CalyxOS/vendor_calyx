@@ -33,6 +33,24 @@
       "message": "vendor/google/$DEVICE/android-info.txt",
       "revId": "a956117ea5fff3a1cec4ec6010244dc0979dcf23",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "605a307e_42010d4f",
+        "filename": "scripts/test-generate-factory.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-04T15:33:27Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "941a1a6d_ca3335c8",
+      "revId": "a956117ea5fff3a1cec4ec6010244dc0979dcf23",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
