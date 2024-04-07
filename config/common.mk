@@ -186,3 +186,8 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.debug.dalvik.vm.jdwp.enabled=1
 endif
+
+# Miracast
+PRODUCT_SYSTEM_PROPERTIES += \
+    persist.debug.wfd.enable=1 \
+    persist.debug.wfd.appmonitoring=1 \
