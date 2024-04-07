@@ -181,8 +181,16 @@ endif
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
 
+<<<<<<< PATCH SET (40d08c Add Miracast support)
+# Miracast
+PRODUCT_SYSTEM_PROPERTIES += \
+    persist.debug.wfd.enable=1 \
+    persist.debug.wfd.appmonitoring=1 \
+
+=======
 # Enable debugging for all processes on debuggable builds
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.debug.dalvik.vm.jdwp.enabled=1
 endif
+>>>>>>> BASE      (4dd030 CalyxOS 5.11.0)
