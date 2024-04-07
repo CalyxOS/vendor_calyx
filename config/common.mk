@@ -179,3 +179,9 @@ endif
 # Include AOSP initial package stopped states.
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
+
+# Miracast
+PRODUCT_SYSTEM_PROPERTIES += \
+    persist.debug.wfd.enable=1 \
+    persist.debug.wfd.appmonitoring=1 \
+
