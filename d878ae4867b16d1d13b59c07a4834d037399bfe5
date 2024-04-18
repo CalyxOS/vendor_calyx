@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ec64c24e_05f89a87",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-18T19:29:59Z",
+      "side": 1,
+      "message": "Looks like it\u0027ll apply to existing users too, per `system/extras/mtectrl/mtectrl.rc`\n\nWill wait on toggle too, so people can turn it off easily if needed.",
+      "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
