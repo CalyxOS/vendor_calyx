@@ -16,6 +16,23 @@
       "message": "Looks like it\u0027ll apply to existing users too, per `system/extras/mtectrl/mtectrl.rc`\n\nWill wait on toggle too, so people can turn it off easily if needed.",
       "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "53e7ddde_ab5f48ed",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-25T20:51:36Z",
+      "side": 1,
+      "message": "Still set to `[arm64.memtag.bootctl]: [none]` on upgrade.\n\nout/target/product/shiba/product/etc/build.prop\n37:arm64.memtag.bootctl\u003dmemtag\n\nIt\u0027s right in the output and on device at least.",
+      "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
