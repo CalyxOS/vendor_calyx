@@ -158,6 +158,24 @@
       "parentUuid": "01c0e1f4_2b3c2ab1",
       "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5a9143f3_98fe8aa1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-04-26T17:08:48Z",
+      "side": 1,
+      "message": "If the prop is set to memtag then can you check logs? It should show the init.rc file line being executed, it could be stuck on the other prop it waits on or could be failing to execute mtectrl which may be missing",
+      "parentUuid": "7af640a3_ace5dc99",
+      "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
