@@ -178,3 +178,7 @@ endif
 # Include AOSP initial package stopped states.
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
+
+# Memory tagging extension
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.arm64.memtag.bootctl_settings_toggle=true
