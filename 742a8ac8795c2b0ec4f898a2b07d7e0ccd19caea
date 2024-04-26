@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3828dc44_2a19dc73",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-04-26T15:26:46Z",
+      "side": 1,
+      "message": "We could use this instead of copying the developer option to other options",
+      "revId": "742a8ac8795c2b0ec4f898a2b07d7e0ccd19caea",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
