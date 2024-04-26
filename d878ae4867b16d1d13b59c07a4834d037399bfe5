@@ -86,6 +86,24 @@
       "message": "Does system/bin/mtectrl exist on supported devices? I see it is part of the base system (https://cs.android.com/android/platform/superproject/main/+/main:build/make/target/product/base_system.mk;l\u003d230?q\u003dmtectrl%20file:.mk\u0026sq\u003d) but I do not see it on-device (on unsupported device)",
       "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e53f1b68_d5f010f2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-04-26T04:48:46Z",
+      "side": 1,
+      "message": "`out/target/product/bluejay/system/bin/mtectrl` exists in build output interestingly",
+      "parentUuid": "d3048936_0719c486",
+      "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
