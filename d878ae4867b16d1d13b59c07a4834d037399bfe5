@@ -104,6 +104,24 @@
       "parentUuid": "d3048936_0719c486",
       "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c8c62903_5ac6211f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-04-26T04:55:57Z",
+      "side": 1,
+      "message": "Also, what does https://play.google.com/store/apps/details?id\u003dcom.sanitizers.app.production show when installed on devices that are supposed to support MTE?",
+      "parentUuid": "e53f1b68_d5f010f2",
+      "revId": "d878ae4867b16d1d13b59c07a4834d037399bfe5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
