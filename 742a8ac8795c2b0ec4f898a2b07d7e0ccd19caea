@@ -16,6 +16,24 @@
       "message": "We could use this instead of copying the developer option to other options",
       "revId": "742a8ac8795c2b0ec4f898a2b07d7e0ccd19caea",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4f9b6bc2_567f27cc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-26T17:16:16Z",
+      "side": 1,
+      "message": "How would this help? You\u0027d still need to go to developer options to control it.",
+      "parentUuid": "3828dc44_2a19dc73",
+      "revId": "742a8ac8795c2b0ec4f898a2b07d7e0ccd19caea",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
