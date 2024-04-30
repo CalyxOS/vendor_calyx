@@ -179,3 +179,9 @@ endif
 # Include AOSP initial package stopped states.
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
+
+# Enable debugging for all processes on debuggable builds
+ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
+PRODUCT_PRODUCT_PROPERTIES += \
+    persist.debug.dalvik.vm.jdwp.enabled=1
+endif
