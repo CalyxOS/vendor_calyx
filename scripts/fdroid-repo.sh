@@ -39,10 +39,30 @@ APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 	echo -e 'include $(BUILD_PREBUILT)'
 	echo
 	echo -e 'include $(CLEAR_VARS)'
+	echo -e "LOCAL_MODULE := fdroid-debug-repo"
+	echo -e "LOCAL_MODULE_CLASS := ETC"
+	echo -e "LOCAL_MODULE_TAGS := optional"
+	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.fdroid.debug'
+	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
+	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
+	echo -e "LOCAL_PRODUCT_MODULE := true"
+	echo -e 'include $(BUILD_PREBUILT)'
+	echo
+	echo -e 'include $(CLEAR_VARS)'
 	echo -e "LOCAL_MODULE := fdroid-basic-repo"
 	echo -e "LOCAL_MODULE_CLASS := ETC"
 	echo -e "LOCAL_MODULE_TAGS := optional"
 	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.basic'
+	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
+	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
+	echo -e "LOCAL_PRODUCT_MODULE := true"
+	echo -e 'include $(BUILD_PREBUILT)'
+	echo
+	echo -e 'include $(CLEAR_VARS)'
+	echo -e "LOCAL_MODULE := fdroid-basic-debug-repo"
+	echo -e "LOCAL_MODULE_CLASS := ETC"
+	echo -e "LOCAL_MODULE_TAGS := optional"
+	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.basic.debug'
 	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
 	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
 	echo -e "LOCAL_PRODUCT_MODULE := true"
@@ -94,7 +114,9 @@ done
 	echo
 	echo "PRODUCT_PACKAGES += \\"
 	echo "    fdroid-repo \\"
+	echo "    fdroid-debug-repo \\"
 	echo "    fdroid-basic-repo \\"
+	echo "    fdroid-basic-debug-repo \\"
 	echo "    aurora-store \\"
 } >> $FDROID_MK
 
