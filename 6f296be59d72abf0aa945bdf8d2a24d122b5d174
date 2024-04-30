@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8628d9a9_83fe0a27",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-30T16:59:14Z",
+      "side": 1,
+      "message": "Why? Th rationale behind any change should always be mentioned in the commit message.",
+      "revId": "6f296be59d72abf0aa945bdf8d2a24d122b5d174",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
