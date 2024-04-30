@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f0a325f0_e893ff03",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-04-30T18:05:00Z",
+      "side": 1,
+      "message": "This tells us what the change does, but doesn\u0027t tell us why this is needed.\n\nWhy does it have to be done here, by default?\n\nWill it have any other impacts?",
+      "revId": "655ea1364b20ad3a2889df89596b5bbbd9e20f0f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
