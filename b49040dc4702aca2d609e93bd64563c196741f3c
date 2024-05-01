@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "da5d4f37_156a7b6e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000065
+      },
+      "writtenOn": "2024-05-01T12:35:17Z",
+      "side": 1,
+      "message": "Not needed as Aurora Store was adapted a while back to load the list on debug and nightly as well by using the package name of the stable builds.\n\nhttps://gitlab.com/AuroraOSS/AuroraStore/-/commit/8374738e27d5806249035ca5d0044c6f24813d0d",
+      "revId": "b49040dc4702aca2d609e93bd64563c196741f3c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
