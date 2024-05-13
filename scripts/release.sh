@@ -191,7 +191,7 @@ rm $OUT/$DEVICE-img-$BUILD.zip
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest $OTATEST -o -d "$KEY_DIR" \
+$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest -o -d "$KEY_DIR" \
  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
 
