@@ -152,11 +152,24 @@ if [[ $DEVICE == raven || $DEVICE == cheetah || $DEVICE == tangorpro || $DEVICE 
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 fi
 
+if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+  if [[ $DEVICE == FP5 || $DEVICE == FP4 ||
+        $DEVICE == hawao || $DEVICE == rhode || $DEVICE == devon ]]; then
+    EXTRA_SIGNING_ARGS+=("--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE")
+  else
+    echo "Unsupported device for AVB Rollback Index override: $DEVICE"
+    exit 1
+  fi
+fi
+
 echo "Creating signed targetfiles zip"
 $RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
 
+if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+echo "Skipping OTA update zip for AVB Rollback Index override build"
+else
 echo "Create OTA update zip"
 $RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
   $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
@@ -166,6 +179,7 @@ sha256sum $OUT/$DEVICE-ota_update-$BUILD.zip | awk '{printf $1}' > $OUT/$DEVICE-
 if [ ! -z $OTA_ONLY ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
+fi
 fi
 
 echo "Creating factory images"
