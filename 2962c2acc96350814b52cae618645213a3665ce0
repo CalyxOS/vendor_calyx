@@ -56,6 +56,30 @@
       },
       "revId": "2962c2acc96350814b52cae618645213a3665ce0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b2a79ca3_fa0e605d",
+        "filename": "scripts/release.sh",
+        "patchSetId": 6
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-05-20T14:16:11Z",
+      "side": 1,
+      "message": "Yeah these will get rewritten entirely, and then everything will be consistent.",
+      "parentUuid": "1a6702ea_5e004fd8",
+      "range": {
+        "startLine": 158,
+        "startChar": 55,
+        "endLine": 158,
+        "endChar": 83
+      },
+      "revId": "2962c2acc96350814b52cae618645213a3665ce0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
