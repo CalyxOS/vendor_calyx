@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1c333a71_61d4d797",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-05-30T15:30:00Z",
+      "side": 1,
+      "message": "This is already set in `packages/apps/Glimpse/rro_overlays/GlimpseFrameworksBaseOverlay/res/values/config.xml`",
+      "revId": "23eb93ba95946f2f2f0d15b24ba5ea0615d13f48",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
