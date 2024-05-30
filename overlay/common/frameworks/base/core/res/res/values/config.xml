@@ -83,6 +83,9 @@
     <!-- Grant Launcher3 the wellbeing permission group -->
     <string name="config_defaultWellbeingPackage" translatable="false">com.android.launcher3</string>
 
+    <!-- The name of the package that will hold the system gallery role. -->
+    <string name="config_systemGallery" translatable="false">org.calyxos.glimpse</string>
+
     <!-- The name of the package that will hold the wellbeing role. -->
     <string name="config_systemWellbeing" translatable="false">com.android.launcher3</string>
 
