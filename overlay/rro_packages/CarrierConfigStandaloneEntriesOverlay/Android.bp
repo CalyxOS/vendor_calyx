@@ -1,0 +1,4 @@
+runtime_resource_overlay {
+    name: "CarrierConfigStandaloneEntriesOverlay",
+    product_specific: true,
+}
