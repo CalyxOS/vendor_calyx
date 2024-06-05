@@ -7,6 +7,7 @@ PRODUCT_PACKAGE_OVERLAYS += \
     vendor/calyx/overlay/no-rro
 
 PRODUCT_PACKAGES += \
+    CarrierConfigStandaloneEntriesOverlay \
     CellBroadcastReceiverOverlay \
     Launcher3Overlay
 
