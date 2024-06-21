@@ -16,6 +16,24 @@
       "message": "This tells us what the change does, but doesn\u0027t tell us why this is needed.\n\nWhy does it have to be done here, by default?\n\nWill it have any other impacts?",
       "revId": "655ea1364b20ad3a2889df89596b5bbbd9e20f0f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e3386bb2_039d64ea",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-06-21T15:08:56Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f0a325f0_e893ff03",
+      "revId": "655ea1364b20ad3a2889df89596b5bbbd9e20f0f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
