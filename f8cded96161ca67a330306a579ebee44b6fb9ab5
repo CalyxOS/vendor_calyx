@@ -16,6 +16,24 @@
       "message": "There\u0027s also\n\n`com.android.hardware.biometrics.face.virtual.apex`\n\nBut we don\u0027t have any users yet.",
       "revId": "f8cded96161ca67a330306a579ebee44b6fb9ab5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "bb67376d_40b00b0c",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-07-01T13:17:01Z",
+      "side": 1,
+      "message": "Going through emails and I have the notification for this comment starred. I think that was just to remind me to look at it.\n\nAnything we/I should do here?",
+      "parentUuid": "adee1fc6_1dda82a5",
+      "revId": "f8cded96161ca67a330306a579ebee44b6fb9ab5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ],
   "submitRequirementResults": [
