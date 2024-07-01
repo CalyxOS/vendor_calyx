@@ -34,6 +34,24 @@
       "parentUuid": "adee1fc6_1dda82a5",
       "revId": "f8cded96161ca67a330306a579ebee44b6fb9ab5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "43b206ec_172b26bc",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-07-01T18:15:38Z",
+      "side": 1,
+      "message": "Nothing to do yet, I noticed `biometrics.face`, remembered that I had seen `biometrics.fingerprint`, and thus left a comment here.",
+      "parentUuid": "bb67376d_40b00b0c",
+      "revId": "f8cded96161ca67a330306a579ebee44b6fb9ab5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ],
   "submitRequirementResults": [
