@@ -33,6 +33,24 @@
       "message": "Given these are existing resources this overlay should be fine.\n\nWe aren\u0027t adding any new resources here, just modifying an existing resource.",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "89efa866_1f1881ce",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-07-16T23:25:21Z",
+      "side": 1,
+      "message": "We also need to override all the translations, or any other language except the default English won\u0027t have the overlays applied.",
+      "parentUuid": "5634f4a5_83b0f6ca",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
