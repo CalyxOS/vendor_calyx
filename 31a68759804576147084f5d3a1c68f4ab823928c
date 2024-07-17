@@ -123,6 +123,24 @@
       "parentUuid": "d64391ac_1293bbca",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "023a36a2_146fd90e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-07-17T22:20:43Z",
+      "side": 1,
+      "message": "Also, this project is not on Weblate anyways, not that there\u0027s anything to translate here.\n\nFor AOSP strings, well, those aren\u0027t in Weblate either, just ours. \n\nSO it\u0027ll be good to go once the above copying is done.",
+      "parentUuid": "5f9ea147_378a6fc1",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
