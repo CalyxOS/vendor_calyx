@@ -105,6 +105,24 @@
       "parentUuid": "80985ce9_70a4c275",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5f9ea147_378a6fc1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-07-17T22:19:38Z",
+      "side": 1,
+      "message": "aka what needs to be done\n\n`for lang in $langugages; do mkdir values-${lang}; cp values/strings.xml values-${lang}/; done`\n\nOne-time",
+      "parentUuid": "d64391ac_1293bbca",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
