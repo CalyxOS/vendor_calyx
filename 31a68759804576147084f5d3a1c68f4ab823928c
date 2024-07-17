@@ -87,6 +87,24 @@
       "parentUuid": "bb444a85_f1fdf542",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d64391ac_1293bbca",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-07-17T16:51:48Z",
+      "side": 1,
+      "message": "The original strings come from AOSP so they also have all the translations in place, but since we want to override the original string we also have to override all the translations, it\u0027s not possible to work around that in some way.\n\nThe new string does not have anything that can be translated, so it wouldn\u0027t end up in weblate anyway, this would be a one-time change that duplicates the base file in all languages",
+      "parentUuid": "80985ce9_70a4c275",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
