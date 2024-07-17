@@ -51,6 +51,24 @@
       "parentUuid": "5634f4a5_83b0f6ca",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "bb444a85_f1fdf542",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-07-17T12:38:24Z",
+      "side": 1,
+      "message": "Yes, can confirm that these are not applied with e.g. Spanish.",
+      "parentUuid": "89efa866_1f1881ce",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
