@@ -86,6 +86,24 @@
       "message": "Not a blocker: our own pool",
       "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fb8a25fc_d441cf08",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-07-17T21:37:20Z",
+      "side": 1,
+      "message": "We now have calyx.pool.ntp.org",
+      "parentUuid": "a29f2101_3bd25e51",
+      "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
