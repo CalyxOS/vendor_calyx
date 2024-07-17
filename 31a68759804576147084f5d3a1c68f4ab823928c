@@ -69,6 +69,24 @@
       "parentUuid": "89efa866_1f1881ce",
       "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "80985ce9_70a4c275",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-07-17T16:43:48Z",
+      "side": 1,
+      "message": "Is there any way to do this without overriding it for every language? I would rather avoid that if possible since it seems messy.\n\nIf there isn\u0027t, or if that\u0027s not worth exploring, is there a way to indicate for Weblate purposes that the string isn\u0027t truly translated for those other languages?\n\nAlso, I want to point out again that the actual string used here is just a sample. It\u0027s what I\u0027m using on my daily driver, but I\u0027m not obsessed with it.",
+      "parentUuid": "bb444a85_f1fdf542",
+      "revId": "31a68759804576147084f5d3a1c68f4ab823928c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
