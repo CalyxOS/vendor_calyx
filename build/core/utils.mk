@@ -210,3 +210,12 @@ define add-radio-file-sha1-checked
     $(call add-radio-file,$(1)),
     $(error $(path) SHA1 mismatch ($(sha1) != $(2))))
 endef
+
+# $(call add-radio-file-sha1-board-info-checked,path,version-{bootloader,baseband},sha1)
+define add-radio-file-sha1-board-info-checked
+  $(eval path := $(LOCAL_PATH)/$(1))
+  $(eval sha1 := $(shell sha1sum "$(path)" | cut -d" " -f 1))
+  $(if $(filter $(sha1),$(3)),
+    $(call add-radio-file-checked,$(1),$(2)),
+    $(error $(path) SHA1 mismatch ($(sha1) != $(3))))
+endef
