@@ -177,6 +177,24 @@
       "parentUuid": "6540f1ec_f6067566",
       "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "88ca4108_5f0aa260",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-07-23T13:17:59Z",
+      "side": 1,
+      "message": "@chirayu@calyxinstitute.org Should we get a UX review on this? I\u0027ve been trying to say that this string has only been a placeholder / sample until the string is finalized. If we like the placeholder, that\u0027s fine, but it has some downsides (see above). I haven\u0027t gotten any opinions about it yet.",
+      "parentUuid": "b53e0133_c6e2dac3",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
