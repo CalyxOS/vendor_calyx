@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d79c63ea_d728fba2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-07-31T22:24:39Z",
+      "side": 1,
+      "message": "*** Error opening \"vendor/google/akita/factory/bootloader-akita-akita-14.5-11693900.img.sha1\"; can\u0027t verify version-bootloader\n*** Error opening \"vendor/google/akita/factory/radio-akita-g5300o-240308-240517-b-11857457.img.sha1\"; can\u0027t verify version-baseband",
+      "revId": "f7a72b43dfffeb1ee208278e6d8654e43bfdaf73",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
