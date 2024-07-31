@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "714eadf0_f76516f9",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-07-31T14:50:47Z",
+      "side": 1,
+      "message": "Stock was 2048. This should be fine.",
+      "revId": "7fd978ad896f2c3f6e8fb4496c995a68288b064f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
