@@ -65,6 +65,9 @@ elif [[ $DEVICE == otter ]]; then
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
   QCOM_FIRMWARE="true"
+elif [[ $DEVICE == bangkk || $DEVICE == fogos ]]; then
+  MOTO_BLAIR="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   : # Do nothing, for now.
 else
@@ -88,7 +91,8 @@ elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
 elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == FP5 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
-  $DEVICE == otter || $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
+  $DEVICE == otter || $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+  $DEVICE == bangkk || $DEVICE == fogos ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -124,7 +128,8 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ||
   $DEVICE == FP4 || $DEVICE == FP5 ||
   $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
-  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
+  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+  $DEVICE == bangkk || $DEVICE == fogos ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
@@ -165,7 +170,8 @@ fi
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
   if [[ $DEVICE == otter || $DEVICE == FP5 || $DEVICE == FP4 ||
-        $DEVICE == hawao || $DEVICE == rhode || $DEVICE == devon ]]; then
+        $DEVICE == hawao || $DEVICE == rhode || $DEVICE == devon ||
+        $DEVICE == bangkk || $DEVICE == fogos ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE)
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
