@@ -104,6 +104,24 @@
       "parentUuid": "a29f2101_3bd25e51",
       "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f124ae5c_5959d504",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-07-31T21:43:19Z",
+      "side": 1,
+      "message": "Are we ready for this? Do you want me to test it, or what\u0027s next?",
+      "parentUuid": "fb8a25fc_d441cf08",
+      "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
