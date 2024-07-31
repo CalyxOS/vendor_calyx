@@ -18,6 +18,23 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "7b6a110c_75e4233a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-07-31T23:14:10Z",
+      "side": 1,
+      "message": "We need to handle this in a different way since AOSP already supports checking against sha1 for factory images: https://android.googlesource.com/platform/build/+/9296f092771a0261404f51bcbc1b62ba20654947",
+      "revId": "f7a72b43dfffeb1ee208278e6d8654e43bfdaf73",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "4024017d_7ed132e4",
