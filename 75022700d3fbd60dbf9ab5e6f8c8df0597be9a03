@@ -53,6 +53,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": true,
+      "key": {
+        "uuid": "5c3e6319_0453c79b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-08-01T20:20:59Z",
+      "side": 1,
+      "message": "One solution for this is making this optional, having configuration for this.",
+      "parentUuid": "f4410a26_cefb3587",
+      "revId": "75022700d3fbd60dbf9ab5e6f8c8df0597be9a03",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": false,
       "key": {
         "uuid": "e2e2853c_8d49a80a",

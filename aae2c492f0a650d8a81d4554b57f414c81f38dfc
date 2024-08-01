@@ -122,6 +122,24 @@
       "parentUuid": "fb8a25fc_d441cf08",
       "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6b87d736_788ac222",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-08-01T20:20:59Z",
+      "side": 1,
+      "message": "We should at least test it, yes. I haven\u0027t had a chance to do so given the timing.\n\nThe other unresolved comment still stands though.",
+      "parentUuid": "f124ae5c_5959d504",
+      "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
