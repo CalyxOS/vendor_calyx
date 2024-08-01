@@ -105,6 +105,24 @@
       "parentUuid": "b1383b0b_27cad16b",
       "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cd2ac0f2_40d65bcf",
+        "filename": "config/common.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-08-01T20:23:15Z",
+      "side": 1,
+      "message": "The latest patch set should be good, shipping both Updaters.\n\nWe\u0027ll make some quick code/text changes to the Updater to avoid confusion, but that\u0027s separate, to be done when shipping.",
+      "parentUuid": "19654596_6e08509f",
+      "revId": "9612e41f23fb9778b84b2450dcf95ee0efee9977",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
