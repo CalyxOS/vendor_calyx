@@ -249,6 +249,24 @@
       "parentUuid": "1d348883_6d0c3bc3",
       "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a0db4d9b_4d14caf3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-08-01T21:31:18Z",
+      "side": 1,
+      "message": "Will continue UX discussion on GitLab / other channels.",
+      "parentUuid": "7a634835_2d3a4825",
+      "revId": "71a414ff44ddb93dbdf11521f86e55a4a99c2cd9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
