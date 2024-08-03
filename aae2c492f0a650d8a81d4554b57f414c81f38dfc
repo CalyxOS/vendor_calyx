@@ -140,6 +140,24 @@
       "parentUuid": "f124ae5c_5959d504",
       "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "56a120f6_cc5c4581",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 1000109
+      },
+      "writtenOn": "2024-08-03T20:10:12Z",
+      "side": 1,
+      "message": "calyx.pool.ntp.org doesn\u0027t seem to have any IPv6 addresses, so that\u0027s a regression.\nATM CalyxOS works on true IPv6-only networks (AFAIK)\n\n(sorry, i\u0027ll always complain about missing IPv6 in things)",
+      "parentUuid": "6b87d736_788ac222",
+      "revId": "aae2c492f0a650d8a81d4554b57f414c81f38dfc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
