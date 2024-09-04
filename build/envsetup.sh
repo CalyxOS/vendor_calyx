@@ -1,12 +1,3 @@
-function __print_calyx_functions_help() {
-cat <<EOF
-Additional CalyxOS functions:
-- aospremote:      Add git remote for matching AOSP repository.
-- calyxremote:     Add git remote for CalyxOS Gerrit Review.
-- repopick:        Utility to fetch changes from Gerrit.
-EOF
-}
-
 # Find the output directory
 # From build/soong/scripts/microfactory.bash
 function _getoutdir

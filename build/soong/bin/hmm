@@ -1,0 +1,10 @@
+function __print_calyx_functions_help() {
+cat <<EOF
+Additional CalyxOS functions:
+- breakfast:       Wrapper for "lunch".
+- aospremote:      Add git remote for matching AOSP repository.
+- calyxremote:     Add git remote for CalyxOS Gerrit Review.
+- lineageremote:   Add git remote for LineageOS Github.
+- repopick:        Utility to fetch changes from Gerrit.
+EOF
+}
