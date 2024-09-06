@@ -1,8 +1,8 @@
 # Build fingerprint
 ifneq ($(BUILD_FINGERPRINT),)
-ADDITIONAL_SYSTEM_PROPERTIES += \
-    ro.build.fingerprint=$(BUILD_FINGERPRINT)
+#ADDITIONAL_SYSTEM_PROPERTIES += \
+#    ro.build.fingerprint=$(BUILD_FINGERPRINT)
 endif
 
-ADDITIONAL_SYSTEM_PROPERTIES += \
-    ro.calyxos.version=$(CALYXOS_VERSION)
+#ADDITIONAL_SYSTEM_PROPERTIES += \
+#    ro.calyxos.version=$(CALYXOS_VERSION)
