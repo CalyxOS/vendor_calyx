@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2be37992_a67a9a26",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-09-09T15:47:53Z",
+      "side": 1,
+      "message": "`CALYXOS_VERSION\u003d5.11.14 -UNOFFICIAL`",
+      "revId": "7dcfa5e997670a77613fddeed914f63bb0388be5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
