@@ -138,7 +138,7 @@ function lineageremote()
             REMOTE=$(git config --get remote.gitlab-priv.projectname)
         fi
 
-        local PROJECT=$(echo $REMOTE | sed -e "s#CalyxOS/##g; s#platform_#android_#g; s#vendor_#android_vendor_#g;")
+        local PROJECT=$(echo $REMOTE | sed -e "s#CalyxOS/##g; s#platform_#android_#g; s#device_#android_device_#g; s#vendor_#android_vendor_#g;")
 
         git remote add lineage https://github.com/LineageOS/$PROJECT
     fi
