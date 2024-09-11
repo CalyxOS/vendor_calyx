@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e8088654_7e955942",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 0,
+      "message": "Stem didn\u0027t seem to work so maybe should rename at source or find alternative?",
+      "range": {
+        "startLine": 36,
+        "startChar": 10,
+        "endLine": 36,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "01e06fbd_d9a61e84",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 0,
+      "message": "Ditto",
+      "range": {
+        "startLine": 46,
+        "startChar": 10,
+        "endLine": 46,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "41934205_0d0f9f7c",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 0,
+      "message": "Ditto",
+      "range": {
+        "startLine": 56,
+        "startChar": 10,
+        "endLine": 56,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6355782a_a8f61bdf",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 0,
+      "message": "Ditto",
+      "range": {
+        "startLine": 66,
+        "startChar": 10,
+        "endLine": 66,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e2ea50b1_3e0701bf",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 0,
+      "message": "Ditto",
+      "range": {
+        "startLine": 76,
+        "startChar": 10,
+        "endLine": 76,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}

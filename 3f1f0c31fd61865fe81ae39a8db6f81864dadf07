@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e9a02edf_e720bd87",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-11T20:42:38Z",
+      "side": 1,
+      "message": "Might have to declare `product_specific: true,` for this relative path?",
+      "range": {
+        "startLine": 76,
+        "startChar": 14,
+        "endLine": 76,
+        "endChar": 35
+      },
+      "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
