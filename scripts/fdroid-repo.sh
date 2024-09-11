@@ -5,7 +5,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 DATE=$(date +%F)
 FDROIDREPOTMP=$(mktemp -d)
 JOBID=$(curl -sI https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/artifacts/main/download?job=fdroid-repo | grep -iw Location: | cut -d / -f 8)
-ANDROID_MK=Android.mk
+ANDROID_BP=Android.bp
 FDROID_MK=fdroid-repo.mk
 
 pushd $SCRIPTPATH/../../../prebuilts/calyx/fdroid
@@ -14,7 +14,7 @@ curl -L https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts
 unzip artifacts.zip
 popd
 rm -rf repo
-rm -rf $ANDROID_MK $FDROID_MK
+rm -rf $ANDROID_BP $FDROID_MK
 cp -a ${FDROIDREPOTMP}/public/fdroid/repo .
 chmod 755 repo
 # Temporary, due to copy-xml-file-checked TODO: Figure out a better solution, if possible
@@ -24,77 +24,74 @@ APKS=$(cd repo/ && find . -type f -name "*.apk" -printf "%P\n" | sort)
 APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
 
 {
-	echo "# Auto generated, do not edit."
+	echo '# Auto generated, do not edit.'
 	echo
-	echo -e 'LOCAL_PATH := $(call my-dir)'
+	echo -e 'prebuilt_etc_xml {'
+	echo -e '    name: "fdroid-repo",'
 	echo
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := fdroid-repo"
-	echo -e "LOCAL_MODULE_CLASS := ETC"
-	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.fdroid'
-	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
-	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
-	echo -e "LOCAL_PRODUCT_MODULE := true"
-	echo -e 'include $(BUILD_PREBUILT)'
+	echo -e '    product_specific: true,'
+	echo -e '    src: "additional_repos.xml",'
+	echo -e '    filename_from_src: true,'
+	echo -e '    sub_dir: "org.fdroid.fdroid",'
+	echo -e '}'
 	echo
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := fdroid-debug-repo"
-	echo -e "LOCAL_MODULE_CLASS := ETC"
-	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.fdroid.debug'
-	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
-	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
-	echo -e "LOCAL_PRODUCT_MODULE := true"
-	echo -e 'include $(BUILD_PREBUILT)'
+	echo -e 'prebuilt_etc_xml {'
+	echo -e '    name: "fdroid-debug-repo",'
 	echo
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := fdroid-basic-repo"
-	echo -e "LOCAL_MODULE_CLASS := ETC"
-	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.basic'
-	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
-	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
-	echo -e "LOCAL_PRODUCT_MODULE := true"
-	echo -e 'include $(BUILD_PREBUILT)'
+	echo -e '    product_specific: true,'
+	echo -e '    src: "additional_repos.xml",'
+  echo -e '    filename_from_src: true,'
+	echo -e '    sub_dir: "org.fdroid.fdroid.debug",'
+	echo -e '}'
 	echo
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := fdroid-basic-debug-repo"
-	echo -e "LOCAL_MODULE_CLASS := ETC"
-	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/org.fdroid.basic.debug'
-	echo -e "LOCAL_MODULE_STEM := additional_repos.xml"
-	echo -e "LOCAL_SRC_FILES := additional_repos.xml"
-	echo -e "LOCAL_PRODUCT_MODULE := true"
-	echo -e 'include $(BUILD_PREBUILT)'
+  echo -e 'prebuilt_etc_xml {'
+  echo -e '    name: "fdroid-basic-repo",'
+  echo
+  echo -e '    product_specific: true,'
+  echo -e '    src: "additional_repos.xml",'
+  echo -e '    filename_from_src: true,'
+  echo -e '    sub_dir: "org.fdroid.basic",'
+  echo -e '}'
+  echo
+  echo -e 'prebuilt_etc_xml {'
+  echo -e '    name: "fdroid-basic-debug-repo",'
+  echo
+  echo -e '    product_specific: true,'
+  echo -e '    src: "additional_repos.xml",'
+  echo -e '    filename_from_src: true,'
+  echo -e '    sub_dir: "org.fdroid.basic.debug",'
+  echo -e '}'
+  echo
+  echo -e 'prebuilt_etc_xml {'
+  echo -e '    name: "aurora-store",'
+  echo
+  echo -e '    product_specific: true,'
+  echo -e '    src: "aurora-store-blacklist.xml",'
+  echo -e '    filename_from_src: false,'
+  echo -e '    filename: "blacklist.xml'
+  echo -e '    sub_dir: "com.aurora.store",'
+  echo -e '}'
 	echo
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := aurora-store"
-	echo -e "LOCAL_MODULE_CLASS := ETC"
-	echo -e "LOCAL_MODULE_TAGS := optional"
-	echo -e 'LOCAL_MODULE_PATH := $(TARGET_OUT_PRODUCT_ETC)/com.aurora.store'
-	echo -e "LOCAL_MODULE_STEM := blacklist.xml"
-	echo -e "LOCAL_SRC_FILES := aurora-store-blacklist.xml"
-	echo -e "LOCAL_PRODUCT_MODULE := true"
-	echo -e 'include $(BUILD_PREBUILT)'
-	echo
-} > $ANDROID_MK
+} > $ANDROID_BP
 
 for app in $APPS; do
 	{
-	echo -e 'include $(CLEAR_VARS)'
-	echo -e "LOCAL_MODULE := $app"
-	echo -e 'LOCAL_SRC_FILES := repo/$(LOCAL_MODULE).apk'
-	echo -e 'LOCAL_MODULE_PATH := $(PRODUCT_OUT)/$(TARGET_COPY_OUT_PRODUCT)/fdroid/repo'
-	echo -e "LOCAL_CERTIFICATE := PRESIGNED"
-	echo -e "LOCAL_MODULE_CLASS := APPS"
-	echo -e "LOCAL_DEX_PREOPT := false"
-	echo -e "LOCAL_NO_STANDARD_LIBRARIES := true"
-	echo -e 'LOCAL_REPLACE_PREBUILT_APK_INSTALLED := $(LOCAL_PATH)/repo/$(LOCAL_MODULE).apk'
-	echo -e "LOCAL_ENFORCE_USES_LIBRARIES := false"
-	echo -e 'include $(BUILD_PREBUILT)'
+	echo -e 'android_app_import {'
+	echo -e '    name: "$app",'
 	echo
-	} >> $ANDROID_MK
+	echo -e '    relative_install_path: "fdroid/repo",'
+	echo
+	echo -e '    dex_preopt: {'
+	echo -e '        enabled: false,'
+	echo -e '    },'
+	echo
+	echo -e '    preprocessed: true,'
+	echo -e '    enforce_uses_libs: false,'
+	echo -e '    apk: "repo/$app.apk",'
+	echo -e '    presigned: true,'
+	echo -e '}'
+	echo
+	} >> $ANDROID_BP
 done
 
 {
@@ -124,7 +121,7 @@ for app in $APPS; do
 	echo "    $app \\" >> $FDROID_MK
 done
 
-git add repo $ANDROID_MK $FDROID_MK
+git add repo $ANDROID_BP $FDROID_MK
 git commit -m "Update fdroid repo to ${JOBID}"
 rm -rf ${FDROIDREPOTMP}
 
