@@ -16,6 +16,24 @@
       "message": "In some ways we just want to copy a file, if the build system will let us do that some other way.",
       "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a8da89a0_8df99388",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T18:37:15Z",
+      "side": 1,
+      "message": "`PRODUCT_COPY_FILES` exists in .mk. Could use it if this doesn\u0027t need to be Android.(bp|mk)",
+      "parentUuid": "a75f0398_0a5df2cb",
+      "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
