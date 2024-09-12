@@ -9,6 +9,9 @@ endif
 
 CALYXOS_VERSION := $(PRODUCT_VERSION_MAJOR).$(PRODUCT_VERSION_MINOR).$(PRODUCT_VERSION_PATCH)$(strip $(PRODUCT_VERSION_EXTRA))
 
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.calyxos.version=$(CALYXOS_VERSION)
+
 # BUILD_NUMBER
 # See $top/calyx/scripts/release/version.sh
 # last 2 of year,    yy * 1000000
