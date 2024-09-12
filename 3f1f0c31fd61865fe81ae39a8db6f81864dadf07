@@ -22,6 +22,30 @@
       },
       "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f5ca7a96_7221505b",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T17:08:33Z",
+      "side": 1,
+      "message": "Unfortunately that just makes it `/product/app/fdroid/repo/$app.apk`",
+      "parentUuid": "e9a02edf_e720bd87",
+      "range": {
+        "startLine": 76,
+        "startChar": 14,
+        "endLine": 76,
+        "endChar": 35
+      },
+      "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
