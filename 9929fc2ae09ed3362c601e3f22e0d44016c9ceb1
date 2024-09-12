@@ -34,6 +34,24 @@
       "parentUuid": "a75f0398_0a5df2cb",
       "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7d1d27c5_201bcabc",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-09-12T19:20:01Z",
+      "side": 1,
+      "message": "As far as I know you can\u0027t copy an apk, it needs to be packaged.",
+      "parentUuid": "a8da89a0_8df99388",
+      "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
