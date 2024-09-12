@@ -24,6 +24,30 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "244d3254_a3141602",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T14:23:03Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "e8088654_7e955942",
+      "range": {
+        "startLine": 36,
+        "startChar": 10,
+        "endLine": 36,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "01e06fbd_d9a61e84",
@@ -37,6 +61,30 @@
       "writtenOn": "2024-09-11T20:42:38Z",
       "side": 0,
       "message": "Ditto",
+      "range": {
+        "startLine": 46,
+        "startChar": 10,
+        "endLine": 46,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c0f5a3c1_7b7a32ce",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T14:23:03Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "01e06fbd_d9a61e84",
       "range": {
         "startLine": 46,
         "startChar": 10,
@@ -70,6 +118,30 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "6ad03f1c_473ae751",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T14:23:03Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "41934205_0d0f9f7c",
+      "range": {
+        "startLine": 56,
+        "startChar": 10,
+        "endLine": 56,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "6355782a_a8f61bdf",
@@ -93,6 +165,30 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "779cdeb9_c9913573",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T14:23:03Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "6355782a_a8f61bdf",
+      "range": {
+        "startLine": 66,
+        "startChar": 10,
+        "endLine": 66,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "e2ea50b1_3e0701bf",
@@ -106,6 +202,30 @@
       "writtenOn": "2024-09-11T20:42:38Z",
       "side": 0,
       "message": "Ditto",
+      "range": {
+        "startLine": 76,
+        "startChar": 10,
+        "endLine": 76,
+        "endChar": 28
+      },
+      "revId": "9ce026f9827ddc3fcb4ee78ec6886ad582bfd83d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8c021b2d_26bbbfc8",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-09-12T14:23:03Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "e2ea50b1_3e0701bf",
       "range": {
         "startLine": 76,
         "startChar": 10,
