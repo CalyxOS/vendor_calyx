@@ -1,0 +1,6 @@
+flag_value {
+  package: "android.app.admin.flags"
+  name: "cross_user_suspension_enabled_ro"
+  state: ENABLED
+  permission: READ_ONLY
+}
