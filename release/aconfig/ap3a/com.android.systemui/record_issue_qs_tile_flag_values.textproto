@@ -1,0 +1,6 @@
+flag_value {
+  package: "com.android.systemui"
+  name: "record_issue_qs_tile"
+  state: ENABLED
+  permission: READ_WRITE
+}
