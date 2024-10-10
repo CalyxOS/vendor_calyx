@@ -16,6 +16,24 @@
       "message": "missing .apex on this and a few below",
       "revId": "9fb41305d4c785d4340a976660b62fcb0c9250ac",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a67d8cee_0c70d83a",
+        "filename": "scripts/metadata",
+        "patchSetId": 1
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-10T17:03:19Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "117932ba_f107c59b",
+      "revId": "9fb41305d4c785d4340a976660b62fcb0c9250ac",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
