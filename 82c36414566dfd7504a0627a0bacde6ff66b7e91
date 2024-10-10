@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2766c6c9_73cb5845",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-10T17:17:41Z",
+      "side": 1,
+      "message": "```\ncommon.ExternalError: Failed to run command \u0027[\u0027avbtool\u0027, \u0027add_hashtree_footer\u0027, \u0027--do_not_generate_fec\u0027, \u0027--algorithm\u0027, \u0027SHA256_RSA4096\u0027, \u0027--key\u0027, \u0027hardware/interfaces/apexkey/com.android.hardware.pem\u0027, \u0027--prop\u0027, \u0027apex.key:com.android.hardware\u0027, \u0027--image\u0027, \u0027/tmp/apex-payload-ddb1d8li/apex_payload.img\u0027, \u0027--salt\u0027, \u0027c1e8e88da21111ec2303e720a3c2209876fc88d17f4971d09d4479568d141131\u0027, \u0027--hash_algorithm\u0027, \u0027sha256\u0027]\u0027 (exit code 1):\n/home/user/androidsign/bin/avbtool: Adding hashtree_footer failed: Error getting public key: b\u0027Could not open file or uri for loading public key from hardware/interfaces/apexkey/com.android.hardware.pem\\n40E7B04C537F0000:error:16000069:STORE routines:ossl_store_get0_loader_int:unregistered scheme:../crypto/store/store_register.c:237:scheme\u003dfile\\n40E7B04C537F0000:error:80000002:system library:file_open:No such file or directory:../providers/implementations/storemgmt/file_store.c:267:calling stat(hardware/interfaces/apexkey/com.android.hardware.pem)\\n\u0027.\n```",
+      "revId": "82c36414566dfd7504a0627a0bacde6ff66b7e91",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
