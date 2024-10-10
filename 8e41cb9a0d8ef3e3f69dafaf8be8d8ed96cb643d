@@ -33,6 +33,24 @@
       "message": "Multiple AP2A sightings, e.g.:\n\n`--prop com.android.build.dtbo.fingerprint:google/bluejay/bluejay:14/AP2A.240905.003.F1/12235381:user/release-keys\"`",
       "revId": "8e41cb9a0d8ef3e3f69dafaf8be8d8ed96cb643d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1a0be393_b99844ad",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-10T17:50:03Z",
+      "side": 1,
+      "message": "In vendor/google/bluejay I have:\n- factory/bootloader-bluejay_beta-bluejay-15.0-11921129.img\n- factory/radio-bluejay_beta-g5123b-140687-240805-b-12182594.img\n\nI may need to rename, remove the _beta.\n\nActually I guess these comments are becoming unrelated to this change now.",
+      "parentUuid": "a2368030_700a5636",
+      "revId": "8e41cb9a0d8ef3e3f69dafaf8be8d8ed96cb643d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
