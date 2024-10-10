@@ -43,6 +43,7 @@ keymap[com.android.wifi.dialog]=com.android.wifi.dialog
 keymap[com.android.uwb.resources]=com.android.uwb.resources
 keymap[com.android.nearby.halfsheet]=com.android.nearby.halfsheet
 keymap[com.android.graphics.pdf]=com.android.graphics.pdf
+keymap[com.android.appsearch.apk]=com.android.appsearch.apk
 # Common
 keymap[org.calyxos.fdroid]=org.calyxos.fdroid
 keymap[com.google.android.apps.photos]=com.google.android.apps.photos
@@ -101,8 +102,12 @@ apexes=(
 	com.android.conscrypt.apex
 	com.android.devicelock.apex
 	com.android.extservices.apex
+	com.android.hardware.authsecret.apex
+	com.android.hardware.biometrics.face.virtual.apex
 	com.android.hardware.biometrics.fingerprint.virtual.apex
 	com.android.hardware.cas.apex
+	com.android.hardware.neuralnetworks.apex
+	com.android.hardware.rebootescrow.apex
 	com.android.hardware.wifi.apex
 	com.android.healthfitness.apex
 	com.android.i18n.apex
@@ -111,9 +116,11 @@ apexes=(
 	com.android.mediaprovider.apex
 	com.android.media.swcodec.apex
 	com.android.neuralnetworks.apex
+	com.android.nfcservices.apex
 	com.android.ondevicepersonalization.apex
 	com.android.os.statsd.apex
 	com.android.permission.apex
+	com.android.profiling.apex
 	com.android.resolv.apex
 	com.android.rkpd.apex
 	com.android.runtime.apex
@@ -147,8 +154,12 @@ apex_container_key[com.android.configinfrastructure.apex]=com.android.configinfr
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_container_key[com.android.devicelock.apex]=com.android.devicelock
 apex_container_key[com.android.extservices.apex]=com.android.extservices
+apex_container_key[com.android.hardware.authsecret.apex]=com.android.hardware.authsecret
+apex_container_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
 apex_container_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
 apex_container_key[com.android.hardware.cas.apex]=com.android.hardware
+apex_container_key[com.android.hardware.neuralnetworks.apex]=com.android.hardware.neuralnetworks
+apex_container_key[com.android.hardware.rebootescrow.apex]=com.android.hardware.rebootescrow
 apex_container_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
 apex_container_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_container_key[com.android.i18n.apex]=com.android.i18n
@@ -157,9 +168,11 @@ apex_container_key[com.android.media.apex]=com.android.media
 apex_container_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_container_key[com.android.media.swcodec.apex]=com.android.media.swcodec
 apex_container_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_container_key[com.android.nfcservices.apex]=com.android.nfcservices
 apex_container_key[com.android.ondevicepersonalization.apex]=releasekey
 apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_container_key[com.android.permission.apex]=com.android.permission
+apex_container_key[com.android.profiling.apex]=com.android.profiling
 apex_container_key[com.android.resolv.apex]=testcert
 apex_container_key[com.android.rkpd.apex]=com.android.rkpd
 apex_container_key[com.android.runtime.apex]=com.android.runtime
@@ -192,8 +205,12 @@ apex_payload_key[com.android.configinfrastructure.apex]=com.android.configinfras
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
 apex_payload_key[com.android.devicelock.apex]=com.android.devicelock
 apex_payload_key[com.android.extservices.apex]=com.android.extservices
+apex_payload_key[com.android.hardware.authsecret.apex]=com.android.hardware.authsecret
+apex_payload_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
 apex_payload_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
 apex_payload_key[com.android.hardware.cas.apex]=com.android.hardware
+apex_payload_key[com.android.hardware.neuralnetworks.apex]=com.android.hardware.neuralnetworks
+apex_payload_key[com.android.hardware.rebootescrow.apex]=com.android.hardware.rebootescrow
 apex_payload_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
 apex_payload_key[com.android.healthfitness.apex]=com.android.healthfitness
 apex_payload_key[com.android.i18n.apex]=com.android.i18n
@@ -202,9 +219,11 @@ apex_payload_key[com.android.media.apex]=com.android.media
 apex_payload_key[com.android.mediaprovider.apex]=com.android.mediaprovider
 apex_payload_key[com.android.media.swcodec.apex]=com.android.media.swcodec
 apex_payload_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
+apex_payload_key[com.android.nfcservices.apex]=com.android.nfcservices
 apex_payload_key[com.android.ondevicepersonalization.apex]=com.android.ondevicepersonalization
 apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
 apex_payload_key[com.android.permission.apex]=com.android.permission
+apex_payload_key[com.android.profiling.apex]=com.android.profiling
 apex_payload_key[com.android.resolv.apex]=com.android.resolv
 apex_payload_key[com.android.rkpd.apex]=com.android.rkpd
 apex_payload_key[com.android.runtime.apex]=com.android.runtime
