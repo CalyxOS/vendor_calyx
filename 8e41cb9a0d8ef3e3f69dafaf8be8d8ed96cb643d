@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a2368030_700a5636",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-10T17:46:12Z",
+      "side": 1,
+      "message": "Bootloader and radio didn\u0027t make it in.\n\n```\nArchive:  bluejay-target_files-24600000.00.zip\ncaution: filename not matched:  RADIO/bootloader-bluejay-bluejay-15.0-11921129.img\nArchive:  bluejay-target_files-24600000.00.zip\ncaution: filename not matched:  RADIO/radio-bluejay-g5123b-140687-240805-b-12182594.img\nArchive:  bluejay-target_files-24600000.00.zip\n   creating: tmp/VENDOR/firmware/dauntless/\n  inflating: tmp/VENDOR/firmware/dauntless/d3m2.ec.bin\n  inflating: tmp/VENDOR/firmware/dauntless/evt.ec.bin\n  inflating: tmp/VENDOR/firmware/dauntless/proto11.ec.bin\ncp: cannot stat \u0027tmp/RADIO/bootloader-bluejay-bluejay-15.0-11921129.img\u0027: No such file or directory\ncp: cannot stat \u0027tmp/RADIO/radio-bluejay-g5123b-140687-240805-b-12182594.img\u0027: No such file or directory\n```",
+      "revId": "8e41cb9a0d8ef3e3f69dafaf8be8d8ed96cb643d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
