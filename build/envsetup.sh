@@ -1,3 +1,6 @@
+CLANG_VERSION=$(build/soong/scripts/get_clang_version.py)
+export LLVM_AOSP_PREBUILTS_VERSION="${CLANG_VERSION}"
+
 # Find the top directory
 # Slightly modified from build/make/shell_utils.sh
 function _gettop
