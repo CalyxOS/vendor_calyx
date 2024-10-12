@@ -52,6 +52,24 @@
       "parentUuid": "a8da89a0_8df99388",
       "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "58d36e2e_6e235586",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-12T02:32:58Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "7d1d27c5_201bcabc",
+      "revId": "9929fc2ae09ed3362c601e3f22e0d44016c9ceb1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
