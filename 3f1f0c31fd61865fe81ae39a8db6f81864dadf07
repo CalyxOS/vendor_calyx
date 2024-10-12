@@ -70,6 +70,30 @@
       },
       "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ff2e9331_d828e7e8",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-12T02:39:56Z",
+      "side": 1,
+      "message": "Can confirm that f-droid shows an error after updating the path, is it hard-coded in fdroid source? If so guess both paths could be checked?",
+      "parentUuid": "d2a312f8_8bf83827",
+      "range": {
+        "startLine": 76,
+        "startChar": 14,
+        "endLine": 76,
+        "endChar": 35
+      },
+      "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
