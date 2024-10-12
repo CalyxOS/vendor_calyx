@@ -1,3 +1,6 @@
+CLANG_VERSION=$(build/soong/scripts/get_clang_version.py)
+export LLVM_AOSP_PREBUILTS_VERSION="${CLANG_VERSION}"
+
 # Find the output directory
 # From build/soong/scripts/microfactory.bash
 function _getoutdir
