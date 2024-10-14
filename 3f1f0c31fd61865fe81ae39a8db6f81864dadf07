@@ -94,6 +94,30 @@
       },
       "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d00e6e95_dc7d258b",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-14T13:43:17Z",
+      "side": 1,
+      "message": "The path is set in `prebuilts/calyx/fdroid/additional_repos.xml`\n\nNow, we can change that, however F-Droid won\u0027t re-read / update that for existing installs IIRC :-(\n\nDoes `product/app` work fine otherwise? Apps show up ok?",
+      "parentUuid": "ff2e9331_d828e7e8",
+      "range": {
+        "startLine": 76,
+        "startChar": 14,
+        "endLine": 76,
+        "endChar": 35
+      },
+      "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
