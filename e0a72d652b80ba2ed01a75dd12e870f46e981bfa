@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b9efce0d_2f6cb8f1",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_AKITA.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "19 in sep24 fourteen\n\n29257: Merge tag \u0027android-14.0.0_r68\u0027 into staging/android14_merge-android-14.0.0_r68 | https://review.calyxos.org/c/CalyxOS/device_google_akita/+/29257",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cd8602cf_94bcfa5f",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_BLUEJAY.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "65 in sep24 fourteen\n\n29262: Merge tag \u0027android-14.0.0_r73\u0027 into staging/android14_merge-android-14.0.0_r73 | https://review.calyxos.org/c/CalyxOS/device_google_bluejay/+/29262",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e59bbd24_ac224398",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_CHEETAH.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "61 in sep24 fourteen\n\n29261: Merge tag \u0027android-14.0.0_r67\u0027 into staging/android14_merge-android-14.0.0_r67 | https://review.calyxos.org/c/CalyxOS/device_google_pantah/+/29261",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "43141b96_1372a320",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_FELIX.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "55 in sep24 fourteen\n\n29259: Merge tag \u0027android-14.0.0_r67\u0027 into staging/android14_merge-android-14.0.0_r67 | https://review.calyxos.org/c/CalyxOS/device_google_felix/+/29259",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0e3e9b8f_7c7e971f",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_HUSKY.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "36 in sep24 fourteen\n\n29258: Merge tag \u0027android-14.0.0_r67\u0027 into staging/android14_merge-android-14.0.0_r67 | https://review.calyxos.org/c/CalyxOS/device_google_shusky/+/29258",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3a9f8c07_484a8ee7",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_LYNX.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "46 in sep24 fourteen\n\n29260: Merge tag \u0027android-14.0.0_r67\u0027 into staging/android14_merge-android-14.0.0_r67 | https://review.calyxos.org/c/CalyxOS/device_google_lynx/+/29260",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "99802669_e56dedac",
+        "filename": "release/flag_values/ap3a/RELEASE_SVN_ORIOLE.textproto",
+        "patchSetId": 1
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-16T21:50:47Z",
+      "side": 1,
+      "message": "86 in sep24 fourteen\n\n29263: Merge tag \u0027android-14.0.0_r73\u0027 into staging/android14_merge-android-14.0.0_r73 | https://review.calyxos.org/c/CalyxOS/device_google_raviole/+/29263",
+      "revId": "e0a72d652b80ba2ed01a75dd12e870f46e981bfa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
