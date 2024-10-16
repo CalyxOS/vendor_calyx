@@ -16,6 +16,24 @@
       "message": "Wiped, installed a build:\n\n```\nadb shell cmd device_config list\nprofile_experiences/android.os.allow_private_profile\u003dtrue\n```\n\nAnd it shows up in Settings -\u003e Security, too.",
       "revId": "246cea2c390cf4eebd95fcaba71ab66d2ce7ac22",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ee8ba1bb_6210c549",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-16T21:18:49Z",
+      "side": 1,
+      "message": "Not sure what to make of this since it was all working for me with precisely 2eb2bed (patchset 1) checked out for vendor/calyx. I wiped, too.\n\nDid you pick the record_issue_qs one, too? If so, do you see that in the Quick Settings tiles selection? I do. If you don\u0027t, that would be interesting.",
+      "parentUuid": "279bfb85_34a5214d",
+      "revId": "246cea2c390cf4eebd95fcaba71ab66d2ce7ac22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
