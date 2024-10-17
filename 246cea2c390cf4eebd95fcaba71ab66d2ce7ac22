@@ -52,6 +52,24 @@
       "parentUuid": "ee8ba1bb_6210c549",
       "revId": "246cea2c390cf4eebd95fcaba71ab66d2ce7ac22",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d46238b8_9e1aa6eb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-17T14:50:27Z",
+      "side": 1,
+      "message": "Did a fresh build for another device, works.\n\nRe-building the others cleanly as well.",
+      "parentUuid": "d069ed09_9ec7490d",
+      "revId": "246cea2c390cf4eebd95fcaba71ab66d2ce7ac22",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
