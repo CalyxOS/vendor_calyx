@@ -33,6 +33,24 @@
       "message": "This will work while we address issues with the feature. Upstream has removed the feature flag and it is no longer read, so this should be addressed before we get the QPR containing said changes",
       "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6cef3a50_ec5fb6ed",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-17T04:30:36Z",
+      "side": 1,
+      "message": "akita 15 (without patch):\n```2024-10-17 00:29:22.603  1569-1569  BluetoothSystemServer   system_server                        D  BluetoothManagerService: AutoOnFeature status: flag\u003dtrue, property\u003dtrue\n2024-10-17 00:29:24.071  1569-1875  ContextImpl             system_process                       W  Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcast:1348 com.android.server.bluetooth.AutoOnFeature.setFeatureEnabledForUserUnchecked:294 com.android.server.bluetooth.AutoOnFeature.notifyBluetoothOn:107 com.android.server.bluetooth.BluetoothManagerService.bluetoothStateChangeHandler:2162 com.android.server.bluetooth.BluetoothManagerService.-$$Nest$mbluetoothStateChangeHandler:0 \n2024-10-17 00:29:24.071  1569-1875  BluetoothSystemServer   system_process                       I  AutoOnFeature: Feature was set to its default value true\n2024-10-17 00:29:50.705  1569-1875  ContextImpl             system_process                       W  Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcast:1348 com.android.server.bluetooth.AutoOnFeature.setFeatureEnabledForUserUnchecked:294 com.android.server.bluetooth.AutoOnFeature.setUserEnabled:139 com.android.server.bluetooth.BluetoothManagerService.lambda$setAutoOnEnabled$11:2724 com.android.server.bluetooth.BluetoothManagerService.$r8$lambda$gpiWNZhBVkYT7n8p7rlPgOtJQ7c:0 \n2024-10-17 00:29:50.706  1569-1875  BluetoothSystemServer   system_process                       D  AutoOnFeature: Bluetooth already in ON, no need for timer\n2024-10-17 00:29:54.781  1569-1875  BluetoothSystemServer   system_process                       I  AutoOnFeature: [Timer was scheduled at 2024-10-17T04:29:54.773783 and should expire at 2024-10-18T05:00. (sleep for 1d 0h 30m 5.226217s).]: Scheduling next Bluetooth restart```",
+      "parentUuid": "a8d5243d_4a6bba31",
+      "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
