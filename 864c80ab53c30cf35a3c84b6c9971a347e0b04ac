@@ -16,6 +16,24 @@
       "message": "Pause apps",
       "revId": "864c80ab53c30cf35a3c84b6c9971a347e0b04ac",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0bf0daf9_bd4d5221",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-17T14:53:51Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "6c26d330_cba117ce",
+      "revId": "864c80ab53c30cf35a3c84b6c9971a347e0b04ac",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
