@@ -51,6 +51,24 @@
       "parentUuid": "a8d5243d_4a6bba31",
       "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "27894d89_8174d47d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-17T04:47:48Z",
+      "side": 1,
+      "message": "akita 15 (with patch):\n`adb shell settings get secure bluetooth_automatic_turn_on`\n`null`\n\nakita 15 (without patch):\n`adb shell settings get secure bluetooth_automatic_turn_on`\n`1`",
+      "parentUuid": "6cef3a50_ec5fb6ed",
+      "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
