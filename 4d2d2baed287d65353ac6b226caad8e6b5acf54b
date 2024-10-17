@@ -16,6 +16,23 @@
       "message": "akita 14:\n```2024-10-17 00:01:27.104  1531-1531  BluetoothSystemServer   system_server                        D  BluetoothManagerService: AutoOnFeature status: flag\u003dfalse, property\u003dfalse\n2024-10-17 00:01:27.972  1531-1801  BluetoothSystemServer   system_server                        D  BluetoothManagerService: No support for AutoOn feature: Not listening on hidden api```\n\n\nakita 15 (with patch):\n```2024-10-16 23:34:35.631  1573-1573  BluetoothSystemServer   system_process                       D  BluetoothManagerService: AutoOnFeature status: flag\u003dfalse, property\u003dtrue\n2024-10-16 23:34:36.323  1573-1877  BluetoothSystemServer   system_process                       D  BluetoothManagerService: No support for AutoOn feature: Not creating a timer```",
       "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d67f3e62_5a77bf58",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-17T04:29:40Z",
+      "side": 1,
+      "message": "This will work while we address issues with the feature. Upstream has removed the feature flag and it is no longer read, so this should be addressed before we get the QPR containing said changes",
+      "revId": "4d2d2baed287d65353ac6b226caad8e6b5acf54b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
