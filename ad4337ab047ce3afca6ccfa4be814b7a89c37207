@@ -102,6 +102,75 @@
       "parentUuid": "21551c87_7606c0a7",
       "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fcdd265b_079b11e8",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:29:22Z",
+      "side": 1,
+      "message": "This apex isn\u0027t in the final build, not sure what made you add it @tommy@calyxinstitute.org\n\nI removed this and 2 others which aren\u0027t present for now, I don\u0027t see them in stock either, not even \u0027com.google...\u0027 variants.",
+      "parentUuid": "9df35986_ede4ae63",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "295790c6_3e84e509",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 158,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:29:22Z",
+      "side": 1,
+      "message": "`name\u003d\"com.android.hardware.biometrics.face.virtual.apex\" public_key\u003d\"hardware/interfaces/apexkey/com.android.hardware.avbpubkey\" private_key\u003d\"hardware/interfaces/apexkey/com.android.hardware.pem\" container_certificate\u003d\"hardware/interfaces/apexkey/com.android.hardware.x509.pem\" container_private_key\u003d\"hardware/interfaces/apexkey/com.android.hardware.pk8\" partition\u003d\"vendor\"`",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7b261abc_ae8d00d1",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:29:22Z",
+      "side": 1,
+      "message": "`name\u003d\"com.android.nfcservices.apex\" public_key\u003d\"packages/apps/Nfc/apex/com.android.nfcservices.avbpubkey\" private_key\u003d\"packages/apps/Nfc/apex/com.android.nfcservices.pem\" container_certificate\u003d\"packages/apps/Nfc/apex/com.android.nfcservices.x509.pem\" container_private_key\u003d\"packages/apps/Nfc/apex/com.android.nfcservices.pk8\" partition\u003d\"system\"`",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f75e9fca_cc9bf01a",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 175,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:29:22Z",
+      "side": 1,
+      "message": "`name\u003d\"com.android.profiling.apex\" public_key\u003d\"packages/modules/Profiling/apex/com.android.profiling.avbpubkey\" private_key\u003d\"packages/modules/Profiling/apex/com.android.profiling.pem\" container_certificate\u003d\"packages/modules/Profiling/apex/com.android.profiling.x509.pem\" container_private_key\u003d\"packages/modules/Profiling/apex/com.android.profiling.pk8\" partition\u003d\"system\"`",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
