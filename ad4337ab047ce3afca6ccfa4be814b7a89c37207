@@ -35,6 +35,40 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1cb4f67b_d3266db7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:18:46Z",
+      "side": 1,
+      "message": "Just FTR:\n\n```\nRewriting PRODUCT/etc/selinux/product_mac_permissions.xml with new keys.\n    Error accessing build/make/target/product/security/devkey.x509.pem: No such file or directory.\nSkip replacing build/make/target/product/security/devkey.x509.pem with keys/akita/releasekey.x509.pem.\nSkip replacing packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet.x509.pem with keys/akita/com.android.nearby.halfsheet.x509.pem.\n    Replacing packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf.x509.pem with keys/akita/com.android.graphics.pdf.x509.pem\n    Error accessing packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf.x509.pem: No such file or directory.\nSkip replacing packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf.x509.pem with keys/akita/com.android.graphics.pdf.x509.pem.\n    Replacing build/make/target/product/security/bluetooth.x509.pem with keys/akita/com.android.bluetooth.x509.pem\n    Replaced 0 occurence(s) of build/make/target/product/security/bluetooth.x509.pem with keys/akita/com.android.bluetooth.x509.pem\n```\n\n(Should be fine, but it\u0027s an easy fix, otatools.zip should contain the above aosp keys)",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5bf7cc50_792c1a3d",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:18:46Z",
+      "side": 1,
+      "message": "`name\u003d\"com.android.appsearch.apk.apk\" certificate\u003d\"packages/modules/AppSearch/apk/com.android.appsearch.apk.x509.pem\" private_key\u003d\"packages/modules/AppSearch/apk/com.android.appsearch.apk.pk8\" partition\u003d\"system\"`",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "21551c87_7606c0a7",
