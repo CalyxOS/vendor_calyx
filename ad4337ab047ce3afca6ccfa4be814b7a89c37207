@@ -18,6 +18,23 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "11200b77_6b2e92e4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:10:37Z",
+      "side": 1,
+      "message": "apex:\n\n```",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "21551c87_7606c0a7",
@@ -31,6 +48,24 @@
       "writtenOn": "2024-10-18T15:02:15Z",
       "side": 1,
       "message": "https://android.googlesource.com/platform/hardware/interfaces/+/android-15.0.0_r1/authsecret/aidl/default/Android.bp\n\nThis re-uses the com.android.hardware key.\n\nChecking everything else now.",
+      "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9df35986_ede4ae63",
+        "filename": "scripts/metadata",
+        "patchSetId": 7
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-18T15:10:37Z",
+      "side": 1,
+      "message": "https://gitlab.com/CalyxOS/calyxos/-/issues/2701#note_2166462557",
+      "parentUuid": "21551c87_7606c0a7",
       "revId": "ad4337ab047ce3afca6ccfa4be814b7a89c37207",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
