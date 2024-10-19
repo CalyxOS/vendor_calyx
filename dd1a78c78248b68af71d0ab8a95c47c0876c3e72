@@ -16,6 +16,24 @@
       "message": "Tested on Pixel 9 that had a google account set up on stock. PIN can now be set in CalyxOS SetupWizard and apps can be installed after setup.",
       "revId": "dd1a78c78248b68af71d0ab8a95c47c0876c3e72",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fa3fd4a8_2112b0e1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-10-19T15:58:53Z",
+      "side": 1,
+      "message": "TODO: See if this applied to Pixel 6 - 8",
+      "parentUuid": "e709b8c9_c1cc4334",
+      "revId": "dd1a78c78248b68af71d0ab8a95c47c0876c3e72",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
