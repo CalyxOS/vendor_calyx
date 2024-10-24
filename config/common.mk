@@ -181,6 +181,10 @@ endif
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml
 
+# Perform strict signature checking for particular system packages.
+PRODUCT_PACKAGES += \
+    preinstalled-packages-strict-signature-custom.xml
+
 # Enable debugging for all processes on debuggable builds
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
