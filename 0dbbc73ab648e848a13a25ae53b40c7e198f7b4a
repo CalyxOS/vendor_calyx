@@ -16,6 +16,24 @@
       "message": "should be `federatedcompute/apk`",
       "revId": "0dbbc73ab648e848a13a25ae53b40c7e198f7b4a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "39738510_3e9970ae",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-24T14:17:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "746977df_75267548",
+      "revId": "0dbbc73ab648e848a13a25ae53b40c7e198f7b4a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
