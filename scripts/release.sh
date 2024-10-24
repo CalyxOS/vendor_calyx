@@ -148,6 +148,9 @@ EXTRA_SIGNING_ARGS+=(-k packages/providers/MediaProvider/pdf/apk/com.android.gra
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/AppSearch/apk/com.android.appsearch.apk=$KEY_DIR/com.android.appsearch.apk)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/apk/com.android.healthconnect.controller=$KEY_DIR/com.android.healthconnect.controller)
+EXTRA_SIGNING_ARGS+=(-k packages/apps/Nfc/apex/com.android.nfcservices=$KEY_DIR/com.android.nfcservices)
+EXTRA_SIGNING_ARGS+=(-k packages/modules/OnDevicePersonalization/federatedcompute/com.android.federatedcompute=$KEY_DIR/com.android.federatedcompute)
 
 if [[ $DEVICE == raven || $DEVICE == cheetah || $DEVICE == tangorpro || $DEVICE == felix ]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
