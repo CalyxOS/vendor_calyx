@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "8bdd016b_e6433cbc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-10-24T20:09:07Z",
+      "side": 1,
+      "message": "Maybe needs product_specific or something, getting system artifact path requirement error.",
+      "revId": "90472e073ed94dd93d9d1c2c24eb36ef3661b45e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
