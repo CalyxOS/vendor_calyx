@@ -60,5 +60,8 @@
 
         <!-- Disable uwb on first boot until the user explicitly toggles UWB on for the first time. -->
         <item>uwb/uwb_disabled_until_first_toggle=true</item>
+
+        <!-- Use v4 signature and fs-verity to chain verification of allowlisted APKs to Verified Boot -->
+        <item>hardware_backed_security/extend_vb_chain_to_updated_apk=true</item>
     </string-array>
 </resources>
