@@ -4,3 +4,9 @@ prebuilt_etc_xml {
     src: "sensitive_pn.xml",
     schema: ":spn-schema",
 }
+
+prebuilt_etc {
+    name: "preinstalled-packages-strict-signature-custom.xml",
+    sub_dir: "sysconfig",
+    src: "preinstalled-packages-strict-signature-custom.xml",
+}
