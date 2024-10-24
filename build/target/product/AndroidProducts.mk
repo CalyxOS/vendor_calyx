@@ -15,11 +15,15 @@
 #
 
 PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/calyx_cf_phone_arm64.mk \
+    $(LOCAL_DIR)/calyx_cf_phone_x86_64.mk \
     $(LOCAL_DIR)/calyx_gsi_arm64.mk \
     $(LOCAL_DIR)/calyx_gsi_x86_64.mk \
     $(LOCAL_DIR)/calyx_sdk_phone_x86_64.mk
 
 COMMON_LUNCH_CHOICES := \
+    calyx_cf_phone_arm64-userdebug \
+    calyx_cf_phone_x86_64-userdebug \
     calyx_gsi_arm64-userdebug \
     calyx_gsi_x86_64-userdebug \
     calyx_sdk_phone_x86_64-userdebug
