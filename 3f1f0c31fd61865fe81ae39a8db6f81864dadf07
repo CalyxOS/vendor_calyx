@@ -118,6 +118,30 @@
       },
       "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d13e5b65_edbd4f6b",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-10-25T16:32:05Z",
+      "side": 1,
+      "message": "Yeah, apps show up under `product/app/fdroid/repo`",
+      "parentUuid": "d00e6e95_dc7d258b",
+      "range": {
+        "startLine": 76,
+        "startChar": 14,
+        "endLine": 76,
+        "endChar": 35
+      },
+      "revId": "3f1f0c31fd61865fe81ae39a8db6f81864dadf07",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
