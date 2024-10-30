@@ -42,7 +42,8 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx ||
-  $DEVICE == felix || $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ]]; then
+  $DEVICE == felix || $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
@@ -100,7 +101,8 @@ elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
 elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
-  $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ]]; then
+  $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
@@ -116,6 +118,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
   $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ||
   $DEVICE == FP4 || $DEVICE == FP5 ||
   $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
   $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
