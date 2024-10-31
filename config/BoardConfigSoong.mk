@@ -35,7 +35,6 @@ SOONG_CONFIG_calyxGlobalVars += \
     gralloc_handle_has_reserved_size \
     gralloc_handle_has_ubwcp_format \
     inline_kernel_building \
-    target_health_charging_control_charging_path \
     target_health_charging_control_charging_enabled \
     target_health_charging_control_charging_disabled \
     target_health_charging_control_deadline_path \
@@ -51,6 +50,11 @@ SOONG_CONFIG_calyxGlobalVars += \
     target_trust_usb_control_path \
     target_trust_usb_control_enable \
     target_trust_usb_control_disable
+
+ifneq ($(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_PATH),)
+SOONG_CONFIG_calyxGlobalVars += \
+    target_health_charging_control_charging_path
+endif
 
 SOONG_CONFIG_NAMESPACES += calyxQcomVars
 SOONG_CONFIG_calyxQcomVars += \
@@ -99,7 +103,9 @@ TARGET_TRUST_USB_CONTROL_DISABLE ?= 0
 # Soong value variables
 SOONG_CONFIG_calyxGlobalVars_aapt_version_code := $(shell date -u +%Y%m%d)
 SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
+ifneq ($(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_PATH),)
 SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_path := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_PATH)
+endif
 SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_enabled := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_ENABLED)
 SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_charging_disabled := $(TARGET_HEALTH_CHARGING_CONTROL_CHARGING_DISABLED)
 SOONG_CONFIG_calyxGlobalVars_target_health_charging_control_deadline_path := $(TARGET_HEALTH_CHARGING_CONTROL_DEADLINE_PATH)
