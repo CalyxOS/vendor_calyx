@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4d9b03a5_cbdf8062",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-11-12T18:07:23Z",
+      "side": 1,
+      "message": "`avbtool` output matches stock.\n\nFactory image file list has everything stock does!",
+      "revId": "a6bed70ba4d639f6500cb7a9a918054c1f99c52a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
