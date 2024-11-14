@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e9027da8_b5e3f434",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2024-11-14T20:54:01Z",
+      "side": 1,
+      "message": "If this is ever enabled (by us or in AOSP), user switcher related changes will have to be adapter to accomodate this",
+      "revId": "ab46ddbc7b91c5ae30456a4ef9c55ad83c8d65bb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
