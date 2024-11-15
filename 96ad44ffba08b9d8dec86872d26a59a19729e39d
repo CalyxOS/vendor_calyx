@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b2d5616e_56d58a56",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-11-15T14:10:56Z",
+      "side": 1,
+      "message": "We can\u0027t change the path of the f-droid repo to avoid breaking existing users.\n\nNeed another way.",
+      "revId": "96ad44ffba08b9d8dec86872d26a59a19729e39d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
