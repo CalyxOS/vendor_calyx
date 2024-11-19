@@ -57,6 +57,8 @@ elif [[ $DEVICE == FP5 ]]; then
 elif [[ $DEVICE == axolotl ]]; then
   AXOLOTL="true"
   FASTBOOT_PRODUCT="sdm845"
+elif [[ $DEVICE == otter ]]; then
+  OTTER="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
@@ -82,7 +84,7 @@ elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
 elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == FP5 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
-  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
+  $DEVICE == otter || $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
@@ -126,7 +128,7 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   done
 fi
 
-if [[ $DEVICE == jasmine_sprout || $DEVICE == axolotl ]]; then
+if [[ $DEVICE == jasmine_sprout || $DEVICE == axolotl || $DEVICE == otter ]]; then
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
@@ -158,7 +160,7 @@ if [[ $DEVICE == raven || $DEVICE == cheetah || $DEVICE == tangorpro || $DEVICE 
 fi
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
-  if [[ $DEVICE == FP5 || $DEVICE == FP4 ||
+  if [[ $DEVICE == otter || $DEVICE == FP5 || $DEVICE == FP4 ||
         $DEVICE == hawao || $DEVICE == rhode || $DEVICE == devon ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE)
   else
