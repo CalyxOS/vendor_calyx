@@ -45,12 +45,9 @@ if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE =
   $DEVICE == felix || $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
   $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
-  BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
-  RADIOSRC=radio-${DEVICE}-${RADIO,,}.img
 elif [[ $DEVICE == tangorpro ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
-  BOOTLOADERSRC=bootloader-${DEVICE}-${BOOTLOADER,,}.img
 elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
