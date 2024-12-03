@@ -112,6 +112,7 @@ PRODUCT_PACKAGES += \
     AvatarPicker \
     BatteryStatsViewer \
     Bellis \
+    Camelot \
     Datura \
     Etar \
     ExactCalculator \
