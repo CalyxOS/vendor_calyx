@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6ff2430_32436847",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-12-05T16:26:57Z",
+      "side": 1,
+      "message": "Because we\u0027re still partially patching and bumping ASB accurately to reflect that.",
+      "revId": "2871b566177b1f8bdebbb3c55a77acdf974909af",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
