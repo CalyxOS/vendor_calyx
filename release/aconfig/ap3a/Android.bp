@@ -19,6 +19,5 @@ aconfig_value_set {
         "aconfig-values-ap3a-android.app.admin.flags-all",
         "aconfig-values-ap3a-android.os-all",
         "aconfig-values-ap3a-com.android.systemui-all",
-        "aconfig-values-ap3a-com.android.bluetooth.flags-all",
     ],
 }
