@@ -17,7 +17,6 @@ aconfig_value_set {
     name: "aconfig_value_set-calyx-ap4a",
     values: [
         "aconfig-values-ap4a-android.app.admin.flags-all",
-        "aconfig-values-ap4a-android.os-all",
         "aconfig-values-ap4a-android.security-all",
         "aconfig-values-ap4a-com.android.systemui-all",
     ],
