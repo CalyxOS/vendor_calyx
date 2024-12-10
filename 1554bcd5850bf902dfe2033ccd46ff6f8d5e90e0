@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bdafef76_bba75938",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2024-12-10T22:02:32Z",
+      "side": 1,
+      "message": "Worked for kernel/configs",
+      "revId": "1554bcd5850bf902dfe2033ccd46ff6f8d5e90e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
