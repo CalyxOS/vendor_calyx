@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "49c7d5f9_f5555794",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-12-11T11:19:24Z",
+      "side": 1,
+      "message": "In testing, so -2 for now.\n\nAlso see https://issuetracker.google.com/issues/381899617\n\nSearch \"could cause problems\" there",
+      "revId": "21facef81e0a2e36103342218289c17ac77efee6",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
