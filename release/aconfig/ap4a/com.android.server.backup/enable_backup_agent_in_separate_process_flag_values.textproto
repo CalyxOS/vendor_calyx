@@ -1,0 +1,6 @@
+flag_value {
+  package: "com.android.server.backup"
+  name: "enable_backup_agent_in_separate_process"
+  state: ENABLED
+  permission: READ_ONLY
+}
