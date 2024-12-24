@@ -16,6 +16,24 @@
       "message": "Should hashtag change to next-feature-build?",
       "revId": "845e119eb79c8453fa854f82f66dea68521abfc4",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f18ed4be_be5fb8cc",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2024-12-24T14:05:58Z",
+      "side": 1,
+      "message": "Yes done",
+      "parentUuid": "a00fd3d2_d2e2856c",
+      "revId": "845e119eb79c8453fa854f82f66dea68521abfc4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
