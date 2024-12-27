@@ -113,6 +113,7 @@ PRODUCT_PACKAGES += \
     BatteryStatsViewer \
     Bellis \
     Datura \
+    ESpeakNG \
     Etar \
     ExactCalculator \
     F-DroidPrivilegedExtension \
