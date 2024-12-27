@@ -119,6 +119,7 @@ PRODUCT_PACKAGES += \
     F-DroidPrivilegedExtension \
     Glimpse \
     Panic \
+    Talkback \
     TrichromeChrome \
     TrichromeWebView \
     Eleven \
