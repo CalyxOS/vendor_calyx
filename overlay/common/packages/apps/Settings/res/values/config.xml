@@ -33,4 +33,7 @@
     <!-- Whether wallpaper attribution should be shown or not. -->
     <bool name="config_show_wallpaper_attribution">false</bool>
 
+    <!-- Carrier_enabled editable -->
+    <bool name="config_allow_edit_carrier_enabled" translatable="false">true</bool>
+
 </resources>
