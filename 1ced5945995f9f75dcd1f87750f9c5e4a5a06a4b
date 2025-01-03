@@ -34,6 +34,24 @@
       "parentUuid": "37c01d05_acaded58",
       "revId": "1ced5945995f9f75dcd1f87750f9c5e4a5a06a4b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "528501fa_a9e905fc",
+        "filename": "overlay/common/packages/apps/Settings/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-01-03T20:54:24Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "87b997b1_446f6163",
+      "revId": "1ced5945995f9f75dcd1f87750f9c5e4a5a06a4b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
