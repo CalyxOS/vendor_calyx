@@ -16,6 +16,24 @@
       "message": "Does this supersede any carrier-specific configuration either via res/values-mccmnc if present, or via CarrierConfig or such?",
       "revId": "1ced5945995f9f75dcd1f87750f9c5e4a5a06a4b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "87b997b1_446f6163",
+        "filename": "overlay/common/packages/apps/Settings/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-01-03T20:30:28Z",
+      "side": 1,
+      "message": "It should. It is read here https://cs.android.com/android/platform/superproject/main/+/main:packages/apps/Settings/src/com/android/settings/network/apn/ApnEditCarrierEnabled.kt;l\u003d32?q\u003dconfig_allow_edit_carrier_enabled\u0026sq\u003d and all values-mccmnc I saw seemed to set it to true (default being false)",
+      "parentUuid": "37c01d05_acaded58",
+      "revId": "1ced5945995f9f75dcd1f87750f9c5e4a5a06a4b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
