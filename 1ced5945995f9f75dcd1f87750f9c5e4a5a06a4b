@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "37c01d05_acaded58",
+        "filename": "overlay/common/packages/apps/Settings/res/values/config.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-01-03T20:25:04Z",
+      "side": 1,
+      "message": "Does this supersede any carrier-specific configuration either via res/values-mccmnc if present, or via CarrierConfig or such?",
+      "revId": "1ced5945995f9f75dcd1f87750f9c5e4a5a06a4b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
