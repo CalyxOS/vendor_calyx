@@ -69,6 +69,10 @@ function aospremote()
         then
             PROJECT="build"
         fi
+        if (echo $PROJECT | grep -qv "^device")
+        then
+            local PFX="platform/"
+        fi
         git remote add aosp https://android.googlesource.com/$PFX$PROJECT
     fi
     echo "Remote 'aosp' created"
