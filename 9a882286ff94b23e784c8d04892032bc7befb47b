@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a0bbfc6c_c721b8d8",
+        "filename": "build/envsetup.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-01-07T22:40:52Z",
+      "side": 1,
+      "message": "Maybe exclude kernel as well, just in case?",
+      "revId": "9a882286ff94b23e784c8d04892032bc7befb47b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
