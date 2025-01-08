@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "fcc5fa8b_e4f1df12",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-01-08T14:03:25Z",
+      "side": 1,
+      "message": "Yeah, I meant fork, such as platform/build, frameworks/base, etc.",
+      "parentUuid": "ad645e0e_539a0b74",
+      "revId": "9a882286ff94b23e784c8d04892032bc7befb47b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "a0bbfc6c_c721b8d8",
