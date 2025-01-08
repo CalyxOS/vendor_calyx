@@ -3,6 +3,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "ad645e0e_539a0b74",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-01-08T10:09:12Z",
+      "side": 1,
+      "message": "Won\u0027t any AOSP repository already have the `aosp` remote?",
+      "revId": "9a882286ff94b23e784c8d04892032bc7befb47b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "a0bbfc6c_c721b8d8",
         "filename": "build/envsetup.sh",
         "patchSetId": 2
