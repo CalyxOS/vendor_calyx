@@ -33,6 +33,23 @@
       "message": "Too good to be true? `PANIC: QEMU2 emulator does not support arm64 CPU architecture`",
       "revId": "401eb02f1a42bdccdcbacfb734e2dfd90c5ce3a9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "951d5994_c83f2270",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-01-14T09:13:36Z",
+      "side": 1,
+      "message": "arm64 emulator never worked for me (that\u0027s why I never added it) and I couldn\u0027t figure out how it\u0027s supposed to work",
+      "revId": "401eb02f1a42bdccdcbacfb734e2dfd90c5ce3a9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
