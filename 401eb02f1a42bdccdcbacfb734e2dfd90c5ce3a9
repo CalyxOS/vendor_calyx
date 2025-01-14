@@ -86,6 +86,24 @@
       "parentUuid": "dcc2d4b5_efc7f9e7",
       "revId": "401eb02f1a42bdccdcbacfb734e2dfd90c5ce3a9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "165ec04a_f7ac61be",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-01-14T16:57:42Z",
+      "side": 1,
+      "message": "It was with `emulator`. It turns out that arm64 Android emulators running on x86_64 have not been supported since Oreo. That\u0027s \"documented\" somewhere, but I don\u0027t have the link handy.\n\nI messed with this a lot last night for a personal use case. I rebuilt the emulator with this restriction manually removed (which requires a new repo checkout with `emu-35-5-release`). With the `-qemu -machine virt` args, it tried to start but segfaulted after trying to launch some render threads, so it didn\u0027t work and I gave up there for now.\n\ncuttlefish is apparently the new hotness and doesn\u0027t rely on a complicated qemu fork, but I\u0027m not sure if it would allow running arm64 on x86-64 either.",
+      "parentUuid": "abde0ef0_f36e2ea6",
+      "revId": "401eb02f1a42bdccdcbacfb734e2dfd90c5ce3a9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
