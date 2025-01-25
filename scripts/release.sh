@@ -60,7 +60,7 @@ elif [[ $DEVICE == axolotl ]]; then
 elif [[ $DEVICE == otter ]]; then
   OTTER="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
-  MOTO="true"
+  MOTO_BENGAL="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   : # Do nothing, for now.
 else
