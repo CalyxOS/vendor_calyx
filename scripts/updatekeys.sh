@@ -28,60 +28,53 @@ AVBTOOL=$TOP/bin/avbtool
 pushd $KEY_DIR
 
 for k in releasekey platform shared media networkstack sdk_sandbox \
-		com.android.connectivity.resources \
-		com.android.hotspot2.osulogin com.android.wifi.resources com.android.adservices.api \
-		com.android.bluetooth com.android.safetycenter.resources com.android.wifi.dialog \
-		com.android.uwb.resources com.android.nearby.halfsheet com.android.graphics.pdf \
-		com.android.appsearch.apk com.android.healthconnect.controller \
-		com.android.health.connect.backuprestore com.android.nfcservices \
-		com.android.federatedcompute; do
-	if [[ ! -e ${k}.pk8 ]]; then
-		$SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
-	fi
+    com.android.connectivity.resources \
+    com.android.hotspot2.osulogin com.android.wifi.resources com.android.adservices.api \
+    com.android.bluetooth com.android.safetycenter.resources com.android.wifi.dialog \
+    com.android.uwb.resources com.android.nearby.halfsheet com.android.graphics.pdf \
+    com.android.appsearch.apk com.android.healthconnect.controller \
+    com.android.health.connect.backuprestore com.android.nfcservices \
+    com.android.federatedcompute; do
+  if [[ ! -e ${k}.pk8 ]]; then
+    $SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
+  fi
 done
 
-if [[ $KEY_DIR =~ raven || $KEY_DIR =~ cheetah || $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix ]]; then
-	if [[ ! -e com.qorvo.uwb.pk8 ]]; then
-		$SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
-	fi
+if [[
+  $KEY_DIR =~ raven ||
+  $KEY_DIR =~ cheetah ||
+  $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix
+]]; then
+  if [[ ! -e com.qorvo.uwb.pk8 ]]; then
+    $SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
+  fi
 fi
 
-# Verified Boot (Pixel, Mi A2)
-if [[ ! -e verity.pk8 ]]; then
-	$SCRIPTPATH/mkkey.sh verity "$SUBJECT"
-	$GENVERITYKEY -convert verity.x509.pem verity_key
-	openssl x509 -outform der -in verity.x509.pem -out verity_user.der.x509
-fi
-
+# AVB 2.0
 if [[ ! -e avb.pem ]]; then
-	if [[ $KEY_DIR =~ comet || $KEY_DIR =~ komodo || $KEY_DIR =~ caiman || $KEY_DIR =~ tokay ||
-		$KEY_DIR =~ akita || $KEY_DIR =~ husky || $KEY_DIR =~ shiba ||
-		$KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ||
-		$KEY_DIR =~ barbet || $KEY_DIR =~ oriole || $KEY_DIR =~ raven || $KEY_DIR =~ bluejay ||
-		$KEY_DIR =~ FP4 || $KEY_DIR =~ FP5 || $KEY_DIR =~ kebab || $KEY_DIR =~ lemonade || $KEY_DIR =~ lemonadep ||
-		$KEY_DIR =~ axolotl || $KEY_DIR =~ otter || $KEY_DIR =~ devon || $KEY_DIR =~ hawao || $KEY_DIR =~ rhode ||
-		$KEY_DIR =~ bangkk || $KEY_DIR =~ fogos ]]; then
-	# AVB 2.0 (Pixel 9 Pro Fold, 9 Pro XL, 9 Pro, 9, 8a, 8, 8 Pro, Fold, Tablet, 7a, 7, 7 pro, 5a, 6, 6 pro, 6a, Fairphone 4, 5, OnePlus 8T, 9, 9 Pro, SHIFT6mq, SHIFTphone 8, moto g32, g42, g52, g34, g84)
-	openssl genrsa -out avb.pem 4096
-	$AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
-	else
-	# AVB 2.0 (Pixel 2, 2 xl, 3, 3 xl, 3a, 3a xl, 4, 4 xl, 4a, 5, 4a 5g)
-	openssl genrsa -out avb.pem 2048
-	$AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
-	fi
+  if [[
+    $KEY_DIR =~ redfin || $KEY_DIR =~ bramble
+  ]]; then
+    openssl genrsa -out avb.pem 2048
+    $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
+  else
+    openssl genrsa -out avb.pem 4096
+    $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
+  fi
 fi
 
-# Pixel 9 Pro Fold, 9 Pro XL, 9 Pro, 9, 8a, 8, 8 Pro, Fold, Tablet, 7a, 7, 7 pro
-if [[ $KEY_DIR =~ comet || $KEY_DIR =~ komodo || $KEY_DIR =~ caiman || $KEY_DIR =~ tokay ||
-      $KEY_DIR =~ akita || $KEY_DIR =~ husky || $KEY_DIR =~ shiba ||
-      $KEY_DIR =~ felix || $KEY_DIR =~ tangorpro || $KEY_DIR =~ lynx || $KEY_DIR =~ cheetah || $KEY_DIR =~ panther ]]; then
-	if [[ ! -e avb_vbmeta_system.pem ]]; then
-	openssl genrsa -out avb_vbmeta_system.pem 4096
-	fi
+if [[
+  $KEY_DIR =~ panther || $KEY_DIR =~ cheetah || $KEY_DIR =~ lynx || $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix ||
+  $KEY_DIR =~ shiba || $KEY_DIR =~ husky || $KEY_DIR =~ akita ||
+  $KEY_DIR =~ tokay || $KEY_DIR =~ caiman || $KEY_DIR =~ komodo || $KEY_DIR =~ comet
+]]; then
+  if [[ ! -e avb_vbmeta_system.pem ]]; then
+    openssl genrsa -out avb_vbmeta_system.pem 4096
+  fi
 fi
 
 if [[ -e avb_pkmd.bin ]]; then
-	mv avb_pkmd.bin avb_custom_key.img
+  mv avb_pkmd.bin avb_custom_key.img
 fi
 
 # Migration from 10 to 11
@@ -90,16 +83,16 @@ fi
 [[ -e com.android.runtime.release.x509.pem ]] && mv com.android.runtime.release.x509.pem com.android.runtime.x509.pem
 
 for apex in "${apexes[@]}"; do
-	if [[ ! -e ${apex_container_key[$apex]}.pk8 ]]; then
-		$SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
-	fi
+  if [[ ! -e ${apex_container_key[$apex]}.pk8 ]]; then
+    $SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
+  fi
 done
 
 for apex in "${apexes[@]}"; do
-	if [[ ! -e ${apex_payload_key[$apex]}.pem ]]; then
-		openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
-		$AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
-	fi
+  if [[ ! -e ${apex_payload_key[$apex]}.pem ]]; then
+    openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
+    $AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
+  fi
 done
 
 popd

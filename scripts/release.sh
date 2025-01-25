@@ -36,80 +36,69 @@ fi
 
 VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == taimen || $DEVICE == walleye ||
-	$DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ||
-	$DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
-  $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
-  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx ||
-  $DEVICE == felix || $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ]]; then
+if [[
+    $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
+    $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
+    $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == felix ||
+    $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
+    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet
+]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
 elif [[ $DEVICE == tangorpro ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
-elif [[ $DEVICE == jasmine_sprout ]]; then
-  MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
   QCOM_FIRMWARE="true"
 elif [[ $DEVICE == FP5 ]]; then
   FP5="true"
   QCOM_FIRMWARE="true"
-elif [[ $DEVICE == axolotl ]]; then
-  AXOLOTL="true"
-  FASTBOOT_PRODUCT="sdm845"
-elif [[ $DEVICE == otter ]]; then
-  OTTER="true"
-  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
   QCOM_FIRMWARE="true"
-elif [[ $DEVICE == bangkk || $DEVICE == fogos ]]; then
+elif [[ $DEVICE == fogos || $DEVICE == bangkk ]]; then
   MOTO_BLAIR="true"
   QCOM_FIRMWARE="true"
-elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
-  : # Do nothing, for now.
+elif [[ $DEVICE == otter ]]; then
+  OTTER="true"
+  QCOM_FIRMWARE="true"
 else
   error "Unsupported device $DEVICE"
 fi
 
 mkdir -p $OUT || exit 1
 
-if [[ $DEVICE == marlin || $DEVICE == sailfish || $DEVICE == jasmine_sprout ]]; then
-  VERITY_SWITCHES=(--replace_verity_public_key "$KEY_DIR/verity_key.pub" --replace_verity_private_key "$KEY_DIR/verity"
-                   --replace_verity_keyid "$KEY_DIR/verity.x509.pem")
-elif [[ $DEVICE == blueline || $DEVICE == crosshatch || $DEVICE == sargo || $DEVICE == bonito ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048)
-  EXTRA_OTA_ARGS="--retrofit_dynamic_partitions"
-elif [[ $DEVICE == taimen || $DEVICE == walleye ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == coral || $DEVICE == flame || $DEVICE == sunfish ||
-  $DEVICE == redfin || $DEVICE == bramble ]]; then
+
+if [[
+  $DEVICE == redfin || $DEVICE == bramble
+]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[ $DEVICE == barbet || $DEVICE == FP4 || $DEVICE == FP5 || $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
-  $DEVICE == otter || $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-  $DEVICE == bangkk || $DEVICE == fogos ]]; then
+elif [[
+  $DEVICE == barbet ||
+  $DEVICE == FP4 ||
+  $DEVICE == FP5 ||
+  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+  $DEVICE == fogos || $DEVICE == bangkk ||
+  $DEVICE == otter
+]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == axolotl ]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ]]; then
+elif [[
+  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay
+]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
                    --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
                    --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
-elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
-  $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ]]; then
+elif [[
+  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
+  $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet
+]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
                    --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
@@ -119,17 +108,17 @@ elif [[ $DEVICE == cheetah || $DEVICE == panther || $DEVICE == lynx || $DEVICE =
                    --avb_init_boot_key "$KEY_DIR/avb.pem" --avb_init_boot_algorithm SHA256_RSA4096)
 fi
 
-if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE == crosshatch ||
-  $DEVICE == sargo || $DEVICE == bonito || $DEVICE == coral || $DEVICE == flame ||
-  $DEVICE == sunfish || $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
+if [[
+  $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
-  $DEVICE == husky || $DEVICE == shiba || $DEVICE == akita ||
+  $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
   $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ||
-  $DEVICE == FP4 || $DEVICE == FP5 ||
-  $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ||
+  $DEVICE == FP4 ||
+  $DEVICE == FP5 ||
   $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-  $DEVICE == bangkk || $DEVICE == fogos ]]; then
+  $DEVICE == fogos || $DEVICE == bangkk
+]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
@@ -137,7 +126,9 @@ if [[ $DEVICE == taimen || $DEVICE == walleye || $DEVICE == blueline || $DEVICE 
   done
 fi
 
-if [[ $DEVICE == jasmine_sprout || $DEVICE == axolotl || $DEVICE == otter ]]; then
+if [[
+  $DEVICE == otter
+]]; then
   for apex in "${apexes[@]}"; do
     EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
@@ -164,14 +155,22 @@ EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/backuprestore/com.android
 EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/nfc=$KEY_DIR/com.android.nfcservices)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute=$KEY_DIR/com.android.federatedcompute)
 
-if [[ $DEVICE == raven || $DEVICE == cheetah || $DEVICE == tangorpro || $DEVICE == felix ]]; then
+if [[
+  $DEVICE == raven ||
+  $DEVICE == cheetah ||
+  $DEVICE == tangorpro || $DEVICE == felix
+]]; then
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 fi
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
-  if [[ $DEVICE == otter || $DEVICE == FP5 || $DEVICE == FP4 ||
-        $DEVICE == hawao || $DEVICE == rhode || $DEVICE == devon ||
-        $DEVICE == bangkk || $DEVICE == fogos ]]; then
+  if [[
+    $DEVICE == FP4 ||
+    $DEVICE == FP5 ||
+    $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+    $DEVICE == fogos || $DEVICE == bangkk ||
+    $DEVICE == otter
+  ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE)
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
@@ -206,9 +205,9 @@ $RELEASETOOLS_PATH/bin/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TA
 pushd $OUT || exit 1
 
 if [ ! -z $ANDROID_BUILD_TOP ]; then
-	source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
+  source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
 else
-	source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
+  source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
 fi
 
 mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD.zip
