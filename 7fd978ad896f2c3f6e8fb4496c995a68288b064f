@@ -16,6 +16,24 @@
       "message": "Stock was 2048. This should be fine.",
       "revId": "7fd978ad896f2c3f6e8fb4496c995a68288b064f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "706a235f_cedbc290",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-01-25T13:20:52Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "714eadf0_f76516f9",
+      "revId": "7fd978ad896f2c3f6e8fb4496c995a68288b064f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
