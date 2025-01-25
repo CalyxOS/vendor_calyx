@@ -52,15 +52,19 @@ elif [[ $DEVICE == jasmine_sprout ]]; then
   MI_A2="true"
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == FP5 ]]; then
   FP5="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == axolotl ]]; then
   AXOLOTL="true"
   FASTBOOT_PRODUCT="sdm845"
 elif [[ $DEVICE == otter ]]; then
   OTTER="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == kebab || $DEVICE == lemonade || $DEVICE == lemonadep ]]; then
   : # Do nothing, for now.
 else
