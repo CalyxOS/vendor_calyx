@@ -51,6 +51,24 @@
       "message": "Maybe exclude kernel as well, just in case?",
       "revId": "9a882286ff94b23e784c8d04892032bc7befb47b",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "89d014ea_d2dcb203",
+        "filename": "build/envsetup.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-05T13:32:45Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "a0bbfc6c_c721b8d8",
+      "revId": "9a882286ff94b23e784c8d04892032bc7befb47b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
