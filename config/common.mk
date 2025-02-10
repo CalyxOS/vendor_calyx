@@ -1,5 +1,7 @@
 include vendor/calyx/config/version.mk
 
+-include vendor/google/gearhead/aa.mk
+
 # Overlays
 PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/calyx/overlay/no-rro
 PRODUCT_PACKAGE_OVERLAYS += \
