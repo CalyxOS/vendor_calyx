@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5993c6fd_14e07199",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-10T21:02:10Z",
+      "side": 1,
+      "message": "TODO: What happens if some rogue app with the same package name gets installed? What does this get that?",
+      "revId": "2709175ad5242e225fe2ef37a7584d2673417859",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
