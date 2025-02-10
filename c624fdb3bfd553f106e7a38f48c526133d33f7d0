@@ -1,5 +1,23 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e2dd17b8_01724c83",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-10T21:03:58Z",
+      "side": 1,
+      "message": "18108: [DO NOT MERGE] Android Auto | https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/18108",
+      "revId": "c624fdb3bfd553f106e7a38f48c526133d33f7d0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ],
   "submitRequirementResults": [
     {
       "submitRequirement": {
