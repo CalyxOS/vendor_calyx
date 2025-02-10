@@ -142,4 +142,7 @@
          value is left empty.  When this is non-empty then config_rawContactsLocalAccountName
          should also be non-empty.-->
     <string name="config_rawContactsLocalAccountType" translatable="false">com.android.contacts</string>
+
+    <!-- The names of the packages that will hold the automotive projection role. -->
+    <string name="config_systemAutomotiveProjection" translatable="false">com.google.android.projection.gearhead</string>
 </resources>
