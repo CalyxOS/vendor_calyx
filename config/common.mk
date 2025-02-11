@@ -9,7 +9,8 @@ PRODUCT_PACKAGE_OVERLAYS += \
 PRODUCT_PACKAGES += \
     CarrierConfigStandaloneEntriesOverlay \
     CellBroadcastReceiverOverlay \
-    Launcher3Overlay
+    Launcher3Overlay \
+    PermissionControllerOverlay
 
 # Translations
 CUSTOM_LOCALES += \
