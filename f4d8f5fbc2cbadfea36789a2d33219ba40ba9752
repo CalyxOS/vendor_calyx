@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ac1adc74_989c5415",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-15T18:18:25Z",
+      "side": 1,
+      "message": "1. vendor/calyx/scripts/fdroid-repo.sh\n2. Remove MuPDF from calyx-fdroid-repo - loook at git history for examples\n3. Repeat 1, now only diff will be this removal, making it easy to see.",
+      "revId": "f4d8f5fbc2cbadfea36789a2d33219ba40ba9752",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
