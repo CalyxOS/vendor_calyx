@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fb37d58c_f975b288",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-16T20:09:12Z",
+      "side": 1,
+      "message": "Looks good otherwise.\n\nA test for this is sign the same set of builds using this - and also generate keys using this and compare that ot what we already have.",
+      "revId": "07e3811a1c02c305670d831f50c8c6e17741239d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2f55c723_5e593e86",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 176,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-16T20:09:12Z",
+      "side": 1,
+      "message": "This doesn\u0027t look right.",
+      "revId": "07e3811a1c02c305670d831f50c8c6e17741239d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
