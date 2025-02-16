@@ -33,6 +33,24 @@
       "message": "This doesn\u0027t look right.",
       "revId": "07e3811a1c02c305670d831f50c8c6e17741239d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6912ff72_35a601c0",
+        "filename": "scripts/release.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 176,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-02-16T20:38:50Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2f55c723_5e593e86",
+      "revId": "07e3811a1c02c305670d831f50c8c6e17741239d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
