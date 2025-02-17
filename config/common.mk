@@ -1,5 +1,12 @@
 include vendor/calyx/config/version.mk
 
+ifneq ($(wildcard vendor/google/gearhead/proprietary/),)
+include device/google/gearhead/device.mk
+include vendor/google/gearhead/gearhead-vendor.mk
+else
+$(warning "Building without Android Auto support")
+endif
+
 # Overlays
 PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += vendor/calyx/overlay/no-rro
 PRODUCT_PACKAGE_OVERLAYS += \
