@@ -16,6 +16,24 @@
       "message": "1. vendor/calyx/scripts/fdroid-repo.sh\n2. Remove MuPDF from calyx-fdroid-repo - loook at git history for examples\n3. Repeat 1, now only diff will be this removal, making it easy to see.",
       "revId": "f4d8f5fbc2cbadfea36789a2d33219ba40ba9752",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a764c529_08db8510",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-02-20T15:08:21Z",
+      "side": 1,
+      "message": "1. https://review.calyxos.org/c/CalyxOS/lfs_prebuilts_calyx_fdroid/+/35582 Update fdroid repo to 9197688601 \n2. https://review.calyxos.org/c/CalyxOS/calyxos-fdroid-repo/+/35581 Remove MuPDFviewer, replaced by Camelot\n3. https://review.calyxos.org/c/CalyxOS/lfs_prebuilts_calyx_fdroid/+/35583 Update fdroid repo to 9197788376",
+      "parentUuid": "ac1adc74_989c5415",
+      "revId": "f4d8f5fbc2cbadfea36789a2d33219ba40ba9752",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
