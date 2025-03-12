@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6eb2af6c_c7f3874f",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-03-12T20:43:20Z",
+      "side": 1,
+      "message": "```suggestion\n3. Extract CalyxOS image and hosttar\n```",
+      "range": {
+        "startLine": 17,
+        "startChar": 11,
+        "endLine": 17,
+        "endChar": 20
+      },
+      "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "38a84556_6f22bbb7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-03-12T20:43:20Z",
+      "side": 1,
+      "message": "Can we add a note to the commit message that this was adapted for CalyxOS from LineageOS\u0027s change, if nothing else to make it clear that the authorship is original authorship rather than this change coming directly from the listed author? Maybe add yourself to Co-authored-by or something too?\n\nI\u0027m not clear on how we usually handle this.",
+      "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
