@@ -34,4 +34,7 @@
          for immersive mode.
          Override to disable immersive mode confirmation for certain packages. -->
     <string name="def_immersive_mode_confirmations" translatable="false">confirmed</string>
+
+    <!-- Default for Settings.Secure.LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS -->
+    <bool name="def_lock_screen_allow_private_notifications">false</bool>
 </resources>
