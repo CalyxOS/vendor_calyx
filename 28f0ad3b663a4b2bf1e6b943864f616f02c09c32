@@ -117,6 +117,24 @@
       "parentUuid": "a2c29b46_ba4546d7",
       "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6a3ae6ac_bc397e08",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-03-13T22:38:56Z",
+      "side": 1,
+      "message": "It is false attribution. It looks like the author wrote the commit message as it is appears, verbatim - like they tailored this change for CalyxOS. They probably don\u0027t mind, but I don\u0027t like altering people\u0027s words without noting it somehow, even if it\u0027s minor.",
+      "parentUuid": "27721840_655d75e0",
+      "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
