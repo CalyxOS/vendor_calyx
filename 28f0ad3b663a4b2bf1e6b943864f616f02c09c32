@@ -39,6 +39,24 @@
       "message": "Can we add a note to the commit message that this was adapted for CalyxOS from LineageOS\u0027s change, if nothing else to make it clear that the authorship is original authorship rather than this change coming directly from the listed author? Maybe add yourself to Co-authored-by or something too?\n\nI\u0027m not clear on how we usually handle this.",
       "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "56a2161a_315d64b7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-03-13T14:03:57Z",
+      "side": 1,
+      "message": "We usually just keep these changes as-is, apart from s/Lineage/Calyx/ as needed, especially in this repo.",
+      "parentUuid": "38a84556_6f22bbb7",
+      "revId": "28f0ad3b663a4b2bf1e6b943864f616f02c09c32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
