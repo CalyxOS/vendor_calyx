@@ -16,6 +16,24 @@
       "message": "Nice. Can there be a reference to [soong: Support installing apps to fdroid directory](https://review.calyxos.org/c/CalyxOS/platform_build_soong/+/37381) in the commit message, e.g. `Requires-Change-Id: I5c1b49d41e78225999d2459ba0046c3307d6d123` or something like that?",
       "revId": "0374439d5959da530d8e57d5196df6af54b5baa8",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d7dad3bf_7b26e254",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 9
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-03-27T14:57:36Z",
+      "side": 1,
+      "message": "Done, another way is to use the same Change-Id - not possible now, but an option",
+      "parentUuid": "e5d9a353_f32c1e4e",
+      "revId": "0374439d5959da530d8e57d5196df6af54b5baa8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
