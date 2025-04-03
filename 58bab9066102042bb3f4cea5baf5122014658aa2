@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2be09cff_02a89637",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-04-03T20:39:16Z",
+      "side": 1,
+      "message": "Works. Tested on FP5. Note that on cuttlefish, for some reason, with this change, NFC cannot be turned on anymore. This is a cuttlefish issue.",
+      "revId": "58bab9066102042bb3f4cea5baf5122014658aa2",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
