@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d0aa3267_ad2c8ab0",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-04-03T19:57:21Z",
+      "side": 1,
+      "message": "```suggestion\nShow sensitive notification content only when unlocked, by default\n\nWhen a new user establishes a screen lock, or an existing user\nestablishes one for the first time, hide sensitive notification\ncontent from the lock screen by default. This affects the behavior\ncoming out of the setup wizard and the default option selected when\nestablishing a screen lock from outside of the setup wizard.\n```\n\nThe title re-uses the AOSP verbiage, and the description attempts to clarify the behavior.",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 7,
+        "endChar": 53
+      },
+      "revId": "6a69e161bbc71d8c8f1b9dd219e9bd656703ebc9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
