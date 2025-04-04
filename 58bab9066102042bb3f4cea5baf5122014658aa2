@@ -16,6 +16,24 @@
       "message": "Works. Tested on FP5. Note that on cuttlefish, for some reason, with this change, NFC cannot be turned on anymore. This is a cuttlefish issue.",
       "revId": "58bab9066102042bb3f4cea5baf5122014658aa2",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "36e7442a_c909ae8f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-04-04T13:12:54Z",
+      "side": 1,
+      "message": "One way for that is to not include this overlay in cuttlefish builds. Bluetooth as well. Or have a higher priority overlay here or in the cuttlefish repo which sets them as on instead.\n\nBasically, some way to have a difference to make things work.",
+      "parentUuid": "2be09cff_02a89637",
+      "revId": "58bab9066102042bb3f4cea5baf5122014658aa2",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
