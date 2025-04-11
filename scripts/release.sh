@@ -41,7 +41,7 @@ if [[
     $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
     $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == felix ||
     $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet
+    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
 ]]; then
   BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
@@ -97,7 +97,7 @@ elif [[
 elif [[
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
   $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
 ]]; then
   VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
                    --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
@@ -113,7 +113,7 @@ if [[
   $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
   $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
   $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet ||
+  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu ||
   $DEVICE == FP4 ||
   $DEVICE == FP5 ||
   $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||

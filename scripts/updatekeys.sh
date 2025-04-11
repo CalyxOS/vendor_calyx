@@ -66,7 +66,7 @@ fi
 if [[
   $KEY_DIR =~ panther || $KEY_DIR =~ cheetah || $KEY_DIR =~ lynx || $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix ||
   $KEY_DIR =~ shiba || $KEY_DIR =~ husky || $KEY_DIR =~ akita ||
-  $KEY_DIR =~ tokay || $KEY_DIR =~ caiman || $KEY_DIR =~ komodo || $KEY_DIR =~ comet
+  $KEY_DIR =~ tokay || $KEY_DIR =~ caiman || $KEY_DIR =~ komodo || $KEY_DIR =~ comet || $KEY_DIR =~ tegu
 ]]; then
   if [[ ! -e avb_vbmeta_system.pem ]]; then
     openssl genrsa -out avb_vbmeta_system.pem 4096
