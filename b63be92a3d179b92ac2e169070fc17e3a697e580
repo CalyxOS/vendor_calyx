@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "336e1f8b_62e0b471",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-04-11T00:13:05Z",
+      "side": 1,
+      "message": "Kernels don\u0027t match the build split, although that\u0027s normal.\n\n6-7 is one build, 8-9 another.",
+      "revId": "b63be92a3d179b92ac2e169070fc17e3a697e580",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
