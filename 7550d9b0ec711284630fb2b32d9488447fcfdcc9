@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "994085ef_0f315bef",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-04-16T19:07:10Z",
+      "side": 1,
+      "message": "This is fine now, FP4 has been pinned to previous clang version and the rest of the devices are ok.",
+      "revId": "7550d9b0ec711284630fb2b32d9488447fcfdcc9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
