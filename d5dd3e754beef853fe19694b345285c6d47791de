@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6dedb427_7243d160",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-04-16T17:27:18Z",
+      "side": 1,
+      "message": "Counterpart: https://review.calyxos.org/c/CalyxOS/platform_external_tinycompress/+/38417",
+      "revId": "d5dd3e754beef853fe19694b345285c6d47791de",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
