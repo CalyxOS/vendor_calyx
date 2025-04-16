@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "40348bfa_0b347b43",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-04-16T17:26:06Z",
+      "side": 1,
+      "message": "Counterpart: https://review.calyxos.org/c/CalyxOS/platform_frameworks_native/+/38418",
+      "revId": "88c809ca3bd57d1b18f2057d826573f52078758f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
