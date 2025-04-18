@@ -90,6 +90,10 @@ function calyxremote()
     local CALYX="true"
     if [ -z "$REMOTE" ]
     then
+        REMOTE=$(git config --get remote.gitlab-main.projectname)
+    fi
+    if [ -z "$REMOTE" ]
+    then
         REMOTE=$(git config --get remote.gitlab-priv.projectname)
     fi
     if [ -z "$REMOTE" ]

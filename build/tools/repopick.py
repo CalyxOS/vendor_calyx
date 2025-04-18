@@ -657,6 +657,20 @@ def do_git_fetch_pull(args, item):
             return
         print("ERROR: git command failed")
 
+    # Try fetching from GitLab first if using calyx gerrit
+    if is_calyx_gerrit(args.gerrit):
+        if args.verbose:
+            print("Trying to fetch the change from GitLab main")
+
+        cmd[-2] = "gitlab-main"
+        if not args.quiet:
+            print(cmd)
+        result = subprocess.call(cmd, cwd=project_path)
+        # Check if it worked
+        if result == 0:
+            return
+        print("ERROR: git command failed")
+
     # If not using the calyx gerrit or gitlab failed, fetch from gerrit.
     if args.verbose:
         if is_calyx_gerrit(args.gerrit):
