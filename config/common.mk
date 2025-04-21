@@ -215,3 +215,7 @@ ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PRODUCT_PROPERTIES += \
     persist.debug.dalvik.vm.jdwp.enabled=1
 endif
+
+# Init script run via vendor on all devices, including with GSIs.
+PRODUCT_PACKAGES += \
+    init.calyx.rc
