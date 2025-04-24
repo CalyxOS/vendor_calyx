@@ -28,14 +28,14 @@ $(foreach v,$(EXPORT_TO_SOONG),$(eval $(call addVar,$(v))))
 
 SOONG_CONFIG_NAMESPACES += calyxGlobalVars
 SOONG_CONFIG_calyxGlobalVars += \
-    additional_gralloc_10_usage_bits \
     inline_kernel_building
 
 # Soong bool variables
 SOONG_CONFIG_calyxGlobalVars_inline_kernel_building := $(INLINE_KERNEL_BUILDING)
 
-# Set default values
+# Libui
 TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS ?= 0
 
-# Soong value variables
-SOONG_CONFIG_calyxGlobalVars_additional_gralloc_10_usage_bits := $(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS)
+ifneq ($(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS),)
+    $(call soong_config_set,libui,additional_gralloc_10_usage_bits,$(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS))
+endif
