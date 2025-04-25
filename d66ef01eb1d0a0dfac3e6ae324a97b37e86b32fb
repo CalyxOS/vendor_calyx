@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "84f66368_d47de2dd",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-04-25T20:00:48Z",
+      "side": 1,
+      "message": "Not sure of the drawbacks of this if any.",
+      "revId": "d66ef01eb1d0a0dfac3e6ae324a97b37e86b32fb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
