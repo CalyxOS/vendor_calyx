@@ -16,6 +16,24 @@
       "message": "Not sure of the drawbacks of this if any.",
       "revId": "d66ef01eb1d0a0dfac3e6ae324a97b37e86b32fb",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "86178a74_452d1b28",
+        "filename": "overlay/common/frameworks/base/core/res/res/values/config.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 58,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-04-25T20:03:10Z",
+      "side": 1,
+      "message": "This was to pass FRP tests. But would essentially force (at least parts of) FRP to be implemented in microG",
+      "parentUuid": "84f66368_d47de2dd",
+      "revId": "d66ef01eb1d0a0dfac3e6ae324a97b37e86b32fb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
