@@ -150,6 +150,10 @@ PRODUCT_PACKAGES += \
     lineage_charger_animation_vendor
 endif
 
+# Credential storage
+PRODUCT_PACKAGES += \
+    android.software.credentials.prebuilt.xml
+
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
