@@ -33,6 +33,24 @@
       "message": "This shouldn\u0027t be needed, if there\u0027s no HAL the sdk can\u0027t do anything",
       "revId": "37a9a45afd3ccd1202662dac211e2a4118d976a8",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9d4bdaa0_14ccf407",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-04-29T13:39:31Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "d37a388d_0f4995fd",
+      "revId": "37a9a45afd3ccd1202662dac211e2a4118d976a8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
