@@ -16,6 +16,23 @@
       "message": "Do we want this as well?",
       "revId": "37a9a45afd3ccd1202662dac211e2a4118d976a8",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f6efa277_4b16bbec",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-04-29T13:02:29Z",
+      "side": 1,
+      "message": "This shouldn\u0027t be needed, if there\u0027s no HAL the sdk can\u0027t do anything",
+      "revId": "37a9a45afd3ccd1202662dac211e2a4118d976a8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
