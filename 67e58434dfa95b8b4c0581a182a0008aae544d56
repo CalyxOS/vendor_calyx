@@ -52,6 +52,24 @@
       "parentUuid": "030b81d9_9333e3c1",
       "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "12ec3b77_9d3b612e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-04-30T14:53:51Z",
+      "side": 1,
+      "message": "https://cs.android.com/android/platform/superproject/+/android15-qpr2-release:frameworks/base/services/core/java/com/android/server/app/GameManagerService.java;l\u003d2278?q\u003dsetGameDefaultFrameRateOverride\u0026start\u003d1\nAs far as I can tell it only sets different default frame rates for UIDs that are classified as being games that are in the foreground",
+      "parentUuid": "1ee6e11c_bcd00ab3",
+      "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
