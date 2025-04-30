@@ -88,6 +88,24 @@
       "parentUuid": "12ec3b77_9d3b612e",
       "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "faf250c2_59a2ff3a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-04-30T16:57:08Z",
+      "side": 1,
+      "message": "Yeah, good point about ensuring overlays would work appropriately in this case",
+      "parentUuid": "dd6259fe_d3382ff9",
+      "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
