@@ -34,6 +34,24 @@
       "parentUuid": "10e4906d_1506b50a",
       "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1ee6e11c_bcd00ab3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-04-30T14:40:07Z",
+      "side": 1,
+      "message": "Related CTS test for reference (set to 60 if prop is not set)\nhttps://cs.android.com/android/platform/superproject/main/+/main:cts/tests/tests/gameframerate/src/GameFrameRateCtsActivity.java;l\u003d522?q\u003dgame_default_frame_rate_override",
+      "parentUuid": "030b81d9_9333e3c1",
+      "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
