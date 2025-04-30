@@ -16,6 +16,24 @@
       "message": "This is marked CTS, so I assume stock Googlified OSes all do this, or something like it? Do you know what the value or behavior is if unset? Could this change that behavior in a way we need to consider?",
       "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "030b81d9_9333e3c1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000002
+      },
+      "writtenOn": "2025-04-30T14:37:08Z",
+      "side": 1,
+      "message": "Correct, the value cannot be empty to pass the test that verifies it is set. I don\u0027t know what the value or behaviour is if unset. I can take a quick look at code search. I\u0027m uncertain if it would have any impact outside of games",
+      "parentUuid": "10e4906d_1506b50a",
+      "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
