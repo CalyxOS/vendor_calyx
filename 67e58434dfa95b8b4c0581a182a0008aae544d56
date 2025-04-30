@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "10e4906d_1506b50a",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-04-30T14:33:39Z",
+      "side": 1,
+      "message": "This is marked CTS, so I assume stock Googlified OSes all do this, or something like it? Do you know what the value or behavior is if unset? Could this change that behavior in a way we need to consider?",
+      "revId": "67e58434dfa95b8b4c0581a182a0008aae544d56",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
