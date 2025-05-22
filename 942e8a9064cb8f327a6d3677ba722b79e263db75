@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ad88cc5b_f787ff1c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-05-22T18:08:50Z",
+      "side": 1,
+      "message": "Note that `$OFFICIAL_BUILD` would need to be quoted if we were using single brackets, but the double brackets are not POSIX (they\u0027re an extension) and they don\u0027t mind this. Also doesn\u0027t matter if it\u0027s undefined any more or less than it did before (so, doesn\u0027t matter at all).",
+      "revId": "942e8a9064cb8f327a6d3677ba722b79e263db75",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
