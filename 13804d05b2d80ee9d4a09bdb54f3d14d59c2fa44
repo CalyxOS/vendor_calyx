@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5910d677_f62796da",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-05-23T12:52:14Z",
+      "side": 1,
+      "message": "Might be easier to just pick the other commits instead of trying to rebase and fix conflicts",
+      "revId": "13804d05b2d80ee9d4a09bdb54f3d14d59c2fa44",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
