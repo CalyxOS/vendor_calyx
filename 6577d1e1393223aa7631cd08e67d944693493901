@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "bc37eb76_46f33c45",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-05-23T22:27:17Z",
+      "side": 1,
+      "message": "TODO: Compare against stock",
+      "revId": "6577d1e1393223aa7631cd08e67d944693493901",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
