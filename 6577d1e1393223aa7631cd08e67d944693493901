@@ -16,6 +16,24 @@
       "message": "TODO: Compare against stock",
       "revId": "6577d1e1393223aa7631cd08e67d944693493901",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8048b7f1_80d01a2f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-05-28T14:28:03Z",
+      "side": 1,
+      "message": "https://gitlab.com/CalyxOS/calyxos/-/issues/3162#note_2527935721",
+      "parentUuid": "bc37eb76_46f33c45",
+      "revId": "6577d1e1393223aa7631cd08e67d944693493901",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
