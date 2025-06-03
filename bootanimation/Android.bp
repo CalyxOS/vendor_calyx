@@ -1,0 +1,5 @@
+prebuilt_media {
+    name: "bootanimation.zip",
+    src: "bootanimation.zip",
+    product_specific: true,
+}
