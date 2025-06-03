@@ -48,6 +48,11 @@ PRODUCT_PACKAGES += \
     Updater
 endif
 
+# Boot animation
+PRODUCT_PACKAGES += \
+    bootanimation.zip \
+    bootanimation-dark.zip
+
 # SetupWizard
 PRODUCT_PACKAGES += \
     CalyxSetupWizard \
