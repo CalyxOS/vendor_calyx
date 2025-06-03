@@ -185,6 +185,10 @@ PRODUCT_PACKAGES += \
 # Audio
 include vendor/calyx/config/audio.mk
 
+# Boot animation
+PRODUCT_PACKAGES += \
+		bootanimation.zip
+
 # SystemUI
 PRODUCT_DEXPREOPT_SPEED_APPS += \
     SystemUI
