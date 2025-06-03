@@ -52,6 +52,10 @@ PRODUCT_PRODUCT_PROPERTIES += \
     setupwizard.theme=glif_v4 \
     setupwizard.feature.day_night_mode_enabled=true
 
+# Boot animation
+PRODUCT_PACKAGES += \
+    bootanimation.zip
+
 # Customization
 PRODUCT_PACKAGES += \
     IconPackCircularAndroidOverlay \
