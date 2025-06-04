@@ -16,6 +16,24 @@
       "message": "1080x is too wide for some screens. The edges get cut off.",
       "revId": "3403be754d332debbace0fbb94d62df96e458017",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "db4029cf_283d2dfa",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-04T20:09:15Z",
+      "side": 1,
+      "message": "Patchset 5: 1080x.\nPatchset 6: 720x.",
+      "parentUuid": "33669354_a80b7032",
+      "revId": "3403be754d332debbace0fbb94d62df96e458017",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
