@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "33669354_a80b7032",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-04T20:07:06Z",
+      "side": 1,
+      "message": "1080x is too wide for some screens. The edges get cut off.",
+      "revId": "3403be754d332debbace0fbb94d62df96e458017",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
