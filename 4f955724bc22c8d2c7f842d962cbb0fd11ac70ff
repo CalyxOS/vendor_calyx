@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "35eb69a5_ee6a43c7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-04T19:58:19Z",
+      "side": 1,
+      "message": "Fix misnamed frames of part0 (10xx.png -\u003e 01xx.png).",
+      "revId": "4f955724bc22c8d2c7f842d962cbb0fd11ac70ff",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
