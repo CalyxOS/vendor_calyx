@@ -16,6 +16,23 @@
       "message": "Fix misnamed frames of part0 (10xx.png -\u003e 01xx.png).",
       "revId": "4f955724bc22c8d2c7f842d962cbb0fd11ac70ff",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "063fc0a9_1ad301a6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-04T20:00:22Z",
+      "side": 1,
+      "message": "Remove delay after part0.",
+      "revId": "4f955724bc22c8d2c7f842d962cbb0fd11ac70ff",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
