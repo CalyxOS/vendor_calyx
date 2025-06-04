@@ -50,6 +50,24 @@
       "message": "part2 is just a single frame of the CalyxOS logo, so remove the duplicate frames. We can adjust how long it lasts in desc.txt. Currently we have a delay of 60 frames after it shows, or 1 second, given 60fps. So it lasts 61/60 of a second before moving into part3. Slightly unsettling, so maybe we can delay 59 to make an even second.",
       "revId": "4f955724bc22c8d2c7f842d962cbb0fd11ac70ff",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1f893a8d_a0509a72",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-04T20:04:39Z",
+      "side": 1,
+      "message": "We might want it longer than a second too, not sure; will of course leave that up to Sage and others.",
+      "parentUuid": "3986acb0_faae0572",
+      "revId": "4f955724bc22c8d2c7f842d962cbb0fd11ac70ff",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
