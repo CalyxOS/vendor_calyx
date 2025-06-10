@@ -16,6 +16,24 @@
       "message": "Shouldn\u0027t the examples be a realistic number? We probably aren\u0027t going to have 9 QPR releases",
       "revId": "cbcb6d75ad818aa26708287de8563896d590c0bb",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e56bf7fe_a4376982",
+        "filename": "config/version.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2025-06-10T16:39:53Z",
+      "side": 1,
+      "message": "We hardcoded the QPR for 15 to 9 because the previous release was \u00276.8.x\u0027. It\u0027s in the ticket, too.\n\nGoing forward, it\u0027ll be 0/1/2/3 for 16 and so on.\n\nWill update this when picking to 16",
+      "parentUuid": "697887fa_0cc3f1c8",
+      "revId": "cbcb6d75ad818aa26708287de8563896d590c0bb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
