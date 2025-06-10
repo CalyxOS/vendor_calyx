@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "697887fa_0cc3f1c8",
+        "filename": "config/version.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-06-10T15:11:25Z",
+      "side": 1,
+      "message": "Shouldn\u0027t the examples be a realistic number? We probably aren\u0027t going to have 9 QPR releases",
+      "revId": "cbcb6d75ad818aa26708287de8563896d590c0bb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
