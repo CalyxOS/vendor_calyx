@@ -14,10 +14,9 @@
 // limitations under the License.
 
 aconfig_value_set {
-    name: "aconfig_value_set-calyx-bp1a",
+    name: "aconfig_value_set-calyx-bp2a",
     values: [
-        "aconfig-values-bp1a-android.app.admin.flags-all",
-        "aconfig-values-bp1a-android.hardware.biometrics-all",
-        "aconfig-values-bp1a-android.security-all",
+        "aconfig-values-bp2a-android.app.admin.flags-all",
+        "aconfig-values-bp2a-android.security-all",
     ],
 }
