@@ -16,6 +16,24 @@
       "message": "@mikeioannina@gmail.com You surely know the proper way to do this.",
       "revId": "486d8e8bef713646e7787b888690423df4decb15",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6bc45a65_d400254f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-06-12T12:11:39Z",
+      "side": 1,
+      "message": "For a start this is fine. Next step is to check if any of the release/aconfig flags are enabled by default in bp2a in build/release and then remove them from here. \n\nFinal step would be to update the pixel flags, but that doesn\u0027t matter since we lost source access and we might as well remove them once we bring up the device trees.",
+      "parentUuid": "67712b66_ff0457a2",
+      "revId": "486d8e8bef713646e7787b888690423df4decb15",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
