@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "67712b66_ff0457a2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-12T12:04:23Z",
+      "side": 1,
+      "message": "@mikeioannina@gmail.com You surely know the proper way to do this.",
+      "revId": "486d8e8bef713646e7787b888690423df4decb15",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
