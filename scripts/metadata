@@ -45,11 +45,13 @@ keys_apex=(
   com.android.appsearch
   com.android.art
   com.android.bluetooth
+  com.android.bt
   com.android.btservices
   com.android.cellbroadcast
   com.android.compos
   com.android.configinfrastructure
   com.android.conscrypt
+  com.android.crashrecovery
   com.android.devicelock
   com.android.extservices
   com.android.hardware.biometrics.face.virtual
@@ -77,6 +79,7 @@ keys_apex=(
   com.android.telephonymodules
   com.android.tethering
   com.android.tzdata
+  com.android.uprobestats
   com.android.uwb
   com.android.vibrator.drv2624
   com.android.vibrator.sunfish
