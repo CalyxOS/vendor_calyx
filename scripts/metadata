@@ -95,11 +95,13 @@ apexes=(
 	com.android.appsearch.apex
 	com.android.art.apex
 	com.android.bluetooth.apex
+	com.android.bt.apex
 	com.android.btservices.apex
 	com.android.cellbroadcast.apex
 	com.android.compos.apex
 	com.android.configinfrastructure.apex
 	com.android.conscrypt.apex
+	com.android.crashrecovery.apex
 	com.android.devicelock.apex
 	com.android.extservices.apex
 	com.android.hardware.biometrics.face.virtual.apex
@@ -127,6 +129,7 @@ apexes=(
 	com.android.telephonymodules.apex
 	com.android.tethering.apex
 	com.android.tzdata.apex
+	com.android.uprobestats.apex
 	com.android.uwb.apex
 	com.android.vibrator.drv2624.apex # bonito, sargo
 	com.android.vibrator.sunfish.apex
@@ -144,11 +147,13 @@ apex_container_key[com.android.adservices.apex]=com.android.adservices
 apex_container_key[com.android.appsearch.apex]=com.android.appsearch
 apex_container_key[com.android.art.apex]=com.android.art
 apex_container_key[com.android.bluetooth.apex]=com.android.btservices
+apex_container_key[com.android.bt.apex]=com.android.bt
 apex_container_key[com.android.btservices.apex]=com.android.btservices
 apex_container_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_container_key[com.android.compos.apex]=com.android.compos
 apex_container_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
 apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_container_key[com.android.crashrecovery.apex]=com.android.crashrecovery
 apex_container_key[com.android.devicelock.apex]=com.android.devicelock
 apex_container_key[com.android.extservices.apex]=com.android.extservices
 apex_container_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
@@ -176,6 +181,7 @@ apex_container_key[com.android.support.apexer.apex]=releasekey
 apex_container_key[com.android.telephonymodules.apex]=com.android.telephonymodules
 apex_container_key[com.android.tethering.apex]=releasekey
 apex_container_key[com.android.tzdata.apex]=com.android.tzdata
+apex_container_key[com.android.uprobestats.apex]=com.android.uprobestats
 apex_container_key[com.android.uwb.apex]=com.android.uwb
 apex_container_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
 apex_container_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
@@ -192,11 +198,13 @@ apex_payload_key[com.android.adservices.apex]=com.android.adservices
 apex_payload_key[com.android.appsearch.apex]=com.android.appsearch
 apex_payload_key[com.android.art.apex]=com.android.art
 apex_payload_key[com.android.bluetooth.apex]=com.android.btservices
+apex_payload_key[com.android.bt.apex]=com.android.bt
 apex_payload_key[com.android.btservices.apex]=com.android.btservices
 apex_payload_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
 apex_payload_key[com.android.compos.apex]=com.android.compos
 apex_payload_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
 apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
+apex_payload_key[com.android.crashrecovery.apex]=com.android.crashrecovery
 apex_payload_key[com.android.devicelock.apex]=com.android.devicelock
 apex_payload_key[com.android.extservices.apex]=com.android.extservices
 apex_payload_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
@@ -224,6 +232,7 @@ apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
 apex_payload_key[com.android.telephonymodules.apex]=com.android.telephonymodules
 apex_payload_key[com.android.tethering.apex]=com.android.tethering
 apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
+apex_payload_key[com.android.uprobestats.apex]=com.android.uprobestats
 apex_payload_key[com.android.uwb.apex]=com.android.uwb
 apex_payload_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
 apex_payload_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
