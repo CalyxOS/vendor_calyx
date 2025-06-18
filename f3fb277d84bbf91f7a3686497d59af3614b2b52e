@@ -16,6 +16,29 @@
       "message": "Looks okay to me so far, with bluejay and akita. The following \"issues\" as shown for akita are expected, because we don\u0027t sign those:\n\n```\n$ DEVICE\u003dakita\n$ ~/android/calyxos/android16/calyx/scripts/misc/check_keys.sh gen_allowlist keys/$DEVICE keys/common | sort -u \u003e allowed-keys-$DEVICE.txt\n\n$ ALLOWED_FINGERPRINTS\u003d\"$(cat allowed-keys-$DEVICE.txt)\" /home/twebb/android/calyxos/android16/calyx/scripts/misc/check_keys.sh target_files     \"archive/release-$DEVICE-250700000/$DEVICE-target_files-250700000.zip\"\nNo matching certs for PRODUCT/priv-app/AndroidAutoStubPrebuilt/AndroidAutoStubPrebuilt.apk ():\n  SHA-256:1ca8dcc0bed3cbd872d2cb791200c0292ca9975768a82d676b8b424fb65b5295\n  SHA-1:a60bd681f4cee6031cb6235b3e145bb1936c4e76\n  MD5:646301a5e0afb01384a6e5fc0612f798\n  SHA-256:fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf\n  SHA-1:9ca91f9e704d630ef67a23f52bf1577a92b9ca5d\n  MD5:eeb557fc154afc0d8eec621bdc7ea950\nFingerprint not found on allowlist: PRODUCT/priv-app/AndroidAutoStubPrebuilt/AndroidAutoStubPrebuilt.apk\nNo matching certs for SYSTEM_EXT/priv-app/EuiccSupportPixel-P23/EuiccSupportPixel-P23.apk ():\n  SHA-256:e0afeca77af15aee48a25ead314c576f8f274682a8fba3365610878f7c1ddb6b\n  SHA-1:b704849e8c516e1d0d0d406a9fa742bbe05728eb\n  MD5:bccb425bf176935cc63cd06da5814e13\nFingerprint not found on allowlist: SYSTEM_EXT/priv-app/EuiccSupportPixel-P23/EuiccSupportPixel-P23.apk\nNo matching certs for SYSTEM_EXT/priv-app/ril-extension/ril-extension.apk ():\n  SHA-256:51449f7b7240c14325c2220fdb6a38ed14004819e88b8e213aeceaa7a1f70e77\n  SHA-1:235c4f8752083ddae2dd3bcd6d035aa60ad49128\n  MD5:106756c86dd3c8f33daa8e836d74d7fa\nFingerprint not found on allowlist: SYSTEM_EXT/priv-app/ril-extension/ril-extension.apk\nNo matching certs for VENDOR/apex/com.google.android.hardware.biometrics.face.apex ():\n  SHA-256:27413dc3e9d2f607ec90ecf13adde6c6760cd4939eb71ea84baa614fdc7af253\n  SHA-1:c223df73a07d1c5f822c97884b79894a314e457b\n  MD5:a78d42bc04640d42febb4d07f16d1129\nFingerprint not found on allowlist: VENDOR/apex/com.google.android.hardware.biometrics.face.apex\n\nFINGERPRINT ISSUES FOUND WITH:\nPRODUCT/priv-app/AndroidAutoStubPrebuilt/AndroidAutoStubPrebuilt.apk\nSYSTEM_EXT/priv-app/EuiccSupportPixel-P23/EuiccSupportPixel-P23.apk\nSYSTEM_EXT/priv-app/ril-extension/ril-extension.apk\nVENDOR/apex/com.google.android.hardware.biometrics.face.apex\n```\n\nbluejay only reported AndroidAutoStubPrebuilt.apk.",
       "revId": "f3fb277d84bbf91f7a3686497d59af3614b2b52e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "64aafcb1_567e9f77",
+        "filename": "scripts/metadata",
+        "patchSetId": 3
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-06-18T14:33:42Z",
+      "side": 1,
+      "message": "Here it\u0027s `bt` but in payload category below it\u0027s `btservices`, is this correct?",
+      "range": {
+        "startLine": 150,
+        "startChar": 52,
+        "endLine": 150,
+        "endChar": 54
+      },
+      "revId": "f3fb277d84bbf91f7a3686497d59af3614b2b52e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
