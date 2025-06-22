@@ -1,6 +1,8 @@
 #!/bin/bash
 # Update the local CalyxOS F-Droid repository
 
+set -euo pipefail
+
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 DATE=$(date +%F)
 FDROIDREPOTMP=$(mktemp -d)

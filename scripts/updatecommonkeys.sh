@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 key_dir subject"
@@ -17,10 +19,10 @@ source "$SCRIPTPATH/metadata"
 KEY_DIR=$1
 SUBJECT="$2"
 
-[[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
-[[ ! -e $(which keytool) ]] && error "keytool not found in PATH."
+[[ -e $(which openssl) ]] || error "openssl not found in PATH."
+[[ -e $(which keytool) ]] || error "keytool not found in PATH."
 
-[[ ! -d $KEY_DIR ]] && error "key directory does not exist"
+[[ -d $KEY_DIR ]] || error "key directory does not exist"
 
 pushd "$KEY_DIR"
 

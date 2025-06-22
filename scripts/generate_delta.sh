@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
 read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
 
