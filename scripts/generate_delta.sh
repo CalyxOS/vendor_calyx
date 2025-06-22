@@ -1,7 +1,10 @@
 #!/bin/bash
 
+read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
+read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
+
 error() {
-  echo error: $1, please try again >&2
+  echo "error: $1, please try again" >&2
   echo "Usage: $0 device oldversion newversion"
   exit 1
 }
@@ -18,13 +21,13 @@ if [[ -d build/tools/releasetools ]]; then
 else
   # For usage with otatools.zip
   RELEASETOOLS_PATH=.
-  EXTRA_RELEASETOOLS_ARGS="-p ."
+  EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" \
-  -i archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip \
-  archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip \
-  archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$KEY_DIR/releasekey" \
+  -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
+  "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
+  "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
 
 echo "Calculating sha256sum for incremental"
-sha256sum archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip | awk '{printf $1}' > archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum
+sha256sum "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip" | awk '{printf $1}' > "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"

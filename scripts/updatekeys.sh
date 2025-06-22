@@ -1,7 +1,7 @@
 #!/bin/bash
 
 error() {
-  echo error: $1, please try again >&2
+  echo "error: $1, please try again" >&2
   echo "Usage: $0 key_dir subject"
   echo "Example subject: '/C=US/ST=California/L=Mountain View/O=Android/OU=Android/CN=Android/emailAddress=android@android.com'"
   exit 1
@@ -12,7 +12,7 @@ error() {
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 TOP="$SCRIPTPATH/../../.."
 
-source $SCRIPTPATH/metadata
+source "$SCRIPTPATH/metadata"
 
 KEY_DIR=$1
 SUBJECT="$2"
@@ -25,7 +25,7 @@ AVBTOOL=$TOP/bin/avbtool
 
 [[ ! -d $KEY_DIR ]] && error "key directory does not exist"
 
-pushd $KEY_DIR
+pushd "$KEY_DIR"
 
 for k in releasekey platform shared media networkstack sdk_sandbox \
     com.android.connectivity.resources \
@@ -36,7 +36,7 @@ for k in releasekey platform shared media networkstack sdk_sandbox \
     com.android.health.connect.backuprestore com.android.nfcservices \
     com.android.federatedcompute; do
   if [[ ! -e ${k}.pk8 ]]; then
-    $SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
+    "$SCRIPTPATH/mkkey.sh" "$k" "$SUBJECT"
   fi
 done
 
@@ -46,7 +46,7 @@ if [[
   $KEY_DIR =~ tangorpro || $KEY_DIR =~ felix
 ]]; then
   if [[ ! -e com.qorvo.uwb.pk8 ]]; then
-    $SCRIPTPATH/mkkey.sh "com.qorvo.uwb" "$SUBJECT"
+    "$SCRIPTPATH/mkkey.sh" "com.qorvo.uwb" "$SUBJECT"
   fi
 fi
 
@@ -56,10 +56,10 @@ if [[ ! -e avb.pem ]]; then
     $KEY_DIR =~ redfin || $KEY_DIR =~ bramble
   ]]; then
     openssl genrsa -out avb.pem 2048
-    $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
+    "$AVBTOOL" extract_public_key --key avb.pem --output avb_custom_key.img
   else
     openssl genrsa -out avb.pem 4096
-    $AVBTOOL extract_public_key --key avb.pem --output avb_custom_key.img
+    "$AVBTOOL" extract_public_key --key avb.pem --output avb_custom_key.img
   fi
 fi
 
@@ -84,14 +84,14 @@ fi
 
 for apex in "${apexes[@]}"; do
   if [[ ! -e ${apex_container_key[$apex]}.pk8 ]]; then
-    $SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
+    "$SCRIPTPATH/mkkey.sh" "${apex_container_key[$apex]}" "$SUBJECT"
   fi
 done
 
 for apex in "${apexes[@]}"; do
   if [[ ! -e ${apex_payload_key[$apex]}.pem ]]; then
-    openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
-    $AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
+    openssl genrsa -out "${apex_payload_key[$apex]}.pem" 4096
+    "$AVBTOOL" extract_public_key --key "${apex_payload_key[$apex]}.pem" --output "${apex_payload_key[$apex]}.avbpubkey"
   fi
 done
 
