@@ -8,20 +8,20 @@ JOBID=$(curl -sI https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/artifacts
 ANDROID_BP=Android.bp
 FDROID_MK=fdroid-repo.mk
 
-pushd $SCRIPTPATH/../../../prebuilts/calyx/fdroid
-pushd $FDROIDREPOTMP
-curl -L https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download -o artifacts.zip || exit 1
+pushd "$SCRIPTPATH/../../../prebuilts/calyx/fdroid"
+pushd "$FDROIDREPOTMP"
+curl -L "https://gitlab.com/CalyxOS/calyxos-fdroid-repo/-/jobs/${JOBID}/artifacts/download" -o artifacts.zip || exit 1
 unzip artifacts.zip
 popd
 rm -rf repo
-rm -rf $ANDROID_BP $FDROID_MK
-cp -a ${FDROIDREPOTMP}/public/fdroid/repo .
+rm -rf "$ANDROID_BP" "$FDROID_MK"
+cp -a "${FDROIDREPOTMP}/public/fdroid/repo" .
 chmod 755 repo
 # Temporary, due to copy-xml-file-checked TODO: Figure out a better solution, if possible
 rm -f repo/icons*/*.xml
 FILES=$(find repo/ -type f -not -name "*.apk" | sort)
 APKS=$(cd repo/ && find . -type f -name "*.apk" -printf "%P\n" | sort)
-APPS=$(for apk in $APKS; do echo ${apk%.*}; done)
+APPS=$(for apk in $APKS; do echo "${apk%.*}"; done)
 
 cat <<EOL > $ANDROID_BP
 // Auto generated, do not edit.
@@ -85,7 +85,7 @@ android_app_import {
     presigned: true,
 EOL
 
-    if ! $SCRIPTPATH/../../../build/soong/scripts/check_prebuilt_presigned_apk.py --zipalign $SCRIPTPATH/../../../out/host/linux-x86/bin/zipalign --preprocessed repo/$app.apk /tmp/$app.apk; then
+    if ! "$SCRIPTPATH/../../../build/soong/scripts/check_prebuilt_presigned_apk.py" --zipalign "$SCRIPTPATH/../../../out/host/linux-x86/bin/zipalign" --preprocessed "repo/$app.apk" "/tmp/$app.apk"; then
         echo -e "    skip_preprocessed_apk_checks: true," >> $ANDROID_BP
     fi
 
@@ -119,8 +119,8 @@ for app in $APPS; do
     echo "    $app \\" >> $FDROID_MK
 done
 
-git add repo $ANDROID_BP $FDROID_MK
+git add repo "$ANDROID_BP" "$FDROID_MK"
 git commit -m "Update fdroid repo to ${JOBID}"
-rm -rf ${FDROIDREPOTMP}
+rm -rf "${FDROIDREPOTMP}"
 
 popd
