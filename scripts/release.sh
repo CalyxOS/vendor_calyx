@@ -2,6 +2,7 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
+set -eo pipefail
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source $SCRIPTPATH/metadata
@@ -237,6 +238,9 @@ fi
 
 pushd "$OUT" || exit 1
 
+# FIXME: generate-factory-images-common.sh doesn't handle errors gracefully, such as for missing
+#        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error before sourcing it.
+set +eo pipefail
 if [ ! -z "$ANDROID_BUILD_TOP" ]; then
   $maybe_dry_run \
   source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
@@ -244,6 +248,7 @@ else
   $maybe_dry_run \
   source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
+set -eo pipefail
 
 $maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
