@@ -4,10 +4,13 @@
 
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
-source $SCRIPTPATH/metadata
+read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
+read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
+
+source "$SCRIPTPATH/metadata"
 
 error() {
-  echo error: $1, please try again >&2
+  echo "error: $1, please try again" >&2
   echo "Usage: $0 device [target-files.zip]"
   exit 1
 }
@@ -31,10 +34,10 @@ else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH="$(pwd -P)"
-  EXTRA_RELEASETOOLS_ARGS="-p $RELEASETOOLS_PATH"
+  EXTRA_RELEASETOOLS_ARGS+=(-p "$RELEASETOOLS_PATH")
 fi
 
-VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
+VERSION=$(unzip -c "$TARGET_FILES" SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
 if [[
     $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
@@ -43,10 +46,10 @@ if [[
     $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
     $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
 ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
-  RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  RADIO=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
 elif [[ $DEVICE == tangorpro ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
   QCOM_FIRMWARE="true"
@@ -66,7 +69,7 @@ else
   error "Unsupported device $DEVICE"
 fi
 
-mkdir -p $OUT || exit 1
+mkdir -p "$OUT" || exit 1
 
 
 if [[
@@ -121,8 +124,8 @@ if [[
 ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
   done
 fi
 
@@ -130,37 +133,37 @@ if [[
   $DEVICE == otter
 ]]; then
   for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
   done
 fi
 
-EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
-EXTRA_SIGNING_ARGS+=(-k external/calyx/chromium/certs/chromium=$KEY_DIR/../common/chromium)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/AdServices/adservices/apk/com.android.adservices.api=$KEY_DIR/com.android.adservices.api)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Bluetooth/android/app/certs/com.android.bluetooth=$KEY_DIR/com.android.bluetooth)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources=$KEY_DIR/com.android.safetycenter.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog=$KEY_DIR/com.android.wifi.dialog)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
-EXTRA_SIGNING_ARGS+=(-k packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf=$KEY_DIR/com.android.graphics.pdf)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/AppSearch/apk/com.android.appsearch.apk=$KEY_DIR/com.android.appsearch.apk)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/apk/com.android.healthconnect.controller=$KEY_DIR/com.android.healthconnect.controller)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore=$KEY_DIR/com.android.health.connect.backuprestore)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/nfc=$KEY_DIR/com.android.nfcservices)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute=$KEY_DIR/com.android.federatedcompute)
+EXTRA_SIGNING_ARGS+=(-k "prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg")
+EXTRA_SIGNING_ARGS+=(-k "external/calyx/chromium/certs/chromium=$KEY_DIR/../common/chromium")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/AdServices/adservices/apk/com.android.adservices.api=$KEY_DIR/com.android.adservices.api")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Bluetooth/android/app/certs/com.android.bluetooth=$KEY_DIR/com.android.bluetooth")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources=$KEY_DIR/com.android.safetycenter.resources")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog=$KEY_DIR/com.android.wifi.dialog")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet")
+EXTRA_SIGNING_ARGS+=(-k "packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf=$KEY_DIR/com.android.graphics.pdf")
+EXTRA_SIGNING_ARGS+=(-k "build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth")
+EXTRA_SIGNING_ARGS+=(-k "build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/AppSearch/apk/com.android.appsearch.apk=$KEY_DIR/com.android.appsearch.apk")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/HealthFitness/apk/com.android.healthconnect.controller=$KEY_DIR/com.android.healthconnect.controller")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore=$KEY_DIR/com.android.health.connect.backuprestore")
+EXTRA_SIGNING_ARGS+=(-k "build/make/target/product/security/nfc=$KEY_DIR/com.android.nfcservices")
+EXTRA_SIGNING_ARGS+=(-k "packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute=$KEY_DIR/com.android.federatedcompute")
 
 if [[
   $DEVICE == raven ||
   $DEVICE == cheetah ||
   $DEVICE == tangorpro || $DEVICE == felix
 ]]; then
-  EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
+  EXTRA_SIGNING_ARGS+=(-k "device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb")
 fi
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
@@ -171,7 +174,7 @@ if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ||
     $DEVICE == otter
   ]]; then
-    EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE)
+    EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
     exit 1
@@ -179,53 +182,53 @@ if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
 fi
 
 echo "Creating signed targetfiles zip"
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
-  $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
+  "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 echo "Create OTA update zip"
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
-  $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+  "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
-sha256sum $OUT/$DEVICE-ota_update-$BUILD.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum
+sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
 
-if [ ! -z $OTA_ONLY ]; then
+if [ ! -z "$OTA_ONLY" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
 fi
 fi
 
 echo "Creating factory images"
-$RELEASETOOLS_PATH/bin/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
-  $OUT/$DEVICE-img-$BUILD.zip || exit 1
+"$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+  "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
 
-pushd $OUT || exit 1
+pushd "$OUT" || exit 1
 
-if [ ! -z $ANDROID_BUILD_TOP ]; then
-  source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
+if [ ! -z "$ANDROID_BUILD_TOP" ]; then
+  source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
 else
-  source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
+  source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
 
-mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD.zip
-sha256sum $DEVICE-factory-$BUILD.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD.zip.sha256sum
+mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
+sha256sum "$DEVICE-factory-$BUILD.zip" | awk '{printf $1}' > "$DEVICE-factory-$BUILD.zip.sha256sum"
 
 popd
 
 echo "Removing intermediate file after factory image generation: $DEVICE-img-$BUILD.zip"
-rm $OUT/$DEVICE-img-$BUILD.zip
+rm "$OUT/$DEVICE-img-$BUILD.zip"
 
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \
  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
-  $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
+  "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
-  $OUT/$DEVICE-ota_update-$OTATEST.zip || exit 1
-sha256sum $OUT/$DEVICE-ota_update-$OTATEST.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
+  "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
+sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
 fi

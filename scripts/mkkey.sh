@@ -1,7 +1,7 @@
 #!/bin/bash
 
 error() {
-  echo error: $1, please try again >&2
+  echo "error: $1, please try again" >&2
   echo "Usage: $0 key_name subject"
   echo "Example key_name: networkstack"
   echo "Example subject: '/C=US/ST=California/L=Mountain View/O=Android/OU=Android/CN=Android/emailAddress=android@android.com'"
@@ -24,4 +24,4 @@ MKKEY=$TOP/development/tools/make_key
 [[ -e ${KEY_NAME}.pem ]] && error "key $KEY_NAME already exists"
 [[ -e ${KEY_NAME}.x509.pem ]] && error "key $KEY_NAME already exists"
 
-$MKKEY "$KEY_NAME" "$SUBJECT"
+"$MKKEY" "$KEY_NAME" "$SUBJECT"
