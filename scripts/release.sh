@@ -183,24 +183,40 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   fi
 fi
 
-echo "Creating signed targetfiles zip"
-$maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
-  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
-  "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
+case "${KEEP_EXISTING:-}" in
+  *target*|all)
+    KEEP_TARGET_FILES=y
+    ;;&
+  *otaupdate*|all)
+    KEEP_OTA=y
+    ;;&
+  *factory*|all)
+    KEEP_FACTORY=y
+    ;;
+esac
+
+if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
+  echo "Creating signed targetfiles zip"
+  $maybe_dry_run \
+    "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
+      "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+      "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
+fi
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
-echo "Create OTA update zip"
-$maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
-  "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
+if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
+  echo "Create OTA update zip"
+  $maybe_dry_run \
+  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+    "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
-$maybe_dry_run \
-sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" \
-  | $maybe_dry_run_ignore awk '{printf $1}' \
-  | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
+  $maybe_dry_run \
+  sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" \
+    | $maybe_dry_run_ignore awk '{printf $1}' \
+    | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
+fi
 
 if [ ! -z "${OTA_ONLY:-}" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
@@ -208,10 +224,12 @@ if [ ! -z "${OTA_ONLY:-}" ]; then
 fi
 fi
 
-echo "Creating factory images"
-$maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
-  "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
+if [ "${KEEP_FACTORY:-n}" = n ] || [ ! -e "$OUT/$DEVICE-img-$BUILD.zip" ]; then
+  echo "Creating factory images"
+  $maybe_dry_run \
+  "$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+    "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
+fi
 
 $maybe_dry_run pushd "$OUT" || exit 1
 
