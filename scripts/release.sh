@@ -2,6 +2,7 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
+set -euo pipefail
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
@@ -166,7 +167,7 @@ if [[
   EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
 fi
 
-if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   if [[
     $DEVICE == FP4 ||
     $DEVICE == FP5 ||
@@ -186,7 +187,7 @@ echo "Creating signed targetfiles zip"
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
 
-if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 echo "Create OTA update zip"
@@ -195,7 +196,7 @@ echo "Create OTA update zip"
 
 sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
 
-if [ ! -z "$OTA_ONLY" ]; then
+if [ ! -z "${OTA_ONLY:-}" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
 fi
@@ -207,11 +208,15 @@ echo "Creating factory images"
 
 pushd "$OUT" || exit 1
 
-if [ ! -z "$ANDROID_BUILD_TOP" ]; then
+# FIXME: generate-factory-images-common.sh doesn't handle errors gracefully, such as for missing
+#        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error, etc before sourcing it.
+set +euo pipefail
+if [ ! -z "${ANDROID_BUILD_TOP:-}" ]; then
   source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
 else
   source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
+set -euo pipefail
 
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
 sha256sum "$DEVICE-factory-$BUILD.zip" | awk '{printf $1}' > "$DEVICE-factory-$BUILD.zip.sha256sum"
@@ -221,7 +226,7 @@ popd
 echo "Removing intermediate file after factory image generation: $DEVICE-img-$BUILD.zip"
 rm "$OUT/$DEVICE-img-$BUILD.zip"
 
-if [[ -n $OTATEST ]]; then
+if [[ -n ${OTATEST:-} ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \

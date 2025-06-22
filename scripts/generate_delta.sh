@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -euo pipefail
 EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
 EXTRA_OTA_ARGS=(${EXTRA_OTA_ARGS:-})
 
