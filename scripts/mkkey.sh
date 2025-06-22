@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 key_name subject"
@@ -17,11 +19,11 @@ KEY_NAME=$1
 SUBJECT="$2"
 MKKEY=$TOP/development/tools/make_key
 
-[[ ! -e ${MKKEY} ]] && error "${MKKEY} not found"
-[[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
+[[ -e ${MKKEY} ]] || error "${MKKEY} not found"
+[[ -e $(which openssl) ]] || error "openssl not found in PATH."
 
-[[ -e ${KEY_NAME}.pk8 ]] && error "key $KEY_NAME already exists"
-[[ -e ${KEY_NAME}.pem ]] && error "key $KEY_NAME already exists"
-[[ -e ${KEY_NAME}.x509.pem ]] && error "key $KEY_NAME already exists"
+[[ ! -e ${KEY_NAME}.pk8 ]] || error "key $KEY_NAME already exists"
+[[ ! -e ${KEY_NAME}.pem ]] || error "key $KEY_NAME already exists"
+[[ ! -e ${KEY_NAME}.x509.pem ]] || error "key $KEY_NAME already exists"
 
 "$MKKEY" "$KEY_NAME" "$SUBJECT"
