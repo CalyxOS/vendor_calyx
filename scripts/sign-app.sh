@@ -1,6 +1,8 @@
 #!/bin/bash
 # Signs given app with the appropriate key
 
+set -euo pipefail
+
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 source "$SCRIPTPATH/metadata"

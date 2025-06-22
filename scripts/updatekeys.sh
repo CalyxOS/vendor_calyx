@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 key_dir subject"
@@ -19,11 +21,11 @@ SUBJECT="$2"
 GENVERITYKEY=$TOP/bin/generate_verity_key
 AVBTOOL=$TOP/bin/avbtool
 
-[[ ! -e ${GENVERITYKEY} ]] && error "${GENVERITYKEY} not found."
-[[ ! -e ${AVBTOOL} ]] && error "${AVBTOOL} not found."
-[[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
+[[ -e ${GENVERITYKEY} ]] || error "${GENVERITYKEY} not found."
+[[ -e ${AVBTOOL} ]] || error "${AVBTOOL} not found."
+[[ -e $(which openssl) ]] || error "openssl not found in PATH."
 
-[[ ! -d $KEY_DIR ]] && error "key directory does not exist"
+[[ -d $KEY_DIR ]] || error "key directory does not exist"
 
 pushd "$KEY_DIR"
 
@@ -79,8 +81,8 @@ fi
 
 # Migration from 10 to 11
 # ART apex was renamed, and bionic runtime was split out into a new apex
-[[ -e com.android.runtime.release.pk8 ]] && mv com.android.runtime.release.pk8 com.android.runtime.pk8
-[[ -e com.android.runtime.release.x509.pem ]] && mv com.android.runtime.release.x509.pem com.android.runtime.x509.pem
+if [[ -e com.android.runtime.release.pk8 ]]; then mv com.android.runtime.release.pk8 com.android.runtime.pk8; fi
+if [[ -e com.android.runtime.release.x509.pem ]]; then mv com.android.runtime.release.x509.pem com.android.runtime.x509.pem; fi
 
 for apex in "${apexes[@]}"; do
   if [[ ! -e ${apex_container_key[$apex]}.pk8 ]]; then
