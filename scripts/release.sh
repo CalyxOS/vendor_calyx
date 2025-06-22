@@ -37,14 +37,15 @@ SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
 if [[ -z $2 ]] ; then
   TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD.zip
   RELEASETOOLS_PATH=build/tools
+  EXTRA_RELEASETOOLS_ARGS=()
 else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH="$(pwd -P)"
-  EXTRA_RELEASETOOLS_ARGS="-p $RELEASETOOLS_PATH"
+  EXTRA_RELEASETOOLS_ARGS=(-p "$RELEASETOOLS_PATH")
 fi
 
-VERSION=$(unzip -c $TARGET_FILES SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
+VERSION=$(unzip -c "$TARGET_FILES" SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
 if [[
     $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
@@ -53,10 +54,10 @@ if [[
     $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
     $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
 ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
-  RADIO=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  RADIO=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
 elif [[ $DEVICE == tangorpro ]]; then
-  BOOTLOADER=$(unzip -c $TARGET_FILES OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
+  BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
 elif [[ $DEVICE == FP4 ]]; then
   FP4="true"
   QCOM_FIRMWARE="true"
@@ -76,7 +77,7 @@ else
   error "Unsupported device $DEVICE"
 fi
 
-mkdir -p $OUT || exit 1
+mkdir -p "$OUT" || exit 1
 
 
 if [[
@@ -131,8 +132,8 @@ if [[
 ]]; then
   AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
   for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
   done
 fi
 
@@ -140,8 +141,8 @@ if [[
   $DEVICE == otter
 ]]; then
   for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks $apex=$KEY_DIR/${apex_container_key[$apex]})
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key $apex=$KEY_DIR/${apex_payload_key[$apex]}.pem)
+    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
   done
 fi
 
@@ -181,7 +182,7 @@ if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ||
     $DEVICE == otter
   ]]; then
-    EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override $AVB_ROLLBACK_INDEX_OVERRIDE)
+    EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
     exit 1
@@ -190,22 +191,22 @@ fi
 
 echo "Creating signed targetfiles zip"
 $maybe_dry_run \
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
-  $TARGET_FILES $SIGNED_TARGET_FILES || exit 1
+  "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
 
 if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 echo "Create OTA update zip"
 $maybe_dry_run \
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $SIGNED_TARGET_FILES \
-  $OUT/$DEVICE-ota_update-$BUILD.zip || exit 1
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS "$SIGNED_TARGET_FILES" \
+  "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
 $maybe_dry_run \
-sha256sum $OUT/$DEVICE-ota_update-$BUILD.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum
+sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
 
-if [ ! -z $OTA_ONLY ]; then
+if [ ! -z "$OTA_ONLY" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
 fi
@@ -213,41 +214,41 @@ fi
 
 echo "Creating factory images"
 $maybe_dry_run \
-$RELEASETOOLS_PATH/bin/img_from_target_files $EXTRA_RELEASETOOLS_ARGS $SIGNED_TARGET_FILES \
-  $OUT/$DEVICE-img-$BUILD.zip || exit 1
+"$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+  "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
 
-pushd $OUT || exit 1
+pushd "$OUT" || exit 1
 
-if [ ! -z $ANDROID_BUILD_TOP ]; then
+if [ ! -z "$ANDROID_BUILD_TOP" ]; then
   $maybe_dry_run \
-  source $ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh
+  source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
 else
   $maybe_dry_run \
-  source $RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh
+  source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
 
 $maybe_dry_run \
-mv $DEVICE-$VERSION-factory-*.zip $DEVICE-factory-$BUILD.zip
+mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
 $maybe_dry_run \
-sha256sum $DEVICE-factory-$BUILD.zip | awk '{printf $1}' > $DEVICE-factory-$BUILD.zip.sha256sum
+sha256sum "$DEVICE-factory-$BUILD.zip" | awk '{printf $1}' > "$DEVICE-factory-$BUILD.zip.sha256sum"
 
 popd
 
 echo "Removing intermediate file after factory image generation: $DEVICE-img-$BUILD.zip"
 $maybe_dry_run \
-rm $OUT/$DEVICE-img-$BUILD.zip
+rm "$OUT/$DEVICE-img-$BUILD.zip"
 
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 $maybe_dry_run \
-$RELEASETOOLS_PATH/bin/sign_target_files_apks $EXTRA_RELEASETOOLS_ARGS --otatest -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \
  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
-  $TARGET_FILES $OTATEST_TARGET_FILES || exit 1
+  "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
 $maybe_dry_run \
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS $OTATEST_TARGET_FILES \
-  $OUT/$DEVICE-ota_update-$OTATEST.zip || exit 1
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS "$OTATEST_TARGET_FILES" \
+  "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
 $maybe_dry_run \
-sha256sum $OUT/$DEVICE-ota_update-$OTATEST.zip | awk '{printf $1}' > $OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum
+sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
 fi
