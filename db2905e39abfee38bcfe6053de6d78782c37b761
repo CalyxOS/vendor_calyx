@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2075502f_d3152de8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-23T18:58:23Z",
+      "side": 1,
+      "message": "Let\u0027s consult LineageOS as a reference:\n- https://review.lineageos.org/c/LineageOS/scripts/+/434642\n\nNo need to reinvent the wheel.\n\nAlso useful: https://github.com/LineageOS/scripts/tree/main/lineage-priv-template",
+      "revId": "db2905e39abfee38bcfe6053de6d78782c37b761",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}

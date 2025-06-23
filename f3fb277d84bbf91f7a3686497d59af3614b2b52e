@@ -39,6 +39,30 @@
       },
       "revId": "f3fb277d84bbf91f7a3686497d59af3614b2b52e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f55d5213_dbbfeb09",
+        "filename": "scripts/metadata",
+        "patchSetId": 3
+      },
+      "lineNbr": 150,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-06-23T18:58:23Z",
+      "side": 1,
+      "message": "No, I think it\u0027s wrong. Thanks for pointing it out.",
+      "parentUuid": "64aafcb1_567e9f77",
+      "range": {
+        "startLine": 150,
+        "startChar": 52,
+        "endLine": 150,
+        "endChar": 54
+      },
+      "revId": "f3fb277d84bbf91f7a3686497d59af3614b2b52e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
