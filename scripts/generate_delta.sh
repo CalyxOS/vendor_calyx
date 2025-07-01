@@ -1,5 +1,13 @@
 #!/bin/bash
 
+scriptpath="$(cd "$(dirname "$0")";pwd -P)"
+
+EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
+EXTRA_COMMON_ARGS=(${EXTRA_COMMON_ARGS:-})
+
+source "$scriptpath/metadata"
+source "$scriptpath/common.include.sh"
+
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device oldversion newversion"
@@ -9,7 +17,6 @@ error() {
 [[ $# -eq 3 ]] ||  error "incorrect number of arguments"
 
 DEVICE=$1
-KEY_DIR=keys/$DEVICE
 OLD=$2
 NEW=$3
 
@@ -18,10 +25,16 @@ if [[ -d build/tools/releasetools ]]; then
 else
   # For usage with otatools.zip
   RELEASETOOLS_PATH=.
-  EXTRA_RELEASETOOLS_ARGS="-p ."
+  EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-$RELEASETOOLS_PATH/bin/ota_from_target_files $EXTRA_RELEASETOOLS_ARGS -k "$KEY_DIR/releasekey" \
+load_keymapper_and_maybe_pkcs11 || error "failed to load keymapper"
+
+RELEASEKEY="$(get_key core build/make/target/product/security/testkey)"
+
+$RELEASETOOLS_PATH/bin/ota_from_target_files "${EXTRA_RELEASETOOLS_ARGS[@]}" \
+  "${EXTRA_COMMON_ARGS[@]}" \
+  -k "$RELEASEKEY" \
   -i archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip \
   archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip
