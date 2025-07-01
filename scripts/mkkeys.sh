@@ -13,8 +13,9 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 TOP="$SCRIPTPATH/../../.."
 
 source $SCRIPTPATH/metadata
+source $SCRIPTPATH/keymapper_legacy.sh
 
-KEY_DIR=$1
+KEY_DIR=${1%/}/
 SUBJECT="$2"
 GENVERITYKEY=$TOP/bin/generate_verity_key
 AVBTOOL=$TOP/bin/avbtool
@@ -66,13 +67,14 @@ if [[
   openssl genrsa -out avb_vbmeta_system.pem 4096
 fi
 
-for apex in "${apexes[@]}"; do
-  $SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
+for apex in "${keys_apex[@]}"; do
+  $SCRIPTPATH/mkkey.sh "$(KEY_DIR= get_key apex_container "$apex")" "$SUBJECT"
 done
 
-for apex in "${apexes[@]}"; do
-  openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
-  $AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
+for apex in "${keys_apex[@]}"; do
+  keyval="$(KEY_DIR= KEY_SUFFIX= get_key apex_payload "$apex")"
+  openssl genrsa -out "$keyval.pem" 4096
+  $AVBTOOL extract_public_key --key "$keyval.pem" --output "$keyval.avbpubkey"
 done
 
 popd
