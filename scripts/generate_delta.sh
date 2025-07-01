@@ -9,6 +9,11 @@ EXTRA_OTA_ARGS=(${EXTRA_OTA_ARGS:-})
 source "$scriptpath/common.include.sh"
 source "$scriptpath/metadata"
 
+release_cleanup() {
+  cleanup_signing_full || true
+}
+trap release_cleanup EXIT
+
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device oldversion newversion"
@@ -29,7 +34,8 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-load_keymapper || error "failed to load keymapper"
+BUILD_NUMBER=${NEW}_$OLD \
+prepare_for_signing_full "$0" "$@" || error "failed to prepare for signing"
 
 RELEASEKEY=$(get_key core build/make/target/product/security/testkey)
 
@@ -42,3 +48,6 @@ echo "Calculating sha256sum for incremental"
 $maybe_dry_run sha256sum "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip" \
   | $maybe_dry_run_ignore awk '{printf $1}' \
   | $maybe_dry_run_ignore tee "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
+
+release_cleanup || true
+trap "" EXIT
