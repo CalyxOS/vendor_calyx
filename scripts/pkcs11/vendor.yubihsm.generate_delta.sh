@@ -1,0 +1,1 @@
+vendor.yubihsm.release.sh
