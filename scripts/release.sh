@@ -38,7 +38,7 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p "$RELEASETOOLS_PATH")
 fi
 
-load_keymapper || exit $?
+load_keymapper_and_maybe_pkcs11 || exit $?
 
 if [ "${DRY_RUN:-}" != "y" ]; then
 
