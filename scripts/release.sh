@@ -2,10 +2,10 @@
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
-set -eo pipefail
+set -euo pipefail
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
-source $SCRIPTPATH/metadata
+source "$SCRIPTPATH/metadata"
 
 error() {
   echo error: $1, please try again >&2
@@ -30,7 +30,6 @@ fi
 
 DEVICE=$1
 PRODUCT=$1
-KEY_DIR=keys/$DEVICE
 OUT=out/release-$DEVICE-$BUILD_NUMBER
 BUILD=$BUILD_NUMBER
 SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
@@ -45,6 +44,69 @@ else
   RELEASETOOLS_PATH="$(pwd -P)"
   EXTRA_RELEASETOOLS_ARGS=(-p "$RELEASETOOLS_PATH")
 fi
+
+load_keymapper() {
+  if [ -n "${KEYMAPPER_FILE:-}" ]; then
+    source "$KEYMAPPER_FILE" || exit 1
+  elif [ -n "${KEYMAPPER:-}" ]; then
+    keymapper_path=$(cd "$SCRIPTPATH"; realpath -e "keymapper_$KEYMAPPER.sh" || true)
+    if [ -z "$keymapper_path" ]; then
+      echo "Could not find keymapper '$KEYMAPPER'." >&2
+      exit 1
+    fi
+    source "$keymapper_path" || exit 1
+  else
+    source "$SCRIPTPATH/keymapper_legacy.sh" || exit 1
+  fi
+}
+
+if [ -n "${PKCS11_MODULE:-}" ] || [ -n "${PKCS11_VENDOR:-}" ] || [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
+  source "$SCRIPTPATH/pkcs11/include.sh"
+  if [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
+    source "$PKCS11_VENDOR_FILE" || exit 1
+  elif [ -n "${PKCS11_VENDOR:-}" ]; then
+    pkcs11_vendor_path=$(cd "$SCRIPTPATH"; realpath -e "pkcs11/vendor.${PKCS11_VENDOR}.include.sh" || true)
+    if [ -z "$pkcs11_vendor_path" ]; then
+      echo "Could not find PKCS#11 vendor include script for '$PKCS11_VENDOR'." >&2
+      exit 1
+    fi
+    source "$pkcs11_vendor_path" || exit 1
+  fi
+  load_keymapper
+  tmpdir=$(mktemp -d)
+  cleanup() {
+    rm -f "$tmpdir/sunpkcs11.cfg"
+    rmdir "$tmpdir"
+  }
+  trap cleanup EXIT
+  _generate_sunpkcs11_config > "$tmpdir/sunpkcs11.cfg"
+  tool=pkcs11-tool
+  if [ "${PREFER_OPENSSL:-n}" = "y" ]; then
+    tool=openssl
+  fi
+  EXTRA_RELEASETOOLS_ARGS+=(
+    --verbose
+    --pkcs11_config "$tmpdir/sunpkcs11.cfg"
+    --extra_avbtool_signing_args "--signing_helper vendor/calyx/scripts/pkcs11/signing_helper_${tool}.sh"
+  )
+  EXTRA_COMMON_ARGS+=(
+    --payload_signer "vendor/calyx/scripts/pkcs11/payload_signer_${tool}.sh"
+    --extra_apksigner_args '--v1-signing-enabled=false --v4-signing-enabled=false'
+  )
+else
+  load_keymapper
+fi
+if [ -n "${SIGN_COMMAND_INTERMEDIARY:-}" ]; then
+  EXTRA_COMMON_ARGS+=(
+    --sign_command_intermediary "$SIGN_COMMAND_INTERMEDIARY"
+  )
+fi
+
+# Payload signer maximum signature size is set to 512 in the metadata file by default
+# to accommodate RSA4096 keys.
+[ -z "${PAYLOAD_SIGNER_MAXIMUM_SIGNATURE_SIZE:-}" ] || EXTRA_COMMON_ARGS+=(
+  --payload_signer_maximum_signature_size "$PAYLOAD_SIGNER_MAXIMUM_SIGNATURE_SIZE"
+)
 
 VERSION=$(unzip -c "$TARGET_FILES" SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
 
@@ -80,102 +142,48 @@ fi
 
 mkdir -p "$OUT" || exit 1
 
+# Get AVB arguments from keymapper.
+avb_arguments=()
+fill_avb_arguments
 
-if [[
-  $DEVICE == redfin || $DEVICE == bramble
-]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA2048
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA2048
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-elif [[
-  $DEVICE == barbet ||
-  $DEVICE == FP4 ||
-  $DEVICE == FP5 ||
-  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-  $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ||
-  $DEVICE == otter
-]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096)
-elif [[
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay
-]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_system_key "$KEY_DIR/avb.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096)
-elif [[
-  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
-  $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
-]]; then
-  VERITY_SWITCHES=(--avb_vbmeta_key "$KEY_DIR/avb.pem" --avb_vbmeta_algorithm SHA256_RSA4096
-                   --avb_system_key "$KEY_DIR/avb.pem" --avb_system_algorithm SHA256_RSA4096
-                   --avb_system_other_key "$KEY_DIR/avb.pem" --avb_system_other_algorithm SHA256_RSA4096
-                   --avb_vbmeta_system_key "$KEY_DIR/avb_vbmeta_system.pem" --avb_vbmeta_system_algorithm SHA256_RSA4096
-                   --avb_vbmeta_vendor_key "$KEY_DIR/avb.pem" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                   --avb_boot_key "$KEY_DIR/avb.pem" --avb_boot_algorithm SHA256_RSA4096
-                   --avb_init_boot_key "$KEY_DIR/avb.pem" --avb_init_boot_algorithm SHA256_RSA4096)
-fi
+# Populate key mappings for APEXes.
+for key in "${keys_apex[@]}"; do
+  EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key")")
+  EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem)")
+done
 
-if [[
-  $DEVICE == redfin || $DEVICE == bramble || $DEVICE == barbet ||
-  $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
-  $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == tangorpro || $DEVICE == felix ||
-  $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-  $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu ||
-  $DEVICE == FP4 ||
-  $DEVICE == FP5 ||
-  $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-  $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
-]]; then
-  AVB_CUSTOM_KEY="$PWD/$KEY_DIR/avb_custom_key.img"
-  for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
-  done
-fi
+# Populate key mappings for everything else.
+declare -A already_remapped
+for key in "${keys_avb[@]}"; do
+  [ -z "${already_remapped[$key]:-}" ] || continue
+  value=$(get_key avb "$key")
+  [ -n "$value" ] || continue
+  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+  already_remapped[$key]=1
+done
+for key in "${keys_core[@]}"; do
+  [ -z "${already_remapped[$key]:-}" ] || continue
+  value=$(get_key core "$key")
+  [ -n "$value" ] || continue
+  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+  already_remapped[$key]=1
+done
+for key in "${keys_apex_apk[@]}"; do
+  [ -z "${already_remapped[$key]:-}" ] || continue
+  value=$(get_key apex_apk "$key")
+  [ -n "$value" ] || continue
+  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+  already_remapped[$key]=1
+done
+for key in "${keys_app[@]}"; do
+  [ -z "${already_remapped[$key]:-}" ] || continue
+  value=$(get_key app "$key")
+  [ -n "$value" ] || continue
+  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+  already_remapped[$key]=1
+done
 
-if [[
-  $DEVICE == otter
-]]; then
-  for apex in "${apexes[@]}"; do
-    EXTRA_SIGNING_ARGS+=(--extra_apks "$apex=$KEY_DIR/${apex_container_key[$apex]}")
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$apex=$KEY_DIR/${apex_payload_key[$apex]}.pem")
-  done
-fi
-
-EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
-EXTRA_SIGNING_ARGS+=(-k external/calyx/chromium/certs/chromium=$KEY_DIR/../common/chromium)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/AdServices/adservices/apk/com.android.adservices.api=$KEY_DIR/com.android.adservices.api)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Bluetooth/android/app/certs/com.android.bluetooth=$KEY_DIR/com.android.bluetooth)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources=$KEY_DIR/com.android.safetycenter.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog=$KEY_DIR/com.android.wifi.dialog)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources=$KEY_DIR/com.android.uwb.resources)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet=$KEY_DIR/com.android.nearby.halfsheet)
-EXTRA_SIGNING_ARGS+=(-k packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf=$KEY_DIR/com.android.graphics.pdf)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/bluetooth=$KEY_DIR/com.android.bluetooth)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/sdk_sandbox=$KEY_DIR/sdk_sandbox)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/AppSearch/apk/com.android.appsearch.apk=$KEY_DIR/com.android.appsearch.apk)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/apk/com.android.healthconnect.controller=$KEY_DIR/com.android.healthconnect.controller)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore=$KEY_DIR/com.android.health.connect.backuprestore)
-EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/nfc=$KEY_DIR/com.android.nfcservices)
-EXTRA_SIGNING_ARGS+=(-k packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute=$KEY_DIR/com.android.federatedcompute)
-
-if [[
-  $DEVICE == raven ||
-  $DEVICE == cheetah ||
-  $DEVICE == tangorpro || $DEVICE == felix
-]]; then
-  EXTRA_SIGNING_ARGS+=(-k device/google/gs-common/uwb-certs/com.qorvo.uwb=$KEY_DIR/com.qorvo.uwb)
-fi
-
-if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   if [[
     $DEVICE == FP4 ||
     $DEVICE == FP5 ||
@@ -205,25 +213,27 @@ esac
 if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
   echo "Creating signed targetfiles zip"
   $maybe_dry_run \
-    "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
-      "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+    "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_COMMON_ARGS[@]}" -o -d "${KEY_DIR%/}" \
+      "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
       "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
 fi
 
-if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
+RELEASEKEY="$(get_key core build/make/target/product/security/testkey)"
+
+if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
   echo "Create OTA update zip"
   $maybe_dry_run \
-  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS "$SIGNED_TARGET_FILES" \
+  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_COMMON_ARGS[@]}" -k "$RELEASEKEY" ${EXTRA_OTA_ARGS:-} "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
   $maybe_dry_run \
   sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
 fi
 
-if [ ! -z "$OTA_ONLY" ]; then
+if [ ! -z "${OTA_ONLY:-}" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
   exit 0
 fi
@@ -239,16 +249,16 @@ fi
 pushd "$OUT" || exit 1
 
 # FIXME: generate-factory-images-common.sh doesn't handle errors gracefully, such as for missing
-#        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error before sourcing it.
-set +eo pipefail
-if [ ! -z "$ANDROID_BUILD_TOP" ]; then
+#        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error, etc before sourcing it.
+set +euo pipefail
+if [ ! -z "${ANDROID_BUILD_TOP:-}" ]; then
   $maybe_dry_run \
   source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
 else
   $maybe_dry_run \
   source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
-set -eo pipefail
+set -euo pipefail
 
 $maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
@@ -261,16 +271,16 @@ echo "Removing intermediate file after factory image generation: $DEVICE-img-$BU
 $maybe_dry_run \
 rm "$OUT/$DEVICE-img-$BUILD.zip"
 
-if [[ -n $OTATEST ]]; then
+if [[ -n ${OTATEST:-} ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \
- "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_COMMON_ARGS[@]}" --otatest -o -d "${KEY_DIR%/}" \
+ "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" $EXTRA_OTA_ARGS "$OTATEST_TARGET_FILES" \
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_COMMON_ARGS[@]}" -k "$RELEASEKEY" ${EXTRA_OTA_ARGS:-} "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
 $maybe_dry_run \
 sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
