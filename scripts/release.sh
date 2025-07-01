@@ -11,6 +11,11 @@ EXTRA_OTA_ARGS=(${EXTRA_OTA_ARGS:-})
 source "$SCRIPTPATH/common.include.sh"
 source "$SCRIPTPATH/metadata"
 
+release_cleanup() {
+  common_cleanup_with_vendor || true
+}
+trap release_cleanup EXIT
+
 error() {
   echo error: $1, please try again >&2
   echo "Usage: $0 device [target-files.zip]"
@@ -38,7 +43,7 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p "$RELEASETOOLS_PATH")
 fi
 
-load_keymapper || exit $?
+prepare_for_signing_full || exit $?
 
 if [ "${DRY_RUN:-}" != "y" ]; then
 
@@ -224,3 +229,6 @@ sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" \
   | $maybe_dry_run_ignore awk '{printf $1}' \
   | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
 fi
+
+release_cleanup || true
+trap "" EXIT
