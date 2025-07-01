@@ -29,7 +29,7 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-load_keymapper || error "failed to load keymapper"
+load_keymapper_and_maybe_pkcs11 || error "failed to load keymapper"
 
 RELEASEKEY=$(get_key core build/make/target/product/security/testkey)
 
