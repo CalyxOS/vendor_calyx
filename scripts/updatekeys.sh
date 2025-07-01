@@ -13,8 +13,9 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 TOP="$SCRIPTPATH/../../.."
 
 source $SCRIPTPATH/metadata
+source $SCRIPTPATH/keymapper_legacy.sh
 
-KEY_DIR=$1
+KEY_DIR=${1%/}
 SUBJECT="$2"
 GENVERITYKEY=$TOP/bin/generate_verity_key
 AVBTOOL=$TOP/bin/avbtool
@@ -82,17 +83,14 @@ fi
 [[ -e com.android.runtime.release.pk8 ]] && mv com.android.runtime.release.pk8 com.android.runtime.pk8
 [[ -e com.android.runtime.release.x509.pem ]] && mv com.android.runtime.release.x509.pem com.android.runtime.x509.pem
 
-for apex in "${apexes[@]}"; do
-  if [[ ! -e ${apex_container_key[$apex]}.pk8 ]]; then
-    $SCRIPTPATH/mkkey.sh "${apex_container_key[$apex]}" "$SUBJECT"
-  fi
+for apex in "${keys_apex[@]}"; do
+  $SCRIPTPATH/mkkey.sh "$(KEY_DIR= get_key apex_container "$apex")" "$SUBJECT"
 done
 
-for apex in "${apexes[@]}"; do
-  if [[ ! -e ${apex_payload_key[$apex]}.pem ]]; then
-    openssl genrsa -out ${apex_payload_key[$apex]}.pem 4096
-    $AVBTOOL extract_public_key --key ${apex_payload_key[$apex]}.pem --output ${apex_payload_key[$apex]}.avbpubkey
-  fi
+for apex in "${keys_apex[@]}"; do
+  keyval="$(KEY_DIR= KEY_SUFFIX= get_key apex_payload "$apex")"
+  openssl genrsa -out "$keyval.pem" 4096
+  $AVBTOOL extract_public_key --key "$keyval.pem" --output "$keyval.avbpubkey"
 done
 
 popd
