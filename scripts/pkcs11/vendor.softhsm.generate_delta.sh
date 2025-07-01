@@ -1,0 +1,1 @@
+vendor.softhsm.release.sh
