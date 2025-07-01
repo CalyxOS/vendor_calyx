@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 scriptpath=$(cd "$(dirname "$0")";pwd -P)
+
+get_key_id_is_exportable_yn() {
+  # Default value in case not specified by any includes.
+  echo '?'
+}
+
 source "$scriptpath/common.include.sh" || exit $?
 source "$scriptpath/metadata" || exit $?
 source "${DEVICES_FILE:-$scriptpath/../../../calyx/scripts/vars/devices}" || exit $?
@@ -15,7 +21,7 @@ main() {
     return 1
   fi
   declare -A already_generated
-  printf "%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key"
+  printf "%s\t%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key" "Exportable"
   local key_type
   for key_type in "${key_types[@]}"; do
     local array_name
@@ -46,7 +52,9 @@ main() {
         local value
         value=$(KEY_DIR= DEVICE=$device get_key "$key_type" "$key") || return $?
         if [ -z "$value" ]; then continue; fi
-        printf "%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key"
+        local exportable
+        exportable=$(DEVICE=$device get_key_id_is_exportable_yn "$value") || return $?
+        printf "%s\t%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key" "$exportable"
       done
     done || return $?
   done | sort
