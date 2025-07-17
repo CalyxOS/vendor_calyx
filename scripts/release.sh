@@ -8,6 +8,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
 EXTRA_OTA_ARGS=(${EXTRA_OTA_ARGS:-})
 
+source "$SCRIPTPATH/common.include.sh"
 source "$SCRIPTPATH/metadata"
 
 error() {
@@ -183,6 +184,7 @@ if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
 fi
 
 echo "Creating signed targetfiles zip"
+$maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
@@ -191,10 +193,14 @@ if [[ -n $AVB_ROLLBACK_INDEX_OVERRIDE ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 echo "Create OTA update zip"
+$maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
-sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
+$maybe_dry_run \
+sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" \
+  | $maybe_dry_run_ignore awk '{printf $1}' \
+  | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
 
 if [ ! -z "$OTA_ONLY" ]; then
   echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
@@ -203,6 +209,7 @@ fi
 fi
 
 echo "Creating factory images"
+$maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
   "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
 
@@ -212,28 +219,40 @@ pushd "$OUT" || exit 1
 #        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error before sourcing it.
 set +eo pipefail
 if [ ! -z "$ANDROID_BUILD_TOP" ]; then
+  $maybe_dry_run \
   source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
 else
+  $maybe_dry_run \
   source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
 set -eo pipefail
 
+$maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
-sha256sum "$DEVICE-factory-$BUILD.zip" | awk '{printf $1}' > "$DEVICE-factory-$BUILD.zip.sha256sum"
+$maybe_dry_run \
+sha256sum "$DEVICE-factory-$BUILD.zip" \
+  | $maybe_dry_run_ignore awk '{printf $1}' \
+  | $maybe_dry_run_ignore tee "$DEVICE-factory-$BUILD.zip.sha256sum"
 
 popd
 
 echo "Removing intermediate file after factory image generation: $DEVICE-img-$BUILD.zip"
+$maybe_dry_run \
 rm "$OUT/$DEVICE-img-$BUILD.zip"
 
 if [[ -n $OTATEST ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
+$maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \
  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
+$maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$KEY_DIR/releasekey" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
-sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" | awk '{printf $1}' > "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
+$maybe_dry_run \
+sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" \
+  | $maybe_dry_run_ignore awk '{printf $1}' \
+  | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
 fi
