@@ -1,7 +1,11 @@
 #!/bin/bash
 
+scriptpath="$(cd "$(dirname "$0")";pwd -P)"
+
 EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
 EXTRA_OTA_ARGS=(${EXTRA_OTA_ARGS:-})
+
+source "$scriptpath/common.include.sh"
 
 error() {
   echo error: $1, please try again >&2
@@ -24,10 +28,12 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$KEY_DIR/releasekey" \
+$maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$KEY_DIR/releasekey" \
   -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
 
 echo "Calculating sha256sum for incremental"
-sha256sum "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip" | awk '{printf $1}' | tee "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
+$maybe_dry_run sha256sum "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip" \
+  | $maybe_dry_run_ignore awk '{printf $1}' \
+  | $maybe_dry_run_ignore tee "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
