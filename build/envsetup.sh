@@ -88,15 +88,16 @@ function breakfast()
 
 function aospremote()
 {
-    if ! git rev-parse --git-dir &> /dev/null
+    local T=`git rev-parse --show-toplevel 2> /dev/null`
+    if [ -z "$T" ]
     then
-        echo ".git directory not found. Please run this from the root directory of the Android repository you wish to set up."
+        echo "Git repository not found. Please run this from the directory of the Android repository you wish to set up."
         return 1
     fi
     git remote rm aosp 2> /dev/null
 
-    if [ -f ".gitupstream" ]; then
-        local REMOTE=$(cat .gitupstream | cut -d ' ' -f 1)
+    if [ -f "$T/.gitupstream" ]; then
+        local REMOTE=$(cat "$T/.gitupstream" | cut -d ' ' -f 1)
         git remote add aosp ${REMOTE}
     else
         local PROJECT=$(pwd -P | sed -e "s#$ANDROID_BUILD_TOP\/##")
@@ -158,15 +159,16 @@ function calyxremote()
 
 function lineageremote()
 {
-    if ! git rev-parse --git-dir &> /dev/null
+    local T=`git rev-parse --show-toplevel 2> /dev/null`
+    if [ -z "$T" ]
     then
-        echo ".git directory not found. Please run this from the root directory of the Android repository you wish to set up."
+        echo "Git repository not found. Please run this from the directory of the Android repository you wish to set up."
         return 1
     fi
     git remote rm lineage 2> /dev/null
 
-    if [ -f ".gitupstream-lineage" ]; then
-        local REMOTE=$(cat .gitupstream-lineage | cut -d ' ' -f 1)
+    if [ -f "$T/.gitupstream-lineage" ]; then
+        local REMOTE=$(cat "$T/.gitupstream-lineage" | cut -d ' ' -f 1)
         git remote add lineage ${REMOTE}
     else
         local REMOTE=$(git config --get remote.gitlab.projectname)
