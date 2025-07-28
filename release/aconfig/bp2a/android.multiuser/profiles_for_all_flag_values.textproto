@@ -1,0 +1,6 @@
+flag_value {
+  package: "android.multiuser"
+  name: "profiles_for_all"
+  state: ENABLED
+  permission: READ_ONLY
+}
