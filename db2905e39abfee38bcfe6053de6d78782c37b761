@@ -16,6 +16,24 @@
       "message": "Let\u0027s consult LineageOS as a reference:\n- https://review.lineageos.org/c/LineageOS/scripts/+/434642\n\nNo need to reinvent the wheel.\n\nAlso useful: https://github.com/LineageOS/scripts/tree/main/lineage-priv-template",
       "revId": "db2905e39abfee38bcfe6053de6d78782c37b761",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "df5a65de_aac1dca8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-07-28T17:50:44Z",
+      "side": 1,
+      "message": "We are still missing some from here, that should each be looked at. Will do.",
+      "parentUuid": "2075502f_d3152de8",
+      "revId": "db2905e39abfee38bcfe6053de6d78782c37b761",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
