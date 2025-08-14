@@ -36,7 +36,7 @@ VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
 ifneq ($(TARGET_DISABLE_EPPE),true)
 # Require all requested packages to exist
-$(call enforce-product-packages-exist-internal,$(wildcard device/*/$(VENDOR_DEVICE)/$(TARGET_PRODUCT).mk),product_manifest.xml rild Calendar)
+$(call enforce-product-packages-exist-internal,$(lastword $(_include_stack)),product_manifest.xml rild Calendar)
 endif
 
 ifeq ($(OFFICIAL_BUILD),true)
