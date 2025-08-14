@@ -1,3 +1,33 @@
+# Find the top directory
+# Slightly modified from build/make/shell_utils.sh
+function _gettop
+{
+    local TOPFILE=vendor/calyx/build/envsetup.sh
+    # The ${TOP-} expansion allows this to work even with set -u
+    if [ -n "${TOP:-}" -a -f "${TOP:-}/$TOPFILE" ] ; then
+        # The following circumlocution ensures we remove symlinks from TOP.
+        (cd "$TOP"; PWD= /bin/pwd)
+    else
+        if [ -f $TOPFILE ] ; then
+            # The following circumlocution (repeated below as well) ensures
+            # that we record the true directory name and not one that is
+            # faked up with symlink names.
+            PWD= /bin/pwd
+        else
+            local HERE=$PWD
+            local T=
+            while [ \( ! \( -f $TOPFILE \) \) -a \( "$PWD" != "/" \) ]; do
+                \cd ..
+                T=`PWD= /bin/pwd -P`
+            done
+            \cd "$HERE"
+            if [ -f "$T/$TOPFILE" ]; then
+                echo "$T"
+            fi
+        fi
+    fi
+}
+
 # Find the output directory
 # From build/soong/scripts/microfactory.bash
 function _getoutdir
@@ -147,7 +177,7 @@ function lineageremote()
 }
 
 function repopick() {
-    T=$(gettop)
+    T=$(_gettop)
     $T/vendor/calyx/build/tools/repopick.py $@
 }
 
