@@ -119,6 +119,24 @@
       "parentUuid": "bde00885_a6f24fd7",
       "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "634ffc16_51c6cbd5",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:45:56Z",
+      "side": 1,
+      "message": "*Well*, okay, this doesn\u0027t only affect AVB. SignApexPayload is affected too. So we may need the intermediary hack after all as the easiest workaround for now. (This is all deja vu since I dealt with this before...)",
+      "parentUuid": "02aaff7e_884cc40d",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
