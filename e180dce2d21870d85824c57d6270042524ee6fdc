@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5b53956e_7f3d50a2",
+        "filename": "scripts/keymapper_yubihsm.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:08:50Z",
+      "side": 1,
+      "message": "Not used at the moment...",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b22c4877_fd2e508f",
+        "filename": "scripts/keymapper_yubihsm.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 148,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:08:50Z",
+      "side": 1,
+      "message": "Not used",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "283ad130_7942df9f",
+        "filename": "scripts/keymapper_yubihsm.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 170,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:08:50Z",
+      "side": 1,
+      "message": "Not used",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
