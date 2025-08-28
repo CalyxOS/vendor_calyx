@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f357e175_2c083c17",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 14
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:15:30Z",
+      "side": 1,
+      "message": "mkkeys.sh and updatekeys.sh should be replaced by a single legacy keygen script at some point in the future.",
+      "revId": "0037635e8f3846f2ed5b5449fe2da9677249fb32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e49f9b5d_8f27bbab",
+        "filename": "scripts/keymapper_modern.sh",
+        "patchSetId": 14
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:15:30Z",
+      "side": 1,
+      "message": "Remove the keymapper_modern.sh script.",
+      "revId": "0037635e8f3846f2ed5b5449fe2da9677249fb32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "032eb61a_8c0e9fc9",
+        "filename": "scripts/pkcs11/nitrokey_nethsm_keygen.sh",
+        "patchSetId": 14
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:15:30Z",
+      "side": 1,
+      "message": "Remove the nitrokey_nethsm_keygen.sh script for now. It could potentially be resurrected in another commit at some point in the future.",
+      "revId": "0037635e8f3846f2ed5b5449fe2da9677249fb32",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
