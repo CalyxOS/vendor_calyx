@@ -137,6 +137,24 @@
       "parentUuid": "02aaff7e_884cc40d",
       "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "38e3a1bf_60e7f8bb",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:01:33Z",
+      "side": 1,
+      "message": "Oof. Finally done. I guess this tangent was kind of a good thing, since it helped to identify usages of avbtool that were not getting coverage with the signing command intermediary. But it took an awful lot of time-consuming trial and error.",
+      "parentUuid": "634ffc16_51c6cbd5",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
