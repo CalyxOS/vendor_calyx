@@ -101,6 +101,24 @@
       "message": "fill_avb_arguments is where we can specify an RSA key size without being as weird about it as this. See keymapper_modern.sh. We could set that up to read $RSA_KEY_SIZE or something like that, if we need to.",
       "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "02aaff7e_884cc40d",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 4
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:28:29Z",
+      "side": 1,
+      "message": "Done. Also, for the record, the only reason I\u0027m messing with 2048-bit keys right now is because they are much faster to generate and I have been working on the keygen script.",
+      "parentUuid": "bde00885_a6f24fd7",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
