@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "03c37a4d_f0bc3406",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T03:42:57Z",
+      "side": 1,
+      "message": "The inspiration for this is that I have randomly been getting CKR_SESSION_COUNT even when no other signing sessions should still be active. It doesn\u0027t happen often, but it happens sometimes, and it\u0027s better not to have to start the signing process over entirely. Ultimately, there may be a better way to deal with it, and once we implement audit logging and handling, it *might* become more obvious what\u0027s going on.",
+      "revId": "30f4ce6506d8a531bb5c93799ca2fcfa5c427f2e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
