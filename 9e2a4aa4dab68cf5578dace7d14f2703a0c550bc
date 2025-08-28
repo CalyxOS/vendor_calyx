@@ -16,6 +16,23 @@
       "message": "Rename softhsm_keygen.sh to vendor.softhsm.keygen.sh",
       "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "349235b7_2a08b209",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 13
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:04:21Z",
+      "side": 1,
+      "message": "(Eventually) Make sure SoftHSM support still works.",
+      "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
