@@ -33,6 +33,23 @@
       "message": "(Eventually) Make sure SoftHSM support still works.",
       "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "719b2108_f7b357cd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 13
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-28T21:08:26Z",
+      "side": 1,
+      "message": "Figure out file naming. There\u0027s multiple patterns, like vendor.yubihsm.include.sh and keymapper_legacy.sh. Why use underscores for some? What\u0027s with the other? Would it make sense to add directories instead? Maybe.",
+      "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
