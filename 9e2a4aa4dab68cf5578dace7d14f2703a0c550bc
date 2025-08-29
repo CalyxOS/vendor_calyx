@@ -50,6 +50,24 @@
       "message": "Figure out file naming. There\u0027s multiple patterns, like vendor.yubihsm.include.sh and keymapper_legacy.sh. Why use underscores for some? What\u0027s with the other? Would it make sense to add directories instead? Maybe.",
       "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bf66f9ba_84977d50",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 13
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-08-29T00:59:46Z",
+      "side": 1,
+      "message": "Well, I settled on something for now. Here\u0027s the concept (regardless of whether or not it makes sense):\n- `.include.sh` is added at the end of scripts that are strictly included.\n- When something dynamic is involved in a filename, it\u0027s separated with dots instead of underscores, e.g. payload_signer.openssl.sh or payload_signer.pkcs11-tool.sh. Otherwise, it\u0027s usually an understand.\n- My impulse is not to get bogged down in too many separate directories at the moment.",
+      "parentUuid": "719b2108_f7b357cd",
+      "revId": "9e2a4aa4dab68cf5578dace7d14f2703a0c550bc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
