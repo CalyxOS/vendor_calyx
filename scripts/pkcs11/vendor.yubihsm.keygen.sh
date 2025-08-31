@@ -3,7 +3,8 @@ set -euo pipefail
 
 ourpath=$(cd "$(dirname "$0")";pwd -P)
 scriptpath=$(cd "$(dirname "$0")/..";pwd -P)
-source "$scriptpath/keygen.include.sh" || exit $?
+source "$ourpath/keygen.include.sh" || exit $?
+# $scriptpath/vendor.yubihsm.include.sh is included later, in main()
 
 trap cleanup EXIT
 
@@ -24,10 +25,6 @@ openssl_for_yubihsm() {
 
 initialize_pre_metadata() {
   TEMP_DIR=$(mktemp -d /dev/shm/keygen-XXXXXXXX) || return $?
-  if [ -z "${YUBIHSM_CONNECTOR_HOST:-}" ]; then
-    YUBIHSM_CONNECTOR_HOST=http://127.0.0.1:12345
-    echo "YUBIHSM_CONNECTOR_HOST not specified. Using $YUBIHSM_CONNECTOR_HOST." >&2
-  fi
 
   if [ -z "${YUBIHSM_AUTHKEY:-}" ]; then
     YUBIHSM_AUTHKEY=1
@@ -47,15 +44,15 @@ initialize_pre_metadata() {
   fi
   PKCS11_PIN=$(printf '%4s\n' "$YUBIHSM_AUTHKEY" | tr ' ' 0)$YUBIHSM_PASSWORD
 
-  #PKCS11_OPENSSL_CONFIG_EXTRA="INIT_ARGS = connector=$YUBIHSM_CONNECTOR_HOST debug"
+  #PKCS11_OPENSSL_CONFIG_EXTRA="INIT_ARGS = connector=$YUBIHSM_CONNECTOR debug"
   initialize_pre_metadata_pkcs11 "$@" || return $?
   #LIST_REQUIRES_NO_PIN=y
   #MODIFICATION_USES_SO_PIN=y
   #KEY_LABEL_IS_HEX=y
-  if [ -z "${YUBIHSM_KEY_CAPABILITIES:-}" ]; then
-    YUBIHSM_KEY_CAPABILITIES="sign-pkcs,sign-pss,decrypt-pkcs,decrypt-oaep,exportable-under-wrap,sign-attestation-certificate"
-    echo "YUBIHSM_KEY_CAPABILITIES not specified. Using $YUBIHSM_KEY_CAPABILITIES." >&2
-  fi
+  YUBIHSM_KEY_CAPABILITIES=${YUBIHSM_KEY_CAPABILITIES:-}
+  YUBIHSM_OPAQUE_CAPABILITIES=${YUBIHSM_OPAQUE_CAPABILITIES:-}
+  echo "Using YUBIHSM_KEY_CAPABILITIES: $YUBIHSM_KEY_CAPABILITIES." >&2
+  echo "Using YUBIHSM_OPAQUE_CAPABILITIES: $YUBIHSM_OPAQUE_CAPABILITIES." >&2
   UNDERLYING_PKCS11_TOOL_BIN=$PKCS11_TOOL_BIN
   UNDERLYING_OPENSSL_BIN=$OPENSSL_BIN
   PKCS11_TOOL_BIN=pkcs11-tool_for_yubihsm
@@ -77,17 +74,61 @@ initialize_post_metadata() {
   #maybe_add_operator || return $?
 }
 
+_get_domains_for_key_id() {
+  local key_id=$1
+  local is_key_id_exportable
+  local is_key_id_ondemand
+  is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
+  if [ "$is_key_id_exportable" = "y" ]; then
+    is_key_id_ondemand=$(get_key_id_is_ondemand_yn "$key_id") || return $?
+    if [ "$is_key_id_ondemand" = "y" ]; then
+      printf "%s\n" "$YUBIHSM_EXPORTABLE_DOMAIN,$YUBIHSM_ONDEMAND_DOMAIN"
+    else
+      printf "%s\n" "$YUBIHSM_EXPORTABLE_DOMAIN"
+    fi
+  else
+    printf "%s\n" "$YUBIHSM_UNEXPORTABLE_DOMAIN"
+  fi
+}
+
+_get_capabilities_for_key_id() {
+  local key_id=$1
+  local capabilities=$2
+  local is_key_id_exportable
+  is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
+  if [ "$is_key_id_exportable" = "y" ]; then
+    printf "%s,%s\n" "$2" "exportable-under-wrap"
+  else
+    printf "%s\n" "$2"
+  fi
+}
+
 generate_keypair() {
   local key_id=$1
   local key_label=$2  # unused
-  # Password shouldn't just be on the command line, ideally...
-  # However, for production, this should all be run on an air-gapped machine in a temporary
-  # environment, so it could be worse.
-  # TODO: Provide a notice for / document the above.
-  "$YUBIHSM_SHELL_BIN" --authkey="$YUBIHSM_AUTHKEY" --password="$YUBIHSM_PASSWORD" \
-    -a generate-asymmetric-key --algorithm="rsa$RSA_KEY_SIZE" -i "0x$key_id" \
-    --capabilities="$YUBIHSM_KEY_CAPABILITIES" || return $?
+  local domain
+  local capabilities
+  domain=$(_get_domains_for_key_id "$key_id") || return $?
+  capabilities=$(_get_capabilities_for_key_id "$key_id" "$YUBIHSM_KEY_CAPABILITIES") || return $?
+
+  yubihsm -a generate-asymmetric-key \
+    --object-id "$key_id" \
+    --algorithm "rsa$RSA_KEY_SIZE" \
+    --domain "$domain" \
+    --capabilities "$capabilities" \
+    || return $?
   # --label="$key_label"
+
+  local is_key_id_exportable
+  is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
+  if [ "$is_key_id_exportable" = "y" ]; then
+    yubihsm -a get-wrapped \
+      --wrap-id "$YUBIHSM_WRAP_KEY" \
+      --object-id "$key_id" \
+      --object-type asymmetric-key \
+      --out "$key_out_dir/${key_id}-asymmetric-key.yhk" \
+      || return $?
+  fi
 }
 
 generate_cert() {
@@ -95,83 +136,60 @@ generate_cert() {
   local key_label=$2  # unused
   local key_type=$3
   local key_name=$4
-  local dstdir=$public_key_out_dir
-  "$YUBIHSM_SHELL_BIN" --authkey="$YUBIHSM_AUTHKEY" --password="$YUBIHSM_PASSWORD" \
-    -a sign-attestation-certificate -i "0x$key_id" --attestation-id 0 \
-    --out "$dstdir/$key_id.x509.pem" || return $?
-  "$YUBIHSM_SHELL_BIN" --authkey="$YUBIHSM_AUTHKEY" --password="$YUBIHSM_PASSWORD" \
-    -a put-opaque -i "0x$key_id" -A opaque-x509-certificate --informat=PEM \
-    --in "$dstdir/$key_id.x509.pem" || return $?
+  local domain
+  local capabilities
+  domain=$(_get_domains_for_key_id "$key_id") || return $?
+  capabilities=$(_get_capabilities_for_key_id "$key_id" "$YUBIHSM_OPAQUE_CAPABILITIES") || return $?
+
+  yubihsm -a sign-attestation-certificate \
+    --object-id "$key_id" \
+    --attestation-id 0 \
+    --out "$key_out_dir/$key_id.x509.pem" \
+    || return $?
+  yubihsm -a put-opaque \
+    --object-id "$key_id" \
+    -A opaque-x509-certificate \
+    --informat=PEM \
+    --domain "$domain" \
+    --capabilities "$capabilities" \
+    --in "$key_out_dir/$key_id.x509.pem" \
+    || return $?
 
   # Output the certificate and the public key.
-  local name=$key_id
   case "$key_type" in
     avb|apex_payload|apex_container)
-      if [ -e "$dstdir/$name.pem" ]; then
-        echo "Public key file already exists: $dstdir/$name.pem" >&2
+      if [ -e "$key_out_dir/$key_id.pem" ]; then
+        echo "Public key file already exists: $key_out_dir/$key_id.pem" >&2
       else
         # Output public key and avbpubkey for APEX payload or AVB keys.
         # Also do this for core keys, since APEX might use them.
-        "$OPENSSL_BIN" x509 -pubkey -noout -in "$dstdir/$key_id.x509.pem" -out "$dstdir/$name.pem" || return $?
+        "$OPENSSL_BIN" x509 -pubkey -noout -in "$key_out_dir/$key_id.x509.pem" \
+          -out "$key_out_dir/$key_id.pem" \
+          || return $?
       fi
-      if [ -e "$dstdir/$name.avbpubkey" ]; then
-        echo "avbpubkey file already exists: $dstdir/$name.avbpubkey" >&2
+      if [ -e "$key_out_dir/$key_id.avbpubkey" ]; then
+        echo "avbpubkey file already exists: $key_out_dir/$key_id.avbpubkey" >&2
       else
         "$AVBTOOL_BIN" extract_public_key \
-          --key "$dstdir/$name.pem" \
-          --output "$dstdir/$name.avbpubkey" \
+          --key "$key_out_dir/$key_id.pem" \
+          --output "$key_out_dir/$key_id.avbpubkey" \
           || return $?
       fi
       ;;
   esac
+
+  # Generating the cert happens after the keypair, so this is our chance to limit the
+  # on-demand key object.
+  limit_ondemand_objects || return $?
+
+  # And we can go ahead and extract logs, too.
+  extract_logs || return $?
 }
 
 ensure_key_not_exist() {
   # temp just say it does not exist
   #return 0
   ensure_key_not_exist_pkcs11 "$@" || return $?
-}
-
-_generate_yubihsm_pkcs11_library_config() {
-  # https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-pkcs11-guide.html
-  cat <<EOF
-# This is a sample configuration file for the YubiHSM PKCS#11 module
-# Uncomment the various options as needed
-
-# URL of the connector to use. This can be a comma-separated list
-connector = http://127.0.0.1:12345
-
-# Enables general debug output in the module
-#
-# debug
-
-# Enables function tracing (ingress/egress) debug output in the module
-#
-# dinout
-
-# Enables libyubihsm debug output in the module
-#
-# libdebug
-
-# Redirects the debug output to a specific file. The file is created
-# if it does not exist. The content is appended
-#
-# debug-file = /tmp/yubihsm_pkcs11_debug
-
-# CA certificate to use for HTTPS validation. Point this variable to
-# a file containing one or more certificates to use when verifying
-# a peer. Currently not supported on Windows
-#
-# cacert = /tmp/cacert.pem
-
-# Proxy server to use for the connector
-# Currently not supported on Windows
-#
-# proxy = http://proxyserver.local.com:8080
-
-# Timeout in seconds to use for the initial connection to the connector
-# timeout = 5
-EOF
 }
 
 cleanup() {

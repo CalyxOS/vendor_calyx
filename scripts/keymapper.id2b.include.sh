@@ -25,7 +25,8 @@
 
 ### BEGIN CONFIGURABLE SECTION ###
 # AOSP per-device key starting prefix, as per above.
-device_key_prefix_base=0x20
+device_key_prefix_start=0x20
+device_key_prefix_end=0xfe
 
 # Hexadecimal prefix for a key type when the type is shared across devices, or empty if none.
 declare -g -A key_type_to_prefix=(
@@ -102,6 +103,60 @@ declare -g -A key_type_to_array=(
   [apex_apk]=keys_apex_apk
   [app]=keys_app
 )
+
+declare -g -A key_id_to_type_and_name_pair=()
+
+# Returns true if the key ID provided is within a range eligible to be exported.
+get_key_id_is_exportable_yn() {
+  # Core keys are not exportable for transparency reasons.
+  # Core keys can be rotated, so they do not need to be exported. This provides an assurance
+  # that the same HSM has been used to sign everything that uses these important core keys,
+  # as the attestation will show that the key was generated on device and not exportable.
+  # This makes it possible to determine if the secondary HSM - or any other device - is used
+  # for signing these components, which could provide a clue in case somehow the keys are
+  # used without proper authorization.
+  local key_id=$1
+  local release_key_id
+  local key_lookup
+  key_lookup=${key_id_to_type_and_name_pair[$key_id]} || return $?
+  local pair
+  if [ -z "$key_lookup" ]; then
+    echo "ERROR: Could not find key information for key ID $key_id." >&2
+    return 1
+  fi
+  for pair in $key_lookup; do
+    case "$pair" in
+      *:build/make/target/product/security/testkey)
+        continue ;;
+      core:*)
+        echo n; return 0 ;;
+    esac
+  done
+  echo y
+}
+
+# Returns true if the key ID provided is within the range designated for on-demand keys,
+# meaning the key has been exported under wrap and can be removed and re-imported to the
+# HSM any time in order to make room for other keys as needed.
+get_key_id_is_ondemand_yn() {
+  get_key_id_is_per_device_yn "$@" || return $?
+}
+
+# Returns true if the key ID provided is within the range designated for per-device keys.
+get_key_id_is_per_device_yn() {
+  local key_id=$1
+  local key_id_decimal
+  local start_decimal
+  local end_decimal
+  key_id_decimal=$(($key_id))
+  start_decimal=$(($device_key_prefix_start << 8))
+  end_decimal=$(($device_key_prefix_end << 8 | 0xff))
+  if [ "$key_id_decimal" -ge "$start_decimal" ] && [ "$key_id_decimal" -le "$end_decimal" ]; then
+    echo y
+  else
+    echo n
+  fi
+}
 
 # Returns true if, within a given key type, a given key name should be
 # considered per-device. Contains special handling for the release key.
@@ -197,7 +252,7 @@ get_key_id() {
     echo "ERROR: Could not find '$key_name' in our ID lookup map for the '$array_name' array." >&2
     return 1
   fi
-  printf "%x\n" "$((0x$base | 0x$lookup_result))"
+  printf "0x%x\n" "$((0x$base | 0x$lookup_result))"
 }
 
 get_key() {
@@ -246,17 +301,49 @@ _generate_key_id_maps() {
     local array="${array_name}[@]"
     local i=0
     if [ "$array_name" = "all_devices" ]; then
-      i=$(($device_key_prefix_base)) # all_devices is used for ID prefixes.
+      i=$(($device_key_prefix_start)) # all_devices is used for ID prefixes.
     fi
     local key
     for key in "${!array}"; do
       local id=$(printf "%02x" "$i")
-      declare -g "${lookup_array_name}[$key]=$id"
+      declare -g "${lookup_array_name}[$key]=$id" || return $?
       i=$((i+1))
     done
   done
 }
-_generate_key_id_maps
+_generate_key_id_maps || { echo "Failed to generate ID maps!" >&2; exit 1; }
+
+_generate_reverse_key_id_map() {
+  local key_type
+  for key_type in "${!key_type_to_array[@]}"; do
+    local array_name
+    array_name=${key_type_to_array[$key_type]} || return $?
+    local array="${array_name}[@]"
+    local key
+    # Device does not really matter, so use the first one.
+    local first_device=${all_devices[0]}
+    for key in "${!array}"; do
+      local key_id
+      local is_per_device
+      is_per_device=$(get_key_is_per_device_yn "$key_type" "$key") || return $?
+      local -a devices_to_use
+      if [ "$is_per_device" = "y" ]; then
+        devices_to_use=("${devices[@]}")
+      else
+        devices_to_use=(any)
+      fi
+      local device
+      for device in "${devices_to_use[@]}"; do
+        key_id=$(DEVICE=$device get_key_id "$key_type" "$key") || return $?
+        local new_map_value
+        new_map_value="${key_id_to_type_and_name_pair[$key_id]:-} $key_type:$key"
+        new_map_value=${new_map_value# }
+        key_id_to_type_and_name_pair[$key_id]=$new_map_value
+      done
+    done
+  done
+}
+_generate_reverse_key_id_map || { echo "Failed to generate reverse ID map!" >&2; return 1; }
 
 # Set AVB custom key path for generate-factory-images-common.sh.
 [ -z "${DEVICE:-}" ] || AVB_CUSTOM_KEY=$PWD/$(get_key avb vbmeta).avbpubkey
