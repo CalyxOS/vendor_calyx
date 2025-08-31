@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPTPATH=$(cd "$(dirname "$0")";pwd -P)
-source "$SCRIPTPATH/include.sh" || exit $?
+ourpath=$(cd "$(dirname "$0")";pwd -P)
+source "$ourpath/include.sh" || exit $?
 
 _default_payload_signature_size=256  # 2048-bit
 
@@ -37,10 +37,10 @@ main() {
   local key=$(_get_key_name "$key_file")
 
   # Workaround for the fact that pkcs11-tool ignores --label during a --sign operation.
-  local rsa_key_size_and_id
-  rsa_key_size_and_id=$(_get_id_and_rsa_key_size_for_key "$key")
-  local rsa_key_size=${rsa_key_size_and_id%%;*}
-  local id=${rsa_key_size_and_id#*;}
+  local id_and_rsa_key_size
+  id_and_rsa_key_size=$(_get_id_and_rsa_key_size_for_key "$key")
+  local id=${id_and_rsa_key_size%%;*}
+  local rsa_key_size=${id_and_rsa_key_size#*;}
 
   if [ -z "$id" ]; then
     echo "Could not found find key with label '$key'" >&2
@@ -51,8 +51,8 @@ main() {
     PAYLOAD_SIGNATURE_SIZE=$(($rsa_key_size / 8))
   fi
 
-  local args
-  if [ "${SIGNING_USES_SO_PIN:-n}" = "y" ]; then
+  local -a args
+  if [ "${SIGNING_USES_SO_PIN:-}" = "y" ]; then
     args=("${pkcs11_tool_args_so_pin[@]}")
   else
     args=("${pkcs11_tool_args[@]}")
@@ -105,7 +105,7 @@ if [ "${DEBUG_PAYLOAD_SIGNER:-y}" = "y" ]; then
   if [ -e "$key_file" ]; then
     cat "$key_file" > "$outdir/$(basename "$key_file")"
   fi
-  "$SCRIPTPATH/payload_signer.openssl.sh" "$@" || exit $?
+  "$ourpath/payload_signer.openssl.sh" "$@" || exit $?
   cat "$output_file" > "$outdir/output-openssl.bin"
 
   if ! diff -q "$outdir/output-pkcs11-tool.bin" "$outdir/output-openssl.bin"; then
