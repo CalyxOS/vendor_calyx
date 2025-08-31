@@ -23,6 +23,18 @@ get_key() {
   esac
 }
 
+get_key_id_is_ondemand_yn() {
+  echo n
+}
+
+get_key_id_is_exportable_yn() {
+  echo y
+}
+
+get_key_id_is_per_device_yn() {
+  echo y
+}
+
 get_key_is_per_device_yn() {
   local key_type=$1
   case "$key_type" in

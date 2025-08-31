@@ -59,7 +59,7 @@ _get_id_for_key() {
   if [ "${KEY_LABEL_IS_HEX:-n}" = "y" ]; then
     key=$(get_key_id "$key")
   fi
-  local args
+  local -a args
   if [ "${LIST_REQUIRES_NO_PIN:-n}" = "y" ]; then
     args=("${pkcs11_tool_args_no_pin[@]}")
   else
@@ -74,8 +74,8 @@ _get_id_for_key() {
 
 _key_id_exists() {
   local key_id=$1
-  local args
-  if [ "${LIST_REQUIRES_NO_PIN:-n}" = "y" ]; then
+  local -a args
+  if [ "${LIST_REQUIRES_NO_PIN:-}" = "y" ]; then
     args=("${pkcs11_tool_args_no_pin[@]}")
   else
     args=("${pkcs11_tool_args[@]}")
@@ -89,7 +89,7 @@ _key_id_exists() {
 
 _get_rsa_key_size() {
   local key_id=$1
-  local args
+  local -a args
   if [ "${LIST_REQUIRES_NO_PIN:-n}" = "y" ]; then
     args=("${pkcs11_tool_args_no_pin[@]}")
   else
@@ -107,14 +107,24 @@ _get_rsa_key_size() {
 
 _get_id_and_rsa_key_size_for_key() {
   local key=$1
-  if [ "${KEY_LABEL_IS_HEX:-n}" = "y" ]; then
-    key=$(get_key_id "$key")
-  fi
-  local args
+  local -a args
   if [ "${LIST_REQUIRES_NO_PIN:-n}" = "y" ]; then
     args=("${pkcs11_tool_args_no_pin[@]}")
   else
     args=("${pkcs11_tool_args[@]}")
+  fi
+  if [ "${FIND_KEYS_BY_ID:-}" = "y" ]; then
+    local output
+    output=$(PKCS11_PIN=${PKCS11_PIN:-} PKCS11_SO_PIN=${PKCS11_SO_PIN:-} \
+      "$PKCS11_TOOL_BIN" --list-objects --type pubkey --id "$key" \
+      "${args[@]}") || return $?
+    rsa_key_size=$(printf "%s\n" "$output" |
+      sed -n -e 's/^Public Key Object; RSA \(.*\) bits$/\1/p') || return $?
+    printf "%s;%s\n" "$key" "$rsa_key_size"
+    return 0
+  fi
+  if [ "${KEY_LABEL_IS_HEX:-n}" = "y" ]; then
+    key=$(get_key_id "$key")
   fi
   local output
   output=$(PKCS11_PIN=${PKCS11_PIN:-} PKCS11_SO_PIN=${PKCS11_SO_PIN:-} \
@@ -129,7 +139,7 @@ _get_id_and_rsa_key_size_for_key() {
   local rsa_key_size
   rsa_key_size=$(printf "%s\n" "$output" |
     sed -n -e 's/^Public Key Object; RSA \(.*\) bits$/\1/p') || return $?
-  printf "%s;%s\n" "$rsa_key_size" "$key_id"
+  printf "%s;%s\n" "$key_id" "$rsa_key_size"
 }
 
 _escape_for_uri() {
@@ -139,8 +149,8 @@ _escape_for_uri() {
   printf "%s\n" "$escapee"
 }
 
-_hex_id_escape_for_uri() {
-  local escapee=$1
+_hex_id_for_uri() {
+  local escapee=${1#0x}
   printf "%s\n" "$escapee" | sed -e 's/\(..\)/%\1/g'
 }
 
@@ -154,13 +164,16 @@ _get_key_name() {
     key=${key#$KEY_DIR*}
     key=${key%.pem}
   fi
+  if [ "${STRIP_HEX_KEY_ID_PREFIX:-}" = "y" ]; then
+    key=${key#0x}
+  fi
   printf "%s\n" "$key"
 }
 
 _get_privkey_uri() {
   local key=$1
   if [ "${OPENSSL_PKCS11_URI_USES_HEX_KEY_ID:-}" = "y" ]; then
-    uri="pkcs11:id=$(_hex_id_escape_for_uri "$key")"
+    uri="pkcs11:id=$(_hex_id_for_uri "$key")"
   else
     uri="pkcs11:object=$(_escape_for_uri "$key")"
   fi
@@ -168,14 +181,37 @@ _get_privkey_uri() {
 }
 
 refresh_pkcs11_tool_args() {
-  declare -ga pkcs11_tool_args_no_pin=()
+  declare -g -a pkcs11_tool_args_no_pin=()
   [ -z "${PKCS11_MODULE:-}" ] || pkcs11_tool_args_no_pin+=(--module "$PKCS11_MODULE")
   [ -z "${PKCS11_TOKEN_LABEL:-}" ] || pkcs11_tool_args_no_pin+=(--token-label "$PKCS11_TOKEN_LABEL")
   [ -z "${PKCS11_SLOT:-}" ] || pkcs11_tool_args_no_pin+=(--slot "$PKCS11_SLOT")
-  declare -ga pkcs11_tool_args=("${pkcs11_tool_args_no_pin[@]}")
+  declare -g -a pkcs11_tool_args=("${pkcs11_tool_args_no_pin[@]}")
   [ -z "${PKCS11_PIN:-}" ] || pkcs11_tool_args+=(--pin env:PKCS11_PIN)
-  declare -ga pkcs11_tool_args_so_pin=("${pkcs11_tool_args_no_pin[@]}")
+  declare -g -a pkcs11_tool_args_so_pin=("${pkcs11_tool_args_no_pin[@]}")
   [ -z "${PKCS11_SO_PIN:-}" ] || pkcs11_tool_args_so_pin+=(--login-type so --so-pin env:PKCS11_SO_PIN)
 }
 
 refresh_pkcs11_tool_args
+
+ensure_key_is_available() {
+  # Do nothing by default; keys are expected to be available.
+  # This can be overridden by vendor includes, in which case it should make a key available
+  # when it is not already available. If it cannot do so, it should return with a failure.
+  true
+}
+
+dry_run_out() {
+  printf "%q " "$@" >&2
+  echo >&2
+}
+dry_run() {
+  printf "%q " "$@" >&2
+  echo >&2
+}
+if [ "${DRY_RUN:-}" = "y" ]; then
+  declare -g maybe_dry_run=dry_run
+  declare -g maybe_dry_run_out=dry_run_out
+else
+  declare -g maybe_dry_run=
+  declare -g maybe_dry_run_out=
+fi
