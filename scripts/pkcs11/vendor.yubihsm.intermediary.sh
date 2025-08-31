@@ -1,8 +1,11 @@
 #!/bin/bash
 set -euo pipefail
+ourpath="$(cd "$(dirname "$0")";pwd -P)"
+scriptpath="$(cd "$(dirname "$0")/..";pwd -P)"
 
 export OPENSSL_PKCS11_URI_USES_HEX_KEY_ID=y
 num_tries=5
+is_a_signing_command=
 
 main() {
   declare -g args=()
@@ -25,6 +28,10 @@ main() {
     err=0
     break
   done
+  if [ "$is_a_signing_command" = "y" ]; then
+    source "$ourpath/vendor.yubihsm.include.sh" || return $?
+    extract_logs || return $?
+  fi
   return $err
 }
 
@@ -44,6 +51,9 @@ handle_avbtool() {
           esac
         fi
         ;;
+      --signing*)
+        is_a_signing_command=y
+        ;;
     esac
     args+=("$1")
     shift 1
@@ -59,6 +69,9 @@ handle_java() {
         jar=${jar%.jar}
         ;;
       --ks-key-alias)
+        # Actually, this is not needed anymore...
+        continue
+        # Back when it was needed, we did this:
         if [ $# -gt 1 ] && [ "$jar" = "apksigner" ]; then
           # Add 0x to the private key.
           args+=("$1" "0x$2")
@@ -74,7 +87,10 @@ handle_java() {
     # Add 0x to the private key.
     local private_key_index=$((${#args[@]}-3))
     args[$private_key_index]=0x${args[$private_key_index]}
+    is_a_signing_command=y
+  elif [ "$jar" = "apksigner" ]; then
+    is_a_signing_command=y
   fi
 }
 
-main "$@"
+main "$@" || exit $?

@@ -139,8 +139,8 @@ _escape_for_uri() {
   printf "%s\n" "$escapee"
 }
 
-_hex_id_escape_for_uri() {
-  local escapee=$1
+_hex_id_for_uri() {
+  local escapee=${1#0x}
   printf "%s\n" "$escapee" | sed -e 's/\(..\)/%\1/g'
 }
 
@@ -160,7 +160,7 @@ _get_key_name() {
 _get_privkey_uri() {
   local key=$1
   if [ "${OPENSSL_PKCS11_URI_USES_HEX_KEY_ID:-}" = "y" ]; then
-    uri="pkcs11:id=$(_hex_id_escape_for_uri "$key")"
+    uri="pkcs11:id=$(_hex_id_for_uri "$key")"
   else
     uri="pkcs11:object=$(_escape_for_uri "$key")"
   fi
@@ -179,3 +179,20 @@ refresh_pkcs11_tool_args() {
 }
 
 refresh_pkcs11_tool_args
+
+ensure_key_is_available() {
+  # Do nothing by default; keys are expected to be available.
+  # This can be overridden by vendor includes, in which case it should make a key available
+  # when it is not already available. If it cannot do so, it should return with a failure.
+  true
+}
+
+dry_run() {
+  printf "%q " "$@"
+  echo
+}
+if [ "${DRY_RUN:-}" = "y" ]; then
+  maybe_dry_run=dry_run
+else
+  maybe_dry_run=
+fi

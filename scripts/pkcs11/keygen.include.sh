@@ -71,7 +71,7 @@ keygen_usage() {
 }
 
 keygen_main() {
-  declare -g public_key_out_dir=
+  declare -g key_out_dir=
   while true; do
     case "${1:-}" in
       -?|-h|--help|"")
@@ -79,11 +79,11 @@ keygen_main() {
         return 0
         ;;
       *)
-        if [ -n "$public_key_out_dir" ]; then
-          echo "Expected just one argument, the public key output directory." >&2
+        if [ -n "$key_out_dir" ]; then
+          echo "Expected just one argument, the key output directory." >&2
           return 1
         else
-          public_key_out_dir=$1
+          key_out_dir=$1
         fi
         ;;
     esac
@@ -91,8 +91,8 @@ keygen_main() {
     [ $# -gt 0 ] || break
   done
 
-  if [ ! -d "$public_key_out_dir" ]; then
-    echo "ERROR: Could not find key output directory '$public_key_out_dir'." >&2
+  if [ ! -d "$key_out_dir" ]; then
+    echo "ERROR: Could not find key output directory '$key_out_dir'." >&2
     return 1
   fi
 
@@ -440,10 +440,10 @@ generate_cert_pkcs11() {
       --id "$key_id" \
       --label "$key_label" || err=$?
 
-  if [ $err -eq 0 ] && [ -n "${public_key_out_dir:-}" ]; then
+  if [ $err -eq 0 ] && [ -n "${key_out_dir:-}" ]; then
     # Output the certificate and the public key.
     local parent_key_dir=$(dirname "$key_label")
-    local dstdir="$public_key_out_dir/$parent_key_dir"
+    local dstdir="$key_out_dir/$parent_key_dir"
     local name=$(basename "$key_label")
     mkdir -p "$dstdir" || return $?
     cp "$tmpfile" "$dstdir/$name.x509.pem" || return $?

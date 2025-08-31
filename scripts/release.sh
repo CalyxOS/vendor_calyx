@@ -60,19 +60,25 @@ load_keymapper() {
   source "$keymapper_path" || return $?
 }
 
+initialize_release_vendor() {
+  # This method is overridable by vendor include.
+  true
+}
+
 if [ -n "${PKCS11_MODULE:-}" ] || [ -n "${PKCS11_VENDOR:-}" ] || [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
   source "$SCRIPTPATH/pkcs11/include.sh"
   if [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
-    source "$PKCS11_VENDOR_FILE" || exit 1
+    source "$PKCS11_VENDOR_FILE" || exit $?
   elif [ -n "${PKCS11_VENDOR:-}" ]; then
     pkcs11_vendor_path=$(cd "$SCRIPTPATH"; realpath -e "pkcs11/vendor.${PKCS11_VENDOR}.include.sh" || true)
     if [ -z "$pkcs11_vendor_path" ]; then
       echo "Could not find PKCS#11 vendor include script for '$PKCS11_VENDOR'." >&2
       exit 1
     fi
-    source "$pkcs11_vendor_path" || exit 1
+    source "$pkcs11_vendor_path" || exit $?
   fi
-  load_keymapper
+  load_keymapper || exit $?
+  initialize_release_vendor || exit $?
   tmpdir=$(mktemp -d)
   cleanup() {
     rm -f "$tmpdir/sunpkcs11.cfg"
