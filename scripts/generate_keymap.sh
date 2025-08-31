@@ -37,7 +37,7 @@ main() {
     apex_apk
     app
   )
-  printf "%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key"
+  printf "%s\t%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key" "Exportable"
   local key_type
   for key_type in "${key_types[@]}"; do
     local array_name
@@ -67,7 +67,9 @@ main() {
       local value
       for device in "${devices_array[@]}"; do
         value=$(KEY_DIR= DEVICE=$device get_key "$key_type" "$key") || return $?
-        printf "%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key"
+        local exportable
+        exportable=$(DEVICE=$device get_key_id_is_exportable_yn "$value") || return $?
+        printf "%s\t%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key" "$exportable"
       done
     done || return $?
   done | sort
