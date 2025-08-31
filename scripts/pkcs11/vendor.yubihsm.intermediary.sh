@@ -1,8 +1,12 @@
 #!/bin/bash
 set -euo pipefail
+ourpath="$(cd "$(dirname "$0")";pwd -P)"
+scriptpath="$(cd "$(dirname "$0")/..";pwd -P)"
 
 export OPENSSL_PKCS11_URI_USES_HEX_KEY_ID=y
+export STRIP_HEX_KEY_ID_PREFIX=y
 num_tries=5
+is_a_signing_command=
 
 main() {
   declare -g args=()
@@ -14,7 +18,6 @@ main() {
   else
     args=("$@")
   fi
-  { printf "%q " "$cmd" "${args[@]}"; echo; } > last_command.txt
 
   # Note: We expect nothing from stdin, so we don't handle it.
 
@@ -25,6 +28,15 @@ main() {
     err=0
     break
   done
+  if [ "$is_a_signing_command" = "y" ]; then
+    source "$ourpath/vendor.yubihsm.include.sh" || return $?
+
+    PREPEND_LINE="Command:$(printf ' %q' "$SIGNING_COMMAND" "${args[@]}")
+Result: $err" \
+    APPEND_LINE="---" \
+      extract_logs \
+      || return $?
+  fi
   return $err
 }
 
@@ -44,6 +56,9 @@ handle_avbtool() {
           esac
         fi
         ;;
+      --signing*)
+        is_a_signing_command=y
+        ;;
     esac
     args+=("$1")
     shift 1
@@ -58,23 +73,15 @@ handle_java() {
         jar=$(basename "${2:-}")
         jar=${jar%.jar}
         ;;
-      --ks-key-alias)
-        if [ $# -gt 1 ] && [ "$jar" = "apksigner" ]; then
-          # Add 0x to the private key.
-          args+=("$1" "0x$2")
-          shift 2
-          continue
-        fi
-        ;;
     esac
     args+=("$1")
     shift 1
   done
   if [ "$jar" = "signapk" ]; then
-    # Add 0x to the private key.
-    local private_key_index=$((${#args[@]}-3))
-    args[$private_key_index]=0x${args[$private_key_index]}
+    is_a_signing_command=y
+  elif [ "$jar" = "apksigner" ]; then
+    is_a_signing_command=y
   fi
 }
 
-main "$@"
+main "$@" || exit $?
