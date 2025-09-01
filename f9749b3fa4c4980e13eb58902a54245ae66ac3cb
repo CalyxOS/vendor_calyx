@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "10c34eb7_809ca6bd",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 261,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-01T06:04:54Z",
+      "side": 1,
+      "message": "It might be good to *not* save it for a later operation, and also to set PREPEND_LINE with a description.",
+      "revId": "f9749b3fa4c4980e13eb58902a54245ae66ac3cb",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
