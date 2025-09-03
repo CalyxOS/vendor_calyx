@@ -38,12 +38,12 @@ SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
 if [[ -z $2 ]] ; then
   TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD.zip
   RELEASETOOLS_PATH=build/tools
-  EXTRA_RELEASETOOLS_ARGS=()
+  EXTRA_RELEASETOOLS_ARGS=(${EXTRA_RELEASETOOLS_ARGS:-})
 else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH="$(pwd -P)"
-  EXTRA_RELEASETOOLS_ARGS=(-p "$RELEASETOOLS_PATH")
+  EXTRA_RELEASETOOLS_ARGS=(-p "$RELEASETOOLS_PATH" ${EXTRA_RELEASETOOLS_ARGS:-})
 fi
 
 VERSION=$(unzip -c "$TARGET_FILES" SYSTEM/build.prop | grep "ro.build.id=" | cut -d = -f 2 | tr '[:upper:]' '[:lower:]')
