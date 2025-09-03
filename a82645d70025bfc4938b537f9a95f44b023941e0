@@ -16,6 +16,24 @@
       "message": "Needs cleanup and possibly splitting / squashing",
       "revId": "a82645d70025bfc4938b537f9a95f44b023941e0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "48db094a_f6da3dfe",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 12
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-03T11:00:39Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "fd961775_e0bf1128",
+      "revId": "a82645d70025bfc4938b537f9a95f44b023941e0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ],
   "submitRequirementResults": [
