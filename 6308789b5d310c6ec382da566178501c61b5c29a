@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0105705b_cc50f25a",
+        "filename": "scripts/pkcs11/payload_signer.pkcs11-tool.sh",
+        "patchSetId": 19
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-03T11:02:41Z",
+      "side": 1,
+      "message": "Nit on style: I had been prefixing with underscore as a convention to represent functions that aren\u0027t referenced from outside of the script, but since this script isn\u0027t included anywhere else, I don\u0027t know if that\u0027s necessary...",
+      "revId": "6308789b5d310c6ec382da566178501c61b5c29a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
