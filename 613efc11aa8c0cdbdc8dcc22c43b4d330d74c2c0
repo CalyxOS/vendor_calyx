@@ -16,6 +16,24 @@
       "message": "Rename or remove this function. We already have a `_get_id_for_key` and this one is weird. It mainly existed to benefit the setup I\u0027d had for Nitrokey NetHSM. We don\u0027t need it now, and we could get rid of the xxd dependency without it, too.",
       "revId": "613efc11aa8c0cdbdc8dcc22c43b4d330d74c2c0",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6852daf6_459a1d8a",
+        "filename": "scripts/pkcs11/include.sh",
+        "patchSetId": 33
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-08T18:13:23Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "de28230c_3a8bc8d7",
+      "revId": "613efc11aa8c0cdbdc8dcc22c43b4d330d74c2c0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
