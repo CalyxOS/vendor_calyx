@@ -121,7 +121,7 @@ generate_keypair() {
     local out=$unique_key_out_dir/$name
     mkdir -p "$unique_key_out_dir" || return $?
     yubihsm -a get-wrapped \
-      --wrap-id "$YUBIHSM_WRAP_KEY" \
+      --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
       --object-id "$key_id" \
       --object-type asymmetric-key \
       --out "$out" \
@@ -190,9 +190,8 @@ generate_cert() {
   limit_ondemand_objects || return $?
 
   # And we can go ahead and extract logs, too.
-  PREPEND_LINE='KEYGEN' \
-  APPEND_LINE='---' \
-  extract_logs || return $?
+  # Or actually, no need, since now we do that as part of yubihsm.
+  #extract_logs "" "KEYGEN" || return $?
 }
 
 ensure_key_not_exist() {

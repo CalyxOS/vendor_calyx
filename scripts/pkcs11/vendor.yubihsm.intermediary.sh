@@ -37,27 +37,28 @@ main() {
     break
   done
   local log_err=
+  local prepend_line=
   if [ "$is_a_signing_command" = "y" ]; then
     source "$pkcs11_scriptpath/vendor.yubihsm.include.sh" || return $?
 
     # Also try multiple times to get this logged...
     local log_try
     for log_try in $(seq 1 $num_tries); do
-      PREPEND_LINE="Command:$(printf ' %q' "$SIGNING_COMMAND" "${args[@]}")"$'\n'"Result: $err"
+      prepend_line="Command:$(printf ' %q' "$SIGNING_COMMAND" "${args[@]}")"$'\n'"Result: $err"
 
       # Make sure the number of tries required is part of the log.
       if [ "$try" -gt 1 ]; then
-        PREPEND_LINE="$PREPEND_LINE"$'\n'"Try: $try"
+        prepend_line="$prepend_line"$'\n'"Try: $try"
       fi
 
       # ...including the number of tries to get logs!
       if [ "$log_try" -gt 1 ]; then
-        PREPEND_LINE="$PREPEND_LINE"$'\n'"Try (log): $log_try"
+        prepend_line="$prepend_line"$'\n'"Try (log): $log_try"
       fi
 
-      PREPEND_LINE=$PREPEND_LINE \
-      APPEND_LINE="---" \
-        extract_logs || {
+      extract_logs "" "$prepend_line" \
+        || \
+        {
           log_err=$?
           echo "Warning: extract_logs failed on try $log_try (error $log_err)." >&2
           sleep $((try*5))

@@ -11,14 +11,32 @@ export STRIP_HEX_KEY_ID_PREFIX=y
 export YUBIHSM_CONNECTOR=${YUBIHSM_CONNECTOR:-yhusb://}
 
 export YUBIHSM_LOGS_DIR=${YUBIHSM_LOGS_DIR:-$(pwd)/logs}
+export YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_COMMAND=${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_COMMAND:-y}
 export YUBIHSM_KEY_CAPABILITIES=${YUBIHSM_KEY_CAPABILITIES:-sign-pkcs,sign-pss,decrypt-pkcs,decrypt-oaep}
 export YUBIHSM_OPAQUE_CAPABILITIES=${YUBIHSM_OPAQUE_CAPABILITIES:-}
 export YUBIHSM_ONDEMAND_DOMAIN=${YUBIHSM_ONDEMAND_DOMAIN:-2}
 export YUBIHSM_EXPORTABLE_DOMAIN=${YUBIHSM_EXPORTABLE_DOMAIN:-3}
 export YUBIHSM_UNEXPORTABLE_DOMAIN=${YUBIHSM_UNEXPORTABLE_DOMAIN:-4}
-export YUBIHSM_WRAP_KEY=${YUBIHSM_WRAP_KEY:-0x0010}
 export YUBIHSM_MAX_ONDEMAND_KEYS=${YUBIHSM_MAX_ONDEMAND_KEYS:-20}
 export DATE_FORMAT=${DATE_FORMAT:-%Y%m%d-%H%M%S}
+
+
+YUBIHSM_SIGNING_AUTHKEY_ID=${YUBIHSM_SIGNING_AUTHKEY_ID:-0x0001}
+YUBIHSM_SIGNING_AUTHKEY_DOMAINS=${YUBIHSM_SIGNING_AUTHKEY_DOMAINS:-all}
+# Authkey capabilities are based on yubihsm-setup, with some changes for our use cases.
+YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES=${YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES:-generate-asymmetric-key,sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa,derive-ecdh,import-wrapped,export-wrapped,exportable-under-wrap,get-option,sign-attestation-certificate,get-log-entries,change-authentication-key,decrypt-pkcs,decrypt-oaep,put-opaque,get-opaque}
+YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES=${YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES:-generate-asymmetric-key,sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa,derive-ecdh,exportable-under-wrap,get-option,decrypt-pkcs,decrypt-oaep}
+YUBIHSM_AUDIT_AUTHKEY_ID=${YUBIHSM_AUDIT_AUTHKEY_ID:-0x0002}
+YUBIHSM_AUDIT_AUTHKEY_DOMAINS=${YUBIHSM_AUDIT_AUTHKEY_DOMAINS:-all}
+YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES=${YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES:-get-log-entries,exportable-under-wrap,get-option,get-opaque}
+YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES=${YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES:-none}
+YUBIHSM_WRAP_KEY_ID=${YUBIHSM_WRAP_KEY_ID:-0x0010}
+
+# Fake... We don't truly get to control these wrap key details; yubihsm-setup controls it all,
+# and there is no customization...
+YUBIHSM_WRAP_KEY_DOMAINS=${YUBIHSM_WRAP_KEY_DOMAINS:-all}
+YUBIHSM_WRAP_KEY_CAPABILITIES=${YUBIHSM_WRAP_KEY_CAPABILITIES:-export-wrapped,import-wrapped}
+YUBIHSM_WRAP_KEY_DELEGATED_CAPABILITIES=${YUBIHSM_WRAP_KEY_DELEGATED_CAPABILITIES:-decrypt-oaep,decrypt-pkcs,derive-ecdh,export-wrapped,exportable-under-wrap,generate-asymmetric-key,get-log-entries,get-option,import-wrapped,sign-ecdsa,sign-eddsa,sign-pkcs,sign-pss,sign-attestation-certificate,change-authentication-key}
 
 maybe_dry_run=${maybe_dry_run:-}
 
@@ -93,6 +111,10 @@ EOF
 }
 
 yubihsm() {
+  if [ -z "${YUBIHSM_CONNECTOR:-}" ]; then
+    echo "ERROR: Must set YUBIHSM_CONNECTOR." >&2
+    return 1
+  fi
   if [ -z "${YUBIHSM_AUTHKEY:-}" ]; then
     echo "ERROR: Must set YUBIHSM_AUTHKEY." >&2
     return 1
@@ -101,128 +123,191 @@ yubihsm() {
     echo "ERROR: Must set YUBIHSM_PASSWORD." >&2
     return 1
   fi
+
+  # The stderr from yubihsm-shell is annoyingly chatty, so we filter out the offenders.
+  local err=
   $maybe_dry_run "$YUBIHSM_SHELL_BIN" \
     --connector "$YUBIHSM_CONNECTOR" \
     --authkey "$YUBIHSM_AUTHKEY" \
     --password file:<(printf "%s\n" "$YUBIHSM_PASSWORD") \
-    "$@"
+    "$@" \
+    2> >(grep -v '^Session keepalive set up to run every 15 seconds$\|^Created session' >&2) \
+    || err=$?
+
+  # Redact arguments for log.
+  local log_args=
+  local arg
+  local redact_next=
+  for arg in "$@"; do
+    if [ -n "$redact_next" ]; then
+      arg="REDACTED"
+      redact_next=
+    fi
+    case "$arg" in
+      --password=*)
+        arg="--password=REDACTED" ;;
+      --new-password=*)
+        arg="--new-password=REDACTED" ;;
+      --password|--new-password|-p)
+        redact_next=y
+        ;;
+    esac
+    log_args="$log_args$(printf " %q" "$arg")"
+  done
+
+  if [ "${DRY_RUN:-}" != "y" ] && [ "$YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_COMMAND" = "y" ]; then
+    # Let's not pollute a dry run with this, but we want to extract logs after every command,
+    # except commands to extract logs, since then we'd be stuck in a loop! extract_logs uses
+    # yubihsm_nolog for that reason.
+    NO_WARN=y \
+    extract_logs "" "Command: yubihsm-shell$log_args"$'\n'"Result: ${err:-0}" \
+      || \
+      {
+        err=${err:-$?}
+        echo "Failed to extract logs" >&2
+        return $err
+      }
+  fi
+  return ${err:-0}
 }
 
-# Extract an audit log to $AUDIT_LOG_PATH in text format and to $AUDIT_LOG_PATH_HEX
-# in hex format. Skip either if the path is set to "". Use YUBIHSM_LOGS_DIR as the
-# directory if given only a filename. Create the directory if it does not exist.
-# Always append to logs. Use PREPEND_LINE and APPEND_LINE if given.
-extract_logs() {
-  local timestamp
+yubihsm_nolog() {
+  YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_COMMAND=n yubihsm "$@" || return $?
+}
+
+maybe_set_audit_log_path() {
+  local timestamp=$1
+  if [ -n "${AUDIT_LOG_PATH+x}" ]; then
+    return 0
+  fi
   local file_timestamp=
-  timestamp=$(date -u +%s.%3N) || {
-    err=$?
-    echo "ERROR: failed to get timestamp" >&2
-    return $err
-  }
-  local text_file=${AUDIT_LOG_PATH:-}
-  local hex_file=${AUDIT_LOG_PATH_HEX:-}
-  if [ -z "$text_file" ] && [ -z "${AUDIT_LOG_PATH+x}" ]; then
-    file_timestamp=$(date -u --date="@$timestamp" +"$DATE_FORMAT") || {
-      err=$?
-      echo "ERROR: failed to get file timestamp" >&2
-      return $err
-    }
-    text_file=audit-$file_timestamp.log
-  fi
-  if [ -z "$hex_file" ] && [ -z "${AUDIT_LOG_PATH_HEX+x}" ]; then
-    if [ -z "$file_timestamp" ]; then
-      file_timestamp=$(date -u --date="@$timestamp" +"$DATE_FORMAT") || {
-        err=$?
-        echo "ERROR: failed to get file timestamp" >&2
-        return $err
-      }
-    fi
-    hex_file=${text_file:-audit-$file_timestamp.log}
-    hex_file=${hex_file%.log}.hex.log
-  fi
-  if [ "$text_file" = "$(basename "$text_file")" ] || \
-     [ "$hex_file" = "$(basename "$hex_file")" ]; then
-    if [ -n "${YUBIHSM_LOGS_DIR:-}" ] && [ ! -d "$YUBIHSM_LOGS_DIR" ]; then
-      $maybe_dry_run mkdir "$YUBIHSM_LOGS_DIR" || {
-        err=$?
-        echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) does not exist, and failed to create it" >&2
-        return $err
-      }
-    fi
-    if [ "$text_file" = "$(basename "$text_file")" ]; then
-      text_file=${YUBIHSM_LOGS_DIR:-.}/$text_file
-    fi
-    if [ -n "$hex_file" ] && [ "$hex_file" = "$(basename "$hex_file")" ]; then
-      hex_file=${YUBIHSM_LOGS_DIR:-.}/$hex_file
-    fi
-  fi
-  if [ "${DRY_RUN:-}" = "y" ]; then
-    text_file=/dev/null
-    hex_file=/dev/null
-  fi
-  local last_index
+  local text_file
+  file_timestamp=$(date -u --date="@$timestamp" +"$DATE_FORMAT") || return $?
+  text_file=audit-$file_timestamp.log
+  AUDIT_LOG_PATH=$text_file
+}
+
+# Extract an audit log to the supplied path or to $AUDIT_LOG_PATH, both in text (ASCII)
+# and hex formats.  Use YUBIHSM_LOGS_DIR as the directory if given only a filename.
+# Create the directory if it does not exist. Always append to logs.
+# Use PREPEND_LINE and APPEND_LINE if given.
+extract_logs() {
+  # Get the logs from the device, both in ASCII and hex formats.
   local logs
-  local err=0
-  logs=$(yubihsm -a get-logs) || {
-    err=$?
-    echo "ERROR: Failed to get logs" >&2
-    logs="Failed to get logs (code $err)"
-  }
-  if [ -n "$text_file" ]; then
-    {
-      [ -z "$PREPEND_LINE" ] || printf "%s\n" "$PREPEND_LINE"
-      echo "Timestamp: $timestamp"
-      printf "%s\n" "$logs"
-      [ -z "$APPEND_LINE" ] || printf "%s\n" "$APPEND_LINE"
-    } >> "$text_file" || {
+  local hex
+  local err=
+  logs=$(yubihsm_nolog -a get-logs) \
+    || {
       err=$?
-      echo "Failed to save logs" >&2
-      return $err
+      echo "ERROR: Failed to get logs" >&2
+      logs="Failed to get logs (code $err)"
+      # Don't exit yet. We want to log the failure.
     }
+
+  hex=$(yubihsm_nolog -a get-logs --outformat hex) \
+    || {
+      err=$?
+      echo "ERROR: Failed to get hex logs" >&2
+      logs="Failed to get logs (code $err)"
+    }
+
+  # Build up text to write to the text file.
+  {
+    if [ -z "$err" ]; then
+      printf "Hex: %s\n" "$hex"
+      printf "%s\n" "$logs"
+    else
+      printf "%s\n" "$logs"
+    fi
+  } | add_input_to_log "$@" || return ${err:-$?}
+
+  # We had errors earlier, so we should not mark the logs as extracted.
+  if [ -n "$err" ]; then
+    return $err
   fi
-  [ $err -eq 0 ] || return $err
+
+  # Get the last index found in the logs, if any.
+  local last_index
   last_index=$(
     printf "%s\n" "$logs" \
       | tail -n1 \
-      | sed -n -e 's/^item: \+\([0-9]\+\) --.*$/\1/p' \
-    ) \
-    || return $?
-  if [ -n "$hex_file" ]; then
-    {
-      [ -z "$PREPEND_LINE" ] || printf "%s\n" "$PREPEND_LINE"
-      echo "Timestamp: $timestamp"
-      local hex
-      hex=$(yubihsm -a get-logs --outformat hex) || {
-        err=$?
-        echo "ERROR: Failed to get hex logs" >&2
-        hex="Failed to get logs (code $err)"
-      }
-      if [ "$err" -eq 0 ]; then
-        printf "Hex: %s\n" "$hex"
-      else
-        printf "%s\n" "$hex"
-      fi
-      [ -z "$APPEND_LINE" ] || printf "%s\n" "$APPEND_LINE"
-    } >> "$hex_file" || {
-      err=$?
-      echo "Failed to get and save logs in hex format" >&2
-      return $err
-    }
-  fi
-  if [ "${DRY_RUN:-}" != "y" ] && ([ -z "$last_index" ] || ! [ "$last_index" -ge 0 ]); then
-    if printf "%s\n" "$logs" | grep -Fx 'No logs to extract'; then
+      | sed -n -e 's/^item: \+\([0-9]\+\) --.*$/\1/p'
+  ) \
+  || return $?
+
+  # Evaluate whether we're in a dry run, whether there are no logs to extract, or whether
+  # an error occurred, before marking logs as extracted.
+  if [ "${DRY_RUN:-}" != "y" ] && { [ -z "$last_index" ] || ! [ "$last_index" -ge 0 ]; }; then
+    # We're not in a dry run, but we can't find the last index to mark the logs as fetched.
+    if printf "%s\n" "$logs" | grep -qFx 'No logs to extract'; then
+      # There was nothing to extract, so we don't need to mark anything as fetched.
+      # We are done.
       [ "${NO_WARN:-}" = "y" ] || echo "WARNING: No logs to extract!" >&2
       return 0
     fi
+    # An actual failure happened.
     echo "Failed to get index of last log entry" >&2
     return 1
   fi
-  yubihsm -a set-log-index --log-index "$last_index" || {
+
+  # Mark all the logs we saw as extracted.
+  yubihsm_nolog -a set-log-index --log-index "$last_index" || {
     err=$?
     echo "Failed to set log index to $last_index" >&2
     return $err
   }
+}
+
+add_input_to_log() {
+  local timestamp
+  timestamp=$(date -u +%s.%3N) || return $?
+  local text_file=${1:-}
+  local prepend_line=${2:-}
+  local append_line=---
+  if [ -n "${3+x}" ]; then
+    append_line=$3
+  fi
+
+  {
+    if [ -n "${prepend_line:-}" ]; then printf "%s\n" "$prepend_line"; fi
+    echo "Timestamp: $timestamp"
+    cat
+    if [ -n "${append_line:-}" ]; then printf "%s\n" "$append_line"; fi
+  } | add_input_to_log_raw "$text_file" \
+  || \
+  { # Error writing to the text file.
+    err=$?
+    echo "Failed to save logs" >&2
+    return $err
+  }
+}
+
+add_input_to_log_raw() {
+  local text_file=${1:-}
+
+  if [ -z "$text_file" ]; then
+    maybe_set_audit_log_path "$timestamp" || return $?
+    text_file=${AUDIT_LOG_PATH:-}
+    if [ -z "$text_file" ]; then
+      # Nowhere to save logs, so don't.
+      return 0
+    fi
+  fi
+
+  if [ "${DRY_RUN:-}" = "y" ]; then
+    # yubihsm commands will do nothing in dry run other than output the command they'd have
+    # run to stderr, so we don't need to change those, but we do need to ensure that we
+    # don't write anywhere.
+    text_file=/dev/null
+  fi
+
+  if [ "$text_file" = "$(basename "$text_file")" ]; then
+    # It's just a filename, no path. Put it in the logs dir if available, else current directory.
+    $maybe_dry_run mkdir -p "${YUBIHSM_LOGS_DIR:-.}" || return $?
+    text_file=${YUBIHSM_LOGS_DIR:-.}/$text_file
+  fi
+
+  cat >> "$text_file" || return $?
 }
 
 limit_ondemand_objects() {
@@ -291,7 +376,7 @@ ensure_key_is_available_internal() {
 
   # Import wrapped key.
   yubihsm -a put-wrapped \
-    --wrap-id "$YUBIHSM_WRAP_KEY" \
+    --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
     --object-id "$key_id" \
     --object-type asymmetric-key \
     --domain "$YUBIHSM_ONDEMAND_DOMAIN,$YUBIHSM_EXPORTABLE_DOMAIN" \
@@ -301,7 +386,7 @@ ensure_key_is_available_internal() {
 
   # The cert itself is not sensitive so does not really need to be wrapped and unwrapped,
   # but yubihsm-setup already does it.
-  #yubihsm -a put-wrapped --wrap-id "$YUBIHSM_WRAP_KEY" --object-id "$key_id" \
+  #yubihsm -a put-wrapped --wrap-id "$YUBIHSM_WRAP_KEY_ID" --object-id "$key_id" \
   #  --object-type opaque \
   #  --domain "$YUBIHSM_EXPORTABLE_DOMAIN" \
   #  --capabilities "$YUBIHSM_OPAQUE_CAPABILITIES" \
@@ -324,10 +409,10 @@ ensure_key_is_available() {
   ensure_key_is_available_internal "$@" || err=$?
 
   # Extract logs.
-  PREPEND_LINE="Function: ensure_key_is_available
-Result: $err" \
-  APPEND_LINE="---" \
-    extract_logs
+
+  local prepend_line="Function: ensure_key_is_available
+Result: $err"
+  extract_logs "" "$prepend_line" || return $?
   return $err
 }
 
@@ -335,11 +420,10 @@ initialize_release_vendor() {
   read_yubihsm_deviceinfo || return $?
   local key_id
   key_id=$(get_key_id avb vbmeta) || return $?
-  PREPEND_LINE="BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
-  APPEND_LINE="---" \
-  NO_WARN=y \
-    extract_logs \
+
+  NO_WARN=y extract_logs "" "BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
     || return $?
+
   $maybe_dry_run ensure_key_is_available "$key_id" || return $?
 }
 
@@ -347,11 +431,11 @@ read_yubihsm_deviceinfo() {
   declare -g yubihsm_deviceinfo
   declare -g yubihsm_serial
   declare -g yubihsm_partnumber
-  yubihsm_deviceinfo==$(yubihsm -a get-device-info)
-  [ -n "$yubihsm_deviceinfo" ]
+  yubihsm_deviceinfo=$(yubihsm_nolog -a get-device-info)
+  [ -n "$yubihsm_deviceinfo" ] || return 1
   yubihsm_serial=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Serial number:\s\+//p')
-  [ -n "$yubihsm_serial" ]
+  [ -n "$yubihsm_serial" ] || return 1
   yubihsm_partnumber=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Part number:\s\+//p')
-  [ -n "$yubihsm_partnumber" ]
+  [ -n "$yubihsm_partnumber" ] || return 1
   declare -g yubihsm_id=$yubihsm_partnumber-$yubihsm_serial
 }

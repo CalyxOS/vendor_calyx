@@ -1,0 +1,1082 @@
+#!/bin/bash
+set -euo pipefail
+ourpath=$(cd "$(dirname "$0")";pwd -P)
+SOURCE_DIRECTORY=${SOURCE_DIRECTORY:-$(pwd)}
+PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
+KEEP_PATH=${KEEP_PATH:-/dev/shm/keep}
+YUBIHSM_CONNECTOR=${YUBIHSM_CONNECTOR:-http://127.0.0.1:12345}
+YUBIHSM_AUTHKEY=${YUBIHSM_AUTHKEY:-1}
+YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-password}
+YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE=${YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE:-0100030004000500060007000900080040004100420243004402450246024702550256024800490057004a024b024c024d0067004e004f0250005102520253025400580259005a025b025c005d005e025f006000610062026302640265026602680269026a026b006c020a006d026e026f0070007100720073027402750276027702}
+
+YUBIHSM_TEMPORARY_AUTHKEY_ID=${YUBIHSM_TEMPORARY_AUTHKEY_ID:-0x00ff}
+stage_file=$PROVISIONING_PATH/stage.txt
+mode_file=$PROVISIONING_PATH/mode.txt
+script_relpath=vendor/calyx/scripts
+pkcs11_relpath=$script_relpath/pkcs11
+our_desired_relpath=$pkcs11_relpath/$(basename "$0")
+# our_desired_path is established in set_mode.
+SHELL=${SHELL:-bash}
+
+script_args=()
+# basepath is established in set_mode.
+is_provisioning_mode=
+provisioning_started=
+asked_resume=
+installed=
+mode=
+stage=
+next_stage=
+
+wizard_script_start=(
+  copy_files
+  verify_copied_files
+  extract_tools
+  relaunch_script_from_memory_if_needed
+  remove_media
+  install_tools
+  source_include_scripts
+  start_yubihsm_connector
+)
+wizard_script_primary=(
+  connect_hsm_primary
+  log_provisioning_start_primary
+  reset_hsm_primary
+  provision_auditing_primary
+  provision_wrap_key_primary
+  ask_authkey_passwords_if_needed
+  add_temporary_authentication_key_primary
+  delete_default_authentication_key_primary
+  provision_authentication_primary
+  delete_temporary_authentication_key_primary
+  create_custom_metadata_for_keygen_primary
+  keygen_primary
+  backup_primary
+  log_provisioning_end_primary
+)
+wizard_script_secondary=(
+  ask_authkey_passwords_if_needed
+  connect_hsm_secondary
+  log_provisioning_start_secondary
+  reset_hsm_secondary
+  provision_auditing_secondary
+  restore_secondary
+  add_temporary_authentication_key_secondary
+  delete_default_authentication_key_secondary
+  provision_authentication_secondary
+  delete_temporary_authentication_key_secondary
+  create_custom_metadata_for_keygen_secondary
+  keygen_secondary
+  log_provisioning_end_secondary
+  log_provisioning_end_secondary
+)
+wizard_script_end=(
+  finish
+)
+
+main() {
+  trap cleanup EXIT
+
+  script_args=("$@")
+
+  export YUBIHSM_LOGS_DIR=$KEEP_PATH/logs
+
+  set_mode "${1:-}" || exit $?
+
+  set -- "${wizard_script[@]}"
+  local skip_until=$stage
+  local last_connect_hsm_step=
+  while [ $# -gt 0 ]; do
+    local script_stage=$1
+    if [ -n "$skip_until" ] && [ "$script_stage" != "$skip_until" ]; then
+      case "$1" in
+        relaunch_script_from_memory_if_needed|source_include_scripts\
+        |ask_*_if_needed|create_custom_metadata_for_keygen*)
+          # Always do these things, even if we are resuming from partially-completed provisioning.
+          stage=$script_stage try "$script_stage" || return $? ;;
+        connect_hsm*)
+          # Make sure we always repeat whichever the last check_hsm step was.
+          # This ensures the user knows to connect the expected HSM.
+          last_connect_hsm_step=$script_stage ;;
+        install_tools)
+          installed=y ;;
+        source_include_scripts)
+          stage=$script_stage try "$script_stage" || return $? ;;
+      esac
+      shift 1
+      continue
+    fi
+    skip_until=
+    next_stage=${2:-}  # The stage *after* this one.
+
+    if [ -n "$last_connect_hsm_step" ]; then
+      # Tell the user to connect the expected HSM.
+      stage=$last_connect_hsm_step try "$last_connect_hsm_step" || return $?
+      last_connect_hsm_step=
+    fi
+
+    set_stage "$script_stage" || return $?
+    try "$script_stage" || return $?
+    shift 1
+  done
+}
+
+start_new_provisioning_or_handle_resume() {
+  if [ "$asked_resume" = "y" ]; then return 0; fi
+  asked_resume=y
+  initialize_provisioning_mode || return $?
+  if [ -z "${RELAUNCHED_SCRIPT:-}" ] && [ -n "$stage" ]; then
+    echo "Detected provisioning still in progress (mode $mode, stage $stage)."
+    if ! confirm "Do you want to continue where you left off?"; then
+      stage=
+      mode=
+      return 0
+    fi
+
+    # Start again using the mode read from the provisioning path.
+    set_mode "$mode" || exit $?
+  fi
+}
+
+start_new_provisioning() {
+  initialize_provisioning_mode || return $?
+  stage=
+  mode=
+}
+
+set_mode() {
+  local new_mode=${1:-full}
+  if [ "$new_mode" = "restore" ]; then
+    start_new_provisioning_or_handle_resume || return 0
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      "${wizard_script_secondary[@]}"
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "primary" ]; then
+    start_new_provisioning_or_handle_resume || return 0
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      "${wizard_script_primary[@]}"
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "limited-keygen" ]; then
+    start_new_provisioning || return $?
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      create_custom_metadata_for_keygen_primary
+      ask_signing_authkey_password_if_needed
+      keygen_primary
+      backup_primary
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "keygen" ]; then
+    start_new_provisioning || return $?
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      ask_signing_authkey_password_if_needed
+      keygen_primary
+      backup_primary
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "full" ]; then
+    start_new_provisioning_or_handle_resume || return 0
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      "${wizard_script_primary[@]}"
+      "${wizard_script_secondary[@]}"
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "backup" ]; then
+    start_new_provisioning || return $?
+    declare -g wizard_script=(
+      "${wizard_script_start[@]}"
+      backup_primary
+      "${wizard_script_end[@]}"
+    )
+  elif [ "$new_mode" = "prepare-directory" ]; then
+    declare -g wizard_script=(
+      prepare_directory
+      verify_prepared_manifest_files
+      "${wizard_script_end[@]}"
+    )
+  else
+    echo "Unrecognized mode: $new_mode" >&2
+    return 1
+  fi
+  if [ "$is_provisioning_mode" = "y" ]; then
+    basepath=$PROVISIONING_PATH
+  else
+    basepath=$SOURCE_DIRECTORY
+  fi
+
+  our_desired_path=$basepath/$our_desired_relpath
+
+  if [ "$new_mode" != "$mode" ] && [ "$is_provisioning_mode" = "y" ]; then
+    # If this is a provisioning mode that initialized our provisioning path, save it there.
+    printf "%s\n" "$new_mode" > "$mode_file" || return $?
+  fi
+  mode=$new_mode
+
+  if [ -z "${RELAUNCHED_SCRIPT:-}" ]; then
+    echo "Mode: $mode"
+  fi
+}
+
+copy_files() {
+  mkdir -p -m0700 "$PROVISIONING_PATH/packages" || return $?
+  if paths_exist_and_are_equal "$0" "$our_desired_path"; then
+    echo "Skipping copying files since we are running from memory already." >&2
+    return 0
+  fi
+  # TODO: Just copy everything to simplify? Or, copy everything from the manifest,
+  #       and also the manifest itself?
+  cp -pur "$SOURCE_DIRECTORY/start.sh" "$PROVISIONING_PATH/" || return $?
+  cp -pur "$SOURCE_DIRECTORY/packages" "$PROVISIONING_PATH/" || return $?
+  cp -pur "$SOURCE_DIRECTORY/sdk" "$PROVISIONING_PATH/" || return $?
+  cp -pur "$SOURCE_DIRECTORY/bin" "$PROVISIONING_PATH/" || return $?
+  cp -pur "$SOURCE_DIRECTORY/calyx" "$PROVISIONING_PATH/" || return $?
+  cp -pur "$SOURCE_DIRECTORY/vendor" "$PROVISIONING_PATH/" || return $?
+}
+
+verify_copied_files() {
+  local manifest=$basepath/$pkcs11_relpath/vendor.yubihsm.provision.manifest.tsv
+  verify_files "$manifest" "$PROVISIONING_PATH" || return $?
+}
+
+extract_tools() {
+  mkdir -p -m0700 "$PROVISIONING_PATH/sdk_packages" || return $?
+  if paths_exist_and_are_equal "$0" "$our_desired_path"; then
+    echo "Skipping extracting tools since we are running from memory already." >&2
+    return 0
+  fi
+
+  local file
+  for file in "$PROVISIONING_PATH/sdk"/yubihsm2-sdk-*.tar.gz; do
+    if [ ! -e "$file" ]; then
+      echo "Could not find YubiHSM SDK in '$PROVISIONING_PATH/sdk'." >&2
+      return 1
+    fi
+    tar -xf "$file" -C "$PROVISIONING_PATH/sdk_packages" || return $?
+    # Don't want or need the development package.
+    rm -f "$PROVISIONING_PATH/sdk_packages/yubihsm2-sdk/"libyubihsm-dev*.deb || true
+    break
+  done
+}
+
+relaunch_script_from_memory_if_needed() {
+  if paths_exist_and_are_equal "$0" "$our_desired_path"; then
+    return 0
+  fi
+  cp -Pu "$0" "$our_desired_path" || return $?
+  chmod +x "$our_desired_path" || return $?
+  if [ -n "$next_stage" ]; then
+    set_stage "$next_stage" no-announce
+  fi
+  trap "" EXIT
+  RELAUNCHED_SCRIPT=y exec "$SHELL" "$our_desired_path" "${script_args[@]}"
+}
+
+paths_exist_and_are_equal() {
+  local path1
+  local path2
+  path1=$(realpath -e --no-symlinks "$1" 2>/dev/null) || return $?
+  path2=$(realpath -e --no-symlinks "$2" 2>/dev/null) || return $?
+  [ "$path1" = "$path2" ]
+}
+
+remove_media() {
+  echo "Everything required has now been installed or copied to memory at $PROVISIONING_PATH."
+  echo "You may now remove the media containing these provisioning files."
+  pause
+}
+
+source_include_scripts() {
+  source "$basepath/$pkcs11_relpath/vendor.yubihsm.include.sh" || return $?
+}
+
+install_tools() {
+  echo "This step uses administrator privileges via sudo to install the packages required to provision YubiHSM 2."
+  echo "You may be required to enter your administrator password."
+  confirm "Would you like to continue?" || return $?
+
+  sudo dpkg -i "$PROVISIONING_PATH/packages/"*.deb "$PROVISIONING_PATH/sdk_packages/yubihsm2-sdk/"*.deb || return $?
+
+  installed=y
+}
+
+start_yubihsm_connector() {
+  echo "This step uses administrator privileges via sudo to start the YubiHSM connector."
+  echo "You may be required to enter your administrator password."
+  pause || return $?
+  sudo systemctl start yubihsm-connector || return $?
+}
+
+connect_hsm_primary() {
+  echo "Please connect the primary YubiHSM 2."
+  confirm "Enter Y when the primary YubiHSM 2 is connected, or N to quit." || return $?
+  export AUDIT_LOG_PATH=provision-primary-$(date -u "+$DATE_FORMAT").log
+}
+
+log_provisioning_start_primary() {
+  log_provisioning_start "$@" || return $?
+}
+
+reset_hsm_primary() {
+  reset_hsm "$@" || return $?
+}
+
+provision_auditing_primary() {
+  provision_auditing "$@" || return $?
+}
+
+provision_wrap_key_primary() {
+  local output
+  output=$(yubihsm_nolog -a list-objects -t wrap-key -i "$YUBIHSM_WRAP_KEY_ID") || return $?
+  if printf "%s\n" "$output" | grep -q "^Found 0 "; then
+    true  # No wrap key found. Proceed.
+  elif printf "%s\n" "$output" | grep -q "^Found 1 "; then
+    echo "Found an existing wrap key."
+    confirm "Would you like to continue anyway?" || return $?
+  else
+    echo "Unexpected output when listing YubiHSM objects." >&2
+    return 1
+  fi
+  echo
+  echo "You are about to enter the yubihsm-setup wizard."
+  echo "When prompted, please answer as follows (note the wrap key will be re-imported as $YUBIHSM_WRAP_KEY_ID):"
+  echo "  Would you like to add RSA decryption capabilities? (y/n) y"
+  echo "  Enter domains: all"
+  echo "  You have selected more than one domain, are you sure? (y/n) y"
+  echo "  Enter wrap key ID (0 to choose automatically): $YUBIHSM_WRAP_KEY_ID"
+  echo "  Enter the number of shares: [TODO: prearranged. let's say 5]"
+  echo "  Enter the privacy threshold: [TODO: prearranged. let's say 3]"
+  # TODO: Prearranged mechanism is... what?
+  echo "Then, prepare to record shares using the prearranged mechanism."
+  echo "More questions (note that the authentication key created here will be discarded):"
+  echo "  Enter application authentication key ID (0 to choose automatically): 0x0002"
+  echo "  Enter application authentication key password: password"
+  echo "  Would you like to create an audit key? (y/n) n"
+  # TODO: Do this for them, and open with xdg-open?
+  echo "You may wish to copy this information to a text file in case it scrolls off the screen."
+  echo
+  confirm "Are you ready to continue?" || return $?
+
+  # Call yubihsm-setup to create the wrap key, and all the other stuff it unfortunately does
+  # which we will subsequently undo.
+  yhsetup --no-delete --no-export ksp || return $?
+
+  # Undo the things we don't want.
+  echo "Deleting application authentication key 0x0002..."
+  yubihsm -a delete-object --object-id 0x0002 --object-type authentication-key || return $?
+}
+
+ask_signing_authkey_password_if_needed() {
+  if [ -n "${YUBIHSM_SIGNING_AUTHKEY_PASSWORD:-}" ]; then
+    return 0
+  fi
+  read_password YUBIHSM_SIGNING_AUTHKEY_PASSWORD "signing authkey password" n || return $?
+}
+
+ask_authkey_passwords_if_needed() {
+  if [ -n "${YUBIHSM_SIGNING_AUTHKEY_PASSWORD:-}" ] && \
+     [ -n "${YUBIHSM_AUDIT_AUTHKEY_PASSWORD:-}" ]; then
+     return 0
+  fi
+  echo "Your HSM will have different authentication keys: one for signing, and one for auditing."
+  echo "Each key will have its own password. Please choose these passwords now."
+  if [ -z "${YUBIHSM_SIGNING_AUTHKEY_PASSWORD:-}" ]; then
+    read_password YUBIHSM_SIGNING_AUTHKEY_PASSWORD "signing authkey password" || return $?
+  fi
+  if [ -z "${YUBIHSM_AUDIT_AUTHKEY_PASSWORD:-}" ]; then
+    read_password YUBIHSM_AUDIT_AUTHKEY_PASSWORD "audit authkey password" || return $?
+  fi
+}
+
+add_temporary_authentication_key_primary() {
+  # Create a temporary full-access authentication key so that the default one can be removed.
+  yubihsm -a put-authentication-key --object-id "$YUBIHSM_TEMPORARY_AUTHKEY_ID" \
+    --new-password password --domains all --capabilities all --delegated all || return $?
+}
+
+delete_default_authentication_key_primary() {
+  # Delete the original, default authentication key using the temporary authentication key.
+  YUBIHSM_AUTHKEY=$YUBIHSM_TEMPORARY_AUTHKEY_ID YUBIHSM_PASSWORD=password yubihsm \
+    -a delete-object --object-id 0x0001 --object-type authentication-key || return $?
+}
+
+provision_authentication_primary() {
+  # WARNING: Password is on the command line.
+  # --new-password does not support the "file:" construction that --password does.
+  # This entire script is expected to be run in an ephemeral, trusted environment.
+
+  # Create the authentication key to be used for signing.
+  YUBIHSM_AUTHKEY=$YUBIHSM_TEMPORARY_AUTHKEY_ID YUBIHSM_PASSWORD=password yubihsm \
+    -a put-authentication-key \
+    --object-id "$YUBIHSM_SIGNING_AUTHKEY_ID" \
+    --domains "$YUBIHSM_SIGNING_AUTHKEY_DOMAINS" \
+    --capabilities "$YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES" \
+    --delegated "$YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES" \
+    --new-password "$YUBIHSM_SIGNING_AUTHKEY_PASSWORD" || return $?
+
+  # Create the authentication key to be used for auditing.
+  YUBIHSM_AUTHKEY=$YUBIHSM_TEMPORARY_AUTHKEY_ID YUBIHSM_PASSWORD=password yubihsm \
+    -a put-authentication-key \
+    --object-id "$YUBIHSM_AUDIT_AUTHKEY_ID" \
+    --domains "$YUBIHSM_AUDIT_AUTHKEY_DOMAINS" \
+    --capabilities "$YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES" \
+    --delegated "$YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES" \
+    --new-password "$YUBIHSM_AUDIT_AUTHKEY_PASSWORD" || return $?
+
+  # change-authentication-key, create-otp-aead, decrypt-oaep, decrypt-otp, decrypt-pkcs, delete-asymmetric-key, delete-authentication-key, delete-hmac-key, delete-opaque, delete-otp-aead-key, delete-template, delete-wrap-key, derive-ecdh, export-wrapped, exportable-under-wrap, generate-asymmetric-key, generate-hmac-key, generate-otp-aead-key, generate-wrap-key, get-log-entries, get-opaque, get-option, get-pseudo-random, get-template, import-wrapped, put-asymmetric-key, put-authentication-key, put-mac-key, put-opaque, put-otp-aead-key, put-template, put-wrap-key, randomize-otp-aead, reset-device, rewrap-from-otp-aead-key, rewrap-to-otp-aead-key, set-option, sign-attestation-certificate, sign-ecdsa, sign-eddsa, sign-hmac, sign-pkcs, sign-pss, sign-ssh-certificate, unwrap-data, verify-hmac, wrap-data
+}
+
+delete_temporary_authentication_key_primary() {
+  # Use the temporary authentication key to delete itself.
+  YUBIHSM_AUTHKEY=$YUBIHSM_TEMPORARY_AUTHKEY_ID YUBIHSM_PASSWORD=password yubihsm \
+    -a delete-object --object-id "$YUBIHSM_TEMPORARY_AUTHKEY_ID" \
+    --object-type authentication-key || return $?
+}
+
+create_custom_metadata_for_keygen_primary() {
+  if [ -z "${METADATA_FILE:-}" ]; then
+    echo "Preparing metadata for generating just a few keys..."
+    export METADATA_FILE=$PROVISIONING_PATH/limited_keygen_metadata
+    (
+      source "$basepath/$script_relpath/metadata" || return $?
+      printf 'keys_avb_partitions=(%q)\n' "${keys_avb_partitions[0]}"
+      printf 'keys_core=(%q %q)\n' "${keys_core[0]}" "${keys_core[1]}"
+      echo 'keys_apex=()'
+      echo 'keys_apex_apk=()'
+      echo "keys_app=(${keys_apps[*]@Q})"
+      echo "all_devices=(${all_devices[*]@Q})"
+    ) > "$METADATA_FILE" || return $?
+  fi
+  if [ -z "${DEVICES_FILE:-}" ]; then
+    echo "Preparing devices list for generating just a few keys..."
+    export DEVICES_FILE=$PROVISIONING_PATH/limited_keygen_devices
+    (
+      source "$basepath/calyx/scripts/vars/devices" || return $?
+      echo "readonly -a devices=(${devices[0]})"
+    ) > "$DEVICES_FILE" || return $?
+  fi
+}
+
+keygen_primary() {
+  (
+    export YUBIHSM_AUTHKEY=$YUBIHSM_SIGNING_AUTHKEY_ID
+    export YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD
+    mkdir -p -m0700 "$KEEP_PATH" || return $?
+    mkdir -p -m0700 "$KEEP_PATH/keys" || return $?
+    cd "$basepath" || return $?
+    "$basepath/$pkcs11_relpath/vendor.yubihsm.keygen.sh" "$KEEP_PATH/keys" || return $?
+  ) || return $?
+}
+
+backup_primary() {
+  mkdir -p -m0700 "$KEEP_PATH/keys"
+  echo
+  echo "You are about to enter yubihsm-setup to export objects."
+  echo "When prompted, please answer as follows:"
+  echo "  Enter the wrapping key ID to use for exporting objects: 0x0010"
+  echo
+  echo "This process fails to export the wrap-key and both of the authkeys. It will, however,"
+  echo "successfully export the generated asymmetric keys. This is useful to verify that restoring"
+  echo "actually works. (The authentication keys will be re-created on the secondary HSM. This is"
+  echo "okay, too, since we keep the same capabilities, and this process uses the same passwords.)"
+  echo
+  confirm "Are you ready to continue?" || return $?
+
+  # Dump objects.
+  (cd "$KEEP_PATH/keys" && YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD yhsetup dump) \
+    || return $?
+
+  # Our authentication keys cannot be exported because the wrap key generated by
+  # yubihsm-setup is missing the sign-attestation-certificate delegated capability and
+  # others, and we need that in order to attest any keys generated on the HSM and to
+  # offer the kind of auditing we would like to have.
+  #if [ ! -e "$KEEP_PATH/keys/0x0001-authentication-key.yhw" ]; then
+  #  echo "Exported signing authentication key not found! Did it fail to export?" >&2
+  #  return 1
+  #fi
+  #if [ ! -e "$KEEP_PATH/keys/0x0002-authentication-key.yhw" ]; then
+  #  echo "Exported audit authentication key not found! Did it fail to export?" >&2
+  #  return 1
+  #fi
+  local key
+  for key in "$KEEP_PATH/keys/"*.yhw; do
+    if [ ! -e "$key" ]; then
+      echo "No exported keys found! Did they all fail to export?" >&2
+      return 1
+    fi
+    break
+  done
+}
+
+log_provisioning_end_primary() {
+  extract_logs_common primary || return $?
+}
+
+connect_hsm_secondary() {
+  echo "Please connect the secondary YubiHSM 2."
+  confirm "Enter Y when the secondary YubiHSM 2 is connected, or N to quit." || return $?
+  export AUDIT_LOG_PATH=provision-secondary-$(date -u "+$DATE_FORMAT").log
+}
+
+reset_hsm_secondary() {
+  reset_hsm "$@" || return $?
+}
+
+provision_auditing_secondary() {
+  provision_auditing "$@" || return $?
+}
+
+add_temporary_authentication_key_secondary() {
+  # They do the same thing.
+  add_temporary_authentication_key_primary "$@" || return $?
+}
+
+delete_default_authentication_key_secondary() {
+  # They do the same thing.
+  delete_default_authentication_key_primary "$@" || return $?
+}
+
+provision_authentication_secondary() {
+  # They do the same thing.
+  provision_authentication_primary "$@" || return $?
+}
+
+restore_secondary() {
+  echo
+  echo "You are about to enter the yubihsm-setup wizard to restore your wrap key."
+  echo "When prompted, please answer as follows:"
+  echo "  Enter the number of shares: [TODO: prearranged. let's say 5]"
+  echo "Then, enter all of the shares recorded previously."
+  echo
+  echo "This process should also successfully restore your audit key from backup,"
+  echo "which serves as a confirmation that the restored wrap key is valid."
+  echo
+  confirm "Are you ready to continue?" || return $?
+  local file
+  for file in "$KEEP_PATH/keys/"*.yhk; do
+    if [ ! -e "$file" ]; then
+      echo "No wrapped keys found. Please place keys (.yhk files) in: $KEEP_PATH/keys" >&2
+      if ! confirm "Do you want to continue without restoring wrapped keys?"; then
+        return 1
+      fi
+    fi
+    break
+  done
+  (cd "$KEEP_PATH/keys" && yhsetup --no-delete --no-export restore) \
+    || return $?
+  local object_id
+  object_id=$(yubihsm_nolog -a list-objects \
+    --object-type asymmetric-key | sed -ne 's/^id: \([^,]\+\),.*$/\1/p') || return $?
+  if [ -z "$object_id" ]; then
+    echo "No asymmetric keys were found on the HSM! Did it fail to restore?" >&2
+    echo "It is possible that one or more of the shares you entered were incorrect." >&2
+    return 1
+  fi
+  echo "Restore completed without errors, and asymmetric keys were found."
+}
+
+delete_temporary_authentication_key_secondary() {
+  # They do the same thing.
+  delete_temporary_authentication_key_primary "$@" || return $?
+}
+
+create_custom_metadata_for_keygen_secondary() {
+  # They do the same thing.
+  create_custom_metadata_for_keygen_primary "$@" || return $?
+}
+
+keygen_secondary() {
+  # They do the same thing.
+  keygen_primary "$@" || return $?
+}
+
+log_provisioning_end_secondary() {
+  extract_logs_common secondary || return $?
+}
+
+finish() {
+  if [ "$is_provisioning_mode" = "y" ]; then
+    echo "Provisioning completed successfully!"
+    echo "Do not forget to save the contents of:"
+    printf "%s\n" "$KEEP_PATH"
+    rm -f "$stage_file"
+  else
+    echo "Done!"
+  fi
+}
+
+log_provisioning_start() {
+  provisioning_started=y
+  read_yubihsm_deviceinfo || return $?
+  [ -n "$yubihsm_deviceinfo" ] || return 1
+  add_input_to_log <<EOF || return $?
+Begin provisioning: Mode $mode
+[Device info]
+$yubihsm_deviceinfo
+EOF
+}
+
+reset_hsm() {
+  yubihsm_nolog -a list-objects
+  echo
+  echo "This provisioning script expects that the provided HSM is in a clean state."
+  if ! confirm "Would you like to reset this HSM? This operation cannot be undone!"; then
+    return 0
+  fi
+  local err=
+  yubihsm_nolog -a reset || err=$?
+  add_input_to_log <<EOF || return $?
+Command: yubihsm-shell -a reset
+Result: ${err:-0}
+EOF
+  if [ -n "$err" ]; then
+    echo "Could not reset the HSM. You may need to reset it manually by removing and" >&2
+    echo "re-inserting it, pressing on the metal rim for at least 10 seconds." >&2
+    return 1
+  fi
+  # Give a moment for the HSM to reappear.
+  sleep 1
+}
+
+provision_auditing() {
+  # Much of this was gleaned from https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e
+  local command_audit_value
+  command_audit_value=$(yubihsm -a get-option --opt-name command-audit | sed -e 's/^Option value is: //') || return $?
+  if [ "$command_audit_value" = "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" ]; then
+    echo "Command audit value is already as expected."
+    return 0
+  fi
+  yubihsm -a put-option --opt-name command-audit --opt-value 4f01 || return $? # log PUT OPTION
+  yubihsm -a put-option --opt-name command-audit --opt-value 4f02 || return $? # log PUT OPTION until factory reset
+  yubihsm -a put-option --opt-name force-audit --opt-value 02 || return $? # prevent operations when audit log is full
+  local -a auditable_commands=(
+    # from: https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html
+    # command Tc values
+    6c # CHANGE AUTHENTICATION KEY
+    58 # DELETE OBJECT
+    4a # EXPORT WRAPPED
+    76 # EXPORT RSA WRAPPED
+    74 # EXPORT RSA WRAPPED KEY
+    46 # GENERATE ASYMMETRIC KEY
+    5a # GENERATE HMAC KEY
+    66 # GENERATE OTP AEAD KEY
+    6e # GENERATE SYMMETRIC KEY
+    5b # GENERATE WRAP KEY
+    51 # GET PSEUDO RANDOM
+    4b # IMPORT WRAPPED
+    77 # IMPORT RSA WRAPPED
+    75 # IMPORT RSA WRAPPED KEY
+    45 # PUT ASYMMETRIC KEY
+    44 # PUT AUTHENTICATION KEY / PUT ASYMMETRIC AUTHENTICATION KEY
+    52 # PUT HMAC KEY
+    42 # PUT OPAQUE
+    65 # PUT OTP AEAD KEY
+    73 # PUT PUBLIC WRAP KEY
+    6d # PUT SYMMETRIC KEY
+    5e # PUT TEMPLATE
+    4c # PUT WRAP KEY
+    62 # RANDOMIZE OTP AEAD
+    63 # REWRAP OTP AEAD
+    # 4f # SET OPTION (PUT OPTION) - already set earlier
+    64 # SIGN ATTESTATION CERTIFICATE
+    56 # SIGN ECDSA
+    6a # SIGN EDDSA
+    53 # SIGN HMAC
+    47 # SIGN RSA PKCS1
+    55 # SIGN RSA PSS
+    69 # UNWRAP DATA
+    68 # WRAP DATA
+  )
+  local cmd
+  for cmd in "${auditable_commands[@]}"; do
+    yubihsm -a put-option --opt-name command-audit --opt-value "${cmd}02" || return $? # force audit of given command until factory reset
+  done
+  command_audit_value=$(yubihsm -a get-option --opt-name command-audit | sed -e 's/^Option value is: //') || return $?
+  if [ "$command_audit_value" != "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" ]; then
+    # TODO: Maybe allow this enforcement to be skipped? But maybe not.
+    echo "Command audit value is not as expected after provisioning!" >&2
+    return 1
+  fi
+  echo "Successfully provisioned auditing options."
+
+  # TODO: Check this automatically?
+  #yubihsm -a get-logs   # witness that there are many 4f entries now, since PUT OPTION is logged
+}
+
+extract_logs_common() {
+  YUBIHSM_AUTHKEY=$YUBIHSM_AUDIT_AUTHKEY_ID \
+  YUBIHSM_PASSWORD=$YUBIHSM_AUDIT_AUTHKEY_PASSWORD \
+  extract_logs "" "PROVISION $1" || return $?
+}
+
+delete_all_asymmetric_keys_and_opaque_objects() {
+  for object_id in $(yubihsm_nolog -a list-objects --object-type asymmetric-key \
+    | sed -ne 's/^id: \([^,]\+\),.*$/\1/p');
+  do
+    yubihsm -a delete-object --object-id "$object_id" --object-type asymmetric-key || return $?
+  done
+  for object_id in $(yubihsm_nolog -a list-objects --object-type opaque \
+    | sed -ne 's/^id: \([^,]\+\),.*$/\1/p');
+  do
+    yubihsm -a delete-object --object-id "$object_id" --object-type opaque || return $?
+  done
+}
+
+verify_files() {
+  local manifest=$1
+  local check_directory=$2
+  local check_for_extra_files=${3:-}
+  local -a manifest_lines
+  mapfile -t manifest_lines < "$manifest" || return $?
+  local line
+  local header_done=
+  local -a failed_files=()
+  local -a mismatched_files=()
+  local -a successful_files=()
+  local -A manifest_files=()
+  for line in "${manifest_lines[@]}"; do
+    local oldIFS=$IFS
+    IFS=$'\t'; set -- $line; IFS=$oldIFS
+    if [ -z "$header_done" ]; then
+      header_done=y
+      if [ "$1" = "filename" ]; then
+        # skip header
+        continue
+      fi
+    fi
+    local filename=$1
+    manifest_files[$filename]=1
+    local sha256sum=$2
+    local actual_sum=$(cd "$check_directory" && sha256sum "$filename" | cut -d' ' -f1) || true
+    if [ -z "$actual_sum" ]; then
+      failed_files+=("$filename")
+    elif [ "$actual_sum" != "$sha256sum" ]; then
+      mismatched_files+=("$filename")
+    else
+      successful_files+=("$filename")
+    fi
+  done
+  local returnval=0
+  if [ "${#failed_files[@]}" -eq 0 ] && [ "${#mismatched_files[@]}" -eq 0 ]; then
+    echo "All files verified successfully."
+  else
+    echo >&2
+    if [ "${#failed_files[@]}" -gt 0 ]; then
+      echo "The following files were missing or sha256sum failed to run:" >&2
+      printf "  %s\n" "${failed_files[@]}" >&2
+    fi
+    if [ "${#mismatched_files[@]}" -gt 0 ]; then
+      echo "The following files FAILED sha256sum verification:" >&2
+      printf "  %s\n" "${mismatched_files[@]}" >&2
+    fi
+    returnval=1
+  fi
+  if [ "${check_for_extra_files:-}" = "y" ]; then
+    # This won't result in an error, just informational.
+    local -a all_actual_files=()
+    mapfile -t -d '' all_actual_files < <(cd "$check_directory"; find -type f -print0 | sort -z)
+    local actual_file
+    local -a extra_files=()
+    for actual_file in "${all_actual_files[@]}"; do
+      actual_file=${actual_file#./}
+      case "$manifest" in
+        *$actual_file)
+          # The manifest cannot contain an entry for itself.
+          continue ;;
+      esac
+      if [ "${manifest_files[$actual_file]:-}" != "1" ]; then
+        extra_files+=("$actual_file")
+      fi
+    done
+    if [ "${#extra_files[@]}" -gt 0 ]; then
+      echo "The following extra files were found:" >&2
+      printf "  %s\n" "${extra_files[@]}" >&2
+    fi
+  fi
+  return $returnval
+}
+
+generate_start_script() {
+  cat <<EOF
+#!/bin/bash
+ourpath=\$(cd "\$(dirname "\$0")";pwd -P)
+SOURCE_DIRECTORY="\$ourpath" exec "\$ourpath/$our_desired_relpath" "\$@"
+EOF
+}
+
+prepare_directory() {
+  local output_directory=${script_args[1]:-}
+  if [ -z "$output_directory" ]; then
+    echo "You must supply an output directory argument." >&2
+    return 1
+  fi
+  echo "We will now prepare $output_directory with the files needed for provisioning."
+  echo "If the directory already contains files, they may be updated."
+  echo "This process will download any missing files."
+  pause
+  if [ ! -d "$output_directory" ]; then
+    mkdir -p "$output_directory" || return $?
+  fi
+  generate_start_script > "$output_directory/start.sh" || return $?
+  chmod +x "$output_directory/start.sh" || true # If this does not work, oh well.
+  prepare_manifest_and_files "$output_directory" || return $?
+}
+
+verify_prepared_manifest_files() {
+  local output_directory=${script_args[1]:-}
+  verify_files \
+    "$output_directory/$pkcs11_relpath/vendor.yubihsm.provision.manifest.tsv" \
+    "$output_directory" \
+    y \
+    || return $?
+}
+
+prepare_manifest_and_files() {
+  local output_directory=$(realpath --no-symlinks "$1")
+  local -a manifest_lines
+  local -a new_manifest_lines=($'filename\tsha256sum\tfilesize\tlink')
+  mapfile -t manifest_lines < "$basepath/$pkcs11_relpath/vendor.yubihsm.provision.manifest.tsv" \
+    || return $?
+  local line
+  local header_done=
+  for line in "${manifest_lines[@]}"; do
+    local oldIFS=$IFS
+    IFS=$'\t'; set -- $line; IFS=$oldIFS
+    if [ -z "$header_done" ]; then
+      header_done=y
+      if [ "$1" = "filename" ]; then
+        # skip header
+        continue
+      fi
+    fi
+    local filename=${1:-}
+    local sha256sum=${2:-}
+    local filesize=${3:-}
+    local link=${4:-}
+    local dest_file=$output_directory/$filename
+    local output_path=$(realpath -m --no-symlinks "$dest_file")
+    case "$output_path" in
+      "$output_directory"/*)
+        true ;; # Expected, no weird path traversal
+      *)
+        echo "Unacceptable path traversal in $filename" >&2
+        return 1 ;;
+    esac
+
+    # Make the directories needed by this file.
+    mkdir -p "$(dirname "$dest_file")" || return $?
+
+    if [ -n "$link" ]; then
+      # Download the file if it does not already exist or does not match the sha256sum.
+      if [ -e "$dest_file" ]; then
+        if [ "$(sha256sum "$dest_file" | cut -d' ' -f1)" != "$sha256sum" ]; then
+          printf "%s does not match expected sha256sum. Deleting and re-downloading..." \
+            "$dest_file" >&2
+          rm -f "$dest_file" || return $?
+        fi
+      fi
+      if [ ! -e "$dest_file" ]; then
+        echo "Downloading $dest_file..."
+        (ulimit -f "$filesize" || true; wget -O "$dest_file" "$link") || return $?
+      fi
+    else
+      # Copy the file.
+      local source_file=
+      local we_generated=
+      case "$filename" in
+        bin/avbtool)
+          source_file=${AVBTOOL_BIN:-${ANDROID_HOST_OUT:-$SOURCE_DIRECTORY}/bin/avbtool}
+          if [ ! -e "$source_file" ]; then
+            echo "avbtool not found. Try setting AVBTOOL_BIN to its path." >&2
+          fi ;;
+        start.sh)
+          # We generate it, so no need to copy, etc.
+          we_generated=y ;;
+        *)
+          source_file=${ANDROID_BUILD_TOP:-$SOURCE_DIRECTORY}/$filename ;;
+      esac
+      if [ "$we_generated" != "y" ] && [ ! -e "$source_file" ]; then
+        echo "Cannot find $filename." >&2
+        echo "Run this script from a lunch'd Android build environment, or run it from" >&2
+        echo "an extracted otatools-keys.zip directory:" >&2
+        echo "  unzip otatools-keys.zip -d otatools-keys" >&2
+        echo "  cd otatools-keys" >&2
+        echo "  ${our_desired_relpath@Q} ${script_args[*]@Q}" >&2
+        echo "(otatools-keys.zip is built with: m otatools-keys-package)" >&2
+        return 1
+      fi
+      if [ -n "$sha256sum" ] && [ "$(sha256sum "$dest_file" | cut -d' ' -f1)" != "$sha256sum" ];
+      then
+        printf "%s does not match expected sha256sum and no link provided!" \
+          "$dest_file" >&2
+      fi
+      if [ "$we_generated" != "y" ]; then
+        filesize=$(stat -c%s "$source_file") || return $?
+        cp -p "$source_file" "$dest_file" || return $?
+      else
+        filesize=$(stat -c%s "$dest_file") || return $?
+      fi
+    fi
+    if [ -z "$sha256sum" ]; then
+      sha256sum=$(sha256sum "$dest_file" | cut -d' ' -f1) || return $?
+    fi
+    new_manifest_lines+=("$filename"$'\t'"$sha256sum"$'\t'"$filesize"$'\t'"$link")
+  done
+  local manifest_rel_path=$pkcs11_relpath/vendor.yubihsm.provision.manifest.tsv
+  mkdir -p "$output_directory/$pkcs11_relpath" || return $?
+  printf "%s\n" "${new_manifest_lines[@]}" > "$output_directory/$manifest_rel_path" || return $?
+}
+
+# The vendor/calyx/scripts/pkcs11/vendor.yubihsm.include.sh script contains an implementation
+# of this function, so when source_include_scripts is run, this function is overridden.
+yubihsm() {
+  yubihsm-shell --connector "$YUBIHSM_CONNECTOR" --authkey "$YUBIHSM_AUTHKEY" --password file:<(printf "%s" "$YUBIHSM_PASSWORD") "$@" || return $?
+}
+
+yhsetup() {
+  # WARNING: Password is on the command line.
+  # yubihsm-setup does not support the "file:" construction that yubihsm-shell does.
+  # This entire script is expected to be run in an ephemeral, trusted environment.
+  local err=
+  yubihsm-setup --connector "$YUBIHSM_CONNECTOR" --authkey "$YUBIHSM_AUTHKEY" --password "$YUBIHSM_PASSWORD" "$@" || err=$?
+  extract_logs "" "Command: yubihsm-setup $(printf '%q ' "$@")"$'\n'"Result: ${err:-0}" \
+    || \
+    {
+      err=${err:-$?}
+      echo "Failed to extract logs" >&2
+      return $err
+    }
+  return ${err:-0}
+}
+
+set_stage() {
+  if [ "$1" != "$stage" ]; then
+    stage=$1
+    case "$stage" in
+      connect_hsm*|source_include_scripts)
+        # Don't store these stages.
+        true ;;
+      *)
+        # If this is a provisioning mode that initialized our provisioning path, save it there.
+        if [ "$is_provisioning_mode" = "y" ]; then
+          printf "%s\n" "$1" > "$stage_file" || return $?
+        fi ;;
+    esac
+  fi
+  if [ "${2:-}" != "no-announce" ]; then
+    echo "Now performing: $stage"
+    if [ "$provisioning_started" = "y" ]; then
+      add_input_to_log <<EOF || return $?
+Stage: $stage
+EOF
+    fi
+  fi
+}
+
+initialize_provisioning_mode() {
+  is_provisioning_mode=y
+  if [ ! -d "$PROVISIONING_PATH" ]; then
+    mkdir -p -m0700 "$PROVISIONING_PATH" || return $?
+  else
+    stage=$(cat "$stage_file" 2>/dev/null) || true
+    mode=$(cat "$mode_file" 2>/dev/null) || true
+  fi
+}
+
+try() {
+  local failed_again=
+  while true; do
+    local err=
+    "$@" || err=$?
+    if [ -n "$err" ]; then
+      if ! confirm "$(printf "%s failed%s (code %s). Try again?" "$1" "$failed_again" "$err")"; then
+        echo "$* failed (code $err). Giving up..." >&2
+        return $err
+      fi
+    else
+      return 0
+    fi
+  done
+}
+
+confirm() {
+  while true; do
+    printf "%s" "$1 (Y/N) "
+    local response
+    read -r response
+    case "$response" in
+      Y|y)
+        break ;;
+      N|n)
+        return 1 ;;
+      *)
+        echo "Please enter Y or N." >&2
+        continue ;;
+    esac
+  done
+}
+
+extract_zip() {
+  local file=$1
+  local outdir=$2
+  if command -v 7z; then
+    7z x "$file" -o"$outdir" || return $?
+  elif command -v 7za; then
+    7za x "$file" -o"$outdir" || return $?
+  elif command -v unzip; then
+    unzip "$file" -d "$outdir" || return $?
+  fi
+}
+
+pause() {
+  printf "%s " "${1:-Press Enter to continue...}"
+  local response
+  read -r response
+}
+
+read_password() {
+  local variable=$1
+  local prompt=$2
+  local confirm=${3:-y}
+  while true; do
+    local try1
+    local try2
+    printf "Enter %s: " "$prompt"
+    read -r -s try1
+    echo
+    if [ "$confirm" = "y" ]; then
+      printf "Confirm %s: " "$prompt"
+      read -r -s try2
+      echo
+      if [ -z "$try1" ] && [ -z "$try2" ]; then
+        return 1
+      fi
+    else
+      try2=$try1
+    fi
+    if [ "$try1" = "$try2" ]; then
+      declare -g "$variable=$try1"
+      return 0
+    else
+      echo "Passwords do not match." >&2
+    fi
+  done
+}
+
+cleanup() {
+  if [ -d "$KEEP_PATH" ]; then
+    echo "IMPORTANT: You must save the contents of '$KEEP_PATH'! Copy it somewhere safe!" >&2
+  fi
+  if [ "${RELAUNCHED_SCRIPT:-}" = "y" ] && \
+     paths_exist_and_are_equal "$0" "$our_desired_path"; then
+    echo "Remember to use this command if you want to launch the script again: " >&2
+    printf "%q %q\n" "$SHELL" "$our_desired_path" >&2
+  fi
+}
+
+main "$@"
