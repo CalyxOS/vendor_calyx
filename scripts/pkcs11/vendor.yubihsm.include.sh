@@ -332,6 +332,7 @@ Result: $err" \
 }
 
 initialize_release_vendor() {
+  read_yubihsm_deviceinfo || return $?
   local key_id
   key_id=$(get_key_id avb vbmeta) || return $?
   PREPEND_LINE="BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
@@ -340,4 +341,17 @@ initialize_release_vendor() {
     extract_logs \
     || return $?
   $maybe_dry_run ensure_key_is_available "$key_id" || return $?
+}
+
+read_yubihsm_deviceinfo() {
+  declare -g yubihsm_deviceinfo
+  declare -g yubihsm_serial
+  declare -g yubihsm_partnumber
+  yubihsm_deviceinfo==$(yubihsm -a get-device-info)
+  [ -n "$yubihsm_deviceinfo" ]
+  yubihsm_serial=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Serial number:\s\+//p')
+  [ -n "$yubihsm_serial" ]
+  yubihsm_partnumber=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Part number:\s\+//p')
+  [ -n "$yubihsm_partnumber" ]
+  declare -g yubihsm_id=$yubihsm_partnumber-$yubihsm_serial
 }

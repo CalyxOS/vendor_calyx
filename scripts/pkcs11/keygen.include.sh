@@ -103,6 +103,8 @@ keygen_main() {
     return 1
   fi
 
+  declare -g unique_key_out_dir=$key_out_dir/$(date +"$DATE_FORMAT")
+
   initialize_pre_metadata || return $?
   load_metadata || return $?
   load_keymapper || return $?

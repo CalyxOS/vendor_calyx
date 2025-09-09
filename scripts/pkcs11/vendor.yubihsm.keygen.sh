@@ -59,6 +59,10 @@ initialize_pre_metadata() {
   if [ -n "$missing_something" ]; then
     exit 1
   fi
+
+  read_yubihsm_deviceinfo || return $?
+  unique_key_out_dir=$key_out_dir/$serial-$(date +$DATE_FORMAT)
+  declare -g hsm_key_out_dir=$key_out_dir/$yubihsm_id
 }
 
 initialize_post_metadata() {
@@ -113,12 +117,16 @@ generate_keypair() {
   local is_key_id_exportable
   is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
   if [ "$is_key_id_exportable" = "y" ]; then
+    local name=$key_id-asymmetric-key.yhk
+    local out=$unique_key_out_dir/$name
+    mkdir -p "$unique_key_out_dir" || return $?
     yubihsm -a get-wrapped \
       --wrap-id "$YUBIHSM_WRAP_KEY" \
       --object-id "$key_id" \
       --object-type asymmetric-key \
-      --out "$key_out_dir/$key_id-asymmetric-key.yhk" \
+      --out "$out" \
       || return $?
+    copy_exported_file_to_other_dirs "$out" || return $?
   fi
 }
 
@@ -132,11 +140,15 @@ generate_cert() {
   domain=$(_get_domains_for_key_id "$key_id") || return $?
   capabilities=$(_get_capabilities_for_key_id "$key_id" "$YUBIHSM_OPAQUE_CAPABILITIES") || return $?
 
+  local out=$unique_key_out_dir/$key_id.x509.pem
+  mkdir -p "$unique_key_out_dir" || return $?
   yubihsm -a sign-attestation-certificate \
     --object-id "$key_id" \
     --attestation-id 0 \
-    --out "$key_out_dir/$key_id.x509.pem" \
+    --out "$out" \
     || return $?
+  copy_exported_file_to_other_dirs "$out" || return $?
+
   yubihsm -a put-opaque \
     --object-id "$key_id" \
     -A opaque-x509-certificate \
@@ -154,17 +166,21 @@ generate_cert() {
       else
         # Output public key and avbpubkey for APEX payload or AVB keys.
         # Also do this for core keys, since APEX might use them.
+        out=$key_out_dir/$key_id.pem
         "$OPENSSL_BIN" x509 -pubkey -noout -in "$key_out_dir/$key_id.x509.pem" \
-          -out "$key_out_dir/$key_id.pem" \
+          -out "$out" \
           || return $?
+        copy_exported_file_to_other_dirs "$out" || return $?
       fi
       if [ -e "$key_out_dir/$key_id.avbpubkey" ]; then
         echo "avbpubkey file already exists: $key_out_dir/$key_id.avbpubkey" >&2
       else
+        out=$key_out_dir/$key_id.avbpubkey
         "$AVBTOOL_BIN" extract_public_key \
           --key "$key_out_dir/$key_id.pem" \
-          --output "$key_out_dir/$key_id.avbpubkey" \
+          --output "$out" \
           || return $?
+        copy_exported_file_to_other_dirs "$out" || return $?
       fi
       ;;
   esac
@@ -190,6 +206,36 @@ ensure_key_not_exist() {
   fi
 }
 
+extract_attestation_key() {
+  local out=$unique_key_out_dir/YubiHSM_attestation.pem
+  mkdir -p "$unique_key_out_dir" || return $?
+  yubihsm -a get-opaque --object-id 0x0000 --outformat PEM \
+    --out "$out" || return $?
+  copy_exported_file_to_other_dirs "$out" || return $?
+}
+
+copy_exported_file_to_other_dirs() {
+  # Copy the exported file to the HSM-unique keys directory, and also to the main keys
+  # directory, provided the file doesn't already exist there. The goal of this whole
+  # structure is to prevent loss of keys while also ensuring that keys for a particular
+  # device or created during a particular session are consistently available, never lost
+  # or clobbered.
+  local source=$1
+  local rel_source
+  rel_source=$(realpath --relative-to="$unique_key_out_dir" "$source") || return $?
+  mkdir -p "$(dirname "$hsm_key_out_dir/$rel_source")" || return $?
+  mkdir -p "$(dirname "$key_out_dir/$rel_source")" || return $?
+  cp "$source" "$hsm_key_out_dir/$rel_source" || return $?
+  cp --no-clobber "$source" "$key_out_dir/$rel_source" || return $?
+}
+
+save_yubihsm_deviceinfo() {
+  # Save the deviceinfo for the HSM so that its association with the folders' keys is clear.
+  local out=$unique_key_out_dir/hsm_info.txt
+  printf "%s\n" "$yubihsm_deviceinfo" > "$out" || return $?
+  copy_exported_file_to_other_dirs "$out" || return $?
+}
+
 cleanup() {
   if [ -n "${TEMP_DIR:-}" ]; then
     if [ "${CLEANUP_ON_EXIT:-y}" = "n" ]; then
@@ -206,3 +252,5 @@ cleanup() {
 }
 
 keygen_main "$@" || exit $?
+extract_attestation_key || exit $?
+save_yubihsm_id || exit $?
