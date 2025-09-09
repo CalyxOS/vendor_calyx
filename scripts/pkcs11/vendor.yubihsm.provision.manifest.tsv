@@ -1,0 +1,20 @@
+filename	sha256sum	filesize	link
+start.sh
+bin/avbtool
+calyx/scripts/vars/devices
+vendor/calyx/scripts/metadata
+vendor/calyx/scripts/common.include.sh
+vendor/calyx/scripts/keymapper.id2b.include.sh
+vendor/calyx/scripts/pkcs11/include.sh
+vendor/calyx/scripts/pkcs11/keygen.include.sh
+vendor/calyx/scripts/pkcs11/vendor.yubihsm.include.sh
+vendor/calyx/scripts/pkcs11/vendor.yubihsm.keygen.sh
+vendor/calyx/scripts/pkcs11/vendor.yubihsm.provision.sh
+sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz	99501dced7e04ff5bb9150503a2e0ab7031714bfd1f6c08b997ea49467d8713a	3991853	https://developers.yubico.com/YubiHSM2/Releases/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz
+packages/libcurl4_7.88.1-10+deb12u14_amd64.deb	7a203bc59523e510aa776f1b5b1798c8f65ea58be1c1f5e35f99b5e3c988f0df	391508	http://ftp.us.debian.org/debian/pool/main/c/curl/libcurl4_7.88.1-10+deb12u14_amd64.deb
+packages/libengine-pkcs11-openssl_0.4.12-0.1_amd64.deb	6cf82d82cb26158ed1b468b5f0f0df6e0121c313c6c535641f274d915c08122d	33808	http://ftp.us.debian.org/debian/pool/main/libp/libp11/libengine-pkcs11-openssl_0.4.12-0.1_amd64.deb
+packages/libpcsclite1_1.9.9-2_amd64.deb	d1bb373fad074443b83e96ed31800d5a12964daf820c1daeb701867da089a728	49704	http://ftp.us.debian.org/debian/pool/main/p/pcsc-lite/libpcsclite1_1.9.9-2_amd64.deb
+packages/libusb-1.0-0_1.0.26-1_amd64.deb	0a8a6c4a7d944538f2820cbde2a313f2fe6f94c21ffece9e6f372fc2ab8072e1	62592	http://ftp.us.debian.org/debian/pool/main/libu/libusb-1.0/libusb-1.0-0_1.0.26-1_amd64.deb
+packages/opensc_0.23.0-0.3+deb12u2_amd64.deb	54c7041f1db7e8ad09755cf3be8dd188d42cee37459ef52f4323bcff2c7bf516	372320	http://ftp.us.debian.org/debian/pool/main/o/opensc/opensc_0.23.0-0.3+deb12u2_amd64.deb
+packages/opensc-pkcs11_0.23.0-0.3+deb12u2_amd64.deb	c10abd389a7ae721099196f900902400090cd5bd0ab2deba0831d4a226275188	916528	http://ftp.us.debian.org/debian/pool/main/o/opensc/opensc-pkcs11_0.23.0-0.3+deb12u2_amd64.deb
+packages/p11-kit_0.24.1-2_amd64.deb	ee45a531fe3b48fbeabaa21f724a8cd6cfd69703aaa9d1c8f73975710f3310e5	291628	http://ftp.us.debian.org/debian/pool/main/p/p11-kit/p11-kit_0.24.1-2_amd64.deb
