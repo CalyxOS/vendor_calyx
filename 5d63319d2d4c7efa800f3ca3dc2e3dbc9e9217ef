@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e49dcfd3_ef699199",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 11
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-10T20:11:21Z",
+      "side": 1,
+      "message": "Log the actual commands executed that result in audit log entries, rather than extracting provisioning audit logs in one big chunk?\n\nThis probably doesn\u0027t provide any actual security guarantees, but it might make things easier to review.",
+      "revId": "5d63319d2d4c7efa800f3ca3dc2e3dbc9e9217ef",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
