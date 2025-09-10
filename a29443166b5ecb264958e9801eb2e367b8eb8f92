@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "83f06bd3_5a72ef60",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-10T12:30:10Z",
+      "side": 1,
+      "message": "Allow audit key to get-opaque and sign-attestation-certificate? get-opaque allows to retrieve public data like certificates that are loaded into the HSM, and sign-attestation-certificate allows - well - attesting to the authenticity of keys in the HSM. Seems useful for an audit key to have.\n\nThe problem continues to be that yubihsm-setup creates a wrap key that is missing useful delegated capabilities, such as the aforementioned get-opaque and sign-attestation-certificate. This means it cannot export or import objects that have these capabilities. \n\nSo, because of that, this will probably break the backup of the audit key, which we were using as an assurance that backup/restore was working. So, we we need a new way to confirm that exporting and importing works, like verifying that there are any asymmetric keys present as a result of the limited keygen...? It also means we will need to re-create the audit key on the secondary as well, but that\u0027s easy enough.",
+      "revId": "a29443166b5ecb264958e9801eb2e367b8eb8f92",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
