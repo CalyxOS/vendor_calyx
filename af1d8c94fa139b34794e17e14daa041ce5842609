@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "66cc7a5e_d87388ba",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-10T11:29:46Z",
+      "side": 1,
+      "message": "1. Rename prepare to initialize.\n2. Add prepare mode which prepares a directory with all the necessary files, including this script itself, to run provisioning. This should include a verification step that is also run during regular provisioning runs.\n3. Change \"provisioning mode\" text to just \"mode\".\n4. Rename \"install_script\" to reflect that this is not an installation.",
+      "revId": "af1d8c94fa139b34794e17e14daa041ce5842609",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
