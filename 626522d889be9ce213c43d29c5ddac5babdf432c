@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "807ccfe8_7f25b2a0",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 49
+      },
+      "lineNbr": 27,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-11T12:24:07Z",
+      "side": 1,
+      "message": "Oops, turns out this needs delete-object, too. Keygen fails otherwise when trying to make room for more, as would happen for signing as well.",
+      "revId": "626522d889be9ce213c43d29c5ddac5babdf432c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
