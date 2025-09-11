@@ -16,6 +16,24 @@
       "message": "This extract_logs method is very messy and basically unreadable. Some of this is due to extensive error handling, maybe too much. Regardless, it should be tidied up.",
       "revId": "aeb5ac4ba2dd69ed3e6cf87593721848714933ab",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "fb3b5a51_ede468d2",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 42
+      },
+      "lineNbr": 115,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-11T04:43:38Z",
+      "side": 1,
+      "message": "Maybe it makes more sense now that it\u0027s been split up and had some comments added...",
+      "parentUuid": "b381a01c_40a26d64",
+      "revId": "aeb5ac4ba2dd69ed3e6cf87593721848714933ab",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
