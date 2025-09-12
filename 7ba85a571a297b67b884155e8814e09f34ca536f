@@ -16,6 +16,23 @@
       "message": "Update keygen to check if certs are available and generate them if they are missing",
       "revId": "7ba85a571a297b67b884155e8814e09f34ca536f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2fbfc458_deec537d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 52
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-12T14:29:58Z",
+      "side": 1,
+      "message": "(Wishlist?) Support a static keymap\n\nThey keymapping process is kind of dynamic which makes it harder to know what\u0027s going to be mapped to what without doing `DRY_RUN\u003dy release.sh` or `generate_keymap.sh`. This got me thinking that it might be nice if the keymapper scripts were merely used as part of generating a keymap file, like generate_keymap.sh already uses them to do, and then release.sh and keygen would read from that file to figure out what they need to know instead of dealing with the keymapper.\n\nThis feels kind of like reinventing the wheel backwards -- in a sense, the legacy keymapping system was already static, although it was spread across release.sh and metadata -- but the difference is that it would offer more certainty, prior to the signing process, about what will be mapped to what.\n\nThe static keymap file would need to be regenerated when metadata / keymapper / devices / generate_keymap files change, so it might be useful for it to store their checksums.\n\nThis all sounds like too much, though, at least at this stage, so maybe we just skip it.",
+      "revId": "7ba85a571a297b67b884155e8814e09f34ca536f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
