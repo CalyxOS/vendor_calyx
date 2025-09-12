@@ -148,6 +148,11 @@ if [[
   done
 fi
 
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/testkey=$KEY_DIR/releasekey)
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/devkey=$KEY_DIR/releasekey)
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/media=$KEY_DIR/media)
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/shared=$KEY_DIR/shared)
+EXTRA_SIGNING_ARGS+=(-k build/make/target/product/security/platform=$KEY_DIR/platform)
 EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
 EXTRA_SIGNING_ARGS+=(-k external/calyx/chromium/certs/chromium=$KEY_DIR/../common/chromium)
 EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
@@ -193,7 +198,7 @@ fi
 
 echo "Creating signed targetfiles zip"
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o \
   "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
 
@@ -252,7 +257,7 @@ if [[ -n ${OTATEST:-} ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o -d "$KEY_DIR" \
+"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o \
  "${EXTRA_SIGNING_ARGS[@]}" "${VERITY_SWITCHES[@]}" \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
