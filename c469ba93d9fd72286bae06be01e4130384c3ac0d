@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1d299135_5c9c0b2e",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 20
+      },
+      "lineNbr": 500,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-12T14:23:34Z",
+      "side": 1,
+      "message": "Can delete this comment",
+      "revId": "c469ba93d9fd72286bae06be01e4130384c3ac0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
