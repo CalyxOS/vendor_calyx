@@ -70,8 +70,10 @@ key_apex_consolidation=dual
 # For each key type, indicate whether or not its associated keys should be generated
 # separately for each device (y) or should instead be shared among all devices (n).
 # "releasekey" is handled specially (see releasekey_type and releasekey_name).
+# "ota" is also handled specially (see ota_key_type and ota_key_name).
 declare -g -A key_is_per_device=(
   [avb]=y
+  [ota]=y
   [releasekey]=n
   [core]=n
   [app]=n
@@ -80,7 +82,13 @@ declare -g -A key_is_per_device=(
   [apex_apk]=n
 )
 
-# If set, allows the release key (OTA key) to refer to the same key as some other key.
+# If set, allows the OTA key to refer to the same key as some other key.
+# With ota_key_type=avb and ota_key_name=vbmeta, the OTA key will be the
+# same as a device's AVB vbmeta key (avb_custom_key.img).
+ota_key_type=avb
+ota_key_name=vbmeta
+
+# If set, allows the release key to refer to the same key as some other key.
 # With releasekey_type=avb and releasekey_name=vbmeta, the release key will be the
 # same as a device's AVB vbmeta key (avb_custom_key.img).
 releasekey_type=core
@@ -122,11 +130,17 @@ get_key_id_is_per_device_yn() {
 
 # Returns true if, within a given key type, a given key name should be
 # considered per-device. Contains special handling for the release key.
+# Also contains special handling for the OTA key, which may be different.
 get_key_is_per_device_yn() {
   local key_type=$1
   local key_name=${2:-}
   local value
-  if [ "$key_type" = "core" ] && \
+  if [ "$key_type" = "other" ] && \
+     [ "$key_name" = "ota" ]; then
+    key_type=${ota_key_type:-$key_type}
+    key_name=${ota_key_name:-$key_name}
+    value=${key_is_per_device[ota]:-${key_is_per_device[$key_type]}}
+  elif [ "$key_type" = "core" ] && \
      { [ "$key_name" = "build/make/target/product/security/testkey" ] ||
        [ "$key_name" = "build/make/target/product/security/devkey" ]; }; then
     key_type=${releasekey_type:-$key_type}
@@ -143,8 +157,8 @@ get_key_is_per_device_yn() {
 }
 
 # Returns the base ID for a given key type. The second argument, key name,
-# is necessary to aid in determining if it is a per-device key due to the release key's
-# special handling.
+# is necessary to aid in determining if it is a per-device key due to the special handling
+# of the release key and OTA key.
 _get_key_id_base() {
   local key_type=$1
   local key_name=$2
@@ -208,6 +222,9 @@ get_key_id() {
        [ "$key_name" = "build/make/target/product/security/devkey" ]; }; then
     key_type=${releasekey_type:-core}
     key_name=${releasekey_name:-build/make/target/product/security/testkey}
+  elif [ "$key_type" = "other" ] && [ "$key_name" = "ota" ]; then
+    key_type=${ota_key_type:-core}
+    key_name=${ota_key_name:-build/make/target/product/security/testkey}
   fi
   base=$(_get_key_id_base "$key_type" "$key_name") || return $?
   local array_name=${key_type_to_array[$key_type]:-}
