@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e58d3fd7_df9a9d76",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 55
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-13T02:07:54Z",
+      "side": 1,
+      "message": "Confirm whether this algorithm works either.\n\nAnd maybe don\u0027t have elliptic curve be the default. It\u0027s just for testing for now. Would need more discussion.",
+      "revId": "aebdfa1ec33cf09477247a987e059a3f6ed01aef",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
