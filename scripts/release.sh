@@ -152,6 +152,7 @@ if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
 fi
 
 OTAKEY="$(get_key other ota)"
+EXTRA_RELEASETOOLS_ARGS+=(--package_key "$OTAKEY")
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
@@ -159,7 +160,7 @@ else
 if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
   echo "Create OTA update zip"
   $maybe_dry_run \
-  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$OTAKEY" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
   $maybe_dry_run \
@@ -217,7 +218,7 @@ $maybe_dry_run \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" -k "$OTAKEY" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
+"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
 $maybe_dry_run \
 sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" \
