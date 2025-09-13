@@ -4,6 +4,10 @@ export KEY_DIR=keys/
 get_key() {
   local key_type=$1
   shift 1
+  if [ "$key_type" = "other" ] && [ "$1" = "ota" ]; then
+    _get_key_core build/make/target/product/security/testkey
+    return $?
+  fi
   case "$key_type" in
     avb)
       _get_key_avb "$@" || return $? ;;
