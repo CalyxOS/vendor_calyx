@@ -7,6 +7,10 @@ num_tries=2
 sleep_time=30
 is_a_signing_command=
 
+declare -g -a args=()
+declare -g -a tool_args=()
+jar=
+
 # Source: https://stackoverflow.com/questions/11027679/capture-stdout-and-stderr-into-different-variables
 # Solution 7, fetched 2025-09-10.
 # Modified to maintain existing stdout and stderr while also capturing.
@@ -20,8 +24,24 @@ transparent_catch() {
   } 5>&1 6>&2 < <((printf '\0%s\0%d\0' "$(((({ shift 2; "${@}" > >(tee >(cat - >&5)) 2> >(tee >(cat - >&6) >&2); echo "${?}" 1>&3-; } | tr -d '\0' 1>&4-) 4>&2- 2>&1- | tr -d '\0' 1>&4-) 3>&1- | exit "$(cat)") 4>&1-)" "${?}" 1>&2) 2>&1)
 }
 
+read_all_fifo() {
+  local fifo=$1
+  local fifo_name=$2
+  local captured i
+  for i in $(seq 1 9); do
+    read -t 7 -r -d $'\0' captured <>"$fifo" || return $?
+    case "$captured" in
+      RETURN:*)
+        return_value=${captured#RETURN:}
+        return $return_value ;;
+      *)
+        printf "%s" "$captured" ;;
+    esac
+  done
+}
+
 main() {
-  declare -g args=()
+  local err=
   cmd=$SIGNING_COMMAND
   if [ "$cmd" = "avbtool" ]; then
     handle_avbtool "$@"
@@ -31,32 +51,58 @@ main() {
     args=("$@")
   fi
 
-  # Note: We expect nothing from stdin, so we don't handle it.
+  local use_apksigner_batch=
+  local try=1
+  if [ "$jar" = "apksigner" ] \
+     && [ "${APKSIGNER_BATCH_STDIN_FIFO:-/dev/null}" != "/dev/null" ] \
+     && ps -p "$APKSIGNER_BATCH_PID" >/dev/null
+  then
+    use_apksigner_batch=y
+  fi
 
-  # Try multiple times, backing off for longer after each try.
-  # This is a workaround for an issue in which the YubiHSM 2 is not able to allocate additional
-  # sessions after multiple signing commands in a row, with errors such as:
-  #   "Failed to create session: All sessions are allocated" from yubihsm-shell
-  #   "CKR_SESSION_COUNT" from PKCS#11 tools
-  local err=
-  local try
-  for try in $(seq 1 $num_tries); do
-    local stdout stderr
-    transparent_catch stdout stderr "$cmd" "${args[@]}" || {
-      err=$?
-      case "$stdout $stderr" in
-        *"All sessions are allocated"*|*SESSION_COUNT*)
-          true ;;  # We retry for this...
-        *)
-          break ;; # But nothing else.
-      esac
-      echo "Warning: $cmd failed on try $try (error $err)." >&2
-      sleep "$sleep_time"
-      continue
-    }
-    err=0
-    break
-  done
+  if [ "$use_apksigner_batch" = "y" ]; then
+    true ${APKSIGNER_BATCH_STDOUT_FIFO?Need APKSIGNER_BATCH_STDOUT_FIFO to know when it is done}
+
+    # Send the signing command to the apksigner batch FIFO.
+    printf "%s\0" "${#tool_args[@]}" "${tool_args[@]}" >>"$APKSIGNER_BATCH_STDIN_FIFO" \
+      || return $?
+
+    local out_reader_pid err_reader_pid
+    read_all_fifo "$APKSIGNER_BATCH_STDOUT_FIFO" stdout & out_reader_pid=$!
+    read_all_fifo "$APKSIGNER_BATCH_STDERR_FIFO" stderr >&2 & err_reader_pid=$!
+    wait $out_reader_pid || err=$?
+    wait $err_reader_pid
+
+    if [ -n "$err" ]; then
+      echo "apksigner batch command exited with error $err, so we will try non-batch." >&2
+    fi
+  fi
+  if [ -n "$err" ] || [ "$use_apksigner_batch" != "y" ]; then
+    # Note: We expect nothing from stdin, so we don't handle it.
+
+    # Try multiple times, backing off for longer after each try.
+    # This is a workaround for an issue in which the YubiHSM 2 is not able to allocate additional
+    # sessions after multiple signing commands in a row, with errors such as:
+    #   "Failed to create session: All sessions are allocated" from yubihsm-shell
+    #   "CKR_SESSION_COUNT" from PKCS#11 tools
+    for try in $(seq 1 $num_tries); do
+      local stdout stderr
+      transparent_catch stdout stderr "$cmd" "${args[@]}" || {
+        err=$?
+        case "$stdout $stderr" in
+          *"All sessions are allocated"*|*SESSION_COUNT*)
+            true ;;  # We retry for this...
+          *)
+            break ;; # But nothing else.
+        esac
+        echo "Warning: $cmd failed on try $try (error $err)." >&2
+        sleep "$sleep_time"
+        continue
+      }
+      err=0
+      break
+    done
+  fi
   local log_err=
   local prepend_line=
   if [ "$is_a_signing_command" = "y" ]; then
@@ -127,31 +173,37 @@ handle_avbtool() {
 }
 
 handle_java() {
-  local jar=
   while [ $# -gt 0 ]; do
-    case "$1" in
-      -jar)
-        jar=$(basename "${2:-}")
-        jar=${jar%.jar}
-        ;;
-      --min-sdk-version)
+    if [ -z "$jar" ] && [ "$1" = "-jar" ] && [ $# -gt 1 ]; then
+      jar=$(basename "$2")
+      jar=${jar%.jar}
+      args+=("$1" "$2")
+      shift 2
+      continue
+    elif [ -n "$jar" ]; then
+      if [ "$1" = "--min-sdk-version" ]; then
         # Enforce that non-essential APK signature schemes be skipped to save time.
         # This is a workaround of unexpected behavior from apksigner in which it incorporates
         # signature schemes that should be unnecessary signatures for a given minimum SDK level.
         if [ $# -gt 1 ]; then
           local min_sdk_version=$2
-          args+=("$1" "$2")
+          local to_add=()
+          to_add+=("$1" "$2")
           if [ "$min_sdk_version" -ge 24 ]; then
-            args+=(--v1-signing-enabled=false)
+            to_add+=(--v1-signing-enabled=false)
           fi
           if [ "$min_sdk_version" -ge 28 ]; then
-            args+=(--v2-signing-enabled=false)
+            to_add+=(--v2-signing-enabled=false)
           fi
+          args+=("${to_add[@]}")
+          tool_args+=("${to_add[@]}")
           shift 2
           continue
         fi
-        ;;
-    esac
+      else
+        tool_args+=("$1")
+      fi
+    fi
     args+=("$1")
     shift 1
   done
