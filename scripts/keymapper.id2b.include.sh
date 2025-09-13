@@ -72,6 +72,7 @@ key_apex_consolidation=dual
 declare -g -A key_is_per_device=(
   [avb]=y
   [ota]=y
+  [release]=y
   [core]=n
   [app]=n
   [apex_container]=n
@@ -84,6 +85,9 @@ declare -g -A key_is_per_device=(
 # same as a device's AVB vbmeta key (avb_custom_key.img).
 ota_key_type=avb
 ota_key_name=vbmeta
+
+release_key_type=avb
+release_key_name=vbmeta
 
 # Set payload signer max signature size to 512 to accommodate RSA4096 keys.
 # Otherwise, a payload_signer crash: padded_signature_size >= signature.size() failed.
@@ -179,6 +183,15 @@ get_key_is_per_device_yn() {
   else
     value=${key_is_per_device[$key_type]:-}
   fi
+  if [ "$key_type" = "core" ] && \
+     { [ "$key_name" = "build/make/target/product/security/testkey" ] ||
+       [ "$key_name" = "build/make/target/product/security/devkey" ]; }; then
+    key_type=${release_key_type:-$key_type}
+    key_name=${release_key_name:-$key_name}
+    value=${key_is_per_device[release]:-${key_is_per_device[$key_type]}}
+  else
+    value=${key_is_per_device[$key_type]:-}
+  fi
   if [ -z "$value" ]; then
     echo "ERROR: Key type '$key_type' is not handled by get_key_type_is_per_device_yn." >&2
     return 1
@@ -247,11 +260,14 @@ get_key_id() {
         key_name=${keys_apex[0]} ;;
       *) echo "Unknown value '$key_apex_consolidation' for key_apex_consolidation." >&2; exit 1 ;;
     esac
-  elif [ "$key_type" = "core" ] && [ "$key_name" = "build/make/target/product/security/devkey" ]; then
-    key_name=build/make/target/product/security/testkey
+  elif [ "$key_type" = "core" ] && \
+     { [ "$key_name" = "build/make/target/product/security/testkey" ] ||
+       [ "$key_name" = "build/make/target/product/security/devkey" ]; }; then
+    key_type=${release_key_type:-core}
+    key_name=${release_key_name:-build/make/target/product/security/testkey}
   elif [ "$key_type" = "other" ] && [ "$key_name" = "ota" ]; then
-    key_type=$ota_key_type
-    key_name=$ota_key_name
+    key_type=${ota_key_type:-core}
+    key_name=${ota_key_name:-build/make/target/product/security/testkey}
   fi
   base=$(_get_key_id_base "$key_type" "$key_name") || return $?
   local array_name=${key_type_to_array[$key_type]:-}
