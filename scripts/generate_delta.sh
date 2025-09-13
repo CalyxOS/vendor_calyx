@@ -31,9 +31,9 @@ fi
 
 load_keymapper_and_maybe_pkcs11 || error "failed to load keymapper"
 
-RELEASEKEY=$(get_key core build/make/target/product/security/testkey)
+OTAKEY=$(get_key other ota)
 
-$maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$RELEASEKEY" \
+$maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
   -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
