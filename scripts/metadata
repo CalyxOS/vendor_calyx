@@ -21,11 +21,21 @@ keys_avb=(
   vbmeta_vendor
 )
 
+# Standalone key types that do not belong in the other categories.
+keys_other=(
+  # Although Android can accept multiple OTA certs for a release, a given release
+  # is signed with just one by design. We have an array for this to match the layout
+  # of other keys. This key was once the "release key" or releasekey, which doubled as
+  # the default signing key for apps, replacing testkey/devkey. However, given that
+  # the key used for OTA updates is a distinct key, we treat it as such today.
+  ota
+)
+
 # Core signing keys. Used by SELinuxMMAC to determine permissions. Each must be unique.
 # PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
 # DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
 keys_core=(
-  # testkey is the default signing key, and also the OTA key.
+  # testkey is the default signing key. This is not necessarily the OTA key. See keys_other.
   build/make/target/product/security/testkey
   build/make/target/product/security/media
   build/make/target/product/security/shared
@@ -136,6 +146,7 @@ keys_app=(
 key_types=(
   avb
   apex_payload
+  other
   core
   apex_container
   apex_apk
@@ -145,6 +156,7 @@ key_types=(
 # Mapping of key types to keys_ arrays.
 declare -g -A key_type_to_array=(
   [avb]=keys_avb
+  [other]=keys_other
   [core]=keys_core
   [apex_container]=keys_apex
   [apex_payload]=keys_apex
@@ -153,7 +165,8 @@ declare -g -A key_type_to_array=(
 )
 
 # Key types whose keys are remapped by passing -k to sign_target_files_apks.
-# This applies to most key types apart from avb and apex containers and payloads.
+# This applies to most key types apart from avb, apex containers and payloads,
+# and other (ota).
 mapped_key_types=(
   core
   apex_apk
