@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4ba4e6ab_20eb9090",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-14T15:15:14Z",
+      "side": 1,
+      "message": "Update generate_delta.sh to use OTAKEY (get_key other ota) as well",
+      "revId": "c6583ef727f4ae41f9c68f096b0dd52f6af75c5c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
