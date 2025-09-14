@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4c9845c6_1f038bea",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 59
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-14T17:32:35Z",
+      "side": 1,
+      "message": "Sometimes things like this happen:\n```\nFailed to get logs: Connector operation failed\nUnable to extract logs\nERROR: Failed to get logs\nFailed connecting \u0027http://127.0.0.1:12345\u0027: Unable to find a suitable connector\nNot connected\n```\n\nand yubihsm-connector needs to be stopped and started. Right now, starting and stopping the connector isn\u0027t part of these scripts, as they default to yhusb:// anyway, but for me, sometimes *that* stops working, too, so I have to switch to yubihsm-connector anyway. At least with yubihsm-connector, I have been able to simply restart the connector if something goes wrong.\n\nMaybe we should include something which starts the connector (in vendor.yubihsm.release.sh and vendor.yubihsm.keygen.sh?), and also something which restarts it when errors like this are encountered...? But bear in mind that at least during provisioning, the connector runs as a system service, and the signing scripts will not be able to restart it. So we\u0027ll need a way to exclude that during provisioning, probably just an environment variable set by vendor.yubihsm.provision.sh.\n\nThings to think about.",
+      "revId": "27044c7f65478112ab0d0fea6f354629dca5e5da",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
