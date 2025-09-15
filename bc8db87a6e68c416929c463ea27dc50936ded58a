@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "ee0348c0_1c8c5944",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 29
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T14:06:39Z",
+      "side": 1,
+      "message": "(authkey ID, I mean. The password is of course private.)",
+      "parentUuid": "d888ccb4_2649e426",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "11c03a36_d14f8dcb",
         "filename": "/PATCHSET_LEVEL",
         "patchSetId": 29
