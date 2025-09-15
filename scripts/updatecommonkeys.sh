@@ -15,6 +15,9 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 TOP="$SCRIPTPATH/../../.."
 
 source "$SCRIPTPATH/metadata"
+source "$SCRIPTPATH/common.include.sh"
+
+load_keymapper
 
 KEY_DIR=$1
 SUBJECT="$2"
@@ -34,9 +37,13 @@ if [[ -e calyxos.keystore ]]; then
   openssl pkcs8 -in calyxos.pem -out chromium.pk8 -outform DER -topk8 -nocrypt && rm calyxos.pem
 fi
 
-for k in "${common_app_keys[@]}"; do
-  if [[ ! -e ${k}.pk8 ]]; then
-    "$SCRIPTPATH/mkkey.sh" "$k" "$SUBJECT"
+for k in "${keys_app[@]}"; do
+  keyval=$(KEY_DIR= get_key app "$k" || exit $?)
+  keyval=$(basename "$keyval")
+  if [[ ! -e ${keyval}.pk8 ]]; then
+    "$SCRIPTPATH/mkkey.sh" "$keyval" "$SUBJECT" \
+      || true  # Broken script. Always returns failure.
+    [[ -e $keyval.pk8 ]] || exit $?  # Exit if the private key does not exist after the above.
   fi
 done
 
