@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ffe82034_14542e5e",
+        "filename": "scripts/keymapper.legacy.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-09-15T16:55:04Z",
+      "side": 1,
+      "message": "I think we want to sign all devices with RSA4096 from now on, so these devices should go in the section below, not sure if there is a similar list in any other files.\n\nOne improvement we always wanted was to remove the hardcoded device names from these scripts and read the supported avb partitions from each devices\u0027 vars file",
+      "revId": "80d17ca9a0da633a18fadf08662e6db3bdd83b82",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "37e37d6a_e63fc8d4",
+        "filename": "scripts/metadata",
+        "patchSetId": 2
+      },
+      "lineNbr": 181,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-09-15T16:55:04Z",
+      "side": 1,
+      "message": "Do we really need all the no longer supported devices?",
+      "range": {
+        "startLine": 168,
+        "startChar": 0,
+        "endLine": 181,
+        "endChar": 11
+      },
+      "revId": "80d17ca9a0da633a18fadf08662e6db3bdd83b82",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
