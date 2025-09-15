@@ -16,6 +16,24 @@
       "message": "Does this need to be 2048-bit?",
       "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b182dbda_58889b49",
+        "filename": "scripts/keymapper.id2b.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T17:11:43Z",
+      "side": 1,
+      "message": "If bramble or redfin actually do require 2048, then this is actually broken, because the keygen will currently not make an exception for them. That would need to be added.\n\nThis whole section about RSA key sizes is a potential contradiction... We shouldn\u0027t be making these choices here that may not even conform to the keys that have been generated. They need to be in sync.",
+      "parentUuid": "2055215c_1cee1ac8",
+      "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
