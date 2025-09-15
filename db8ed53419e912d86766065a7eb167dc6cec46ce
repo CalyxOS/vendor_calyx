@@ -16,6 +16,24 @@
       "message": "load_keymapper is part of common.include.sh and is identical to this, so this can be removed.",
       "revId": "db8ed53419e912d86766065a7eb167dc6cec46ce",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "02c8e652_86ad62c7",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 53
+      },
+      "lineNbr": 255,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T13:54:10Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "b7f0d570_c90b18f4",
+      "revId": "db8ed53419e912d86766065a7eb167dc6cec46ce",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }

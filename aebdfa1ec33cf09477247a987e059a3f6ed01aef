@@ -34,6 +34,24 @@
       "parentUuid": "e58d3fd7_df9a9d76",
       "revId": "aebdfa1ec33cf09477247a987e059a3f6ed01aef",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3773aa68_aa7d369e",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 55
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T13:54:10Z",
+      "side": 1,
+      "message": "Handled by https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41550\n\nand indirectly handled by https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41551",
+      "parentUuid": "4fba3cba_126ddda1",
+      "revId": "aebdfa1ec33cf09477247a987e059a3f6ed01aef",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
