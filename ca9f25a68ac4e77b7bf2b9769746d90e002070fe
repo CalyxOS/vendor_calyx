@@ -70,6 +70,24 @@
       "parentUuid": "f9738bc3_a39bd2fb",
       "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "81612a16_381e26d5",
+        "filename": "scripts/keymapper.id2b.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T17:54:56Z",
+      "side": 1,
+      "message": "This should do it. It\u0027ll default to SHA256_RSA4096 for everything, but that can be overridden either by setting the RSA_KEY_SIZE environment variable or by updating get_key_algorithm in the vendor includes (vendor.yubihsm.keygen.sh).\n\nI don\u0027t think we need to pull from the device vars if it\u0027s just going to be 4096-bit for everything. AVB itself supports even 8192-bit and I think 16384-bit, but that seems silly.\n\nShould I still update the legacy keymapper to use 4096-bit too? So far it\u0027s been intended to match the previous signing as much as possible.",
+      "parentUuid": "71b9ae9d_b44d68ca",
+      "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
