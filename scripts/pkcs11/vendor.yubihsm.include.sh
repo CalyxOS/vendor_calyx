@@ -932,12 +932,17 @@ maybe_stop_apksigner_batch() {
     apksigner_batch_pid=$(cat "$runtime_dir/apksigner.pid")
     apksigner_batch_fifo_keepalive_pid=$(cat "$runtime_dir/apksigner_keepalive.pid") || true
   fi
+  # Send a signal that we are done.
+  printf "\0\0" | timeout 1 tee -a "$runtime_dir/apksigner_stdin_fifo" >/dev/null || true
+  timeout 1 cat "$runtime_dir/apksigner_stdout_fifo" || true
+  timeout 1 cat "$runtime_dir/apksigner_stderr_fifo" || true
   if [ -n "$apksigner_batch_fifo_keepalive_pid" ]; then
     if ps -p "$apksigner_batch_fifo_keepalive_pid" >/dev/null; then
       kill "$apksigner_batch_fifo_keepalive_pid" || true
     fi
     if ps -p "$apksigner_batch_fifo_keepalive_pid" >/dev/null; then
       kill -9 "$apksigner_batch_fifo_keepalive_pid" || true
+      sleep 1
     fi
     if ps -p "$apksigner_batch_fifo_keepalive_pid" >/dev/null; then
       echo "Could not kill apksigner keepalive process" >&2
@@ -952,6 +957,7 @@ maybe_stop_apksigner_batch() {
   fi
   if ps -p "$apksigner_batch_pid" >/dev/null; then
     kill -9 "$apksigner_batch_pid" || return $?
+    sleep 1
   fi
   if ps -p "$apksigner_batch_pid" >/dev/null; then
     echo "Could not kill apksigner" >&2
