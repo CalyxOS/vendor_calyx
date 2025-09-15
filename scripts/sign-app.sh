@@ -27,6 +27,6 @@ if [[ ! " ${apps[@]} " =~ " ${APP} " ]]; then
 fi
 
 APPKEY=${appkey[$APP]}
-KEY=$KEY_DIR/${keymap[$APPKEY]}
+KEY=$KEY_DIR/$APPKEY
 
 "$APKSIGNER" sign --key "${KEY}.pk8" --cert "${KEY}.x509.pem" --in "${APK}" --out "${APP}-signed-${DEVICE}.apk"
