@@ -1,234 +1,210 @@
-# The list of apps we want to sign and update out of band
-# Also used for testing
-apps=(
-	Contacts
-	Dialer
-	Seedvault
-	StorageManager
-	F-Droid
-	AuroraStorePrivilegedExtension
-	GCamPhotosPreview
-	GmsCore
-	GsfProxy
-	FakeStore
-	DejaVuLocationService
-	MozillaNlpBackend
-	NominatimNlpBackend
-	TrichromeChrome
-	universal
-	TrichromeLibrary
-	TrichromeLibrary6432
-	TrichromeWebView
-	TrichromeWebView6432
-	Etar
-	Launcher3QuickStep
+# This file is updated manually based on Android changes, especially for including new
+# core signing keys, APEXes, and APEX APKs.
+# Key re-mapping is not covered in this file.
+# IMPORTANT: PLEASE PRESERVE THE ORDER OF THESE ARRAYS, AS MAPPINGS TO KEY IDS MAY DEPEND ON IT.
+
+# Android Verified Boot (AVB) partitions that can be signed with their own independent keys.
+# RSA algorithm is required for AVB signing.
+# vbmeta can never be rotated.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_avb=(
+  vbmeta
+  boot
+  dtbo
+  init_boot
+  recovery
+  system
+  system_other
+  vendor
+  vbmeta_system
+  vbmeta_vendor
 )
 
-# Mapping from build/tools/releasetools
-declare -A keymap
-keymap[devkey]=releasekey
-keymap[testkey]=releasekey
-keymap[media]=media
-keymap[shared]=shared
-keymap[platform]=platform
-keymap[networkstack]=networkstack
-keymap[sdk_sandbox]=sdk_sandbox
-keymap[com.android.connectivity.resources]=com.android.connectivity.resources
-keymap[com.android.hotspot2.osulogin]=com.android.hotspot2.osulogin
-keymap[com.android.wifi.resources]=com.android.wifi.resources
-keymap[com.android.adservices.api]=com.android.adservices.api
-keymap[com.android.bluetooth]=com.android.bluetooth
-keymap[com.android.safetycenter.resources]=com.android.safetycenter.resources
-keymap[com.android.wifi.dialog]=com.android.wifi.dialog
-keymap[com.android.uwb.resources]=com.android.uwb.resources
-keymap[com.android.nearby.halfsheet]=com.android.nearby.halfsheet
-keymap[com.android.graphics.pdf]=com.android.graphics.pdf
-keymap[com.android.appsearch.apk]=com.android.appsearch.apk
-# Common
-keymap[org.calyxos.fdroid]=org.calyxos.fdroid
-keymap[com.google.android.apps.photos]=com.google.android.apps.photos
-keymap[microg]=microg
-keymap[org.calyxos.nlp.dejavu]=org.calyxos.nlp.dejavu
-keymap[org.calyxos.nlp.ichnaea]=org.calyxos.nlp.ichnaea
-keymap[org.calyxos.nlp.nominatim]=org.calyxos.nlp.nominatim
-keymap[chromium]=chromium
+# Core signing keys. Used by SELinuxMMAC to determine permissions. Each must be unique.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_core=(
+  # testkey is the default signing key, and also the OTA key.
+  build/make/target/product/security/testkey
+  build/make/target/product/security/media
+  build/make/target/product/security/shared
+  build/make/target/product/security/platform
+  build/make/target/product/security/networkstack
+  build/make/target/product/security/bluetooth
+  build/make/target/product/security/sdk_sandbox
+  build/make/target/product/security/nfc
+)
 
-# Key used by that particular app, default is testkey
-declare -A appkey
-appkey[Contacts]=shared
-appkey[Dialer]=shared
-appkey[Seedvault]=platform
-appkey[StorageManager]=testkey
-appkey[F-Droid]=org.calyxos.fdroid
-appkey[AuroraStorePrivilegedExtension]=testkey
-appkey[GCamPhotosPreview]=com.google.android.apps.photos
-appkey[GmsCore]=microg
-appkey[GsfProxy]=microg
-appkey[FakeStore]=microg
-appkey[DejaVuLocationService]=org.calyxos.nlp.dejavu
-appkey[MozillaNlpBackend]=org.calyxos.nlp.ichnaea
-appkey[NominatimNlpBackend]=org.calyxos.nlp.nominatim
-appkey[TrichromeChrome]=chromium
-appkey[universal]=chromium
-appkey[TrichromeLibrary]=chromium
-appkey[TrichromeLibrary6432]=chromium
-appkey[TrichromeWebView]=chromium
-appkey[TrichromeWebView6432]=chromium
-appkey[Etar]=testkey
-appkey[Launcher3QuickStep]=testkey
+# APEXes, each of which has a container and payload.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_apex=(
+  com.android.adbd
+  com.android.adservices
+  com.android.appsearch
+  com.android.art
+  com.android.bluetooth
+  com.android.btservices
+  com.android.cellbroadcast
+  com.android.compos
+  com.android.configinfrastructure
+  com.android.conscrypt
+  com.android.devicelock
+  com.android.extservices
+  com.android.hardware.biometrics.face.virtual
+  com.android.hardware.biometrics.fingerprint.virtual
+  com.android.hardware.cas
+  com.android.hardware.wifi
+  com.android.healthfitness
+  com.android.i18n
+  com.android.ipsec
+  com.android.media
+  com.android.mediaprovider
+  com.android.media.swcodec
+  com.android.neuralnetworks
+  com.android.nfcservices
+  com.android.ondevicepersonalization
+  com.android.os.statsd
+  com.android.permission
+  com.android.profiling
+  com.android.resolv
+  com.android.rkpd
+  com.android.runtime
+  com.android.scheduling
+  com.android.sdkext
+  com.android.support.apexer
+  com.android.telephonymodules
+  com.android.tethering
+  com.android.tzdata
+  com.android.uwb
+  com.android.vibrator.drv2624
+  com.android.vibrator.sunfish
+  com.android.virt
+  com.android.vndk.current
+  com.android.vndk.current.on_vendor
+  com.android.wifi
+  com.google.pixel.vibrator.hal
+)
+
+# APKs inside of APEXes.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_apex_apk=(
+  # Mapping from build/tools/releasetools.
+  packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources
+  packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin
+  packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources
+  packages/modules/AdServices/adservices/apk/com.android.adservices.api
+  packages/modules/Bluetooth/android/app/certs/com.android.bluetooth
+  packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
+  packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
+  packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
+  packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet
+  packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf
+  packages/modules/AppSearch/apk/com.android.appsearch.apk
+  packages/modules/HealthFitness/apk/com.android.healthconnect.controller
+  packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
+  packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute
+  # Device-specific: raven, cheetah, tangorpro, felix.
+  # (It doesn't hurt to override/generate it anyway.)
+  device/google/gs-common/uwb-certs/com.qorvo.uwb
+)
 
 # Extra keys for apps we sign
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_app=(
+  prebuilts/calyx/microg/certs/microg
+  external/calyx/chromium/certs/chromium
+)
+
+# List of all the key types.
+# This affects the order of key generation. Because some keys need to be RSA
+# (avb and apex payload), these keys should be generated first in case they
+# share IDs with other key types that might otherwise be generated with ECC.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+key_types=(
+  avb
+  apex_payload
+  core
+  apex_container
+  apex_apk
+  app
+)
+
+# Mapping of key types to keys_ arrays.
+declare -g -A key_type_to_array=(
+  [avb]=keys_avb
+  [core]=keys_core
+  [apex_container]=keys_apex
+  [apex_payload]=keys_apex
+  [apex_apk]=keys_apex_apk
+  [app]=keys_app
+)
+
+# Key types whose keys are remapped by passing -k to sign_target_files_apks.
+# This applies to most key types apart from avb and apex containers and payloads.
+mapped_key_types=(
+  core
+  apex_apk
+  app
+)
+
+# Used by mkcommonkeys.sh, updatecommonkeys.sh
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
 common_app_keys=(
-	com.google.android.apps.photos
-	microg
-	org.calyxos.fdroid
-	org.calyxos.nlp.dejavu
-	org.calyxos.nlp.ichnaea
-	org.calyxos.nlp.nominatim
-	chromium
+  com.google.android.apps.photos
+  microg
+  chromium
 )
 
-# APEX keys
-apexes=(
-	com.android.adbd.apex
-	com.android.adservices.apex
-	com.android.appsearch.apex
-	com.android.art.apex
-	com.android.bluetooth.apex
-	com.android.btservices.apex
-	com.android.cellbroadcast.apex
-	com.android.compos.apex
-	com.android.configinfrastructure.apex
-	com.android.conscrypt.apex
-	com.android.devicelock.apex
-	com.android.extservices.apex
-	com.android.hardware.biometrics.face.virtual.apex
-	com.android.hardware.biometrics.fingerprint.virtual.apex
-	com.android.hardware.cas.apex
-	com.android.hardware.wifi.apex
-	com.android.healthfitness.apex
-	com.android.i18n.apex
-	com.android.ipsec.apex
-	com.android.media.apex
-	com.android.mediaprovider.apex
-	com.android.media.swcodec.apex
-	com.android.neuralnetworks.apex
-	com.android.nfcservices.apex
-	com.android.ondevicepersonalization.apex
-	com.android.os.statsd.apex
-	com.android.permission.apex
-	com.android.profiling.apex
-	com.android.resolv.apex
-	com.android.rkpd.apex
-	com.android.runtime.apex
-	com.android.scheduling.apex
-	com.android.sdkext.apex
-	com.android.support.apexer.apex
-	com.android.telephonymodules.apex
-	com.android.tethering.apex
-	com.android.tzdata.apex
-	com.android.uwb.apex
-	com.android.vibrator.drv2624.apex # bonito, sargo
-	com.android.vibrator.sunfish.apex
-	com.android.virt.apex
-	com.android.vndk.current.apex
-	com.android.vndk.current.on_vendor.apex
-	com.android.wifi.apex
-	com.google.pixel.vibrator.hal.apex
+# Devices that have ever been supported.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+all_devices=(
+  jasmine_sprout
+  axolotl
+  walleye
+  taimen
+  blueline
+  crosshatch
+  sargo
+  bonito
+  flame
+  coral
+  sunfish
+  kebab
+  lemonade
+  lemonadep
+  redfin
+  bramble
+  barbet
+  devon
+  hawao
+  rhode
+  oriole
+  raven
+  bluejay
+  panther
+  cheetah
+  lynx
+  tangorpro
+  felix
+  shiba
+  husky
+  akita
+  tokay
+  caiman
+  komodo
+  comet
+  tegu
+  fogos
+  bangkk
+  fogo
+  FP4
+  FP5
+  otter
 )
-
-# Container: x509.pem & pk8
-declare -A apex_container_key
-apex_container_key[com.android.adbd.apex]=com.android.adbd
-apex_container_key[com.android.adservices.apex]=com.android.adservices
-apex_container_key[com.android.appsearch.apex]=com.android.appsearch
-apex_container_key[com.android.art.apex]=com.android.art
-apex_container_key[com.android.bluetooth.apex]=com.android.btservices
-apex_container_key[com.android.btservices.apex]=com.android.btservices
-apex_container_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
-apex_container_key[com.android.compos.apex]=com.android.compos
-apex_container_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
-apex_container_key[com.android.conscrypt.apex]=com.android.conscrypt
-apex_container_key[com.android.devicelock.apex]=com.android.devicelock
-apex_container_key[com.android.extservices.apex]=com.android.extservices
-apex_container_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
-apex_container_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
-apex_container_key[com.android.hardware.cas.apex]=com.android.hardware
-apex_container_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
-apex_container_key[com.android.healthfitness.apex]=com.android.healthfitness
-apex_container_key[com.android.i18n.apex]=com.android.i18n
-apex_container_key[com.android.ipsec.apex]=com.android.ipsec
-apex_container_key[com.android.media.apex]=com.android.media
-apex_container_key[com.android.mediaprovider.apex]=com.android.mediaprovider
-apex_container_key[com.android.media.swcodec.apex]=com.android.media.swcodec
-apex_container_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
-apex_container_key[com.android.nfcservices.apex]=com.android.nfcservices
-apex_container_key[com.android.ondevicepersonalization.apex]=releasekey
-apex_container_key[com.android.os.statsd.apex]=com.android.os.statsd
-apex_container_key[com.android.permission.apex]=com.android.permission
-apex_container_key[com.android.profiling.apex]=com.android.profiling
-apex_container_key[com.android.resolv.apex]=testcert
-apex_container_key[com.android.rkpd.apex]=com.android.rkpd
-apex_container_key[com.android.runtime.apex]=com.android.runtime
-apex_container_key[com.android.scheduling.apex]=releasekey
-apex_container_key[com.android.sdkext.apex]=com.android.sdkext
-apex_container_key[com.android.support.apexer.apex]=releasekey
-apex_container_key[com.android.telephonymodules.apex]=com.android.telephonymodules
-apex_container_key[com.android.tethering.apex]=releasekey
-apex_container_key[com.android.tzdata.apex]=com.android.tzdata
-apex_container_key[com.android.uwb.apex]=com.android.uwb
-apex_container_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
-apex_container_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
-apex_container_key[com.android.virt.apex]=com.android.virt
-apex_container_key[com.android.vndk.current.apex]=com.android.vndk.current
-apex_container_key[com.android.vndk.current.on_vendor.apex]=com.android.vndk.current
-apex_container_key[com.android.wifi.apex]=com.android.wifi
-apex_container_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
-
-# Payload: avbpubkey & pem
-declare -A apex_payload_key
-apex_payload_key[com.android.adbd.apex]=com.android.adbd
-apex_payload_key[com.android.adservices.apex]=com.android.adservices
-apex_payload_key[com.android.appsearch.apex]=com.android.appsearch
-apex_payload_key[com.android.art.apex]=com.android.art
-apex_payload_key[com.android.bluetooth.apex]=com.android.btservices
-apex_payload_key[com.android.btservices.apex]=com.android.btservices
-apex_payload_key[com.android.cellbroadcast.apex]=com.android.cellbroadcast
-apex_payload_key[com.android.compos.apex]=com.android.compos
-apex_payload_key[com.android.configinfrastructure.apex]=com.android.configinfrastructure
-apex_payload_key[com.android.conscrypt.apex]=com.android.conscrypt
-apex_payload_key[com.android.devicelock.apex]=com.android.devicelock
-apex_payload_key[com.android.extservices.apex]=com.android.extservices
-apex_payload_key[com.android.hardware.biometrics.face.virtual.apex]=com.android.hardware
-apex_payload_key[com.android.hardware.biometrics.fingerprint.virtual.apex]=com.android.hardware
-apex_payload_key[com.android.hardware.cas.apex]=com.android.hardware
-apex_payload_key[com.android.hardware.wifi.apex]=com.android.hardware.wifi
-apex_payload_key[com.android.healthfitness.apex]=com.android.healthfitness
-apex_payload_key[com.android.i18n.apex]=com.android.i18n
-apex_payload_key[com.android.ipsec.apex]=com.android.ipsec
-apex_payload_key[com.android.media.apex]=com.android.media
-apex_payload_key[com.android.mediaprovider.apex]=com.android.mediaprovider
-apex_payload_key[com.android.media.swcodec.apex]=com.android.media.swcodec
-apex_payload_key[com.android.neuralnetworks.apex]=com.android.neuralnetworks
-apex_payload_key[com.android.nfcservices.apex]=com.android.nfcservices
-apex_payload_key[com.android.ondevicepersonalization.apex]=com.android.ondevicepersonalization
-apex_payload_key[com.android.os.statsd.apex]=com.android.os.statsd
-apex_payload_key[com.android.permission.apex]=com.android.permission
-apex_payload_key[com.android.profiling.apex]=com.android.profiling
-apex_payload_key[com.android.resolv.apex]=com.android.resolv
-apex_payload_key[com.android.rkpd.apex]=com.android.rkpd
-apex_payload_key[com.android.runtime.apex]=com.android.runtime
-apex_payload_key[com.android.scheduling.apex]=com.android.scheduling
-apex_payload_key[com.android.sdkext.apex]=com.android.sdkext
-apex_payload_key[com.android.support.apexer.apex]=com.android.support.apexer
-apex_payload_key[com.android.telephonymodules.apex]=com.android.telephonymodules
-apex_payload_key[com.android.tethering.apex]=com.android.tethering
-apex_payload_key[com.android.tzdata.apex]=com.android.tzdata
-apex_payload_key[com.android.uwb.apex]=com.android.uwb
-apex_payload_key[com.android.vibrator.drv2624.apex]=com.android.vibrator.drv2624 # bonito, sargo
-apex_payload_key[com.android.vibrator.sunfish.apex]=com.android.vibrator.sunfish
-apex_payload_key[com.android.virt.apex]=com.android.virt
-apex_payload_key[com.android.vndk.current.apex]=com.android.vndk.current
-apex_payload_key[com.android.vndk.current.on_vendor.apex]=com.android.vndk.current
-apex_payload_key[com.android.wifi.apex]=com.android.wifi
-apex_payload_key[com.google.pixel.vibrator.hal.apex]=com.google.pixel.vibrator.hal
