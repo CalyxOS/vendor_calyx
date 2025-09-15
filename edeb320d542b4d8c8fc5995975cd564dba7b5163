@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "69a4325c_374cc499",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T20:32:39Z",
+      "side": 1,
+      "message": "Very WIP and case-specific, for testing at the moment. Has hard-coded devices, etc.",
+      "revId": "edeb320d542b4d8c8fc5995975cd564dba7b5163",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
