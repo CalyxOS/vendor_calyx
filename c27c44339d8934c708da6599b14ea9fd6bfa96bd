@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3b119705_956fa8a1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 34
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T20:33:16Z",
+      "side": 1,
+      "message": "Remove every line with /tmp/yubihsm_sign_debug.log",
+      "revId": "c27c44339d8934c708da6599b14ea9fd6bfa96bd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}

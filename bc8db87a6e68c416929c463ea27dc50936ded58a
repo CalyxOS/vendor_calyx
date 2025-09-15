@@ -120,6 +120,24 @@
       "message": "I still think this algorithm handling can probably just be removed...",
       "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1a623188_3d684ff2",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T20:33:16Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "b9c378c2_833dd5a9",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
