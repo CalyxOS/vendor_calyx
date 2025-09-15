@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6dff7902_2e269f75",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 28
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T13:51:06Z",
+      "side": 1,
+      "message": "Add lockfile support to ensure the HSM and its audit log are only tackling one operation at a time.",
+      "revId": "4d08063f64f854385dfdf1aa82a97b379068f0e3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
