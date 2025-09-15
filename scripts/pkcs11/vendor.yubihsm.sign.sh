@@ -1,0 +1,78 @@
+#!/bin/bash
+
+source ./vendor/calyx/scripts/common.include.sh
+source ./vendor/calyx/scripts/pkcs11/include.sh
+source ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.include.sh
+
+export BUILD_NUMBER="25610200"
+export PREV_BUILD_NUMBER_PXL="25608200"
+export PREV_BUILD_NUMBER_MOST="25608210"
+
+error() {
+	echo $@
+	exit 1
+}
+
+[ ! -e archive ] && error "archive directory not found. It should contain the previous builds"
+
+echo "Old build(s) needed:"
+echo "  $PREV_BUILD_NUMBER_PXL"
+echo "  $PREV_BUILD_NUMBER_MOST"
+read -p "Kindly ensure their presence in the archive."
+
+df -h .
+# TODO: is 500GB enough for all devices? test this
+read -p "Make sure there is 500GB free space. Press enter to continue."
+
+# all devices except Pixel 9a
+export TMPDIR=$(mktemp -d -p /dev/shm)
+cleanup() {
+  maybe_stop_yubihsm_connector
+}
+trap cleanup EXIT
+maybe_start_yubihsm_connector "$TMPDIR/yubihsm_connector.pid"
+export YUBIHSM_LOCKFILE=$TMPDIR/yubihsm.lock
+
+if [ -z "${YUBIHSM_PKCS11_CONF:-}" ]; then
+  export YUBIHSM_PKCS11_CONF=$TMPDIR/yubihsm_pkcs11.conf
+  generate_yubihsm_pkcs11_library_config > "$YUBIHSM_PKCS11_CONF"
+fi
+maybe_start_apksigner_batch "$TMPDIR"
+
+skip() {
+echo "Signing release for all devices except Pixel 9a"
+parallel -j 7 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.release.sh {} calyx_{}-target_files-${BUILD_NUMBER}.zip ::: akita shiba bluejay FP5 hawao &
+}
+parallel -j 7 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.release.sh {} calyx_{}-target_files-25608200.zip ::: akita shiba bluejay FP5 hawao &
+parallel -j 7 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.release.sh {} calyx_{}-target_files-25608210.zip ::: FP5 hawao &
+wait
+
+echo "Waiting for signing"
+wait
+rm -rf $TMPDIR
+
+mv out/* archive/
+exit 0
+
+# Deltas
+export TMPDIR=$(mktemp -d -p /dev/shm)
+
+#echo "Generating delta updates for Pixel 9"
+#parallel -j 5 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.generate_delta.sh {} ${PREV_BUILD_NUMBER_PXL} ${BUILD_NUMBER} ::: comet komodo caiman tokay &
+
+echo "Generating delta updates for Pixel 6/7/8"
+parallel -j 5 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.generate_delta.sh {} ${PREV_BUILD_NUMBER_PXL} ${BUILD_NUMBER} ::: akita shiba bluejay &
+
+wait
+
+echo "Generating delta updates for remaining devices"
+parallel -j 6 --tag --line-buffer ./vendor/calyx/scripts/pkcs11/vendor.yubihsm.generate_delta.sh {} ${PREV_BUILD_NUMBER_MOST} ${BUILD_NUMBER} ::: FP5 hawao &
+
+wait
+rm -rf $TMPDIR
+
+echo
+echo "Done signing and making deltas for all devices except Pixel 9a"
+echo
+
+echo "Please minisign -SHm out/release-*-${BUILD_NUMBER}/*-factory-${BUILD_NUMBER}.zip -t 'CalyxOS 6.10.20 - Paused update notice for all current installations'"
