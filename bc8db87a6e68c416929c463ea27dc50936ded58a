@@ -51,6 +51,23 @@
       "message": "Sometimes things like this happen:\n\n```\nFailed to get logs: Connector operation failed\nUnable to extract logs\nERROR: Failed to get logs\nFailed connecting \u0027http://127.0.0.1:12345\u0027: Unable to find a suitable connector\nNot connected\n```\n\nand yubihsm-connector needs to be stopped and started. Right now, starting and stopping the connector isn\u0027t part of these scripts, as they default to yhusb:// anyway, but for me, sometimes that stops working, too, so I have to switch to yubihsm-connector anyway. At least with yubihsm-connector, I have been able to simply restart the connector if something goes wrong.\n\nMaybe we should include something which starts the connector (in vendor.yubihsm.release.sh and vendor.yubihsm.keygen.sh?), and also something which restarts it when errors like this are encountered...? But bear in mind that at least during provisioning, the connector runs as a system service, and the signing scripts will not be able to restart it. So we\u0027ll need a way to exclude that during provisioning, probably just an environment variable set by vendor.yubihsm.provision.sh.\n\nThings to think about.\n\n(Moved from https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41394/comments/4c9845c6_1f038bea )",
       "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "96608cf1_1ccb66e7",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 864,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T14:11:16Z",
+      "side": 1,
+      "message": "It\u0027s *always* unknown-hsm for me with signing, and maybe everything else too, not sure.\n\n`250700010-bluejay-unknown-hsm-20250915-140920-release-audit.log`",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
