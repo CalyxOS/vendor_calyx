@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "772d9b36_b231c73c",
+        "filename": "scripts/keymapper.legacy.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T17:13:02Z",
+      "side": 1,
+      "message": "Thanks, I added some comments here, too, since this is the newer keymapper that I am using for HSM signing: https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41571/comment/2055215c_1cee1ac8/\n\nAs far as I know, these are just mappings, so regardless of whether or not a device supports particular partitions, I think we can have a mapping for them and it will just not get used. Will need to confirm that though.",
+      "parentUuid": "ffe82034_14542e5e",
+      "revId": "80d17ca9a0da633a18fadf08662e6db3bdd83b82",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "37e37d6a_e63fc8d4",
         "filename": "scripts/metadata",
         "patchSetId": 2
