@@ -34,6 +34,24 @@
       "parentUuid": "2055215c_1cee1ac8",
       "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f9738bc3_a39bd2fb",
+        "filename": "scripts/keymapper.id2b.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-09-15T17:17:13Z",
+      "side": 1,
+      "message": "It was 2048 just because stock was using 2048, but AFAIK the bootloader supports up to 4096 and it should work fine. We started using 4096 for every device after barbet",
+      "parentUuid": "b182dbda_58889b49",
+      "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
