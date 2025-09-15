@@ -55,6 +55,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "e0441455_a61452f4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 29
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T14:33:36Z",
+      "side": 1,
+      "message": "To add to this, like I said, yhusb:// has issues for me too, and they\u0027re manifesting basically the same way. This time, it happened when trying to sign the first apk (Aperture) and didn\u0027t recover.\n\n```\nFailed connecting \u0027yhusb://\u0027: Connector operation failed\nNot connected\nFailed to open session\nERROR: Failed to get logs\n```\n\nSo I do think yubihsm-connector is important.",
+      "parentUuid": "11c03a36_d14f8dcb",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "96608cf1_1ccb66e7",
         "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
         "patchSetId": 29
@@ -66,6 +84,40 @@
       "writtenOn": "2025-09-15T14:11:16Z",
       "side": 1,
       "message": "It\u0027s *always* unknown-hsm for me with signing, and maybe everything else too, not sure.\n\n`250700010-bluejay-unknown-hsm-20250915-140920-release-audit.log`",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b743a8e7_fd5da4c8",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T14:33:36Z",
+      "side": 1,
+      "message": "We don\u0027t back off for longer after each try anymore.",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b9c378c2_833dd5a9",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-15T14:33:36Z",
+      "side": 1,
+      "message": "I still think this algorithm handling can probably just be removed...",
       "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
