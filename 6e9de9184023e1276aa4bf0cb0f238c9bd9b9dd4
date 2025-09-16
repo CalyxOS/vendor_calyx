@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "35dc5baf_bec227b6",
+        "filename": "scripts/pkcs11/vendor.yubihsm.sign.sh",
+        "patchSetId": 10
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T17:38:44Z",
+      "side": 1,
+      "message": "Keep the same `declare` style if we\u0027re insisting on it",
+      "revId": "6e9de9184023e1276aa4bf0cb0f238c9bd9b9dd4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c3855c06_131ef0b9",
+        "filename": "scripts/pkcs11/vendor.yubihsm.sign.sh",
+        "patchSetId": 10
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T17:38:44Z",
+      "side": 1,
+      "message": "Remove these",
+      "revId": "6e9de9184023e1276aa4bf0cb0f238c9bd9b9dd4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "91a0e74c_d48b6e91",
+        "filename": "scripts/pkcs11/vendor.yubihsm.sign.sh",
+        "patchSetId": 10
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T17:38:44Z",
+      "side": 1,
+      "message": "nit: Might not have signed, might not have generated incrementals",
+      "revId": "6e9de9184023e1276aa4bf0cb0f238c9bd9b9dd4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
