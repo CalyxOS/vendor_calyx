@@ -3,6 +3,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "4f31fcea_acb56284",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 38
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T20:10:46Z",
+      "side": 1,
+      "message": "Again, let\u0027s make sure I am not unilaterally deciding on using this.",
+      "revId": "8bb03a1ebb7436d154aeb197a6737a01b72bb14f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "d8049459_f6eb5c31",
         "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
         "patchSetId": 38
