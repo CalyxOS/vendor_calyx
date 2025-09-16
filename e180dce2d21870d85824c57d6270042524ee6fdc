@@ -123,6 +123,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "fbb8c291_5539bc5f",
+        "filename": "scripts/metadata",
+        "patchSetId": 4
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T20:07:34Z",
+      "side": 1,
+      "message": "Moved: https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41570/comment/37e37d6a_e63fc8d4/",
+      "parentUuid": "95f78310_682c0db3",
+      "revId": "e180dce2d21870d85824c57d6270042524ee6fdc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "2ca5dde1_14ae372b",
