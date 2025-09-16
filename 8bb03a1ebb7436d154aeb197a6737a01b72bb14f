@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d8049459_f6eb5c31",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 38
+      },
+      "lineNbr": 627,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T20:00:36Z",
+      "side": 1,
+      "message": "No, it doesn\u0027t restore the audit key now. It restores other generated keys.",
+      "revId": "8bb03a1ebb7436d154aeb197a6737a01b72bb14f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
