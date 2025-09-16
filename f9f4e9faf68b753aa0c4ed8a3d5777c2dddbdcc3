@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "db5ef4d2_a5a0a5a4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 37
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-16T17:37:03Z",
+      "side": 1,
+      "message": "ensure_key_is_available is not going to be sufficient as-is for parallel signing. One signing process can start and cause the on-demand key(s) required for a previous process to be removed from the HSM.\n\nThink about how to handle this better... Maybe it needs to be handled in the parallel signing script (follow-up change).",
+      "revId": "f9f4e9faf68b753aa0c4ed8a3d5777c2dddbdcc3",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
