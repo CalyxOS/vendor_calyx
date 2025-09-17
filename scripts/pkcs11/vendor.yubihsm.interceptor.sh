@@ -29,7 +29,9 @@ main() {
     if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
       # Ensure only one YubiHSM operation, including subsequent log extraction,
       # can happen at a time.
+      echo "$(date -u) $$ flocking $*" >> /tmp/yubihsm_sign_debug.log
       flock -x 3
+      echo "$(date -u) $$ proceeding $*" >> /tmp/yubihsm_sign_debug.log
     fi
     run_command_maybe_batch "$@" || return $?
   } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
@@ -49,16 +51,20 @@ run_command_maybe_batch() {
 
   if [ "$use_apksigner_batch" = "y" ]; then
     # Send the signing command to the apksigner batch FIFO.
+    echo "$(date -u) $$ writing to apksigner" >> /tmp/yubihsm_sign_debug.log
     printf "%s\0" "${#tool_args[@]}" "${tool_args[@]}" >>"$APKSIGNER_BATCH_STDIN_FIFO" \
       || \
       {
         err=$?
+        echo "$(date -u) $$ failed to write to apksigner $err $APKSIGNER_BATCH_STDIN_FIFO" >> /tmp/yubihsm_sign_debug.log
         return $err
       }
+    echo "$(date -u) $$ wrote to apksigner" >> /tmp/yubihsm_sign_debug.log
 
     local out_reader_pid err_reader_pid
     read_all_fifo "$APKSIGNER_BATCH_STDOUT_FIFO" stdout & out_reader_pid=$!
     read_all_fifo "$APKSIGNER_BATCH_STDERR_FIFO" stderr >&2 & err_reader_pid=$!
+    echo "$(date -u) $$ read from fifos" >> /tmp/yubihsm_sign_debug.log
     wait $out_reader_pid || err=$?
     wait $err_reader_pid
 
@@ -210,7 +216,9 @@ read_all_fifo() {
   local fifo_name=$2
   local captured i
   for i in $(seq 1 "$fifo_read_cycles"); do
+    echo "$(date -u) $$ reading from fifo $*" >> /tmp/yubihsm_sign_debug.log
     read -t "$fifo_read_wait_time" -r -d $'\0' captured <>"$fifo" || return $?
+    echo "$(date -u) $$ read from fifo $*: $captured" >> /tmp/yubihsm_sign_debug.log
 
     case "$captured" in
       RETURN:*)
