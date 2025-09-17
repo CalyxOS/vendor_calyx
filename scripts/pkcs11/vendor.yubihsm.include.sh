@@ -279,6 +279,7 @@ yubihsm_nolog() {
   local stdout
   local stderr
   local err=
+  echo "$(date -u) $$ executing yubihsm-shell $*" >> /tmp/yubihsm_sign_debug.log
   transparent_catch stdout stderr \
   "$YUBIHSM_SHELL_BIN" \
     --connector "$YUBIHSM_CONNECTOR" \
@@ -287,6 +288,8 @@ yubihsm_nolog() {
     "$@" \
     2> >(yubihsm_spam_filter >&2) || err=$?
 
+  echo "$(date -u) $$ stdout: $err: $*"$'\n'"$stdout" >> /tmp/yubihsm_sign_debug.log
+  echo "$(date -u) $$ stderr: $err: $*"$'\n'"$stderr" >> /tmp/yubihsm_sign_debug.log
   if [ -n "$err" ] && [ -n "${YUBIHSM_CONNECTOR_PIDFILE:-}" ]; then
     case "$stderr" in
       *"Connector operation failed"*)
@@ -301,6 +304,7 @@ yubihsm_nolog() {
           2> >(yubihsm_spam_filter >&2) || return $err
         ;;
       *"Unable to find a suitable connector"*)
+        echo "$(date -u) $$ operation failed: $*"$'\n'"$stderr" >> /tmp/yubihsm_sign_debug.log
         # Try one more time after restarting the YubiHSM connector.
         maybe_start_or_restart_yubihsm_connector || return $?
         err=0
@@ -1026,11 +1030,13 @@ maybe_start_or_restart_yubihsm_connector() {
       return 0 ;;
   esac
   if [ "$start_only" = "y" ] && is_yubihsm_connector_running; then
+    echo "$(date -u) $$ connector already running" >> /tmp/yubihsm_sign_debug.log
     return 0  # Already running.
   fi
   pidfile=${YUBIHSM_CONNECTOR_PIDFILE:-${1:-}}
   if [ -z "${pidfile:-}" ]; then
     echo "Cannot start/restart YubiHSM connector without YUBIHSM_CONNECTOR_PIDFILE specified." >&2
+    echo "$(date -u) no pidfile" >> /tmp/yubihsm_sign_debug.log
     return 1
   fi
   export YUBIHSM_CONNECTOR_PIDFILE=$pidfile
@@ -1039,11 +1045,14 @@ maybe_start_or_restart_yubihsm_connector() {
   export YUBIHSM_CONNECTOR_PIDFILE=$pidfile
   local pid
   nohup "$YUBIHSM_CONNECTOR_BIN" >/dev/null 2>&1 &pid=$!
+  echo "$(date -u) $$ started yubihsm connector $pid" >> /tmp/yubihsm_sign_debug.log
   printf "%s\n" "$pid" > "$YUBIHSM_CONNECTOR_PIDFILE" || return $?
   if [ ! -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
-    echo "yubihsm-connector pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
+    echo "$(date -u) $$ pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >> /tmp/yubihsm_sign_debug.log
+    echo "$(date -u) $$ pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
   fi
   _we_started_yubihsm_connector=y
+  echo "$(date -u) $$ we started connector" >&2
 }
 
 maybe_start_apksigner_batch() {
@@ -1112,6 +1121,7 @@ maybe_start_or_restart_apksigner_batch() {
     2> "$APKSIGNER_BATCH_STDERR_FIFO" \
     > "$APKSIGNER_BATCH_STDOUT_FIFO" \
     &pid=$!
+  echo "$(date -u) $$ started apksigner $pid $APKSIGNER_BATCH_PIDFILE $APKSIGNER_BATCH_RUNTIME_DIR" >> /tmp/yubihsm_sign_debug.log
   printf "%s\n" "$pid" > "$APKSIGNER_BATCH_PIDFILE" || return $?
 
   export APKSIGNER_BATCH_PID=$!
@@ -1139,6 +1149,8 @@ maybe_stop_yubihsm_connector() {
   fi
   local for_restart=${1:-}
   if [ "$for_restart" != "y" ] && [ "$_we_started_yubihsm_connector" != "y" ]; then
+    echo "$(date -u) $$ we did not start yubihsm-connector, so we will not stop it" >&2
+    echo "$(date -u) $$ we did not start yubihsm-connector, so we will not stop it" >> /tmp/yubihsm_sign_debug.log
     return 0
   fi
   if [ -z "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
@@ -1147,17 +1159,23 @@ maybe_stop_yubihsm_connector() {
   fi
   local pid
   if [ ! -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
-    echo "yubihsm-connector pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
+    echo "$(date -u) $$ pidfile $YUBIHSM_CONNECTOR_PIDFILE does not exist somehow" >> /tmp/yubihsm_sign_debug.log
+    echo "$(date -u) $$ pidfile $YUBIHSM_CONNECTOR_PIDFILE does not exist somehow" >&2
   fi
   if [ -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
+    echo "$(date -u) $$ pidfile $YUBIHSM_CONNECTOR_PIDFILE exists" >> /tmp/yubihsm_sign_debug.log
+    echo "$(date -u) $$ pidfile $YUBIHSM_CONNECTOR_PIDFILE exists" >&2
     pid=$(cat "$YUBIHSM_CONNECTOR_PIDFILE")
     if ps -p "$pid" >/dev/null; then
       kill "$pid" || return $?
     fi
     if ps -p "$pid" >/dev/null; then
+      echo "$(date -u) $$ Could not kill existing yubihsm-connector." >> /tmp/yubihsm_sign_debug.log
       echo "Could not kill existing yubihsm-connector." >&2
       return 1
     fi
+    echo "$(date -u) $$ killed existing yubihsm-connector." >> /tmp/yubihsm_sign_debug.log
+    echo "$(date -u) $$ killed existing yubihsm-connector." >&2
     rm -f "$YUBIHSM_CONNECTOR_PIDFILE"
   fi
   YUBIHSM_CONNECTOR_PIDFILE=
@@ -1493,7 +1511,9 @@ initialize_vendor_release() {
     if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
       # Ensure only one YubiHSM operation, including subsequent log extraction,
       # can happen at a time.
+      echo "$(date -u) $$ flocking initialize_vendor_release" >> /tmp/yubihsm_sign_debug.log
       flock -x 3
+      echo "$(date -u) $$ proceeding initialize_vendor_release" >> /tmp/yubihsm_sign_debug.log
     fi
 
     # Need to *not* redirect to the lockfile here in case we launch a new long-running process,
@@ -1532,6 +1552,7 @@ initialize_vendor_release() {
     } 3>/dev/null
 
   } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
+  echo "$(date -u) $$ unflocked initialize_vendor_release" >> /tmp/yubihsm_sign_debug.log
 }
 
 finalize_vendor_release() {
