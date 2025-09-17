@@ -16,6 +16,24 @@
       "message": "Remove every line with /tmp/yubihsm_sign_debug.log",
       "revId": "c27c44339d8934c708da6599b14ea9fd6bfa96bd",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8589a8b6_f2be1b82",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 34
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-17T15:37:56Z",
+      "side": 1,
+      "message": "Done.\n\nBut still here if needed https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41675",
+      "parentUuid": "3b119705_956fa8a1",
+      "revId": "c27c44339d8934c708da6599b14ea9fd6bfa96bd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
