@@ -16,6 +16,24 @@
       "message": "We already have a map for this in metadata, key_type_to_array.",
       "revId": "102d75ec12042c71e282240db775cd876aebe58f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ca3d8888_eeb1dee7",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 60
+      },
+      "lineNbr": 131,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T17:11:08Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6361226f_c458a992",
+      "revId": "102d75ec12042c71e282240db775cd876aebe58f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
