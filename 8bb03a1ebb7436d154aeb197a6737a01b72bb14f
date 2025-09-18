@@ -33,6 +33,24 @@
       "message": "No, it doesn\u0027t restore the audit key now. It restores other generated keys.",
       "revId": "8bb03a1ebb7436d154aeb197a6737a01b72bb14f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c04c4967_a0ed58ad",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 38
+      },
+      "lineNbr": 627,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T17:10:48Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "d8049459_f6eb5c31",
+      "revId": "8bb03a1ebb7436d154aeb197a6737a01b72bb14f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }

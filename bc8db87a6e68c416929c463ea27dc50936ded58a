@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "28d7f423_e1c32a86",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 29
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T17:10:48Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ee0348c0_1c8c5944",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "11c03a36_d14f8dcb",
@@ -137,6 +155,24 @@
       "writtenOn": "2025-09-15T14:33:36Z",
       "side": 1,
       "message": "We don\u0027t back off for longer after each try anymore.",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "474ae1bd_4e702b14",
+        "filename": "scripts/pkcs11/vendor.yubihsm.intermediary.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T17:10:48Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "b743a8e7_fd5da4c8",
       "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
