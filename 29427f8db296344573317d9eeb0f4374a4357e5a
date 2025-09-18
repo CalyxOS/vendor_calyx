@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "03185704_280cd5b3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T19:18:10Z",
+      "side": 1,
+      "message": "When key_apex_consolidation is set to none, and per-device is turned on for APEX containers, apex_container key IDs are not as expected and include some overlap. There is a glitch there.\n\nThis doesn\u0027t represent our current configuration so shouldn\u0027t affect us right now, but it is nevertheless a bug.\n\nExample:\n```\n0x2e30  redfin  apex_container  com.android.adbd        ?\n0x2e30  redfin  apex_container  com.android.hardware.cas        ?\n0x2e30  redfin  apex_container  com.android.runtime     ?\n0x2e31  redfin  apex_container  com.android.adservices  ?\n0x2e31  redfin  apex_container  com.android.hardware.wifi       ?\n0x2e31  redfin  apex_container  com.android.scheduling  ?\n```\n\nThere should not be multiple keys for these IDs with the configuration described.",
+      "revId": "29427f8db296344573317d9eeb0f4374a4357e5a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
