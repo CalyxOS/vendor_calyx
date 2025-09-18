@@ -34,6 +34,40 @@
       "parentUuid": "e404b168_e9296eea",
       "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1654ad09_add35636",
+        "filename": "scripts/sign-app.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T20:44:34Z",
+      "side": 1,
+      "message": "This script also needs updating.",
+      "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6ee5ec95_044a99df",
+        "filename": "scripts/updatekeys.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T20:44:34Z",
+      "side": 1,
+      "message": "This script also doesn\u0027t work.",
+      "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
