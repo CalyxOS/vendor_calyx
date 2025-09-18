@@ -106,6 +106,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "3d11e923_6903476c",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 29
+      },
+      "lineNbr": 864,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-18T03:21:29Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "96608cf1_1ccb66e7",
+      "revId": "bc8db87a6e68c416929c463ea27dc50936ded58a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b743a8e7_fd5da4c8",
