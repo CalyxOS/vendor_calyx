@@ -88,6 +88,24 @@
       "parentUuid": "71b9ae9d_b44d68ca",
       "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0a6d36d6_c495013f",
+        "filename": "scripts/keymapper.id2b.include.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-19T21:15:59Z",
+      "side": 1,
+      "message": "[41711: scripts: Uniform AVB for all devices (esp bramble and redfin)](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41711)",
+      "parentUuid": "81612a16_381e26d5",
+      "revId": "ca9f25a68ac4e77b7bf2b9769746d90e002070fe",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
