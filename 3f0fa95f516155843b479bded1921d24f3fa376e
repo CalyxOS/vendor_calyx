@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "41895f46_d4f7a6fe",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 57
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-19T18:44:15Z",
+      "side": 1,
+      "message": "Could we add a README.md to the pkcs11 folder and among other things include the following markdown?\n\n\nWith the current `extract_logs` implementation,\nlogs are appended to the file at `$AUDIT_LOG_PATH`\nwhich is set by calling scripts.\nIf a directory is not specified, logs are placed in `$YUBIHSM_LOGS_DIR`, which defaults to the `logs/` subdirectory of the current working directory.\n\nAn example of an audit log name in the current scheme is `25610200-hawao-unknown-hsm-20250917-173949-release-audit.log`, where the components are `${BUILD_NUMBER}-${DEVICE}-${HSM_MODEL}-${HSM_SERIAL}-${DATE}-${TIME}-${COMMAND}-audit.log`.\n\nAny line beginning with `Hex: ` represents the hexadecimal log content at the time of extraction, and any line beginning with `item: ` contains the ASCII representation. (Both of these formats are included for flexibility.)",
+      "revId": "3f0fa95f516155843b479bded1921d24f3fa376e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
