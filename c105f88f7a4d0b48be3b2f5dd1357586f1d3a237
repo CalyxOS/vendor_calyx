@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ad0b7486_8c572b21",
+        "filename": "scripts/mkkeys.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-19T21:16:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9cfc52cb_aba167b4",
+      "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "1654ad09_add35636",
@@ -53,6 +71,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "d75dce6a_0f3b10e2",
+        "filename": "scripts/sign-app.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-19T21:16:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1654ad09_add35636",
+      "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "6ee5ec95_044a99df",
@@ -66,6 +102,24 @@
       "writtenOn": "2025-09-18T20:44:34Z",
       "side": 1,
       "message": "This script also doesn\u0027t work.",
+      "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9898569d_5a642b64",
+        "filename": "scripts/updatekeys.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-19T21:16:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6ee5ec95_044a99df",
       "revId": "c105f88f7a4d0b48be3b2f5dd1357586f1d3a237",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
