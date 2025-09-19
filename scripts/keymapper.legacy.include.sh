@@ -94,38 +94,18 @@ _get_key_app() {
 }
 
 fill_avb_arguments() {
-  local vbmeta_key vbmeta_system_key
-  vbmeta_key=$(get_key avb vbmeta || exit $?)
-  vbmeta_system_key=$(get_key avb vbmeta_system || exit $?)
-  case "$DEVICE" in
-    redfin|bramble)
-      avb_arguments=(--avb_vbmeta_key "$vbmeta_key" --avb_vbmeta_algorithm SHA256_RSA2048
-                     --avb_system_key "$vbmeta_key" --avb_system_algorithm SHA256_RSA2048
-                     --avb_vbmeta_system_key "$vbmeta_key" --avb_vbmeta_system_algorithm SHA256_RSA2048)
-      ;;
-    barbet|FP4|FP5|devon|hawao|rhode|fogos|bangkk|fogo|otter)
-      avb_arguments=(--avb_vbmeta_key "$vbmeta_key" --avb_vbmeta_algorithm SHA256_RSA4096
-                     --avb_system_key "$vbmeta_key" --avb_system_algorithm SHA256_RSA4096
-                     --avb_vbmeta_system_key "$vbmeta_key" --avb_vbmeta_system_algorithm SHA256_RSA4096)
-      ;;
-    oriole|raven|bluejay)
-      avb_arguments=(--avb_vbmeta_key "$vbmeta_key" --avb_vbmeta_algorithm SHA256_RSA4096
-                     --avb_system_key "$vbmeta_key" --avb_system_algorithm SHA256_RSA4096
-                     --avb_system_other_key "$vbmeta_key" --avb_system_other_algorithm SHA256_RSA4096
-                     --avb_vbmeta_system_key "$vbmeta_key" --avb_vbmeta_system_algorithm SHA256_RSA4096
-                     --avb_vbmeta_vendor_key "$vbmeta_key" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                     --avb_boot_key "$vbmeta_key" --avb_boot_algorithm SHA256_RSA4096)
-      ;;
-    panther|cheetah|lynx|tangorpro|felix|shiba|husky|akita|tokay|caiman|komodo|comet|tegu)
-      avb_arguments=(--avb_vbmeta_key "$vbmeta_key" --avb_vbmeta_algorithm SHA256_RSA4096
-                     --avb_system_key "$vbmeta_key" --avb_system_algorithm SHA256_RSA4096
-                     --avb_system_other_key "$vbmeta_key" --avb_system_other_algorithm SHA256_RSA4096
-                     --avb_vbmeta_system_key "$vbmeta_system_key" --avb_vbmeta_system_algorithm SHA256_RSA4096
-                     --avb_vbmeta_vendor_key "$vbmeta_key" --avb_vbmeta_vendor_algorithm SHA256_RSA4096
-                     --avb_boot_key "$vbmeta_key" --avb_boot_algorithm SHA256_RSA4096
-                     --avb_init_boot_key "$vbmeta_key" --avb_init_boot_algorithm SHA256_RSA4096)
-      ;;
-  esac
+  avb_arguments=()
+  local keyname
+  for keyname in "${keys_avb[@]}"; do
+    local keyval=$(get_key avb "$keyname" || exit $?) || return $?
+    local alg
+    if [ -n "${AVB_RSA_KEY_SIZE:-}" ]; then
+      alg=SHA256_RSA${AVB_RSA_KEY_SIZE}
+    else
+      alg=SHA256_RSA4096
+    fi
+    avb_arguments+=("--avb_${keyname}_key" "$keyval" "--avb_${keyname}_algorithm" "$alg")
+  done
 }
 
 declare -gA core_key=(

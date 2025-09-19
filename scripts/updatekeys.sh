@@ -56,13 +56,7 @@ done
 # AVB 2.0
 keyval_vbmeta=$(get_key avb vbmeta || exit $?)
 if [[ ! -e "$keyval_vbmeta" ]]; then
-  if [[
-    $KEY_DIR =~ redfin || $KEY_DIR =~ bramble
-  ]]; then
-    openssl genrsa -out "$keyval_vbmeta" 2048
-  else
-    openssl genrsa -out "$keyval_vbmeta" 4096
-  fi
+  openssl genrsa -out "$keyval_vbmeta" 4096
 fi
 "$AVBTOOL" extract_public_key --key "$keyval_vbmeta" --output "$AVB_CUSTOM_KEY"
 
