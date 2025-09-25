@@ -34,6 +34,24 @@
       "parentUuid": "41895f46_d4f7a6fe",
       "revId": "3f0fa95f516155843b479bded1921d24f3fa376e",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "d34ce38b_3235c71e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 57
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-25T16:58:08Z",
+      "side": 1,
+      "message": "README should also talk about the YubiHSM 2 SDK: https://developers.yubico.com/YubiHSM2/Releases/\n\nThe tools/packages required are:\n- yubihsm-shell\n- yubihsm-connector\n- yubihsm-pkcs11\n\n...and any dependencies.",
+      "parentUuid": "edc21a90_c6b43bc9",
+      "revId": "3f0fa95f516155843b479bded1921d24f3fa376e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
