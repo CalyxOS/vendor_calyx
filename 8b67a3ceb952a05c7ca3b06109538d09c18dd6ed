@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1efae53c_3d686b99",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 62
+      },
+      "lineNbr": 1079,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:34:52Z",
+      "side": 1,
+      "message": "This gives us a silly little warning about redirecting stderr to stdout, so let\u0027s just do that ourselves.",
+      "revId": "8b67a3ceb952a05c7ca3b06109538d09c18dd6ed",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
