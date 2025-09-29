@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "5493fbe0_beb9472d",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:03:34Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "bd2bbce0_4abe052d",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "a8179a07_9ef8ab93",
@@ -35,6 +53,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "326ecde8_5caafb08",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 91,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:03:34Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "a8179a07_9ef8ab93",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "7ffc467f_0a704f93",
@@ -48,6 +84,24 @@
       "writtenOn": "2025-09-29T20:00:48Z",
       "side": 1,
       "message": "Since we are going to have an AFTER_EVERY_N_COMMANDS way of extracting logs, we should always extract logs at the end.",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "253a7e43_d155df0a",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 1494,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:03:34Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7ffc467f_0a704f93",
       "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },

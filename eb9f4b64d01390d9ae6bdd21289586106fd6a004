@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c4d79721_047a68ff",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 65
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:03:34Z",
+      "side": 1,
+      "message": "Redundant given the line below.",
+      "revId": "eb9f4b64d01390d9ae6bdd21289586106fd6a004",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f4f9ee92_51ed5977",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 65
+      },
+      "lineNbr": 1528,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:03:34Z",
+      "side": 1,
+      "message": "Don\u0027t fail if this happens. We can\u0027t afford to care; we\u0027re finalizing.",
+      "revId": "eb9f4b64d01390d9ae6bdd21289586106fd6a004",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
