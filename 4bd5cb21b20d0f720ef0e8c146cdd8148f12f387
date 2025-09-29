@@ -33,6 +33,23 @@
       "message": "`YUBIHSM_TMPDIR` should get exported and passed down to child processes so that they can share state/info as needed.",
       "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "274e2f88_da927220",
+        "filename": "scripts/pkcs11/vendor.yubihsm.interceptor.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T19:46:57Z",
+      "side": 1,
+      "message": "This sometimes isn\u0027t enough, especially if using the HSM remotely. Increase to 20.",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
