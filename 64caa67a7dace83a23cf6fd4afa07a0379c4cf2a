@@ -20,6 +20,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "abbcde5b_1e806f65",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 532,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:35:25Z",
+      "side": 1,
+      "message": "This method doesn\u0027t work. It should be looking at the output of get-storage-info line by line. As of now, it does not retrieve the free records correctly, so it is broken.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "2a490c25_1b1c581c",
         "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
         "patchSetId": 66
