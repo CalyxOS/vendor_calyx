@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "38daede6_f379b7ac",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T13:54:54Z",
+      "side": 1,
+      "message": "I don\u0027t know how those key mapping are working, but the changes look sensible to me.",
+      "revId": "7e58130e4ea12e3d7ae14c1678e01964f6220c89",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
