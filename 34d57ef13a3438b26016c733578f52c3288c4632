@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "67a17e71_8e2a3dfd",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T14:00:51Z",
+      "side": 1,
+      "message": "do we have those documented somewhere? Maybe be something for a release/signing section in a README.md maybe?",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4d7edaad_6288c536",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T14:00:51Z",
+      "side": 1,
+      "message": "So if I have `KEEP_TARGET_FILES\u003dy`, then it won\u0027t sign the target files? Is that right?",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
