@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "972fca68_ff8fb2a9",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 494,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "a443ace6_59bfb366",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "abbcde5b_1e806f65",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T21:35:25Z",
       "side": 1,
       "message": "This method doesn\u0027t work. It should be looking at the output of get-storage-info line by line. As of now, it does not retrieve the free records correctly, so it is broken.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f33746f9_33720c03",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 532,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "abbcde5b_1e806f65",
       "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
@@ -52,6 +88,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1fe4d6b1_1affd050",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 615,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2a490c25_1b1c581c",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9cbfe4c4_48ecfc0f",
@@ -69,6 +123,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "b20ced64_f2d69a39",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 784,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9cbfe4c4_48ecfc0f",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "13a7fcd1_36b91268",
@@ -82,6 +154,24 @@
       "writtenOn": "2025-09-29T21:05:25Z",
       "side": 1,
       "message": "Fix keygen handling so it can actually run properly from an extracted otatools-keys-package.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d302097c_0d3c92cc",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "13a7fcd1_36b91268",
       "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }

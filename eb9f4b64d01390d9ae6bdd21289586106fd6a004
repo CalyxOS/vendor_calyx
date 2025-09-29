@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "1f3bdbb4_9f96d81b",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 65
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "c4d79721_047a68ff",
+      "revId": "eb9f4b64d01390d9ae6bdd21289586106fd6a004",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "f4f9ee92_51ed5977",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T20:03:34Z",
       "side": 1,
       "message": "Don\u0027t fail if this happens. We can\u0027t afford to care; we\u0027re finalizing.",
+      "revId": "eb9f4b64d01390d9ae6bdd21289586106fd6a004",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1b59f361_7eeb3a39",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 65
+      },
+      "lineNbr": 1528,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:42:04Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f4f9ee92_51ed5977",
       "revId": "eb9f4b64d01390d9ae6bdd21289586106fd6a004",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
