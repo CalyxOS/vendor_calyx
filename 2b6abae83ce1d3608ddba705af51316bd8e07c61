@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2c30059b_688b4112",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 61
+      },
+      "lineNbr": 1070,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:28:41Z",
+      "side": 1,
+      "message": "Observed a defunct interceptor process stalling the signing process indefinitely, seemingly after it had to restart apksigner. Add `nohup` here? We do it for `yubihsm-connector` launches. This seems like an onversight.",
+      "revId": "2b6abae83ce1d3608ddba705af51316bd8e07c61",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3fa89a65_db1c9364",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 61
+      },
+      "lineNbr": 1079,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:28:41Z",
+      "side": 1,
+      "message": "Add `nohup` here too?",
+      "revId": "2b6abae83ce1d3608ddba705af51316bd8e07c61",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
