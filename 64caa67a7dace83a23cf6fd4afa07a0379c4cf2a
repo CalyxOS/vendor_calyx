@@ -37,6 +37,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "9cbfe4c4_48ecfc0f",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 784,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:06:44Z",
+      "side": 1,
+      "message": "This whole function is not supposed to log, but it is calling the variant of the yubihsm function that logs. Make that not happen.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "13a7fcd1_36b91268",
         "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
         "patchSetId": 66
