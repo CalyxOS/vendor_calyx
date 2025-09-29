@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "52a4dee8_a434f1ee",
+        "filename": "scripts/keymapper.legacy.include.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T20:34:14Z",
+      "side": 1,
+      "message": "I wonder why this is the only line that uses `$vbmeta_system_key`.",
+      "revId": "d612c4b1835b954b165ba4f830c625bedda1dd96",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
