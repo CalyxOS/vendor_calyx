@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "5612291c_add017ed",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 62
+      },
+      "lineNbr": 363,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:45:16Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "04f592ae_c8e03031",
+      "revId": "8b67a3ceb952a05c7ca3b06109538d09c18dd6ed",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "1efae53c_3d686b99",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T18:34:52Z",
       "side": 1,
       "message": "This gives us a silly little warning about redirecting stderr to stdout, so let\u0027s just do that ourselves.",
+      "revId": "8b67a3ceb952a05c7ca3b06109538d09c18dd6ed",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "be05d980_ac441044",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 62
+      },
+      "lineNbr": 1079,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:45:16Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1efae53c_3d686b99",
       "revId": "8b67a3ceb952a05c7ca3b06109538d09c18dd6ed",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
