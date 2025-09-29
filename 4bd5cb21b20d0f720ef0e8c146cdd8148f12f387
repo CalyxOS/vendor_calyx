@@ -50,6 +50,24 @@
       "message": "This sometimes isn\u0027t enough, especially if using the HSM remotely. Increase to 20.",
       "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fb9de25d_fa9ed58f",
+        "filename": "scripts/pkcs11/vendor.yubihsm.interceptor.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T19:53:21Z",
+      "side": 1,
+      "message": "Even 20 isn\u0027t enough, apparently. The first signing of something with batch apksigner may take quite a while. Try 60...? We shouldn\u0027t be relying on this fallback behavior anyway. If it takes a full minute to reach the fallback behavior, at least it\u0027s still going.",
+      "parentUuid": "274e2f88_da927220",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
