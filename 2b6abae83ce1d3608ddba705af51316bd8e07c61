@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "9f06f74f_c2518b68",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 61
+      },
+      "lineNbr": 1070,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:30:11Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2c30059b_688b4112",
+      "revId": "2b6abae83ce1d3608ddba705af51316bd8e07c61",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3fa89a65_db1c9364",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T18:28:41Z",
       "side": 1,
       "message": "Add `nohup` here too?",
+      "revId": "2b6abae83ce1d3608ddba705af51316bd8e07c61",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5441a038_76391f16",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 61
+      },
+      "lineNbr": 1079,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T18:30:11Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3fa89a65_db1c9364",
       "revId": "2b6abae83ce1d3608ddba705af51316bd8e07c61",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
