@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a443ace6_59bfb366",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 494,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:12:06Z",
+      "side": 1,
+      "message": "Wrong, it\u0027s \u003d0 now.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2a490c25_1b1c581c",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 615,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:12:06Z",
+      "side": 1,
+      "message": "Inconsistent. Other methods use nolog. Rename to nolog.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
