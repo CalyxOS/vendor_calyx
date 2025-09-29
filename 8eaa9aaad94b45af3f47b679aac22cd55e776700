@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "8cbec667_e1ef2308",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 60
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T15:07:31Z",
+      "side": 1,
+      "message": "If we never want to start the connector, then we never need to find it, either. Rearrange this.",
+      "revId": "8eaa9aaad94b45af3f47b679aac22cd55e776700",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
