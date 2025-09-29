@@ -3,6 +3,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "c82b6805_af88bc35",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 68
+      },
+      "lineNbr": 813,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T22:31:43Z",
+      "side": 1,
+      "message": "copy/paste error: should be: `$deletion_candidate_cert_id`",
+      "revId": "bbe257b03f545fdd7d26d4eae1da4269fd6ef0ca",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "39fc434f_b63022c2",
         "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
         "patchSetId": 68
