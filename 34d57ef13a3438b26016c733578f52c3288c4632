@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "94470032_99be1c8d",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T14:19:25Z",
+      "side": 1,
+      "message": "No, but that sounds reasonable to me.",
+      "parentUuid": "67a17e71_8e2a3dfd",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "4d7edaad_6288c536",
         "filename": "scripts/release.sh",
         "patchSetId": 15
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T14:00:51Z",
       "side": 1,
       "message": "So if I have `KEEP_TARGET_FILES\u003dy`, then it won\u0027t sign the target files? Is that right?",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "ffafbb42_045e2447",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T14:19:25Z",
+      "side": 1,
+      "message": "If you have `KEEP_TARGET_FILES\u003dy`, and there already exists a signed target files zip in the output directory, it will not overwrite it, correct, but will simply skip the `sign_target_files_apks` step. Bear in mind that if the previous signing session was interrupted or failed, it might not clean up after itself, leaving a broken zip in place, so this should be used with caution, e.g. when you know that only the OTA generation failed last time or something.",
+      "parentUuid": "4d7edaad_6288c536",
       "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
