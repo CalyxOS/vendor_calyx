@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2a7ff01_a3acfbf3",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 60
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T16:09:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8cbec667_e1ef2308",
+      "revId": "8eaa9aaad94b45af3f47b679aac22cd55e776700",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3637577b_c78adc7a",
@@ -31,6 +49,24 @@
       "writtenOn": "2025-09-29T15:32:55Z",
       "side": 1,
       "message": "`maybe_stop_apksigner_batch` bails out if this instance didn\u0027t start it, meaning the FIFOs remain in place, but then below, we continue to try to make the FIFOs again. Add a way to force stop it, since by this point, apksigner has been shown not to be running by the check above, or we are otherwise committed to restart it.\n\nRework things as needed...",
+      "revId": "8eaa9aaad94b45af3f47b679aac22cd55e776700",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c6046604_50c890d2",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 60
+      },
+      "lineNbr": 1047,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T16:09:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3637577b_c78adc7a",
       "revId": "8eaa9aaad94b45af3f47b679aac22cd55e776700",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
