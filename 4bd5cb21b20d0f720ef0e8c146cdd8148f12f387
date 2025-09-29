@@ -37,6 +37,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "7ffc467f_0a704f93",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 1494,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T20:00:48Z",
+      "side": 1,
+      "message": "Since we are going to have an AFTER_EVERY_N_COMMANDS way of extracting logs, we should always extract logs at the end.",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "274e2f88_da927220",
         "filename": "scripts/pkcs11/vendor.yubihsm.interceptor.sh",
         "patchSetId": 64
