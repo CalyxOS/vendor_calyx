@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e7025e9a_cc9e3262",
+        "filename": "scripts/sign.sh",
+        "patchSetId": 34
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T15:06:23Z",
+      "side": 1,
+      "message": "Apparently our development server\u0027s version of GNU parallel, 20221122, does not support `--match`. But it does support `--colsep`, which looks to be even better suited for our limited needs.",
+      "revId": "576f35689edc1c8271b5b9dfb80133a10db3660e",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
