@@ -3,6 +3,23 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "bd2bbce0_4abe052d",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 64
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T19:19:18Z",
+      "side": 1,
+      "message": "Change this to `EVERY_N_COMMANDS` so that extracting logs can happen, for example, after every 10 commands - or 1 for the current default behavior, or 0 to not happen at all (formerly `n`).",
+      "revId": "4bd5cb21b20d0f720ef0e8c146cdd8148f12f387",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "a8179a07_9ef8ab93",
         "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
         "patchSetId": 64
