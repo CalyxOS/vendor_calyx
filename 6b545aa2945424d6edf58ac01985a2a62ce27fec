@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5c09af47_02e33b8b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T13:07:47Z",
+      "side": 1,
+      "message": "nitpick typo: thes",
+      "revId": "6b545aa2945424d6edf58ac01985a2a62ce27fec",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c747fdb0_0c0f0aec",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-09-29T13:07:47Z",
+      "side": 1,
+      "message": "I haven\u0027t verified line by line that the update* scripts really matched mkkey* scripts, but trust tommy on this.",
+      "revId": "6b545aa2945424d6edf58ac01985a2a62ce27fec",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
