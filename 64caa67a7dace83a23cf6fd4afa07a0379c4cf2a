@@ -33,6 +33,23 @@
       "message": "Inconsistent. Other methods use nolog. Rename to nolog.",
       "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "13a7fcd1_36b91268",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 66
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-09-29T21:05:25Z",
+      "side": 1,
+      "message": "Fix keygen handling so it can actually run properly from an extracted otatools-keys-package.",
+      "revId": "64caa67a7dace83a23cf6fd4afa07a0379c4cf2a",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
