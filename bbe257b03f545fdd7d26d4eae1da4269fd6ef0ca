@@ -33,6 +33,24 @@
       "message": "typo: should be `$shipped_manifest_relpath`",
       "revId": "bbe257b03f545fdd7d26d4eae1da4269fd6ef0ca",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cf19f148_063b5c75",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 68
+      },
+      "lineNbr": 226,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-10-07T21:00:09Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "39fc434f_b63022c2",
+      "revId": "bbe257b03f545fdd7d26d4eae1da4269fd6ef0ca",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
