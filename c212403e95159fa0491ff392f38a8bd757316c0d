@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "fedb7592_ee71fae4",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-10-07T20:47:17Z",
+      "side": 1,
+      "message": "Something related to this is broken and as a result \u0027password\u0027 fallback is being used while provisioning a new YubiHSM2. Maybe more similar things are broken, need to check that.",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
