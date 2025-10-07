@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "e9b419c4_0aa04f92",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 68
+      },
+      "lineNbr": 813,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-10-07T21:04:11Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "c82b6805_af88bc35",
+      "revId": "bbe257b03f545fdd7d26d4eae1da4269fd6ef0ca",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "39fc434f_b63022c2",
