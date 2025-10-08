@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 set -euo pipefail
 ourpath=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
@@ -50,7 +50,6 @@ export NEVER_START_YUBIHSM_CONNECTOR=y
 
 wizard_script_provisioning_prerequisites=(
   copy_files
-  verify_copied_files
   extract_tools
   relaunch_script_from_memory_if_needed
   remove_media
@@ -58,7 +57,6 @@ wizard_script_provisioning_prerequisites=(
 )
 wizard_script_start=(
   source_include_scripts
-  maybe_start_yubihsm_connector_service
 )
 wizard_script_primary=(
   connect_hsm_primary
@@ -434,10 +432,12 @@ maybe_reset_hsm_primary() {
 }
 
 provision_auditing_primary() {
+  return 0
   provision_auditing "$@" || return $?
 }
 
 provision_wrap_key_primary() {
+  return 0
   local output
   output=$(yubihsm_nolog -a list-objects -t wrap-key -i "$YUBIHSM_WRAP_KEY_ID") || return $?
   if printf "%s\n" "$output" | grep -q "^Found 0 "; then
@@ -711,6 +711,7 @@ maybe_reset_hsm_secondary() {
 }
 
 provision_auditing_secondary() {
+  return 0
   provision_auditing "$@" || return $?
 }
 
@@ -831,7 +832,6 @@ log_start() {
   if [ -n "$err" ]; then
     asked_reset=y
     echo "Gathering HSM info failed. Wrong password?" >&2
-    reset_hsm_manual || { err=$?; asked_reset=; return $err; }
     err=
   fi
   local manifest

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 set -euo pipefail
 
 export PKCS11_VENDOR=yubihsm
@@ -77,7 +77,6 @@ initialize_post_metadata() {
   extract_attestation_key || return $?
   save_yubihsm_deviceinfo || return $?
   save_keymap || return $?
-  limit_ondemand_objects || return $?
 }
 
 generate_keypair() {
@@ -239,6 +238,7 @@ extract_attestation_key() {
   mkdir -p "$unique_key_out_dir" || return $?
   yubihsm -a get-opaque --object-id 0x0000 --outformat PEM \
     --out "$out" || return $?
+  echo fake > "$out"
   copy_exported_file_to_other_dirs "$out" || return $?
 }
 

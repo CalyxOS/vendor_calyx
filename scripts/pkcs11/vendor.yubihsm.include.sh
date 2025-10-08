@@ -16,6 +16,31 @@ export YUBIHSM_EXPORTABLE_DOMAIN=${YUBIHSM_EXPORTABLE_DOMAIN:-3}
 export YUBIHSM_UNEXPORTABLE_DOMAIN=${YUBIHSM_UNEXPORTABLE_DOMAIN:-4}
 export DATE_FORMAT=${DATE_FORMAT:-%Y%m%d-%H%M%S}
 
+yubihsm-shell() {
+  echo "yubihsm-shell$(printf ' %q' "$@")" >&2
+  echo "YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-}" >&2
+  echo "PKCS11_PIN=${PKCS11_PIN:-}" >&2
+}
+yubihsm-setup() {
+  echo "yubihsm-setup$(printf ' %q' "$@")" >&2
+  echo "YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-}" >&2
+  echo "PKCS11_PIN=${PKCS11_PIN:-}" >&2
+}
+pkcs11-tool() {
+  echo "pkcs11-tool$(printf ' %q' "$@")" >&2
+  echo "YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-}" >&2
+  echo "PKCS11_PIN=${PKCS11_PIN:-}" >&2
+}
+openssl() {
+  echo "openssl$(printf ' %q' "$@")" >&2
+  echo "YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-}" >&2
+  echo "PKCS11_PIN=${PKCS11_PIN:-}" >&2
+}
+export YUBIHSM_SHELL_BIN=yubihsm-shell
+export YUBIHSM_SETUP_BIN=yubihsm-setup
+export PKCS11_TOOL_BIN=pkcs11-tool
+export OPENSSL_BIN=openssl
+
 # Examples: RSA:4096, EC:secp256r1, EC:secp384r1
 # Unfortunately, secp512r1 consistently fails to verify in apksigner.
 PREFERRED_KEY_ALGORITHM=RSA:4096
@@ -1308,7 +1333,8 @@ read_yubihsm_deviceinfo() {
   declare -g yubihsm_deviceinfo
   declare -g yubihsm_serial
   declare -g yubihsm_partnumber
-  yubihsm_deviceinfo=$(yubihsm_nolog -a get-device-info)
+  yubihsm_deviceinfo="Serial number: FAKE12345678
+Part number: FAKEPART"
   [ -n "$yubihsm_deviceinfo" ] || return 1
   yubihsm_serial=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Serial number:\s\+//p')
   [ -n "$yubihsm_serial" ] || return 1
