@@ -70,6 +70,24 @@
       "parentUuid": "6b192c72_5c52baae",
       "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1d90f2d0_30aa7022",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-10-08T20:41:57Z",
+      "side": 1,
+      "message": "You can see in `wizard_script_primary`:\n```\n...\n  use_signing_authkey_for_primary\n  create_custom_metadata_for_keygen_primary\n  keygen_primary\n...\n```\n\nThe `use_signing_authkey_for_primary` sets + exports `YUBIHSM_PASSWORD` to `YUBIHSM_SIGNING_AUTHKEY_PASSWORD` at that point. If there is a bug, this might be an area to look. \n\nAnd then for `wizard_script_secondary`, we have `use_original_authkey_for_secondary` which sets it back.",
+      "parentUuid": "8aa5d76f_8b700bdd",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
