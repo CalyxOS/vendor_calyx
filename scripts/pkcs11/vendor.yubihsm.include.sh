@@ -1318,6 +1318,7 @@ call_for_each_object() {
   mapfile -t object_lines < <(yubihsm_nolog -a list-objects "$@") \
     || return $?
   if [ "${#object_lines[@]}" -eq 0 ]; then
+    echo "ERROR: No objects found on YubiHSM." >&2
     return 1
   fi
   local object_line
