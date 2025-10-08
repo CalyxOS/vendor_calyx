@@ -2,6 +2,7 @@
 set -euo pipefail
 
 export PKCS11_VENDOR=yubihsm
+export NEVER_START_APKSIGNER_BATCH=y
 
 readonly keygen_pkcs11_scriptpath=$(cd "$(dirname "$0")";pwd -P)
 readonly keygen_scriptpath=$(cd "$(dirname "$0")/..";pwd -P)

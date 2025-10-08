@@ -1060,6 +1060,9 @@ maybe_start_apksigner_batch() {
 }
 
 maybe_start_or_restart_apksigner_batch() {
+  if [ "${NEVER_START_APKSIGNER_BATCH:-}" = "y" ]; then
+    return 0
+  fi
   if [ "${DRY_RUN:-}" = "y" ]; then
     return 0
   fi
@@ -1182,6 +1185,9 @@ maybe_stop_yubihsm_connector() {
 }
 
 maybe_stop_apksigner_batch() {
+  if [ "${NEVER_START_APKSIGNER_BATCH:-}" = "y" ]; then
+    return 0
+  fi
   local should_stop=${4:-$_we_started_apksigner}
   if [ "${DRY_RUN:-}" = "y" ]; then
     return 0
