@@ -911,21 +911,6 @@ maybe_reset_hsm() {
   fi
 }
 
-provision_auditing() {
-  if check_command_audit_value; then
-    echo "Command audit value is already as expected."
-    return 0
-  fi
-  yubihsm -a put-option --opt-name command-audit --opt-value "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" || return $?
-  yubihsm -a put-option --opt-name force-audit --opt-value 02 || return $? # prevent operations when audit log is full
-  if ! check_command_audit_value; then
-    # TODO: Maybe allow this enforcement to be skipped? But maybe not.
-    echo "Command audit value is not as expected after provisioning!" >&2
-    return 1
-  fi
-  echo "Successfully provisioned auditing options."
-}
-
 provision_auditing_the_long_way() {
   # Much of this was gleaned from https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e
   if check_command_audit_value; then
