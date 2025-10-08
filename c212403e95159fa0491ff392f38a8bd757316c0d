@@ -16,6 +16,24 @@
       "message": "Something related to this is broken and as a result \u0027password\u0027 fallback is being used while provisioning a new YubiHSM2. Maybe more similar things are broken, need to check that.",
       "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5574fced_06c2dc51",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-10-08T12:37:45Z",
+      "side": 1,
+      "message": "I have a few unsolicited thoughts that are probably not helpful, but after briefly poking around, I can\u0027t see why else this would be broken (I might be missing something) so figured I would mention them.\n\n1. If you don\u0027t export YUBIHSM_PASSWORD, by explicitly `export`ing it or by including it as part of the same single command line, like `YUBIHSM_PASSWORD\u003d$YUBIHSM_PASSWORD /media/amnesia/uuid/start.sh`, it won\u0027t be seen by the script, so it will just default to password.\n2. The default password of a new YubiHSM 2 is `password`, so if it is actually new/reset, this shouldn\u0027t *need* to be changed. In a provisioning context, `YUBIHSM_PASSWORD` is only meant to be used for initial communication with the HSM prior to it being set up with new authentication keys. The script asks for the others at runtime, or looks for them at variables like `YUBIHSM_SIGNING_AUTHKEY_PASSWORD`.\n\nIf there is a specific step of provisioning you see this issue come up, I don\u0027t mind looking.",
+      "parentUuid": "fedb7592_ee71fae4",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
