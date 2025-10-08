@@ -52,6 +52,24 @@
       "parentUuid": "5574fced_06c2dc51",
       "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "8aa5d76f_8b700bdd",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-10-08T20:37:43Z",
+      "side": 1,
+      "message": "Are you using a password that is at least 8 characters? The YubiHSM 2 documentation says this is [required](https://developers.yubico.com/yubihsm-shell/yubihsm-pkcs11.html#_logging_in) for PKCS#11 support. What happens if you try with something like \"passworf\" to rule out some kind of issue with special characters + rule out length issues at the same time?\n\nOther technical details:\n* If you\u0027re running start.sh with no arguments, i.e. full mode, then by the time you\u0027ve reached this point, the default authentication keys have already been removed from the HSM, so what you have are the new authkeys whose passwords were asked of you: signing, audit, and admin. The `YUBIHSM_PASSWORD` variable is not relevant again until trying to log in to a secondary HSM. What matters at this point is `YUBIHSM_SIGNING_AUTHKEY_PASSWORD`, which is requested as the \"signing authkey password\" during setup if not specified. This signing password is the only thing that should influence the error you\u0027re seeing.\n* This error message comes from `pkcs11-tool` which - at this point - is used as part of `does_key_exist_yn_pkcs11` to check if a given pubkey already exists so that it does not need to be created again. Yes, it looks like it\u0027s not logging in correctly, although from some debugging and testing this area of code, for me it appears that the `PKCS11_PIN` variable is being constructed correctly, based on `YUBIHSM_SIGNING_AUTHKEY_PASSWORD` or whatever you provided when asked.",
+      "parentUuid": "6b192c72_5c52baae",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
