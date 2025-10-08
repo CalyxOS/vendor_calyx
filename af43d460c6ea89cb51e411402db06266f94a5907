@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "aa38a8cc_c0ef4707",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2025-10-08T21:03:19Z",
+      "side": 1,
+      "message": "Not even given it the pkcs11 tag because it\u0027s for a very specific purpose, a problem raised in the YubiHSM signing support comments.",
+      "revId": "af43d460c6ea89cb51e411402db06266f94a5907",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
