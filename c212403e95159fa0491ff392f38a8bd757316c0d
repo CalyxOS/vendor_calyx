@@ -34,6 +34,24 @@
       "parentUuid": "fedb7592_ee71fae4",
       "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "6b192c72_5c52baae",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-10-08T15:22:21Z",
+      "side": 1,
+      "message": "I am consistently hitting this issue while provisioning YubiHSM 2 with `start.sh` after setting different passwords etc. and going through all the steps, this is what I\u0027m getting:\n\n```\n##################################################\n### GENERATING KEYS: avb\n##################################################\n# KEY: vbmeta\nUsing slot 0 with a present token (0x0)\nerror: PKCS11 function C_Login failed: rv \u003d CKR_ARGUMENTS_BAD (0x7)\nAborting.\n```\n\nWhen using `password` as the password in the setup, everything works.\nIf you have any hints they would be helpful, I\u0027ll continue reading and debugging anyway.",
+      "parentUuid": "5574fced_06c2dc51",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
