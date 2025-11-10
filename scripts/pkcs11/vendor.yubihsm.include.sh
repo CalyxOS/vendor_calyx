@@ -81,6 +81,9 @@ initialize_vendor() {
     maybe_start_apksigner_batch "$YUBIHSM_TMPDIR"
 
     export YUBIHSM_LOCKFILE=${YUBIHSM_LOCKFILE:-$YUBIHSM_TMPDIR/yubihsm.lock}
+    if [ -z "${YUBIHSM_LOGS_DIR+x}" ]; then
+      export YUBIHSM_LOGS_DIR=$(pwd)/logs
+    fi
   else
     export YUBIHSM_TMPDIR=
     export YUBIHSM_LOCKFILE=
@@ -189,7 +192,7 @@ yubihsm() {
     $maybe_dry_run yubihsm "$@" || return $?
     return 0
   fi
-  if [ "$YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS" -gt 0 ]; then
+  if [ "${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-}" = "0" ]; then
     yubihsm_nolog "$@" || return $?
     return 0
   fi
@@ -1453,9 +1456,6 @@ initialize_vendor_release() {
   local DEVICE=${1:-$DEVICE}
   local BUILD_NUMBER=${2:-$BUILD_NUMBER}
   local command=${3:-$0}
-  if [ -z "${YUBIHSM_LOGS_DIR+x}" ]; then
-    export YUBIHSM_LOGS_DIR=$(pwd)/logs
-  fi
 
   {
     if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
