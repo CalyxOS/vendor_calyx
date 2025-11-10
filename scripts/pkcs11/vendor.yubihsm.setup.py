@@ -4,11 +4,13 @@
 # Creates three auth keys: signing, admin, audit
 
 import os
+import subprocess
 import sys
+from datetime import datetime, timezone
+from itertools import combinations
 
 import yubihsm.defs
 import yubihsm.objects
-from cryptography.hazmat.primitives import serialization
 from yubihsm import YubiHsm
 from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT, ERROR
 from yubihsm.exceptions import YubiHsmDeviceError
@@ -139,6 +141,9 @@ AUDIT_AUTHKEY_CAPS = (
 )
 AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY.NONE
 
+SSS_NUM_SHARDS = 5
+SSS_THRESHOLD = 3
+
 
 def main():
     # Check required env variables
@@ -149,27 +154,47 @@ def main():
     password_signing = check_password("YUBIHSM_SIGNING_AUTHKEY_PASSWORD")
     password_audit = check_password("YUBIHSM_AUDIT_AUTHKEY_PASSWORD")
 
+    # provision primary HSM
+    print("Please connect the primary YubiHSM 2.\n")
+    input("Press any key when primary HSM is connected.")
+    wrap_key_bytes = provision_hsm(password_admin, password_signing, password_audit,
+                                   lambda session: provision_wrap_key(session))
+    # split wrap key into shards and store them encrypted
+    create_and_export_shards(wrap_key_bytes)
+
+    # provision secondary HSM
+    print("\n\nPlease unplug the primary YubiHSM 2\n")
+    print("and connect the secondary YubiHSM 2\n")
+    input("Press any key when secondary HSM is connected.")
+    provision_hsm(password_admin, password_signing, password_audit,
+                  lambda session: wrap_key_bytes)
+    print("\nCongratulations! Both HSMs provisioned.")
+
+
+def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key):
     # Connect to the YubiHSM via the connector using the default password:
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
-    # establish session
-    session = hsm.create_session_derived(0x0001, "password")
     try:
-        print_info(hsm, session)
+        # establish session (using factory default credentials)
+        session = hsm.create_session_derived(0x0001, "password")
+    except yubihsm.exceptions.YubiHsmAuthenticationError as e:
+        # if we can't authenticate with default credentials, the HSM isn't factory reset
+        on_not_factory_reset()
+        raise e
+    try:
+        hsm_name = print_and_get_info(hsm, session)
         enable_auditing(session)
         wrap_key = get_wrap_key(session)
-        if not is_proper_wrap_key(wrap_key):
-            provision_wrap_key(session)
-        provision_admin_auth_key(session)
+        provision_admin_auth_key(session, password_admin)
         # session will get replaced by a new one after switching to our own admin auth key
         session = delete_default_auth_key(hsm, session, password_admin)
         provision_signing_auth_key(session, password_signing)
         provision_audit_auth_key(session, password_audit)
     finally:
         session.close()
-
-    # TODO provision secondary HSM with same wrap_key and same auth keys
-    # TODO export audit log of secondHSM to KEEP_DIR/logs
+    save_audit_log(hsm_name, password_signing)
+    return wrap_key
 
 
 def check_password(env_name):
@@ -180,26 +205,23 @@ def check_password(env_name):
     return password
 
 
-def print_info(hsm, session):
+def print_and_get_info(hsm, session):
     device_info = hsm.get_device_info()
     version = f"v{device_info.version[0]}.{device_info.version[1]}.{device_info.version[2]}"
-    print(
-        f"Connected to YubiHSM 2 {version} Serial: {device_info.serial} Part: {device_info.part_number}\n")
+    print(f"Connected to YubiHSM 2 {version} Serial: {device_info.serial} Part: {device_info.part_number}\n")
 
-    # get public key
-    public_key = hsm.get_device_public_key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo
-                                                          )
-    print(public_key.decode())
-
-    # print all keys on device
+    # get all keys on device and check if this is factory default
     keys = session.list_objects()
-    print("All objects currently in the YubiHSM:")
-    for key_info in keys:
-        print(f"  {key_info}")
+    if len(keys) != 1 or keys[0].get_info().label != "DEFAULT AUTHKEY CHANGE THIS ASAP":
+        on_not_factory_reset()
+    else:
+        print("\nDevice seems to be factory reset, continuing...\n")
+
+    # return HSM name to be used as a folder name to identify this specific HSM
+    return f"{device_info.part_number}-{device_info.serial}"
 
 
-# Turn on audit log
+# Turn on (forced) audit log
 def enable_auditing(session):
     existing_audit_option = session.get_option(OPTION.COMMAND_AUDIT)
     expected_option = "0100030004000500060007000900080040004100420243004402450246024702" + \
@@ -266,18 +288,6 @@ def enable_auditing(session):
     print("Successfully provisioned auditing options.")
 
 
-def get_wrap_key(session):
-    try:
-        wrap_key = session.get_object(WRAP_KEY_ID, OBJECT.WRAP_KEY)
-        wrap_key.get_info()  # needed to cause the OBJECT_NOT_FOUND error here and not later
-    except YubiHsmDeviceError as e:
-        if e.code == ERROR.OBJECT_NOT_FOUND:
-            return None
-        else:
-            raise e
-    return wrap_key
-
-
 def is_proper_wrap_key(wrap_key_obj):
     if wrap_key_obj is None: return False
     info = wrap_key_obj.get_info()
@@ -308,18 +318,53 @@ def provision_wrap_key(session):
     )
     if not is_proper_wrap_key(wrap_key_obj): raise RuntimeError("Created improper wrap key")
     print(f"Imported Wrap Key with ID {wrap_key_obj.id}")
+    return wrap_key_bytes
 
-    # TODO Split the wrap key and save encrypted shards
+
+def create_and_export_shards(wrap_key_bytes):
+    # TODO may switch to a different SSS tool
+    # split wrap key into shards
+    command = ['ssss-split', '-t', str(SSS_THRESHOLD), '-n', str(SSS_NUM_SHARDS), '-x', '-q']
+    result = subprocess.run(command, input=wrap_key_bytes.hex(), capture_output=True, text=True, check=True)
+    shards = result.stdout.splitlines()
+    verify_shards(shards, wrap_key_bytes)
+
+    # ensure shard dir exists
+    shard_dir = os.path.join(os.getenv("KEEP_PATH"), "shards")
+    os.makedirs(shard_dir, exist_ok=True)
+
+    # encrypt shards with age
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    for i, shard in enumerate(shards):
+        key_path = os.path.join(script_dir, "keys", f"{i + 1}.pub")
+        shard_path = os.path.join(shard_dir, f"{i + 1}.shard")
+        age_command = ['age', '-R', key_path, '-o', shard_path]
+        subprocess.run(age_command, input=shard, text=True, check=True)
 
 
-def provision_admin_auth_key(session):
+def verify_shards(shards, wrap_key_bytes):
+    if len(shards) != SSS_NUM_SHARDS:
+        print(f"ERROR: Unexpected number of shards: {len(shards)} != {SSS_NUM_SHARDS}", file=sys.stderr)
+        sys.exit(1)
+    # test that *each* combination of shards can in fact be used to restore the wrap_key_bytes
+    shard_combinations = list(combinations(shards, r=3)) + list(combinations(shards, r=4)) + [shards]
+    for combination in shard_combinations:
+        command = ['ssss-combine', '-t', str(SSS_THRESHOLD), '-x', '-q']
+        result = subprocess.run(command, input="\n".join(combination), capture_output=True, text=True, check=True)
+        combined_key = result.stderr.rstrip()
+        if combined_key != wrap_key_bytes.hex():
+            print(f"ERROR: Could not verify all shards", file=sys.stderr)
+            sys.exit(1)
+
+
+def provision_admin_auth_key(session, admin_password):
     provision_auth_key(
         session=session,
         object_id=ADMIN_AUTHKEY_ID,
         label="Admin auth key",
         capabilities=ADMIN_AUTHKEY_CAPS,
         delegated_capabilities=ADMIN_AUTHKEY_DEL_CAPS,
-        password="password",  # TODO ask user for password
+        password=admin_password,
     )
 
 
@@ -381,6 +426,37 @@ def provision_auth_key(session, object_id, label, capabilities, delegated_capabi
             return
         raise e
     print(f"NOT GENERATING {label} {object_id}, BECAUSE ALREADY EXISTS!")
+
+
+def save_audit_log(hsm_name, password):
+    # define folder for log files and ensure it exists
+    now = datetime.now(timezone.utc)
+    log_path = os.path.join(os.getenv("KEEP_PATH"), "logs", hsm_name)
+    os.makedirs(log_path, exist_ok=True)
+    # define log file path
+    date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime("%f")[:3]}"
+    log_file = os.path.join(log_path, f"{date_str}-provision.log")
+    # execute other python script to actually extract logs
+    # TODO this could be sharing code and HSM session
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    audit_script = os.path.join(script_dir, "vendor.yubihsm.audit.logs.py")
+    comment = "provisioning: 4f is for audit log options, the rest is key setup"
+    command = [audit_script, '--log-file', log_file, '--comment', comment]
+    # pass in signing authkey credentials via environment
+    env = os.environ.copy()
+    env["YUBIHSM_AUTHKEY"] = str(SIGNING_AUTHKEY_ID)
+    env["YUBIHSM_PASSWORD"] = password
+    subprocess.run(command, capture_output=True, text=True, check=True, env=env)
+
+
+def on_not_factory_reset():
+    print()
+    print("ERROR: The HSM does not seem to be factory reset.")
+    print()
+    print("You will need to reset it manually by removing it")
+    print("and pressing on the metal rim for at least 10 seconds.")
+    print("Then try again.")
+    sys.exit(1)
 
 
 if __name__ == "__main__":
