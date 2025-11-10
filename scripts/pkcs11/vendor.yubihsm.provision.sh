@@ -60,37 +60,12 @@ wizard_script_start=(
   source_include_scripts
   maybe_start_yubihsm_connector_service
 )
-wizard_script_primary=(
-  connect_hsm_primary
-  maybe_reset_hsm_primary
-  provision_auditing_primary
-  provision_wrap_key_primary
+wizard_script_main=(
+  connect_hsm
+  maybe_reset_hsm
   ask_authkey_passwords_if_needed
-  provision_admin_authentication_primary
-  use_admin_authkey_for_primary
-  delete_default_authentication_key_primary
-  provision_authentication_primary
-  use_signing_authkey_for_primary
-  create_custom_metadata_for_keygen_primary
-  keygen_primary
-  check_exports_primary
-  log_end_primary
-)
-wizard_script_secondary=(
-  ask_authkey_passwords_if_needed
-  use_original_authkey_for_secondary
-  connect_hsm_secondary
-  maybe_reset_hsm_secondary
-  provision_auditing_secondary
-  restore_secondary
-  provision_admin_authentication_secondary
-  use_admin_authkey_for_secondary
-  delete_default_authentication_key_secondary
-  provision_authentication_secondary
-  use_signing_authkey_for_secondary
-  create_custom_metadata_for_keygen_secondary
-  keygen_secondary
-  log_end_secondary
+  provision_hsm
+  log_end
 )
 wizard_script_end=(
   finish
@@ -114,7 +89,7 @@ main() {
     if [ -n "$skip_until" ] && [ "$script_stage" != "$skip_until" ]; then
       case "$1" in
         relaunch_script_from_memory_if_needed|source_include_scripts\
-        |ask_*_if_needed|create_custom_metadata_for_keygen*)
+        |ask_*_if_needed|create_custom_metadata_for_keygen)
           # Always do these things, even if we are resuming from partially-completed provisioning.
           stage=$script_stage try "$script_stage" || return $? ;;
         connect_hsm*)
@@ -125,8 +100,6 @@ main() {
           last_authkey_stage=$script_stage ;;
         maybe_install_tools)
           installed=y ;;
-        source_include_scripts)
-          stage=$script_stage try "$script_stage" || return $? ;;
       esac
       shift 1
       continue
@@ -192,7 +165,6 @@ set_mode() {
     declare -g wizard_script=(
       "${wizard_script_provisioning_prerequisites[@]}"
       "${wizard_script_start[@]}"
-      "${wizard_script_secondary[@]}"
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "primary" ]; then
@@ -200,7 +172,7 @@ set_mode() {
     declare -g wizard_script=(
       "${wizard_script_provisioning_prerequisites[@]}"
       "${wizard_script_start[@]}"
-      "${wizard_script_primary[@]}"
+      "${wizard_script_main[@]}"
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "limited-keygen" ]; then
@@ -209,12 +181,12 @@ set_mode() {
       "${wizard_script_provisioning_prerequisites[@]}"
       "${wizard_script_start[@]}"
       ask_signing_authkey_password_if_needed
-      use_signing_authkey_for_primary
-      connect_hsm_primary
-      create_custom_metadata_for_keygen_primary
-      keygen_primary
-      check_exports_primary
-      log_end_primary
+      use_signing_authkey
+      connect_hsm
+      create_custom_metadata_for_keygen
+      keygen
+      check_exports
+      log_end
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "keygen" ]; then
@@ -234,10 +206,10 @@ set_mode() {
       "${wizard_script[@]}"
       "${wizard_script_start[@]}"
       ask_signing_authkey_password_if_needed
-      use_signing_authkey_for_primary
+      use_signing_authkey
       connect_hsm
-      keygen_primary
-      check_exports_primary
+      keygen
+      check_exports
       log_end
       "${wizard_script_end[@]}"
     )
@@ -247,8 +219,7 @@ set_mode() {
     declare -g wizard_script=(
       "${wizard_script_provisioning_prerequisites[@]}"
       "${wizard_script_start[@]}"
-      "${wizard_script_primary[@]}"
-      "${wizard_script_secondary[@]}"
+      "${wizard_script_main[@]}"
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "backup" ]; then
@@ -257,7 +228,7 @@ set_mode() {
       "${wizard_script_provisioning_prerequisites[@]}"
       "${wizard_script_start[@]}"
       backup_primary
-      check_exports_primary
+      check_exports
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "load-keys" ]; then
@@ -265,7 +236,7 @@ set_mode() {
     declare -g wizard_script=(
       source_include_scripts
       ask_signing_authkey_password_if_needed
-      use_signing_authkey_for_primary
+      use_signing_authkey
       maybe_start_yubihsm_connector_service
       connect_hsm
       load_keys
@@ -422,122 +393,27 @@ maybe_start_yubihsm_connector_service() {
   sudo systemctl start yubihsm-connector || return $?
 }
 
-connect_hsm_primary() {
+connect_hsm() {
   echo
   echo "Please connect the primary YubiHSM 2."
   confirm "Enter Y when the primary YubiHSM 2 is connected, or N to quit." || return $?
   log_start primary || return $?
 }
 
-maybe_reset_hsm_primary() {
-  maybe_reset_hsm "$@" || return $?
-}
+provision_hsm() {
+  (
+    export YUBIHSM_ADMIN_AUTHKEY_PASSWORD=$YUBIHSM_ADMIN_AUTHKEY_PASSWORD
+    export YUBIHSM_SIGNING_AUTHKEY_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD
+    export YUBIHSM_AUDIT_AUTHKEY_PASSWORD=$YUBIHSM_AUDIT_AUTHKEY_PASSWORD
+    export KEEP_PATH=$KEEP_PATH
+    "$basepath/$pkcs11_relpath/vendor.yubihsm.setup.py" || return $?
+  ) || return $?
 
-provision_auditing_primary() {
-  provision_auditing "$@" || return $?
-}
-
-provision_wrap_key_primary() {
-  local output
-  output=$(yubihsm_nolog -a list-objects -t wrap-key -i "$YUBIHSM_WRAP_KEY_ID") || return $?
-  if printf "%s\n" "$output" | grep -q "^Found 0 "; then
-    true  # No wrap key found. Proceed.
-  elif printf "%s\n" "$output" | grep -q "^Found 1 "; then
-    echo "Found an existing wrap key."
-    confirm "Would you like to continue anyway?" || return $?
-  else
-    echo "Unexpected output when listing YubiHSM objects." >&2
+  if ! check_command_audit_value; then
+    # TODO: Maybe allow this enforcement to be skipped? But maybe not.
+    echo "Command audit value is not as expected after provisioning!" >&2
     return 1
   fi
-  echo
-  echo "You are about to enter the yubihsm-setup wizard."
-  echo "When prompted, please answer as follows (note the wrap key will be created as $YUBIHSM_WRAP_KEY_ID):"
-  echo "  Would you like to add RSA decryption capabilities? (y/n) y"
-  echo "  Enter domains: all"
-  echo "  You have selected more than one domain, are you sure? (y/n) y"
-  echo "  Enter wrap key ID (0 to choose automatically): $YUBIHSM_WRAP_KEY_ID"
-  echo "  Enter the number of shares: [prearranged, e.g. 5]"
-  echo "  Enter the privacy threshold: [prearranged, e.g. 3]"
-  # TODO: Prearranged mechanism is... what?
-  echo "Then, prepare to record shares using the prearranged mechanism."
-  echo "More questions appear, pertaining to authentication keys that we will discard."
-  echo "You may enter any values for these next questions. It does not matter."
-  echo "Here are some preferred values to get you moving quickly:"
-  echo "  Enter application authentication key ID (0 to choose automatically): 0"
-  echo "  Enter application authentication key password: n"
-  echo "  Would you like to create an audit key? (y/n) n"
-  # TODO: Do this for them, and open with xdg-open?
-  echo "You may wish to copy this information to a text file in case it scrolls off the screen."
-  echo
-  confirm "Are you ready to input this information and record shares?" || return $?
-
-  # Call yubihsm-setup to create the wrap key, and all the other stuff it unfortunately does
-  # which we will subsequently undo.
-  yhsetup --no-delete --no-export ksp || return $?
-
-  local will_exit=
-  output=$(yubihsm_nolog -a list-objects -t wrap-key -i "$YUBIHSM_WRAP_KEY_ID") || return $?
-  if printf "%s\n" "$output" | grep -q "^Found 0 "; then
-    echo "Could not find a wrap key with the expected ID!" >&2
-    will_exit=y
-  else
-    output=$(yubihsm_nolog -a get-object-info -i "$YUBIHSM_WRAP_KEY_ID" -t wrap-key \
-      | grep -v '^Found ')
-    echo "Wrap key: $output" >&2
-    if [ "$output" != "$YUBIHSM_EXPECTED_WRAP_KEY_INFO" ]; then
-      echo "Expected: $YUBIHSM_EXPECTED_WRAP_KEY_INFO" >&2
-      echo >&2
-      echo "Found a wrap key, but its details do not match what we expect." >&2
-      echo "It is not recommended to continue!" >&2
-      if ! confirm "Would you like to proceed anyway?"; then
-        will_exit=y
-      fi
-    else
-      echo "Wrap key matches our expected info."
-    fi
-  fi
-  if [ "$will_exit" = "y" ]; then
-    echo >&2
-    echo "Unfortunately, you must restart this entire process from the beginning," >&2
-    echo "resetting the device in the process." >&2
-    no_recover=y
-    no_exit_recommendations=y
-    return 1
-  fi
-
-  # Undo the things we don't want.
-  echo "Deleting authentication keys added by the wizard..."
-
-  mapfile -t authkeys < <(yubihsm_nolog -a list-objects -t authentication-key) || return $?
-  local -a authkeys_to_delete
-  local authkey
-  local found_default_authkey=
-  for authkey in "${authkeys[@]}"; do
-    case "$authkey" in
-      "id: 0x0001,"*DEFAULT*)
-        found_default_authkey=y
-        true ;;  # Skip the default authkey. We only expect this authkey to exist right now.
-      "id: 0x"*","*)
-        authkey=${authkey#id: }
-        authkey=${authkey%%,*}
-        authkeys_to_delete+=("$authkey")
-        ;;
-      *)
-        true ;;  # Not an authkey
-    esac
-  done
-  if [ -z "$authkey" ]; then
-    echo "No authkeys detected. This is not expected. What happened?" >&2
-    return 1
-  fi
-  if [ "$found_default_authkey" != "y" ]; then
-    echo "Did not find default authkey. Cannot safely remove other authkeys." >&2
-    return 1
-  fi
-  for authkey in "${authkeys_to_delete[@]}"; do
-    yubihsm -a delete-object -i "$authkey" -t authentication-key || return $?
-    echo "Deleting authkey $authkey."
-  done
 }
 
 ask_signing_authkey_password_if_needed() {
@@ -572,64 +448,12 @@ ask_authkey_passwords_if_needed() {
   fi
 }
 
-use_admin_authkey_for_primary() {
-  export YUBIHSM_AUTHKEY=$YUBIHSM_ADMIN_AUTHKEY_ID
-  export YUBIHSM_PASSWORD=$YUBIHSM_ADMIN_AUTHKEY_PASSWORD
-}
-
-delete_default_authentication_key_primary() {
-  # Delete the original, default authentication key using the temporary authentication key.
-  yubihsm -a delete-object --object-id 0x0001 --object-type authentication-key \
-    || return $?
-}
-
-provision_admin_authentication_primary() {
-  # WARNING: Password is on the command line.
-  # --new-password does not support the "file:" construction that --password does.
-  # This entire script is expected to be run in an ephemeral, trusted environment.
-
-  # Create the authentication key to be used for admin.
-  yubihsm \
-    -a put-authentication-key \
-    --object-id "$YUBIHSM_ADMIN_AUTHKEY_ID" \
-    --domains "$YUBIHSM_ADMIN_AUTHKEY_DOMAINS" \
-    --capabilities "$YUBIHSM_ADMIN_AUTHKEY_CAPABILITIES" \
-    --delegated "$YUBIHSM_ADMIN_AUTHKEY_DELEGATED_CAPABILITIES" \
-    --new-password "$YUBIHSM_ADMIN_AUTHKEY_PASSWORD" || return $?
-}
-
-provision_authentication_primary() {
-  # WARNING: Password is on the command line.
-  # --new-password does not support the "file:" construction that --password does.
-  # This entire script is expected to be run in an ephemeral, trusted environment.
-
-  # Create the authentication key to be used for signing.
-  YUBIHSM_AUTHKEY=$YUBIHSM_ADMIN_AUTHKEY_ID YUBIHSM_PASSWORD=$YUBIHSM_ADMIN_AUTHKEY_PASSWORD \
-    yubihsm \
-    -a put-authentication-key \
-    --object-id "$YUBIHSM_SIGNING_AUTHKEY_ID" \
-    --domains "$YUBIHSM_SIGNING_AUTHKEY_DOMAINS" \
-    --capabilities "$YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES" \
-    --delegated "$YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES" \
-    --new-password "$YUBIHSM_SIGNING_AUTHKEY_PASSWORD" || return $?
-
-  # Create the authentication key to be used for auditing.
-  YUBIHSM_AUTHKEY=$YUBIHSM_ADMIN_AUTHKEY_ID YUBIHSM_PASSWORD=$YUBIHSM_ADMIN_AUTHKEY_PASSWORD \
-    yubihsm \
-    -a put-authentication-key \
-    --object-id "$YUBIHSM_AUDIT_AUTHKEY_ID" \
-    --domains "$YUBIHSM_AUDIT_AUTHKEY_DOMAINS" \
-    --capabilities "$YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES" \
-    --delegated "$YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES" \
-    --new-password "$YUBIHSM_AUDIT_AUTHKEY_PASSWORD" || return $?
-}
-
-use_signing_authkey_for_primary() {
+use_signing_authkey() {
   export YUBIHSM_AUTHKEY=$YUBIHSM_SIGNING_AUTHKEY_ID
   export YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD
 }
 
-create_custom_metadata_for_keygen_primary() {
+create_custom_metadata_for_keygen() {
   if [ -z "${METADATA_FILE:-}" ]; then
     echo "Preparing metadata for generating just a few keys..."
     export METADATA_FILE=$PROVISIONING_PATH/limited_keygen_metadata
@@ -655,7 +479,8 @@ create_custom_metadata_for_keygen_primary() {
   fi
 }
 
-keygen_primary() {
+keygen() {
+  # shellcheck disable=SC2030
   (
     export YUBIHSM_AUTHKEY=$YUBIHSM_SIGNING_AUTHKEY_ID
     export YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD
@@ -668,11 +493,12 @@ keygen_primary() {
 
 backup_primary() {
   # Back up / export objects.
-  (cd "$KEY_DIR" && YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD yhsetup dump) \
+  # shellcheck disable=SC2031
+  (cd "$KEY_DIR" && YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD dump) \
     || return $?
 }
 
-check_exports_primary() {
+check_exports() {
   local key
   for key in "$KEY_DIR/"*.yhw; do
     if [ ! -e "$key" ]; then
@@ -683,17 +509,6 @@ check_exports_primary() {
   done
 }
 
-log_end_primary() {
-  log_end primary || return $?
-}
-
-connect_hsm_secondary() {
-  echo
-  echo "Please connect the secondary (restoration target) YubiHSM 2."
-  confirm "Enter Y when the specified HSM is connected, or N to quit." || return $?
-  log_start secondary || return $?
-}
-
 connect_hsm() {
   echo
   echo "Please connect the YubiHSM 2."
@@ -701,107 +516,10 @@ connect_hsm() {
   log_start || return $?
 }
 
-use_original_authkey_for_secondary() {
-  export YUBIHSM_AUTHKEY=$yubihsm_original_authkey
-  export YUBIHSM_PASSWORD=$yubihsm_original_password
-}
-
-maybe_reset_hsm_secondary() {
-  maybe_reset_hsm "$@" || return $?
-}
-
-provision_auditing_secondary() {
-  provision_auditing "$@" || return $?
-}
-
-provision_admin_authentication_secondary() {
-  # They do the same thing.
-  provision_admin_authentication_primary "$@" || return $?
-}
-
-use_admin_authkey_for_secondary() {
-  # They do the same thing.
-  use_admin_authkey_for_primary "$@" || return $?
-}
-
-delete_default_authentication_key_secondary() {
-  # They do the same thing.
-  delete_default_authentication_key_primary "$@" || return $?
-}
-
-provision_authentication_secondary() {
-  # They do the same thing.
-  provision_authentication_primary "$@" || return $?
-}
-
-use_signing_authkey_for_secondary() {
-  # They do the same thing.
-  use_signing_authkey_for_primary "$@" || return $?
-}
-
-restore_secondary() {
-  echo
-  echo "You are about to enter the yubihsm-setup wizard to restore your wrap key."
-  echo "When prompted, please answer as follows:"
-  echo "  Enter the number of shares: [TODO: prearranged. let's say 5]"
-  echo "Then, enter all of the shares recorded previously."
-  echo
-  echo "This process should also successfully restore your keys from backup,"
-  echo "which serves as a confirmation that the restored wrap key is valid."
-  echo
-  confirm "Are you ready to continue?" || return $?
-  local file
-  for file in "$KEY_DIR/"*.yhw; do
-    if [ ! -e "$file" ]; then
-      echo "No wrapped keys found. Please place keys (.yhw files) in: $KEY_DIR" >&2
-      if ! confirm "Do you want to continue without restoring wrapped keys?"; then
-        return 1
-      fi
-    fi
-    break
-  done
-
-  # We just want to restore the wrap key, here, so let's hope to choose a working directory
-  # with no keys inside.
-  (cd /dev/shm && yhsetup --no-delete --no-export restore) \
-    || return $?
-
-  echo
-  echo "Finished restoring wrap key with yubihsm-setup. Now trying to restore all available"
-  echo "keys to ensure that works, making room as needed with ondemand keys..."
-  load_keys || return $?
-
-  local object_id
-  object_id=$(yubihsm_nolog -a list-objects \
-    --object-type asymmetric-key | sed -ne 's/^id: \([^,]\+\),.*$/\1/p') || return $?
-  if [ -z "$object_id" ]; then
-    echo >&2
-    echo "No asymmetric keys were found on the HSM! Did it fail to restore?" >&2
-    echo "It is possible that one or more of the shares you entered were incorrect." >&2
-    return 1
-  fi
-  echo
-  echo "Restore completed without errors, and asymmetric keys were found."
-}
-
 load_keys() {
   echo
   echo "Restoring all keys and certs..."
   try restore_all_keys_and_certs "$@" || return $?
-}
-
-create_custom_metadata_for_keygen_secondary() {
-  # They do the same thing.
-  create_custom_metadata_for_keygen_primary "$@" || return $?
-}
-
-keygen_secondary() {
-  # They do the same thing.
-  keygen_primary "$@" || return $?
-}
-
-log_end_secondary() {
-  log_end secondary || return $?
 }
 
 finish() {
@@ -909,69 +627,6 @@ maybe_reset_hsm() {
   if [ -n "$err" ]; then
     reset_hsm_manual "$info" || return $?
   fi
-}
-
-provision_auditing_the_long_way() {
-  # Much of this was gleaned from https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e
-  if check_command_audit_value; then
-    echo "Command audit value is already as expected."
-    return 0
-  fi
-  yubihsm -a put-option --opt-name command-audit --opt-value 4f01 || return $? # log PUT OPTION
-  yubihsm -a put-option --opt-name command-audit --opt-value 4f02 || return $? # log PUT OPTION until factory reset
-  yubihsm -a put-option --opt-name force-audit --opt-value 02 || return $? # prevent operations when audit log is full
-  local -a auditable_commands=(
-    # from: https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html
-    # command Tc values
-    6c # CHANGE AUTHENTICATION KEY
-    58 # DELETE OBJECT
-    4a # EXPORT WRAPPED
-    76 # EXPORT RSA WRAPPED
-    74 # EXPORT RSA WRAPPED KEY
-    46 # GENERATE ASYMMETRIC KEY
-    5a # GENERATE HMAC KEY
-    66 # GENERATE OTP AEAD KEY
-    6e # GENERATE SYMMETRIC KEY
-    5b # GENERATE WRAP KEY
-    51 # GET PSEUDO RANDOM
-    4b # IMPORT WRAPPED
-    77 # IMPORT RSA WRAPPED
-    75 # IMPORT RSA WRAPPED KEY
-    45 # PUT ASYMMETRIC KEY
-    44 # PUT AUTHENTICATION KEY / PUT ASYMMETRIC AUTHENTICATION KEY
-    52 # PUT HMAC KEY
-    42 # PUT OPAQUE
-    65 # PUT OTP AEAD KEY
-    73 # PUT PUBLIC WRAP KEY
-    6d # PUT SYMMETRIC KEY
-    5e # PUT TEMPLATE
-    4c # PUT WRAP KEY
-    62 # RANDOMIZE OTP AEAD
-    63 # REWRAP OTP AEAD
-    # 4f # SET OPTION (PUT OPTION) - already set earlier
-    64 # SIGN ATTESTATION CERTIFICATE
-    56 # SIGN ECDSA
-    6a # SIGN EDDSA
-    53 # SIGN HMAC
-    47 # SIGN RSA PKCS1
-    55 # SIGN RSA PSS
-    69 # UNWRAP DATA
-    68 # WRAP DATA
-  )
-  local cmd
-  for cmd in "${auditable_commands[@]}"; do
-    # Force audit of given command until factory reset.
-    yubihsm -a put-option --opt-name command-audit --opt-value "${cmd}02" || return $?
-  done
-  if ! check_command_audit_value; then
-    # TODO: Maybe allow this enforcement to be skipped? But maybe not.
-    echo "Command audit value is not as expected after provisioning!" >&2
-    return 1
-  fi
-  echo "Successfully provisioned auditing options."
-
-  # TODO: Check this automatically?
-  #yubihsm -a get-logs   # witness that there are many 4f entries now, since PUT OPTION is logged
 }
 
 log_end() {
@@ -1204,22 +859,6 @@ prepare_manifest_and_files() {
 # of this function, so when source_include_scripts is run, this function is overridden.
 yubihsm() {
   yubihsm-shell --connector "$YUBIHSM_CONNECTOR" --authkey "$YUBIHSM_AUTHKEY" --password file:<(printf "%s" "$YUBIHSM_PASSWORD") "$@" || return $?
-}
-
-yhsetup() {
-  # WARNING: Password is on the command line.
-  # yubihsm-setup does not support the "file:" construction that yubihsm-shell does.
-  # This entire script is expected to be run in an ephemeral, trusted environment.
-  local err=
-  yubihsm-setup --connector "$YUBIHSM_CONNECTOR" --authkey "$YUBIHSM_AUTHKEY" --password "$YUBIHSM_PASSWORD" "$@" || err=$?
-  extract_logs "" "Command: yubihsm-setup $(printf '%q ' "$@")"$'\n'"Result: ${err:-0}" \
-    || \
-    {
-      err=${err:-$?}
-      echo "Failed to extract logs" >&2
-      return $err
-    }
-  return ${err:-0}
 }
 
 set_stage() {

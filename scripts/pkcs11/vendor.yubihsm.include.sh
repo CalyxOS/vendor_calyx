@@ -21,36 +21,12 @@ export DATE_FORMAT=${DATE_FORMAT:-%Y%m%d-%H%M%S}
 PREFERRED_KEY_ALGORITHM=RSA:4096
 
 YUBIHSM_SIGNING_AUTHKEY_ID=${YUBIHSM_SIGNING_AUTHKEY_ID:-0x0001}
-YUBIHSM_SIGNING_AUTHKEY_DOMAINS=${YUBIHSM_SIGNING_AUTHKEY_DOMAINS:-all}
-# Authkey capabilities are based on yubihsm-setup, with some changes for our use cases.
-YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES=${YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES:-generate-asymmetric-key,sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa,derive-ecdh,import-wrapped,export-wrapped,exportable-under-wrap,get-option,sign-attestation-certificate,get-log-entries,change-authentication-key,decrypt-pkcs,decrypt-oaep,put-opaque,get-opaque,delete-opaque,delete-asymmetric-key}
-YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES=${YUBIHSM_SIGNING_AUTHKEY_DELEGATED_CAPABILITIES:-generate-asymmetric-key,sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa,derive-ecdh,exportable-under-wrap,get-option,decrypt-pkcs,decrypt-oaep}
-
 YUBIHSM_AUDIT_AUTHKEY_ID=${YUBIHSM_AUDIT_AUTHKEY_ID:-0x0002}
-YUBIHSM_AUDIT_AUTHKEY_DOMAINS=${YUBIHSM_AUDIT_AUTHKEY_DOMAINS:-all}
-YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES=${YUBIHSM_AUDIT_AUTHKEY_CAPABILITIES:-get-log-entries,exportable-under-wrap,get-option,get-opaque}
-YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES=${YUBIHSM_AUDIT_AUTHKEY_DELEGATED_CAPABILITIES:-none}
-
-additional_delegated_capabilities_for_admin_key=,put-asymmetric-key,delete-symmetric-key,generate-symmetric-key,put-symmetric-key,delete-hmac-key,generate-hmac-key,put-mac-key,sign-hmac,verify-hmac,delete-template,get-template,put-template,sign-ssh-certificate,decrypt-cbc,encrypt-cbc,decrypt-ecb,encrypt-ecb,delete-otp-aead-key,generate-otp-aead-key,put-otp-aead-key,create-otp-aead,randomize-otp-aead,rewrap-from-otp-aead-key,rewrap-to-otp-aead-key,delete-opaque
-additional_capabilities_for_admin_key=$additional_delegated_capabilities_for_admin_key,delete-authentication-key,put-authentication-key,set-option,reset-device
 # Key ID 0x0001 is not available when admin authkey is created, so please do not use 0x0001.
 YUBIHSM_ADMIN_AUTHKEY_ID=${YUBIHSM_ADMIN_AUTHKEY_ID:-0x00ad}
-YUBIHSM_ADMIN_AUTHKEY_DOMAINS=${YUBIHSM_ADMIN_AUTHKEY_DOMAINS:-all}
-# Admin authkey defaults to having the same capabilities as signing, plus some more.
-YUBIHSM_ADMIN_AUTHKEY_CAPABILITIES=${YUBIHSM_ADMIN_AUTHKEY_CAPABILITIES:-$YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES$additional_capabilities_for_admin_key}
-# Admin authkey defaults to having the same delegated capabilities as the signing authkey's
-# main capabilities, plus more. It needs to be able to re-create the signing authkey, after all.
-YUBIHSM_ADMIN_AUTHKEY_DELEGATED_CAPABILITIES=${YUBIHSM_ADMIN_AUTHKEY_DELEGATED_CAPABILITIES:-$YUBIHSM_SIGNING_AUTHKEY_CAPABILITIES$additional_delegated_capabilities_for_admin_key}
 YUBIHSM_WRAP_KEY_ID=${YUBIHSM_WRAP_KEY_ID:-0x0010}
 
 YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE=${YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE:-0100030004000500060007000900080040004100420243004402450246024702550256024800490057004a024b024c024d0067004e004f0250005102520253025400580259005a025b025c005d005e025f006000610062026302640265026602680269026a026b006c020a006d026e026f0070007100720073027402750276027702}
-YUBIHSM_EXPECTED_WRAP_KEY_INFO='id: 0x0010, type: wrap-key, algorithm: aes256-ccm-wrap, label: "Wrap key", length: 40, domains: 1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16, sequence: 0, origin: imported, capabilities: export-wrapped:import-wrapped, delegated_capabilities: decrypt-oaep:decrypt-pkcs:derive-ecdh:export-wrapped:exportable-under-wrap:generate-asymmetric-key:get-log-entries:get-option:import-wrapped:sign-ecdsa:sign-eddsa:sign-pkcs:sign-pss'
-
-# We don't truly get to control these wrap key details; yubihsm-setup controls it all,
-# and there is no customization...
-#YUBIHSM_WRAP_KEY_DOMAINS=${YUBIHSM_WRAP_KEY_DOMAINS:-all}
-#YUBIHSM_WRAP_KEY_CAPABILITIES=${YUBIHSM_WRAP_KEY_CAPABILITIES:-export-wrapped,import-wrapped}
-#YUBIHSM_WRAP_KEY_DELEGATED_CAPABILITIES=${YUBIHSM_WRAP_KEY_DELEGATED_CAPABILITIES:-decrypt-oaep,decrypt-pkcs,derive-ecdh,export-wrapped,exportable-under-wrap,generate-asymmetric-key,get-log-entries,get-option,import-wrapped,sign-ecdsa,sign-eddsa,sign-pkcs,sign-pss,sign-attestation-certificate,change-authentication-key}
 
 _already_processed_log_path=
 _we_started_apksigner=
@@ -1366,21 +1342,6 @@ check_command_audit_value() {
     yubihsm_nolog -a get-option --opt-name command-audit | sed -e 's/^Option value is: //'
   ) || return $?
   [ "$command_audit_value" = "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" ] || return $?
-}
-
-provision_auditing() {
-  if check_command_audit_value; then
-    echo "Command audit value is already as expected."
-    return 0
-  fi
-  yubihsm -a put-option --opt-name command-audit --opt-value "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" || return $?
-  yubihsm -a put-option --opt-name force-audit --opt-value 02 || return $? # prevent operations when audit log is full
-  if ! check_command_audit_value; then
-    # TODO: Maybe allow this enforcement to be skipped? But maybe not.
-    echo "Command audit value is not as expected after provisioning!" >&2
-    return 1
-  fi
-  echo "Successfully provisioned auditing options."
 }
 
 show_yubihsm_info() {

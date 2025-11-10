@@ -11,6 +11,7 @@ vendor/calyx/scripts/pkcs11/keygen.include.sh
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.include.sh
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.keygen.sh
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.provision.sh
+vendor/calyx/scripts/pkcs11/vendor.yubihsm.setup.py
 sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz	99501dced7e04ff5bb9150503a2e0ab7031714bfd1f6c08b997ea49467d8713a	3991853	https://developers.yubico.com/YubiHSM2/Releases/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz
 packages/libcurl4t64_8.14.1-2_amd64.deb	0f06f4ed697c62b51f363a7bc57a8d88f6805d94b39e7084d7206641533ed2ea	390604	http://ftp.us.debian.org/debian/pool/main/c/curl/libcurl4t64_8.14.1-2_amd64.deb
 packages/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb	089366fb2b71cadca53fb844cfabb0d0798623463247f5b8fa6ad1cc3ab382f2	51120	http://ftp.us.debian.org/debian/pool/main/o/openpace/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb
