@@ -97,7 +97,6 @@ devices whose keys are not loaded will be signed in parallel *after* devices who
 
 On server, in extracted `otatools-keys.zip` directory:
 ```bash
-YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=16 \
 NEVER_START_YUBIHSM_CONNECTOR=y \
 PKCS11_VENDOR=yubihsm \
 vendor/calyx/scripts/sign.sh
