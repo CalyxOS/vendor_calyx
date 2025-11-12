@@ -8,7 +8,6 @@ export STRIP_HEX_KEY_ID_PREFIX=y
 export YUBIHSM_CONNECTOR=${YUBIHSM_CONNECTOR:-http://127.0.0.1:12345}
 
 # YUBIHSM_LOGS_DIR must be set somewhere else.
-export YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-1}
 export YUBIHSM_KEY_CAPABILITIES=${YUBIHSM_KEY_CAPABILITIES:-sign-pkcs,sign-pss,decrypt-pkcs,decrypt-oaep,sign-ecdsa,sign-eddsa}
 export YUBIHSM_OPAQUE_CAPABILITIES=${YUBIHSM_OPAQUE_CAPABILITIES:-}
 export YUBIHSM_ONDEMAND_DOMAIN=${YUBIHSM_ONDEMAND_DOMAIN:-2}
@@ -28,10 +27,10 @@ YUBIHSM_WRAP_KEY_ID=${YUBIHSM_WRAP_KEY_ID:-0x0010}
 
 YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE=${YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE:-0100030004000500060007000900080040004100420243004402450246024702550256024800490057004a024b024c024d0067004e004f0250005102520253025400580259005a025b025c005d005e025f006000610062026302640265026602680269026a026b006c020a006d026e026f0070007100720073027402750276027702}
 
-_already_processed_log_path=
 _we_started_apksigner=
 _we_started_yubihsm_connector=
 _we_created_yubihsm_tmpdir=
+_our_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit;pwd -P)
 for_restore=
 verify_key_ids=
 declare -g -A fully_loaded_keys_map=()
@@ -81,9 +80,15 @@ initialize_vendor() {
     maybe_start_apksigner_batch "$YUBIHSM_TMPDIR"
 
     export YUBIHSM_LOCKFILE=${YUBIHSM_LOCKFILE:-$YUBIHSM_TMPDIR/yubihsm.lock}
-    if [ -z "${YUBIHSM_LOGS_DIR+x}" ]; then
-      export YUBIHSM_LOGS_DIR=$(pwd)/logs
+    YUBIHSM_LOGS_DIR="$(pwd)/logs"
+    if [ ! -s "$YUBIHSM_LOGS_DIR/upload.py"  ]; then
+      printf "\n" >&2
+      echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) is not the expected git repository." >&2
+      echo "Are you sure you are calling this script from the right place?" >&2
+      echo "Did you clone the audit log git repository already?" >&2
+      return 1
     fi
+    export YUBIHSM_LOGS_DIR
   else
     export YUBIHSM_TMPDIR=
     export YUBIHSM_LOCKFILE=
@@ -192,12 +197,6 @@ yubihsm() {
     $maybe_dry_run yubihsm "$@" || return $?
     return 0
   fi
-  if [ "${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-}" = "0" ]; then
-    yubihsm_nolog "$@" || return $?
-    return 0
-  fi
-  local log_path
-  log_path=$(get_log_path) || return $?
 
   # The stderr from yubihsm-shell is annoyingly chatty, so we filter out the offenders.
   local err=
@@ -232,15 +231,14 @@ yubihsm() {
   done
 
   # Build log entry text, and extract logs.
-  local prepend="Command: yubihsm-shell$log_args"$'\n'"Result: ${err:-0}"
+  local prepend="Command: yubihsm-shell$log_args Result: ${err:-0}"
   if [ -n "$stdout" ]; then
-    prepend="$prepend"$'\n'"-stdout-"$'\n'"$stdout"$'\n'"-"
+    prepend="$prepend -stdout- $stdout -"
   fi
   if [ -n "$stderr" ]; then
-    prepend="$prepend"$'\n'"-stderr-"$'\n'"$stderr"$'\n'"-"
+    prepend="$prepend -stderr- $stderr -"
   fi
-  NO_WARN=y _already_processed_log_path=y \
-  extract_logs "$log_path" "$prepend" \
+  extract_logs "$prepend" \
     || \
     {
       err=${err:-$?}
@@ -296,201 +294,26 @@ yubihsm_nolog() {
   return ${err:-}
 }
 
-maybe_set_audit_log_path() {
-  local timestamp=$1
-  if [ -n "${AUDIT_LOG_PATH+x}" ]; then
-    return 0
-  fi
-  local file_timestamp=
-  local log_path
-  file_timestamp=$(date -u --date="@$timestamp" +"$DATE_FORMAT") || return $?
-  log_path=audit-$file_timestamp.log
-  AUDIT_LOG_PATH=$log_path
-}
-
-# Extract an audit log to the supplied path or to $AUDIT_LOG_PATH, both in text (ASCII)
-# and hex formats. Use YUBIHSM_LOGS_DIR as the directory if given only a filename.
-# If YUBIHSM_LOGS_DIR is not set in this case, this function will fail.
-# Otherwise, create the directory if it does not exist. Always append to logs.
-# Usage: extract_logs [path] [prepend_line] [append_line] if given.
+# Extract an audit log to the supplied path.
+# Usage: extract_logs [comment]
 extract_logs() {
-  # Get the logs from the device, both in ASCII and hex formats.
   if [ "${DRY_RUN:-}" = "y" ]; then
     return 0
   fi
 
-  # Maybe throttle audit logging for performance.
-  local defer_log_extraction_count=0
-  if [ "${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-0}" = "0" ]; then
-    return 0
-  elif [ "${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-}" -gt 1 ]; then
-    defer_log_extraction_count=$(cat "${YUBIHSM_TMPDIR:-/dev/shm}/defer_log_extraction_count.txt" \
-        2>/dev/null || true)
-    defer_log_extraction_count=${defer_log_extraction_count:-0}
-    defer_log_extraction_count=$((defer_log_extraction_count + 1))
-    if [ "$defer_log_extraction_count" -ge "$YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS" ]; then
-      defer_log_extraction_count=0
-    fi
-    printf "%s\n" "$defer_log_extraction_count" \
-        > "${YUBIHSM_TMPDIR:-/dev/shm}/defer_log_extraction_count.txt"
-  fi
-
-  local err=
-  local log_path
-  log_path=$(get_log_path "${1:-}") \
-    || \
+  local log_path=$AUDIT_LOG_PATH || \
     {
-      local err=$?
       echo "Cannot extract logs when there is nowhere appropriate to extract them to." >&2
-      return $err
-    }
-  shift 1
-  local logs
-  local hex
-  if [ "$defer_log_extraction_count" = "0" ]; then
-    logs=$(yubihsm_nolog -a get-logs) \
-      || {
-        err=$?
-        echo "ERROR: Failed to get logs" >&2
-        logs="Failed to get logs (code $err)"
-        # Don't exit yet. We want to log the failure.
-      }
-
-    hex=$(yubihsm_nolog -a get-logs --outformat hex) \
-      || {
-        err=$?
-        echo "ERROR: Failed to get hex logs" >&2
-        hex="Failed to get logs (code $err)"
-      }
-  else
-    logs=
-  fi
-
-  # Build up text to write to the text file.
-  {
-    if [ -z "$err" ] && [ "$defer_log_extraction_count" = "0" ]; then
-      printf "Hex: %s\n" "$hex"
-      printf "%s\n" "$logs"
-    elif [ -n "$logs" ]; then
-      printf "%s\n" "$logs"
-    fi
-  } | _already_processed_log_path=y add_input_to_log "$log_path" "$@" || return ${err:-$?}
-
-  # We had errors earlier, so we should not mark the logs as extracted.
-  if [ -n "$err" ]; then
-    return $err
-  fi
-
-  # We didn't really extract, so we should not mark the logs as extracted.
-  if [ "$defer_log_extraction_count" != "0" ]; then
-    return 0
-  fi
-
-  # Get the last index found in the logs, if any.
-  local last_index
-  last_index=$(
-    printf "%s\n" "$logs" \
-      | tail -n1 \
-      | sed -n -e 's/^item: \+\([0-9]\+\) --.*$/\1/p'
-  ) \
-  || return $?
-
-  # Evaluate whether we're in a dry run, whether there are no logs to extract, or whether
-  # an error occurred, before marking logs as extracted.
-  if [ "${DRY_RUN:-}" != "y" ] && { [ -z "$last_index" ] || ! [ "$last_index" -ge 0 ]; }; then
-    # We're not in a dry run, but we can't find the last index to mark the logs as fetched.
-    if printf "%s\n" "$logs" | grep -qFx 'No logs to extract'; then
-      # There was nothing to extract, so we don't need to mark anything as fetched.
-      # We are done.
-      [ "${NO_WARN:-}" = "y" ] || echo "WARNING: No logs to extract!" >&2
-      return 0
-    fi
-    # An actual failure happened.
-    echo "Failed to get index of last log entry" >&2
-    return 1
-  fi
-
-  # Mark all the logs we saw as extracted.
-  yubihsm_nolog -a set-log-index --log-index "$last_index" || {
-    err=$?
-    echo "Failed to set log index to $last_index" >&2
-    return $err
-  }
-}
-
-add_input_to_log() {
-  local timestamp
-  timestamp=$(date -u +%s.%3N) || return $?
-  local log_path
-  log_path=$(get_log_path "${1:-}" "$timestamp") || return $?
-  local prepend_line=${2:-}
-  local append_line=---
-  if [ -n "${3+x}" ]; then
-    append_line=$3
-  fi
-  {
-    if [ -n "${prepend_line:-}" ]; then printf "%s\n" "$prepend_line"; fi
-    echo "Timestamp: $timestamp"
-    cat
-    if [ -n "${append_line:-}" ]; then printf "%s\n" "$append_line"; fi
-  } | _already_processed_log_path=y add_input_to_log_raw "$log_path" \
-  || \
-  { # Error writing to the text file.
-    err=$?
-    echo "Failed to save logs" >&2
-    return $err
-  }
-}
-
-add_input_to_log_raw() {
-  local log_path
-  log_path=$(get_log_path "$1") || return $?
-  cat >> "$log_path" || return $?
-}
-
-get_log_path() {
-  if [ "${_already_processed_log_path:-}" = "y" ]; then
-    printf "%s\n" "$1"
-    return 0
-  fi
-  local log_path=${1:-${AUDIT_LOG_PATH:-}}
-  if [ -z "$log_path" ]; then
-    local timestamp=${2:-$(date -u +%s.%3N)}
-    maybe_set_audit_log_path "$timestamp" || return $?
-    log_path=${AUDIT_LOG_PATH:-}
-    if [ -z "$log_path" ]; then
-      # Nowhere to save logs, so don't.
-      return 0
-    fi
-  fi
-  if [ -z "$log_path" ]; then
-    # Nowhere to save logs, so don't.
-    return 0
-  fi
-  if [ "$log_path" = "$(basename "$log_path")" ]; then
-    if [ -z "${YUBIHSM_LOGS_DIR:-}" ]; then
-      echo "YUBIHSM_LOGS_DIR not set. Cannot write logs." >&2
-      echo "If you do not want logs, try settings YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=0," \
-          >&2
-      echo "or try a _nolog variant of the function you were calling." >&2
       return 1
-    fi
-    # It's just a filename, no path. Put it in the logs dir if available, else current directory.
-    $maybe_dry_run_ignore mkdir -p "$YUBIHSM_LOGS_DIR" || return $?
-    log_path=$YUBIHSM_LOGS_DIR/$log_path
-  fi
-  if [ ! -e "$log_path" ]; then
-    # Test if the path can be written to. If not, fail. If so, remove file if we created it to test.
-    if ! printf "%s" "" >> "$log_path"; then
-      echo "Log path could not be written to: $log_path" >&2
-    elif [ "$(stat -c%s "$log_path")" = "0" ]; then
-      rm -f "$log_path"
-    fi
-  elif [ ! -w "$log_path" ]; then
-    echo "Log path is not writable: $log_path" >&2
-    return 1
-  fi
-  printf "%s\n" "$log_path"
+    }
+  local comment=${1:-}
+  # shellcheck disable=SC2030
+  (
+    export YUBIHSM_CONNECTOR=$YUBIHSM_CONNECTOR
+    export YUBIHSM_AUTHKEY=$YUBIHSM_AUTHKEY
+    export YUBIHSM_PASSWORD=$YUBIHSM_PASSWORD
+    "$_our_path/vendor.yubihsm.audit.logs.py" --log-file "$log_path" --comment "$comment" || return $?
+  ) || return $?
 }
 
 _fill_object_arrays_delegate_filtered_for_restorable_types() {
@@ -886,12 +709,11 @@ ensure_all_keys_available_for_devices() {
       needed_keys[$key_id]=1
     done
   done
-  verify_key_ids=n ensure_key_is_available "${!needed_keys[@]}" || return $?
+  # using the _nolog version here, because this is called from sign.sh where we extract logs ourselves for the batch
+  verify_key_ids=n ensure_key_is_available_nolog "${!needed_keys[@]}" || return $?
 }
 
 restore_all_keys_and_certs() {
-  local log_path=
-  log_path=$(get_log_path) || return $?
   local err=0
 
   local KEY_DIR=${KEY_DIR:-.}
@@ -916,12 +738,8 @@ restore_all_keys_and_certs() {
   done
 
   # Extract logs.
-  local prepend_line="Function: restore_all_keys_and_certs
-Result: $err"
-  _already_processed_log_path=y \
-  NO_WARN=y \
-  YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=1 \
-  extract_logs "$log_path" "$prepend_line" \
+  local prepend_line="Function: restore_all_keys_and_certs Result: $err"
+  extract_logs "$prepend_line" \
     || err=$?
   return $err
 }
@@ -956,17 +774,12 @@ get_capabilities_for_key_id() {
 }
 
 ensure_key_is_available() {
-  local log_path
-  log_path=$(get_log_path) || return $?
   local err=0
   ensure_key_is_available_nolog "$@" || err=$?
 
   # Extract logs.
-  local prepend_line="Function: ensure_key_is_available
-Result: $err"
-  _already_processed_log_path=y \
-  YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=1 \
-  extract_logs "$log_path" "$prepend_line" \
+  local prepend_line="Function: ensure_key_is_available Result: $err"
+  extract_logs "$prepend_line" \
     || err=$?
   return $err
 }
@@ -1330,13 +1143,8 @@ call_for_each_object() {
   done
 }
 
-_dump_object_info_delegate() {
-  yubihsm_nolog -a get-object-info --object-id "$id" --object-type "$type" \
-    || return $?
-}
-
 dump_object_info() {
-  call_for_each_object _dump_object_info_delegate || return $?
+  yubihsm_nolog -a list-objects || return $?
 }
 
 check_command_audit_value() {
@@ -1371,13 +1179,12 @@ show_yubihsm_info() {
   printf "%s\n" "$storage_info"
 }
 
-get_name_for_hsm_and_session() {
-  local prefix=${1:-}
-  if [ -n "$prefix" ]; then
-    prefix="${prefix}-"
-  fi
-  declare -g session_date=${session_date:-$(date -u +$DATE_FORMAT)}
-  printf "%s%s\n" "$prefix" "${yubihsm_id:-unknown-hsm}-$session_date"
+get_formatted_date() {
+  printf "%s" "$(date --utc +"%Y-%m-%d_%H-%M-%S-%3N")"
+}
+
+get_name_for_hsm() {
+  printf "%s" "${yubihsm_id:-unknown-hsm}"
 }
 
 get_key_algorithm() {
@@ -1470,28 +1277,18 @@ initialize_vendor_release() {
     # (This has been observed happening already.)
     {
       read_yubihsm_deviceinfo || return $?
-      if [ -n "${YUBIHSM_LOGS_DIR:-}" ]; then
-        if [ ! -d "$YUBIHSM_LOGS_DIR" ]; then
-          $maybe_dry_run mkdir "$YUBIHSM_LOGS_DIR" || {
-            err=$?
-            echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) does not exist, and failed to create it" >&2
-            return $err
-          }
-        fi
-        local name
-        name=$(get_name_for_hsm_and_session) || return $?
-        default_prefix=$BUILD_NUMBER-$DEVICE-$name-$(basename "$command" .sh)
-        export AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/${AUDIT_LOG_PATH:-$default_prefix-audit.log}
-        export EXEC_LOG_PATH=$YUBIHSM_LOGS_DIR/${EXEC_LOG_PATH:-$default_prefix-exec.log}
-      fi
+      local name
+      name=$(get_name_for_hsm) || return $?
+      default_prefix=$BUILD_NUMBER-$DEVICE-$(basename "$command" .sh)
+      AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-$default_prefix.log
+      export AUDIT_LOG_PATH
+      EXEC_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/exec/$(get_formatted_date)-$default_prefix.log
+      mkdir -p "$YUBIHSM_LOGS_DIR/$name/exec"
+      export EXEC_LOG_PATH
       local key_id
       key_id=$(get_key_id avb vbmeta) || return $?
-      local log_path
-      log_path=$(get_log_path) || return $?
 
-      NO_WARN=y _already_processed_log_path=y \
-      YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=1 \
-      extract_logs "$log_path" "BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
+      extract_logs "BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
         || return $?
 
       if [ "${ENSURE_KEY_IS_AVAILABLE:-y}" = "y" ]; then
@@ -1503,15 +1300,11 @@ initialize_vendor_release() {
 }
 
 finalize_vendor_release() {
-  local log_path
-  log_path=$(get_log_path) || true
   local err=0
 
   # Extract logs.
-  if [ -n "$log_path" ]; then
-    NO_WARN=y _already_processed_log_path=y \
-    YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=1 \
-    extract_logs "$log_path" "Finished BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
+  if [ -n "${AUDIT_LOG_PATH:-}" ]; then
+    extract_logs "Finished BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
       || true
   fi
 
