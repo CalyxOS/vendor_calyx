@@ -24,9 +24,14 @@ main() {
     handle_java "$@"
   else
     args=("$@")
+    # We prefer to err on the side of caution and treat all the rest as signing commands, so we extract audit logs.
+    # Most/all of the things we intercept here should be signing commands anyway.
+    # The only known exception is avbtool which also does stuff like extracting, so we handle that above.
+    is_a_signing_command=y
   fi
 
   {
+    # if the lock file is defined (non-zero length)
     if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
       # Ensure only one YubiHSM operation, including subsequent log extraction,
       # can happen at a time.
@@ -42,6 +47,7 @@ main() {
     } 3>/dev/null
 
   } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
+  # here the (f)lock gets auto-released
 }
 
 run_command_maybe_batch() {
@@ -87,6 +93,7 @@ run_command_maybe_batch() {
     # However, that has since been addressed in other ways (apksigner changes + locking).
     for try in $(seq 1 $num_tries); do
       local stdout stderr
+      # run the actual command that was passed in via $cmd and $@ and potentially re-try
       transparent_catch stdout stderr "$cmd" "${args[@]}" || {
         err=$?
         if [ -n "${YUBIHSM_CONNECTOR_PIDFILE:-}" ]; then
@@ -119,19 +126,19 @@ run_command_maybe_batch() {
     # Also try multiple times to get this logged...
     local log_try
     for log_try in $(seq 1 $num_tries); do
-      prepend_line="Command:$(printf ' %q' "$SIGNING_COMMAND" "${args[@]}")"$'\n'"Result: ${err:-0}"
+      prepend_line="$(printf ' %q' "$SIGNING_COMMAND" "${args[@]}") # Result: ${err:-0}"
 
       # Make sure the number of tries required is part of the log.
       if [ "$try" -gt 1 ]; then
-        prepend_line="$prepend_line"$'\n'"Try: $try"
+        prepend_line="$prepend_line Try: $try"
       fi
 
       # ...including the number of tries to get logs!
       if [ "$log_try" -gt 1 ]; then
-        prepend_line="$prepend_line"$'\n'"Try (log): $log_try"
+        prepend_line="$prepend_line Try (log): $log_try"
       fi
 
-      extract_logs "" "$prepend_line" \
+      extract_logs "$prepend_line" \
         || \
         {
           log_err=$?

@@ -3,11 +3,11 @@ set -euo pipefail
 ourpath=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 declare -g SOURCE_DIRECTORY
+# KEEP_PATH is established in initialize_provisioning_mode and set_mode.
 declare -g KEEP_PATH
 YUBIHSM_CONNECTOR=${YUBIHSM_CONNECTOR:-http://127.0.0.1:12345}
 YUBIHSM_AUTHKEY=${YUBIHSM_AUTHKEY:-1}
 YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-password}
-YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-1}
 
 stage_file=$PROVISIONING_PATH/stage.txt
 mode_file=$PROVISIONING_PATH/mode.txt
@@ -22,8 +22,6 @@ source_manifest_relpath=$pkcs11_relpath/$manifest_filename
 shipped_manifest_relpath=$manifest_filename
 # manifest_path is established in set_mode.
 declare -g manifest_path
-# KEEP_PATH is established in initialize_provisioning_mode and set_mode.
-declare -g KEEP_PATH
 
 SHELL=${SHELL:-bash}
 
@@ -31,7 +29,6 @@ script_args=()
 # basepath is established in set_mode.
 basepath=
 is_provisioning_mode=
-provisioning_started=
 asked_resume=
 asked_reset=
 installed=
@@ -65,7 +62,6 @@ wizard_script_main=(
   maybe_reset_hsm
   ask_authkey_passwords_if_needed
   provision_hsm
-  log_end
 )
 wizard_script_end=(
   finish
@@ -186,7 +182,6 @@ set_mode() {
       create_custom_metadata_for_keygen
       keygen
       check_exports
-      log_end
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "keygen" ]; then
@@ -210,7 +205,6 @@ set_mode() {
       connect_hsm
       keygen
       check_exports
-      log_end
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "full" ] || [ -z "$new_mode" ]; then
@@ -240,7 +234,6 @@ set_mode() {
       maybe_start_yubihsm_connector_service
       connect_hsm
       load_keys
-      log_end
       "${wizard_script_end[@]}"
     )
   elif [ "$new_mode" = "prepare-directory" ]; then
@@ -414,6 +407,8 @@ provision_hsm() {
     echo "Command audit value is not as expected after provisioning!" >&2
     return 1
   fi
+
+  extract_logs "provisioning: 4f is for audit log options, the rest is key setup" || return $?
 }
 
 ask_signing_authkey_password_if_needed() {
@@ -535,41 +530,21 @@ finish() {
 
 log_start() {
   local err=
-  provisioning_started=y
   read_yubihsm_deviceinfo || err=$?
   if [ -n "$err" ] || [ -z "$yubihsm_deviceinfo" ]; then
     return ${err:-1}
   fi
 
-  export YUBIHSM_LOGS_DIR=${YUBIHSM_LOGS_DIR:-${KEEP_PATH:-$(pwd)}/logs}
-  export AUDIT_LOG_PATH=provision-$(get_name_for_hsm_and_session "${1:-}").log
-
-  local info
-  info=$(show_yubihsm_info 2>&1) || err=$?
-  if [ -n "$err" ]; then
-    asked_reset=y
-    echo "Gathering HSM info failed. Wrong password?" >&2
-    reset_hsm_manual || { err=$?; asked_reset=; return $err; }
-    err=
-  fi
-  local manifest
-  manifest=$(cat "$manifest_path") || return $?
-  add_input_to_log <<EOF || return $?
-Begin mode $mode${1:+for $1}
-$info
--Manifest-
-$manifest
-EOF
+  export YUBIHSM_LOGS_DIR="$KEEP_PATH/logs"
+  AUDIT_LOG_PATH="$YUBIHSM_LOGS_DIR/$(get_name_for_hsm)/$(get_formatted_date)-provision.log"
+  mkdir -p "$YUBIHSM_LOGS_DIR/$(get_name_for_hsm)" || return $?
+  export AUDIT_LOG_PATH
 }
 
 reset_hsm() {
   local err=
   local info=${1:-}
   yubihsm_nolog -a reset || err=$?
-  add_input_to_log <<EOF || return $?
-Command: yubihsm-shell -a reset
-Result: ${err:-0}$info
-EOF
   if [ -z "$err" ]; then
     # No error, so give a moment for the HSM to reappear.
     sleep 2
@@ -627,15 +602,6 @@ maybe_reset_hsm() {
   if [ -n "$err" ]; then
     reset_hsm_manual "$info" || return $?
   fi
-}
-
-log_end() {
-  YUBIHSM_AUTHKEY=$YUBIHSM_SIGNING_AUTHKEY_ID \
-  YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD \
-  add_input_to_log <<EOF || return $?
-End mode $mode${1:+for $1}
-$(show_yubihsm_info)
-EOF
 }
 
 delete_all_asymmetric_keys_and_opaque_objects() {
@@ -877,11 +843,6 @@ set_stage() {
   fi
   if [ "${2:-}" != "no-announce" ]; then
     echo "Now performing: $stage"
-    if [ "$provisioning_started" = "y" ]; then
-      add_input_to_log <<EOF || return $?
-Stage: $stage
-EOF
-    fi
   fi
 }
 
