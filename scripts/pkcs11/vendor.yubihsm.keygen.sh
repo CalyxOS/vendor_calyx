@@ -7,7 +7,6 @@ export NEVER_START_APKSIGNER_BATCH=y
 readonly keygen_pkcs11_scriptpath=$(cd "$(dirname "$0")";pwd -P)
 readonly keygen_scriptpath=$(cd "$(dirname "$0")/..";pwd -P)
 source "$keygen_pkcs11_scriptpath/keygen.include.sh" || exit $?
-YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS=${YUBIHSM_EXTRACT_LOGS_AFTER_EVERY_N_COMMANDS:-1}
 
 trap keygen_cleanup EXIT
 
@@ -67,12 +66,16 @@ initialize_post_metadata() {
   maybe_initialize_vendor || return $?
   read_yubihsm_deviceinfo || return $?
 
+  local name
+  name=$(get_name_for_hsm) || return $?
   declare -g unique_key_out_dir
-  unique_key_out_dir=${UNIQUE_KEY_OUT_DIR:-$key_out_dir/$(get_name_for_hsm_and_session)} \
+  unique_key_out_dir=${UNIQUE_KEY_OUT_DIR:-"$key_out_dir/$name-$(get_formatted_date)"} \
     || return $?
   declare -g hsm_key_out_dir
   hsm_key_out_dir=${HSM_KEY_OUT_DIR:-$key_out_dir/$yubihsm_id} \
     || return $?
+  AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-keygen.log
+  export AUDIT_LOG_PATH
 
   extract_attestation_key || return $?
   save_yubihsm_deviceinfo || return $?
@@ -135,7 +138,7 @@ generate_cert() {
     limit_ondemand_objects || return $?
 
     # And we can go ahead and extract logs, too.
-    extract_logs "" "KEYGEN" || return $?
+    extract_logs || return $?
     return 0
   fi
 
@@ -237,8 +240,7 @@ does_cert_exist_yn() {
 extract_attestation_key() {
   local out=$unique_key_out_dir/YubiHSM_attestation.pem
   mkdir -p "$unique_key_out_dir" || return $?
-  yubihsm -a get-opaque --object-id 0x0000 --outformat PEM \
-    --out "$out" || return $?
+  yubihsm_nolog -a get-opaque --object-id 0x0000 --outformat PEM --out "$out" || return $?
   copy_exported_file_to_other_dirs "$out" || return $?
 }
 
@@ -283,6 +285,10 @@ keygen_cleanup() {
       fi
       rm -rf "$TEMP_DIR"
     fi
+  fi
+  # upload audit logs, if not empty
+  if [[ -n ${AUDIT_LOG_PATH:-} && -s "$AUDIT_LOG_PATH" ]];then
+    "$YUBIHSM_LOGS_DIR/upload.py" -f "$AUDIT_LOG_PATH"
   fi
   common_cleanup_with_vendor || true
 }

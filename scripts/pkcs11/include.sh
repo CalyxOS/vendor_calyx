@@ -17,7 +17,7 @@ find_openssl_engine_library() {
   fi
   # There's got to be a better way.
   local -a possible_paths=(
-    /usr{/local,}/lib{/x86_64-linux-gnu,64,}/engines-3/libpkcs11.so
+    /usr{/local,}/lib{/x86_64-linux-gnu,/aarch64-linux-gnu,64,}/engines-3/libpkcs11.so
   )
   local path; for path in "${possible_paths[@]}"; do
     if [ -e "$path" ]; then

@@ -50,6 +50,7 @@ prompt_missing_variables() {
 
 main() {
   trap sign_cleanup EXIT
+  try setup_log_dir || return $?
   try find_target_files || return $?
   try find_prev_signed_device_builds || return $?
   try source_includes || return $?
@@ -77,25 +78,30 @@ do_or_show() {
   # Sign and generate incrementals for devices with keys already loaded in the HSM.
   if [ "$no_sign" != "y" ] && [ "${#sign_pairs_with_loaded_keys[@]}" -gt 0 ]; then
     $maybe_dry_run sign_builds "${sign_pairs_with_loaded_keys[@]}" || return $?
+    $maybe_dry_run upload_logs || true
   fi
 
   if [ "$no_incremental" != "y" ] && [ ${#incremental_triples_with_loaded_keys[@]} -gt 0 ]; then
     $maybe_dry_run generate_incrementals "${incremental_triples_with_loaded_keys[@]}" || return $?
+    $maybe_dry_run upload_logs || true
   fi
 
   # Sign and generate incrementals for devices with keys not yet loaded in the HSM.
   if [ "${#devices_without_loaded_keys[@]}" -gt 0 ]; then
     try $maybe_dry_run ensure_all_keys_available_for_devices "${devices_without_loaded_keys[@]}" \
       || return $?
+    try $maybe_dry_run upload_logs || true
   fi
 
   if [ "$no_sign" != "y" ] && [ "${#sign_pairs_without_loaded_keys[@]}" -gt 0 ]; then
     $maybe_dry_run sign_builds "${sign_pairs_without_loaded_keys[@]}" || return $?
+    $maybe_dry_run upload_logs || true
   fi
 
   if [ "$no_incremental" != "y" ] && [ ${#incremental_triples_without_loaded_keys[@]} -gt 0 ]; then
     $maybe_dry_run generate_incrementals "${incremental_triples_without_loaded_keys[@]}" \
       || return $?
+    $maybe_dry_run upload_logs || true
   fi
 }
 
@@ -179,6 +185,7 @@ initialize() {
 
 sign_cleanup() {
   common_cleanup_with_vendor || true
+  upload_logs || true
   rm -rf "$TMPDIR" || true
   rm -rf "$STATEDIR" || true
   trap "" EXIT
@@ -313,6 +320,22 @@ maybe_handle_already_existing_builds() {
       exit 0
     fi
   fi
+}
+
+setup_log_dir() {
+  YUBIHSM_LOGS_DIR="$(pwd)/logs"
+  if [ ! -s "$YUBIHSM_LOGS_DIR/upload.py"  ]; then
+    printf "\n" >&2
+    echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) is not the expected git repository." >&2
+    echo "Are you sure you are calling this script from the right place?" >&2
+    echo "Did you clone the audit log git repository already?" >&2
+    return 1
+  fi
+  export YUBIHSM_LOGS_DIR
+}
+
+upload_logs() {
+  "$YUBIHSM_LOGS_DIR/upload.py" --upload-all-new || return $?
 }
 
 find_target_files() {
