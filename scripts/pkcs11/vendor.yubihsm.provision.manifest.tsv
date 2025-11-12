@@ -1,15 +1,7 @@
 filename	sha256sum	filesize	link
 start.sh
-bin/avbtool
-calyx/scripts/vars/devices
-vendor/calyx/scripts/common.include.sh
-vendor/calyx/scripts/generate_keymap.sh
-vendor/calyx/scripts/metadata
-vendor/calyx/scripts/keymapper.id2b.include.sh
-vendor/calyx/scripts/pkcs11/include.sh
-vendor/calyx/scripts/pkcs11/keygen.include.sh
+vendor/calyx/scripts/pkcs11/vendor.yubihsm.audit.logs.py
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.include.sh
-vendor/calyx/scripts/pkcs11/vendor.yubihsm.keygen.sh
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.provision.sh
 vendor/calyx/scripts/pkcs11/vendor.yubihsm.setup.py
 sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz	99501dced7e04ff5bb9150503a2e0ab7031714bfd1f6c08b997ea49467d8713a	3991853	https://developers.yubico.com/YubiHSM2/Releases/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz
