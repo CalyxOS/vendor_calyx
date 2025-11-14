@@ -123,7 +123,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     Aperture \
     AudioFX \
-    AuroraStorePrivilegedExtension \
     AvatarPicker \
     BatteryStatsViewer \
     Bellis \
@@ -132,7 +131,6 @@ PRODUCT_PACKAGES += \
     ESpeakNG \
     Etar \
     ExactCalculator \
-    F-DroidPrivilegedExtension \
     Glimpse \
     Panic \
     Talkback \
