@@ -16,6 +16,8 @@ from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT, ERROR
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm.objects import WrapKey, AuthenticationKey
 
+from audit import extract_and_save_logs
+
 WRAP_KEY_ID = 0x0010
 WRAP_KEY_LEN = 32
 WRAP_KEY_CAPS = (CAPABILITY.IMPORT_WRAPPED | CAPABILITY.EXPORT_WRAPPED)
@@ -193,7 +195,7 @@ def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key
         provision_audit_auth_key(session, password_audit)
     finally:
         session.close()
-    save_audit_log(hsm_name, password_signing)
+    save_audit_log(session, hsm_name, password_signing)
     return wrap_key
 
 
@@ -428,7 +430,7 @@ def provision_auth_key(session, object_id, label, capabilities, delegated_capabi
     print(f"NOT GENERATING {label} {object_id}, BECAUSE ALREADY EXISTS!")
 
 
-def save_audit_log(hsm_name, password):
+def save_audit_log(session, hsm_name, password):
     # define folder for log files and ensure it exists
     now = datetime.now(timezone.utc)
     log_path = os.path.join(os.getenv("KEEP_PATH"), "logs", hsm_name)
@@ -436,17 +438,9 @@ def save_audit_log(hsm_name, password):
     # define log file path
     date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime("%f")[:3]}"
     log_file = os.path.join(log_path, f"{date_str}-provision.log")
-    # execute other python script to actually extract logs
-    # TODO this could be sharing code and HSM session
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    audit_script = os.path.join(script_dir, "vendor.yubihsm.audit.logs.py")
+    # use other python script to actually extract logs
     comment = "provisioning: 4f is for audit log options, the rest is key setup"
-    command = [audit_script, '--log-file', log_file, '--comment', comment]
-    # pass in signing authkey credentials via environment
-    env = os.environ.copy()
-    env["YUBIHSM_AUTHKEY"] = str(SIGNING_AUTHKEY_ID)
-    env["YUBIHSM_PASSWORD"] = password
-    subprocess.run(command, capture_output=True, text=True, check=True, env=env)
+    extract_and_save_logs(session, log_file, comment)
 
 
 def on_not_factory_reset():
