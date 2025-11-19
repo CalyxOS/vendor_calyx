@@ -6,15 +6,15 @@ import time
 
 from yubihsm import YubiHsm
 
-parser = argparse.ArgumentParser(description="Extracts, saves and uploads YubiHSM 2 audit logs.")
-parser.add_argument("--log-file", help="File to append audit log to", required=True)
-parser.add_argument("--comment", help="Comment for all log entries that will get saved")
-parser.add_argument('-v', '--verbose', action='store_true')
-
-args = parser.parse_args()
-
 
 def main():
+    # define command line arguments
+    parser = argparse.ArgumentParser(description="Extracts, saves and uploads YubiHSM 2 audit logs.")
+    parser.add_argument("--log-file", help="File to append audit log to", required=True)
+    parser.add_argument("--comment", help="Comment for all log entries that will get saved")
+    parser.add_argument('-v', '--verbose', action='store_true')
+    args = parser.parse_args()
+
     # connect to the YubiHSM via the connector
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
