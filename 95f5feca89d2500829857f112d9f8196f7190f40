@@ -16,6 +16,23 @@
       "message": "needs testing if this actually works",
       "revId": "95f5feca89d2500829857f112d9f8196f7190f40",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "2c0a7b7f_9f74980a",
+        "filename": "scripts/fdroid-repo.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 142,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-11-19T20:46:40Z",
+      "side": 1,
+      "message": "You need to add the packages here as well",
+      "revId": "95f5feca89d2500829857f112d9f8196f7190f40",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
