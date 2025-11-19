@@ -1,8 +1,13 @@
 filename	sha256sum	filesize	link
 start.sh
-vendor/calyx/scripts/hsm_provisioning/provision.sh
-vendor/calyx/scripts/hsm_provisioning/vendor.yubihsm.setup.py
-vendor/calyx/scripts/hsm_provisioning/vendor.yubihsm.audit.logs.py
+vendor/calyx/scripts/hsm_provisioning/audit.py
+vendor/calyx/scripts/hsm_provisioning/provision.py
+vendor/calyx/scripts/hsm_provisioning/setup.py
+vendor/calyx/scripts/hsm_provisioning/keys/1.pub
+vendor/calyx/scripts/hsm_provisioning/keys/2.pub
+vendor/calyx/scripts/hsm_provisioning/keys/3.pub
+vendor/calyx/scripts/hsm_provisioning/keys/4.pub
+vendor/calyx/scripts/hsm_provisioning/keys/5.pub
 sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz	99501dced7e04ff5bb9150503a2e0ab7031714bfd1f6c08b997ea49467d8713a	3991853	https://developers.yubico.com/YubiHSM2/Releases/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz
 packages/libcurl4t64_8.14.1-2+deb13u2_amd64.deb	d73aa7c6e5293edce3d25d814d662ab4b127cf697895ebdd7ea5c0a54548616e	390756	http://ftp.us.debian.org/debian/pool/main/c/curl/libcurl4t64_8.14.1-2+deb13u2_amd64.deb
 packages/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb	089366fb2b71cadca53fb844cfabb0d0798623463247f5b8fa6ad1cc3ab382f2	51120	http://ftp.us.debian.org/debian/pool/main/o/openpace/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb
@@ -12,3 +17,5 @@ packages/libusb-1.0-0_1.0.28-1_amd64.deb	bb6467a002915c4ac464aa1b22204907951a30e
 packages/opensc_0.26.1-2_amd64.deb	2797d3f18b026f325a8901b91692618f105c3d50d60a5f0263054725a13ea9e5	411144	http://ftp.us.debian.org/debian/pool/main/o/opensc/opensc_0.26.1-2_amd64.deb
 packages/opensc-pkcs11_0.26.1-2_amd64.deb	6f278a3a506530d0675c112bc23ffe37a5716300d3eb26304c75b67544de5506	924200	http://ftp.us.debian.org/debian/pool/main/o/opensc/opensc-pkcs11_0.26.1-2_amd64.deb
 packages/p11-kit_0.25.5-3_amd64.deb	3b048929b011eab66ad30cf888060456281b12a0e2fce2e17dc62906947d0835	403156	http://ftp.us.debian.org/debian/pool/main/p/p11-kit/p11-kit_0.25.5-3_amd64.deb
+packages/python3-yubihsm_3.1.1-1_all.deb	211b2bb012aca1fbc91602d02813c9cba6006f49533dab622c6812fc516b01fa	28104	http://ftp.us.debian.org/debian/pool/main/p/python-yubihsm/python3-yubihsm_3.1.1-1_all.deb
+packages/age_1.2.1-1+b5_amd64.deb	a87ab5ba69a99bc6d8c95935ae467fa877daef50d11d9dabe0520ae01411f85c	1665976	http://ftp.us.debian.org/debian/pool/main/a/age/age_1.2.1-1+b5_amd64.deb

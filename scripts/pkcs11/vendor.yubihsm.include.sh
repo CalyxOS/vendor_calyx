@@ -25,8 +25,6 @@ YUBIHSM_AUDIT_AUTHKEY_ID=${YUBIHSM_AUDIT_AUTHKEY_ID:-0x0002}
 YUBIHSM_ADMIN_AUTHKEY_ID=${YUBIHSM_ADMIN_AUTHKEY_ID:-0x00ad}
 YUBIHSM_WRAP_KEY_ID=${YUBIHSM_WRAP_KEY_ID:-0x0010}
 
-YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE=${YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE:-0100030004000500060007000900080040004100420243004402450246024702550256024800490057004a024b024c024d0067004e004f0250005102520253025400580259005a025b025c005d005e025f006000610062026302640265026602680269026a026b006c020a006d026e026f0070007100720073027402750276027702}
-
 _we_started_apksigner=
 _we_started_yubihsm_connector=
 _we_created_yubihsm_tmpdir=
@@ -1145,38 +1143,6 @@ call_for_each_object() {
 
 dump_object_info() {
   yubihsm_nolog -a list-objects || return $?
-}
-
-check_command_audit_value() {
-  local command_audit_value
-  command_audit_value=$(
-    yubihsm_nolog -a get-option --opt-name command-audit | sed -e 's/^Option value is: //'
-  ) || return $?
-  [ "$command_audit_value" = "$YUBIHSM_EXPECTED_COMMAND_AUDIT_VALUE" ] || return $?
-}
-
-show_yubihsm_info() {
-  if [ -z "${yubihsm_deviceinfo:-}" ]; then
-    read_yubihsm_deviceinfo || return $?
-  fi
-  local objects
-  objects=$(dump_object_info) || return $?
-  local command_audit_value
-  command_audit_value=$(
-    yubihsm_nolog -a get-option --opt-name command-audit | sed -e 's/^Option value is: //'
-  ) || return $?
-  local storage_info
-  storage_info=$(
-    yubihsm_nolog -a get-storage-info 2>&1
-  ) || return $?
-  printf "%s\n" "-Device info-"
-  printf "%s\n" "$yubihsm_deviceinfo"
-  printf "%s\n" "-Objects-"
-  printf "%s\n" "$objects"
-  printf "%s\n" "-Command audit value-"
-  printf "%s\n" "$command_audit_value"
-  printf "%s\n" "-Storage info-"
-  printf "%s\n" "$storage_info"
 }
 
 get_formatted_date() {
