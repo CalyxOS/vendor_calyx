@@ -4,14 +4,7 @@ set -euo pipefail
 
 our_path=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
-script_relpath=vendor/calyx/scripts
-hsm_relpath=$script_relpath/hsm_provisioning
-our_desired_relpath=$hsm_relpath/$(basename "$0")
-provision_relpath=$hsm_relpath/provision.sh
-manifest_filename=prepare.package.manifest.tsv
-source_manifest_relpath=$hsm_relpath/$manifest_filename
-shipped_manifest_relpath=$manifest_filename
-script_args=()
+manifest_filename=manifest.tsv
 # tmp_dir will get removed in cleanup()
 tmp_dir=
 
@@ -23,11 +16,6 @@ main() {
     SOURCE_DIRECTORY=${SOURCE_DIRECTORY%/}
   fi
   basepath=${basepath:-$SOURCE_DIRECTORY}
-  export KEY_DIR=${KEY_DIR:-$(pwd)/keys}
-  manifest_path=${manifest_path:-$basepath/$source_manifest_relpath}
-  if [ ! -e "$manifest_path" ]; then
-    manifest_path=${manifest_path:-$basepath/$shipped_manifest_relpath}
-  fi
 
   tmp_dir=$(mktemp -d)
   output_directory="$tmp_dir/ceremony"
@@ -42,11 +30,13 @@ main() {
   # copy files over to output dir
   prepare_manifest_and_files "$output_directory" || return $?
   # verify copied files
-  verify_files "$output_directory/$shipped_manifest_relpath" "$output_directory" || return $?
+  verify_files "$output_directory/$manifest_filename" "$output_directory" || return $?
   # delete manifest as we won't need it anymore
-  rm "$output_directory/$shipped_manifest_relpath"
-  rm "$zip_file" 2> /dev/null || true
+  rm "$output_directory/$manifest_filename"
+  # move scripts to a more sane location
+  mv "$output_directory/vendor/calyx/scripts/hsm_provisioning" "$output_directory/scripts"
   # create a zip file
+  rm "$zip_file" 2> /dev/null || true
   (
     cd $tmp_dir && \
     zip -r "$zip_file" ceremony
@@ -60,7 +50,7 @@ generate_start_script() {
   cat <<EOF
 #!/bin/bash
 our_path=\$(cd "\$(dirname "\$0")";pwd -P)
-SOURCE_DIRECTORY="\$our_path" exec "\$our_path/$provision_relpath" "\$@"
+SOURCE_DIRECTORY="\$our_path" exec "\$our_path/scripts/provision.py" "\$@"
 EOF
 }
 
@@ -69,7 +59,7 @@ prepare_manifest_and_files() {
   output_directory=$(realpath --no-symlinks "$1")
   local -a manifest_lines
   local -a new_manifest_lines=($'filename\tsha256sum\tfilesize\tlink')
-  mapfile -t manifest_lines < "$basepath/$source_manifest_relpath" \
+  mapfile -t manifest_lines < "$our_path/$manifest_filename" \
     || return $?
   local line
   local header_done=
@@ -123,7 +113,7 @@ prepare_manifest_and_files() {
           # We generate it, so no need to copy, etc.
           we_generated=y ;;
         *)
-          source_file=${ANDROID_BUILD_TOP:-$SOURCE_DIRECTORY}/$filename ;;
+          source_file=$SOURCE_DIRECTORY/$filename ;;
       esac
       if [ "$we_generated" != "y" ] && [ ! -e "$source_file" ]; then
         echo "Cannot find $filename." >&2
@@ -131,7 +121,7 @@ prepare_manifest_and_files() {
         echo "an extracted otatools-keys.zip directory:" >&2
         echo "  unzip otatools-keys.zip -d otatools-keys" >&2
         echo "  cd otatools-keys" >&2
-        echo "  ${our_desired_relpath@Q} ${script_args[*]@Q}" >&2
+        echo "  $our_path/prepare.package.sh" >&2
         echo "(otatools-keys.zip is built with: m otatools-keys-package)" >&2
         return 1
       fi
@@ -152,8 +142,8 @@ prepare_manifest_and_files() {
     fi
     new_manifest_lines+=("$filename"$'\t'"$sha256sum"$'\t'"$file_size"$'\t'"$link")
   done
-  mkdir -p "$(dirname "$output_directory/$shipped_manifest_relpath")" || return $?
-  printf "%s\n" "${new_manifest_lines[@]}" > "$output_directory/$shipped_manifest_relpath" || return $?
+  mkdir -p "$(dirname "$output_directory/$manifest_filename")" || return $?
+  printf "%s\n" "${new_manifest_lines[@]}" > "$output_directory/$manifest_filename" || return $?
 }
 
 verify_files() {

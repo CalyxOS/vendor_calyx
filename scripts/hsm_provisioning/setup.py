@@ -3,6 +3,7 @@
 # Then split the key into shards, exports those encrypted with age to public SSH keys.
 # Creates three auth keys: signing, admin, audit
 
+import getpass
 import os
 import subprocess
 import sys
@@ -146,18 +147,22 @@ AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY.NONE
 SSS_NUM_SHARDS = 5
 SSS_THRESHOLD = 3
 
+KEEP_PATH = os.getenv("KEEP_PATH", "/dev/shm/keep")
+
 
 def main():
-    # Check required env variables
-    if not os.path.isdir(os.getenv("KEEP_PATH", "No KEEP_PATH specified")):
-        print(f"Error: $KEEP_PATH is not a directory.", file=sys.stderr)
-        sys.exit(1)
-    password_admin = check_password("YUBIHSM_ADMIN_AUTHKEY_PASSWORD")
-    password_signing = check_password("YUBIHSM_SIGNING_AUTHKEY_PASSWORD")
-    password_audit = check_password("YUBIHSM_AUDIT_AUTHKEY_PASSWORD")
+    # ask for passwords
+    print("Your HSM will have different authentication keys for different roles: admin, signing and audit.")
+    print()
+    print("Each key will have its own password.")
+    print("Please choose these passwords now.")
+    print()
+    password_admin = ask_password("admin password")
+    password_signing = ask_password("signing password")
+    password_audit = ask_password("audit password")
 
     # provision primary HSM
-    print("Please connect the primary YubiHSM 2.\n")
+    print("\nPlease connect the primary YubiHSM 2.\n")
     input("Press any key when primary HSM is connected.")
     wrap_key_bytes = provision_hsm(password_admin, password_signing, password_audit,
                                    lambda session: provision_wrap_key(session))
@@ -165,12 +170,14 @@ def main():
     create_and_export_shards(wrap_key_bytes)
 
     # provision secondary HSM
-    print("\n\nPlease unplug the primary YubiHSM 2\n")
+    print("\n\nPlease unplug the primary YubiHSM 2")
     print("and connect the secondary YubiHSM 2\n")
     input("Press any key when secondary HSM is connected.")
     provision_hsm(password_admin, password_signing, password_audit,
                   lambda session: wrap_key_bytes)
     print("\nCongratulations! Both HSMs provisioned.")
+    print()
+    print(f"IMPORTANT: Save the contents of {KEEP_PATH} now!")
 
 
 def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key):
@@ -193,17 +200,21 @@ def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key
         session = delete_default_auth_key(hsm, session, password_admin)
         provision_signing_auth_key(session, password_signing)
         provision_audit_auth_key(session, password_audit)
+        save_audit_log(session, hsm_name, password_signing)
     finally:
         session.close()
-    save_audit_log(session, hsm_name, password_signing)
     return wrap_key
 
 
-def check_password(env_name):
-    password = os.getenv(env_name, None)
-    if password is None:
-        print(f"Error: Password for {env_name} missing.", file=sys.stderr)
-        sys.exit(1)
+def ask_password(name):
+    password = getpass.getpass(f"Enter the {name}: ")
+    if len(password) < 8:
+        print(f"Error: Password must be at least 8 characters long.", file=sys.stderr)
+        return ask_password(name)
+    repeated_password = getpass.getpass(f"Re-enter the {name}: ")
+    if password != repeated_password:
+        print(f"Error: {name} does not match. Please try again!", file=sys.stderr)
+        return ask_password(name)
     return password
 
 
@@ -332,7 +343,7 @@ def create_and_export_shards(wrap_key_bytes):
     verify_shards(shards, wrap_key_bytes)
 
     # ensure shard dir exists
-    shard_dir = os.path.join(os.getenv("KEEP_PATH"), "shards")
+    shard_dir = os.path.join(KEEP_PATH, "shards")
     os.makedirs(shard_dir, exist_ok=True)
 
     # encrypt shards with age
@@ -433,7 +444,7 @@ def provision_auth_key(session, object_id, label, capabilities, delegated_capabi
 def save_audit_log(session, hsm_name, password):
     # define folder for log files and ensure it exists
     now = datetime.now(timezone.utc)
-    log_path = os.path.join(os.getenv("KEEP_PATH"), "logs", hsm_name)
+    log_path = os.path.join(KEEP_PATH, "logs", hsm_name)
     os.makedirs(log_path, exist_ok=True)
     # define log file path
     date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime("%f")[:3]}"
