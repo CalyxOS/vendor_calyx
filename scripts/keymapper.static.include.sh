@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
 # Use generate_keymap.sh to create a static keymap based on a given KEYMAPPER.
 # Example: KEYMAPPER=id2b vendor/calyx/scripts/generate_keymap.sh > keymap.tsv
 # Then, to use this keymapper with that static output:

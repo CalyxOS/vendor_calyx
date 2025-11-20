@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: 2018 Daniel Micay
+# SPDX-FileCopyrightText: 2018-2025 The Calyx Institute
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
 
 set -euo pipefail
 scriptpath="$(cd "$(dirname "$0")";pwd -P)"

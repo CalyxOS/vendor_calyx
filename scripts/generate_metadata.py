@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# SPDX-FileCopyrightText: 2018 Daniel Micay
+# SPDX-FileCopyrightText: 2020 The Calyx Institute
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
 
 from argparse import ArgumentParser
 from zipfile import ZipFile
