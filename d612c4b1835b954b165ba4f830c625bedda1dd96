@@ -16,6 +16,24 @@
       "message": "I wonder why this is the only line that uses `$vbmeta_system_key`.",
       "revId": "d612c4b1835b954b165ba4f830c625bedda1dd96",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "17a0f0d4_bb179c60",
+        "filename": "scripts/keymapper.legacy.include.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-11-20T15:22:57Z",
+      "side": 1,
+      "message": "This is either a mistake in the other sections, or lost knowledge at this point. It used to be like this in the old script, and it\u0027s changed in the next commit.",
+      "parentUuid": "52a4dee8_a434f1ee",
+      "revId": "d612c4b1835b954b165ba4f830c625bedda1dd96",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
