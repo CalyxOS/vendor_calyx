@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: 2018 Daniel Micay
+# SPDX-FileCopyrightText: 2018-2025 The Calyx Institute
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
 # Script to sign a target files package, and generate ota packages and factory images
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 

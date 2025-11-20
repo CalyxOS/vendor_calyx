@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 set -euo pipefail
 pkcs11_scriptpath="$(cd "$(dirname "$0")";pwd -P)"
 scriptpath="$(cd "$(dirname "$0")/..";pwd -P)"

@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 OPENSSL_BIN=${OPENSSL_BIN:-$(which openssl)}
 PKCS11_TOOL_BIN=${PKCS11_TOOL_BIN:-$(which pkcs11-tool)}
 

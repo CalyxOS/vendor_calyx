@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
 # Generates a wrap key and imports it into two HSMs.
 # Then split the key into shards, exports those encrypted with age to public SSH keys.
 # Creates three auth keys: signing, admin, audit
