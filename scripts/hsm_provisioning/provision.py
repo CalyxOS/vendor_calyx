@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
 # Leads through the process of provisioning YubiHSM for CalyxOS in an offline environment
 
 import glob

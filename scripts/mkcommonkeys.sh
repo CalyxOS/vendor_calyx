@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 set -euo pipefail
 if [ -d "$1" ]; then
   echo "key directory already exists" >&2
