@@ -1,3 +1,7 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
 # Keymapper files are sourced by release.sh.
 export KEY_DIR=keys/
 

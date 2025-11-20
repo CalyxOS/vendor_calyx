@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 set -euo pipefail
 ourpath=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}

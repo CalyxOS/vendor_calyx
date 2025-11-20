@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
 # id2b: 2-byte IDs for keys (hexadecimal), suitable e.g. for PKCS#11 devices
 # that use such a scheme.
 
