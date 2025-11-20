@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 set -euo pipefail
 
 echo "WARNING: There is something wrong with $0 that leads it to produce inconsistent output." >&2

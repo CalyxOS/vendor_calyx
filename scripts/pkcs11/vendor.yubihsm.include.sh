@@ -1,3 +1,8 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
 export KEYMAPPER=static
 export USE_APKSIGNER=y
 export FIND_KEYS_BY_ID=y
