@@ -195,9 +195,6 @@ fi
 
 $maybe_dry_run pushd "$OUT" || exit 1
 
-# FIXME: generate-factory-images-common.sh doesn't handle errors gracefully, such as for missing
-#        RADIO/bootloader.img on non-Pixel, so we turn off exit-on-error, etc before sourcing it.
-set +euo pipefail
 if [ ! -z "${ANDROID_BUILD_TOP:-}" ]; then
   $maybe_dry_run \
   source "$ANDROID_BUILD_TOP/device/common/generate-factory-images-common.sh"
@@ -205,7 +202,6 @@ else
   $maybe_dry_run \
   source "$RELEASETOOLS_PATH/device/common/generate-factory-images-common.sh"
 fi
-set -euo pipefail
 
 $maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
