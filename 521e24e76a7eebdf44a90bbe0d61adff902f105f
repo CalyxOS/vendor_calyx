@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f006ed6c_b862ebc8",
+        "filename": "scripts/hsm_provisioning/manifest.tsv",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-11-20T15:53:34Z",
+      "side": 1,
+      "message": "These 5 files are not documented anywhere or present in this repo. I assume they are the ssh pub keys?",
+      "range": {
+        "startLine": 6,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 48
+      },
+      "revId": "521e24e76a7eebdf44a90bbe0d61adff902f105f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
