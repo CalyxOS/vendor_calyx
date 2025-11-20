@@ -88,6 +88,24 @@
       "parentUuid": "8aa5d76f_8b700bdd",
       "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "15f81dee_c926c27e",
+        "filename": "scripts/pkcs11/vendor.yubihsm.provision.sh",
+        "patchSetId": 70
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-11-20T15:26:04Z",
+      "side": 1,
+      "message": "This was simply me using a too short password while testing because I haven\u0027t checked the YubiHSM documentation.",
+      "parentUuid": "1d90f2d0_30aa7022",
+      "revId": "c212403e95159fa0491ff392f38a8bd757316c0d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
