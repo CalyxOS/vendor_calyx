@@ -106,7 +106,7 @@ prepare_manifest_and_files() {
       fi
       if [ ! -e "$dest_file" ]; then
         echo "Downloading $dest_file..."
-        (ulimit -f "$file_size" || true; wget -O "$dest_file" "$link") || return $?
+        (ulimit -f "$file_size" || true; curl -L -o "$dest_file" "$link") || return $?
       fi
     else
       # Copy the file.

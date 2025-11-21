@@ -8,6 +8,8 @@ vendor/calyx/scripts/hsm_provisioning/keys/2.pub
 vendor/calyx/scripts/hsm_provisioning/keys/3.pub
 vendor/calyx/scripts/hsm_provisioning/keys/4.pub
 vendor/calyx/scripts/hsm_provisioning/keys/5.pub
+vendor/calyx/scripts/hsm_provisioning/calyx-shamir-split	c2f25e8c5530de6f534618c8cceaca4767456f6e027499f3b6d90385c8feb7b4	2737444	https://gitlab.com/grote/calyx-shamir/-/releases/v0.0.1/downloads/calyx-shamir-split
+vendor/calyx/scripts/hsm_provisioning/calyx-shamir-combine	e130d50ea83bdcfc24fa242a3d318077572cac842d8123a8353d01d70ec1909a	2627265	https://gitlab.com/grote/calyx-shamir/-/releases/v0.0.1/downloads/calyx-shamir-combine
 sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz	99501dced7e04ff5bb9150503a2e0ab7031714bfd1f6c08b997ea49467d8713a	3991853	https://developers.yubico.com/YubiHSM2/Releases/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz
 packages/libcurl4t64_8.14.1-2+deb13u2_amd64.deb	d73aa7c6e5293edce3d25d814d662ab4b127cf697895ebdd7ea5c0a54548616e	390756	http://ftp.us.debian.org/debian/pool/main/c/curl/libcurl4t64_8.14.1-2+deb13u2_amd64.deb
 packages/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb	089366fb2b71cadca53fb844cfabb0d0798623463247f5b8fa6ad1cc3ab382f2	51120	http://ftp.us.debian.org/debian/pool/main/o/openpace/libeac3_1.1.2+ds+git20220117+453c3d6b03a0-1.1+b3_amd64.deb
