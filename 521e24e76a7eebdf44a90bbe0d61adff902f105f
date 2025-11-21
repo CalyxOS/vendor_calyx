@@ -22,6 +22,30 @@
       },
       "revId": "521e24e76a7eebdf44a90bbe0d61adff902f105f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "87df71bb_a91f85d9",
+        "filename": "scripts/hsm_provisioning/manifest.tsv",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-11-21T12:51:46Z",
+      "side": 1,
+      "message": "Yes and since they are missing the change won\u0027t work as-is. Is there a way to mark it WIP?",
+      "parentUuid": "f006ed6c_b862ebc8",
+      "range": {
+        "startLine": 6,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 48
+      },
+      "revId": "521e24e76a7eebdf44a90bbe0d61adff902f105f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
