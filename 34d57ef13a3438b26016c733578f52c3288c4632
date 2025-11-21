@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "0aa0a502_5e9613d5",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 207,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-11-21T13:02:10Z",
+      "side": 1,
+      "message": "We have a readme now and can document them whenever, not a blocker now.",
+      "parentUuid": "94470032_99be1c8d",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "4d7edaad_6288c536",
@@ -67,6 +85,24 @@
       "side": 1,
       "message": "If you have `KEEP_TARGET_FILES\u003dy`, and there already exists a signed target files zip in the output directory, it will not overwrite it, correct, but will simply skip the `sign_target_files_apks` step. Bear in mind that if the previous signing session was interrupted or failed, it might not clean up after itself, leaving a broken zip in place, so this should be used with caution, e.g. when you know that only the OTA generation failed last time or something.",
       "parentUuid": "4d7edaad_6288c536",
+      "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0b2897fc_5787a0f7",
+        "filename": "scripts/release.sh",
+        "patchSetId": 15
+      },
+      "lineNbr": 212,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-11-21T13:02:10Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "ffafbb42_045e2447",
       "revId": "34d57ef13a3438b26016c733578f52c3288c4632",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
