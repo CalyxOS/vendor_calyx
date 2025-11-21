@@ -335,9 +335,10 @@ def provision_wrap_key(session):
 
 
 def create_and_export_shards(wrap_key_bytes):
-    # TODO may switch to a different SSS tool
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    split_path = os.path.join(script_dir, "calyx-shamir-split")
     # split wrap key into shards
-    command = ['ssss-split', '-t', str(SSS_THRESHOLD), '-n', str(SSS_NUM_SHARDS), '-x', '-q']
+    command = [split_path, '--threshold', str(SSS_THRESHOLD), '--shares', str(SSS_NUM_SHARDS)]
     result = subprocess.run(command, input=wrap_key_bytes.hex(), capture_output=True, text=True, check=True)
     shards = result.stdout.splitlines()
     verify_shards(shards, wrap_key_bytes)
@@ -347,7 +348,6 @@ def create_and_export_shards(wrap_key_bytes):
     os.makedirs(shard_dir, exist_ok=True)
 
     # encrypt shards with age
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     for i, shard in enumerate(shards):
         key_path = os.path.join(script_dir, "keys", f"{i + 1}.pub")
         shard_path = os.path.join(shard_dir, f"{i + 1}.shard")
@@ -359,12 +359,14 @@ def verify_shards(shards, wrap_key_bytes):
     if len(shards) != SSS_NUM_SHARDS:
         print(f"ERROR: Unexpected number of shards: {len(shards)} != {SSS_NUM_SHARDS}", file=sys.stderr)
         sys.exit(1)
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    combine_path = os.path.join(script_dir, "calyx-shamir-combine")
     # test that *each* combination of shards can in fact be used to restore the wrap_key_bytes
     shard_combinations = list(combinations(shards, r=3)) + list(combinations(shards, r=4)) + [shards]
     for combination in shard_combinations:
-        command = ['ssss-combine', '-t', str(SSS_THRESHOLD), '-x', '-q']
+        command = [combine_path]
         result = subprocess.run(command, input="\n".join(combination), capture_output=True, text=True, check=True)
-        combined_key = result.stderr.rstrip()
+        combined_key = result.stdout
         if combined_key != wrap_key_bytes.hex():
             print(f"ERROR: Could not verify all shards", file=sys.stderr)
             sys.exit(1)
