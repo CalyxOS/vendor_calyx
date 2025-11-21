@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "5afce7ae_280b08cb",
+        "filename": "scripts/pkcs11/vendor.yubihsm.include.sh",
+        "patchSetId": 38
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-11-21T12:57:25Z",
+      "side": 1,
+      "message": "This referred to the `PREFERRED_KEY_ALGORITHM` variable. The team decided to stick with RSA:4096 and the variable got updated.",
+      "parentUuid": "31c8f8cd_4ba4cc4c",
+      "revId": "8bb03a1ebb7436d154aeb197a6737a01b72bb14f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "d8049459_f6eb5c31",
