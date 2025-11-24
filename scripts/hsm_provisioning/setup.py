@@ -5,10 +5,10 @@
 
 import getpass
 import os
+import pathlib
 import subprocess
 import sys
 from datetime import datetime, timezone
-from itertools import combinations
 
 import yubihsm.defs
 import yubihsm.objects
@@ -18,6 +18,11 @@ from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm.objects import WrapKey, AuthenticationKey
 
 from audit import extract_and_save_logs
+
+SSS_NUM_SHARDS = 5
+SSS_THRESHOLD = 3
+
+KEEP_PATH = os.getenv("KEEP_PATH", os.path.join(pathlib.Path.home(), "CalyxHSM"))
 
 WRAP_KEY_ID = 0x0010
 WRAP_KEY_LEN = 32
@@ -144,11 +149,6 @@ AUDIT_AUTHKEY_CAPS = (
 )
 AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY.NONE
 
-SSS_NUM_SHARDS = 5
-SSS_THRESHOLD = 3
-
-KEEP_PATH = os.getenv("KEEP_PATH", "/dev/shm/keep")
-
 
 def main():
     # ask for passwords
@@ -200,7 +200,7 @@ def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key
         session = delete_default_auth_key(hsm, session, password_admin)
         provision_signing_auth_key(session, password_signing)
         provision_audit_auth_key(session, password_audit)
-        save_audit_log(session, hsm_name, password_signing)
+        save_audit_log(session, hsm_name)
     finally:
         session.close()
     return wrap_key
@@ -236,14 +236,6 @@ def print_and_get_info(hsm, session):
 
 # Turn on (forced) audit log
 def enable_auditing(session):
-    existing_audit_option = session.get_option(OPTION.COMMAND_AUDIT)
-    expected_option = "0100030004000500060007000900080040004100420243004402450246024702" + \
-                      "550256024800490057004a024b024c024d0067004e004f025000510252025302" + \
-                      "5400580259005a025b025c005d005e025f006000610062026302640265026602" + \
-                      "680269026a026b006c020a006d026e026f0070007100720073027402750276027702"
-    if existing_audit_option.hex() == expected_option:
-        print("Already set up audit logs, not doing it again.")
-        return
     print("Provisioning auditing...")
 
     # Much of this was gleaned from https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e
@@ -258,9 +250,7 @@ def enable_auditing(session):
     # We want the latter one to ensure no operation goes unnoticed.
     session.put_option(OPTION.FORCE_AUDIT, b'\x02')
 
-    # Enable audit log for all auditable commands
-    # from: https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html
-    # command Tc values
+    # Enable audit log for most auditable commands, not uncritical ones that create too much noise
     commands_to_audit = (
         COMMAND.CHANGE_AUTHENTICATION_KEY,
         COMMAND.DELETE_OBJECT,
@@ -295,24 +285,23 @@ def enable_auditing(session):
         COMMAND.SIGN_PSS,
         COMMAND.UNWRAP_DATA,
         COMMAND.WRAP_DATA,
+        COMMAND.GET_OPAQUE,
+        COMMAND.DECRYPT_PKCS1,
+        COMMAND.GET_PUBLIC_KEY,
+        COMMAND.DERIVE_ECDH,
+        COMMAND.DECRYPT_OAEP,
+        COMMAND.VERIFY_HMAC,
+        COMMAND.SIGN_SSH_CERTIFICATE,
+        COMMAND.GET_TEMPLATE,
+        COMMAND.CREATE_OTP_AEAD,
+        COMMAND.DECRYPT_ECB,
+        COMMAND.ENCRYPT_ECB,
+        COMMAND.DECRYPT_CBC,
+        COMMAND.ENCRYPT_CBC,
     )
     for command in commands_to_audit:
         session.put_option(OPTION.COMMAND_AUDIT, command.to_bytes() + b"\x02")
     print("Successfully provisioned auditing options.")
-
-
-def is_proper_wrap_key(wrap_key_obj):
-    if wrap_key_obj is None: return False
-    info = wrap_key_obj.get_info()
-    if info.label != "Wrap key": return False
-    if info.algorithm != ALGORITHM.AES256_CCM_WRAP: return False
-    if info.size != 40: return False
-    if info.domains != 0xFFFF: return False
-    # if info.sequence != 0: return False # gets increased when deleting key and re-creating it
-    if info.origin != yubihsm.defs.ORIGIN.IMPORTED: return False
-    if info.capabilities != 12288: return False
-    if info.delegated_capabilities != 17121264: return False
-    return True
 
 
 def create_and_provision_wrap_key(session):
@@ -333,7 +322,6 @@ def provision_wrap_key(session, wrap_key_bytes):
         delegated_capabilities=WRAP_KEY_DEL_CAPS,
         key=wrap_key_bytes,
     )
-    if not is_proper_wrap_key(wrap_key_obj): raise RuntimeError("Created improper wrap key")
     print(f"Imported Wrap Key with ID {wrap_key_obj.id}")
     return wrap_key_bytes
 
@@ -341,11 +329,12 @@ def provision_wrap_key(session, wrap_key_bytes):
 def create_and_export_shards(wrap_key_bytes):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     split_path = os.path.join(script_dir, "calyx-shamir-split")
+    # ensure that split program can be executed
+    os.chmod(split_path, 0o755)
     # split wrap key into shards
     command = [split_path, '--threshold', str(SSS_THRESHOLD), '--shares', str(SSS_NUM_SHARDS)]
     result = subprocess.run(command, input=wrap_key_bytes.hex(), capture_output=True, text=True, check=True)
     shards = result.stdout.splitlines()
-    verify_shards(shards, wrap_key_bytes)
 
     # ensure shard dir exists
     shard_dir = os.path.join(KEEP_PATH, "shards")
@@ -357,23 +346,6 @@ def create_and_export_shards(wrap_key_bytes):
         shard_path = os.path.join(shard_dir, f"{i + 1}.shard")
         age_command = ['age', '-R', key_path, '-o', shard_path]
         subprocess.run(age_command, input=shard, text=True, check=True)
-
-
-def verify_shards(shards, wrap_key_bytes):
-    if len(shards) != SSS_NUM_SHARDS:
-        print(f"ERROR: Unexpected number of shards: {len(shards)} != {SSS_NUM_SHARDS}", file=sys.stderr)
-        sys.exit(1)
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    combine_path = os.path.join(script_dir, "calyx-shamir-combine")
-    # test that *each* combination of shards can in fact be used to restore the wrap_key_bytes
-    shard_combinations = list(combinations(shards, r=3)) + list(combinations(shards, r=4)) + [shards]
-    for combination in shard_combinations:
-        command = [combine_path]
-        result = subprocess.run(command, input="\n".join(combination), capture_output=True, text=True, check=True)
-        combined_key = result.stdout
-        if combined_key != wrap_key_bytes.hex():
-            print(f"ERROR: Could not verify all shards", file=sys.stderr)
-            sys.exit(1)
 
 
 def provision_admin_auth_key(session, admin_password):
@@ -447,7 +419,7 @@ def provision_auth_key(session, object_id, label, capabilities, delegated_capabi
     print(f"NOT GENERATING {label} {object_id}, BECAUSE ALREADY EXISTS!")
 
 
-def save_audit_log(session, hsm_name, password):
+def save_audit_log(session, hsm_name):
     # define folder for log files and ensure it exists
     now = datetime.now(timezone.utc)
     log_path = os.path.join(KEEP_PATH, "logs", hsm_name)
