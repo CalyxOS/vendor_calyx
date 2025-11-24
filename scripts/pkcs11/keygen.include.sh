@@ -127,6 +127,9 @@ keygen_main() {
 
   mkdir -p -m0700 "$key_out_dir" || return $?
 
+  if [ -z "${YUBIHSM_PASSWORD:-}" ]; then
+    ask_variable YUBIHSM_PASSWORD "" y y || return $?
+  fi
   initialize_pre_metadata || return $?
   load_metadata || return $?
   load_keymapper_and_maybe_pkcs11 || return $?
