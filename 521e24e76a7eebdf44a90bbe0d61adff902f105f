@@ -46,6 +46,30 @@
       },
       "revId": "521e24e76a7eebdf44a90bbe0d61adff902f105f",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bc34626f_2856f095",
+        "filename": "scripts/hsm_provisioning/manifest.tsv",
+        "patchSetId": 3
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-11-25T17:34:45Z",
+      "side": 1,
+      "message": "the keys are now included.",
+      "parentUuid": "87df71bb_a91f85d9",
+      "range": {
+        "startLine": 6,
+        "startChar": 0,
+        "endLine": 10,
+        "endChar": 48
+      },
+      "revId": "521e24e76a7eebdf44a90bbe0d61adff902f105f",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
