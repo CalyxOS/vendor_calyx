@@ -256,7 +256,7 @@ copy_exported_file_to_other_dirs() {
   mkdir -p "$(dirname "$hsm_key_out_dir/$rel_source")" || return $?
   mkdir -p "$(dirname "$key_out_dir/$rel_source")" || return $?
   cp "$source" "$hsm_key_out_dir/$rel_source" || return $?
-  cp --no-clobber "$source" "$key_out_dir/$rel_source" || return $?
+  cp --update=none "$source" "$key_out_dir/$rel_source" || return $?
 }
 
 save_yubihsm_deviceinfo() {
