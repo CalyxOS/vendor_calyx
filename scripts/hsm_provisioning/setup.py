@@ -3,15 +3,18 @@
 # Then split the key into shards, exports those encrypted with age to public SSH keys.
 # Creates three auth keys: signing, admin, audit
 
-import getpass
 import os
 import pathlib
+import secrets
+import string
 import subprocess
 import sys
 from datetime import datetime, timezone
 
 import yubihsm.defs
 import yubihsm.objects
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryption, Encoding, PublicFormat
 from yubihsm import YubiHsm
 from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT, ERROR
 from yubihsm.exceptions import YubiHsmDeviceError
@@ -149,22 +152,23 @@ AUDIT_AUTHKEY_CAPS = (
 )
 AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY.NONE
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 def main():
-    # ask for passwords
-    print("Your HSM will have different authentication keys for different roles: admin, signing and audit.")
-    print()
-    print("Each key will have its own password.")
-    print("Please choose these passwords now.")
-    print()
-    password_admin = ask_password("admin password")
-    password_signing = ask_password("signing password")
-    password_audit = ask_password("audit password")
+    # ensure auth key dir exists
+    auth_key_dir = os.path.join(KEEP_PATH, "auth-keys")
+    os.makedirs(auth_key_dir, exist_ok=True)
+
+    # create and get auth keys
+    password_signing = create_auth_password(auth_key_dir, "signing", "5")
+    admin_private_key, admin_public_key = create_auth_key(auth_key_dir, "admin", "4")
+    _, audit_public_key = create_auth_key(auth_key_dir, "audit", "3")
 
     # provision primary HSM
     print("\nPlease connect the primary YubiHSM 2.\n")
     input("Press any key when primary HSM is connected.")
-    wrap_key_bytes = provision_hsm(password_admin, password_signing, password_audit,
+    wrap_key_bytes = provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key,
                                    lambda session: create_and_provision_wrap_key(session))
     # split wrap key into shards and store them encrypted
     create_and_export_shards(wrap_key_bytes)
@@ -173,14 +177,56 @@ def main():
     print("\n\nPlease unplug the primary YubiHSM 2")
     print("and connect the secondary YubiHSM 2\n")
     input("Press any key when secondary HSM is connected.")
-    provision_hsm(password_admin, password_signing, password_audit,
+    provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key,
                   lambda session: provision_wrap_key(session, wrap_key_bytes))
     print("\nCongratulations! Both HSMs provisioned.")
     print()
     print(f"IMPORTANT: Save the contents of {KEEP_PATH} now!")
 
 
-def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key):
+def create_auth_password(auth_key_dir, name, public_key_id):
+    # generate password
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    # this word list will only exist on certain Linux systems, but it does exist on Tails OS 7.2
+    with open('/usr/share/dict/words') as f:
+        words = [word.strip() for word in f]
+    password = ' '.join(secrets.choice(words) for _ in range(4))
+
+    # encrypt password with age
+    public_key_path = os.path.join(script_dir, "keys", f"{public_key_id}.pub")
+    auth_key_path = os.path.join(auth_key_dir, f"{name}.key")
+    age_command = ['age', '-R', public_key_path, '-o', auth_key_path]
+    subprocess.run(age_command, input=password, text=True, check=True)
+
+    return password
+
+
+def create_auth_key(auth_key_dir, name, public_key_id):
+    # create key pair
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    pem_private_key = private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.PKCS8,
+        encryption_algorithm=NoEncryption(),
+    )
+    public_key = private_key.public_key()
+    pem_public_key = public_key.public_bytes(
+        encoding=Encoding.PEM,
+        format=PublicFormat.SubjectPublicKeyInfo,
+    )
+    auth_key = pem_public_key + b'\n' + pem_private_key
+
+    # encrypt auth key pair with age
+    public_key_path = os.path.join(script_dir, "keys", f"{public_key_id}.pub")
+    auth_key_path = os.path.join(auth_key_dir, f"{name}.key")
+    age_command = ['age', '-R', public_key_path, '-o', auth_key_path]
+    subprocess.run(age_command, input=auth_key, check=True)
+
+    return private_key, public_key
+
+
+def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key, get_wrap_key):
     # Connect to the YubiHSM via the connector using the default password:
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
@@ -195,27 +241,15 @@ def provision_hsm(password_admin, password_signing, password_audit, get_wrap_key
         hsm_name = print_and_get_info(hsm, session)
         enable_auditing(session)
         wrap_key = get_wrap_key(session)
-        provision_admin_auth_key(session, password_admin)
+        provision_admin_auth_key(session, admin_public_key)
         # session will get replaced by a new one after switching to our own admin auth key
-        session = delete_default_auth_key(hsm, session, password_admin)
+        session = delete_default_auth_key(hsm, session, admin_private_key)
         provision_signing_auth_key(session, password_signing)
-        provision_audit_auth_key(session, password_audit)
+        provision_audit_auth_key(session, audit_public_key)
         save_audit_log(session, hsm_name)
     finally:
         session.close()
     return wrap_key
-
-
-def ask_password(name):
-    password = getpass.getpass(f"Enter the {name}: ")
-    if len(password) < 8:
-        print(f"Error: Password must be at least 8 characters long.", file=sys.stderr)
-        return ask_password(name)
-    repeated_password = getpass.getpass(f"Re-enter the {name}: ")
-    if password != repeated_password:
-        print(f"Error: {name} does not match. Please try again!", file=sys.stderr)
-        return ask_password(name)
-    return password
 
 
 def print_and_get_info(hsm, session):
@@ -351,7 +385,6 @@ def provision_wrap_key(session, wrap_key_bytes):
 
 
 def create_and_export_shards(wrap_key_bytes):
-    script_dir = os.path.dirname(os.path.realpath(__file__))
     split_path = os.path.join(script_dir, "calyx-shamir-split")
     # ensure that split program can be executed
     os.chmod(split_path, 0o755)
@@ -372,18 +405,21 @@ def create_and_export_shards(wrap_key_bytes):
         subprocess.run(age_command, input=shard, text=True, check=True)
 
 
-def provision_admin_auth_key(session, admin_password):
-    provision_auth_key(
+def provision_admin_auth_key(session, admin_key):
+    label = "Admin auth key"
+    auth_key = AuthenticationKey.put_public_key(
         session=session,
         object_id=ADMIN_AUTHKEY_ID,
-        label="Admin auth key",
+        label=label,
+        domains=0xFFFF,  # all
         capabilities=ADMIN_AUTHKEY_CAPS,
         delegated_capabilities=ADMIN_AUTHKEY_DEL_CAPS,
-        password=admin_password,
+        public_key=admin_key,
     )
+    print(f"Generated {label} with ID {auth_key.id}")
 
 
-def delete_default_auth_key(hsm, session, admin_password):
+def delete_default_auth_key(hsm, session, admin_private_key):
     # first double check that new admin auth key really exists, or we lock ourselves out
     admin_key = session.get_object(ADMIN_AUTHKEY_ID, OBJECT.AUTHENTICATION_KEY)
     admin_key.get_info()
@@ -391,56 +427,41 @@ def delete_default_auth_key(hsm, session, admin_password):
         default_auth_key = session.get_object(0x0001, OBJECT.AUTHENTICATION_KEY)
         default_auth_key.get_info()  # causes OBJECT_NOT_FOUND if key doesn't exist
         default_auth_key.delete()
-        print(f"Deleted default auth key")
-        return hsm.create_session_derived(ADMIN_AUTHKEY_ID, admin_password)
+        print("Deleted default auth key")
+        return hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
     except YubiHsmDeviceError as e:
         if e.code == ERROR.OBJECT_NOT_FOUND:
-            print(f"ALREADY DELETED DEFAULT AUTH KEY, NOT DELETING AGAIN!")
+            print("ALREADY DELETED DEFAULT AUTH KEY, NOT DELETING AGAIN!")
             return session
         raise e
 
 
 def provision_signing_auth_key(session, password):
-    provision_auth_key(
+    label = "Signing auth key"
+    auth_key = AuthenticationKey.put_derived(
         session=session,
         object_id=SIGNING_AUTHKEY_ID,
-        label="Signing auth key",
+        label=label,
+        domains=0xFFFF,  # all
         capabilities=SIGNING_AUTHKEY_CAPS,
         delegated_capabilities=SIGNING_AUTHKEY_DEL_CAPS,
         password=password,
     )
+    print(f"Generated {label} with ID {auth_key.id}")
 
 
-def provision_audit_auth_key(session, password):
-    provision_auth_key(
+def provision_audit_auth_key(session, audit_key):
+    label = "Audit auth key"
+    auth_key = AuthenticationKey.put_public_key(
         session=session,
         object_id=AUDIT_AUTHKEY_ID,
-        label="Audit auth key",
+        label=label,
+        domains=0xFFFF,  # all
         capabilities=AUDIT_AUTHKEY_CAPS,
         delegated_capabilities=AUDIT_AUTHKEY_DEL_CAPS,
-        password=password,
+        public_key=audit_key,
     )
-
-
-def provision_auth_key(session, object_id, label, capabilities, delegated_capabilities, password):
-    try:
-        auth_key = session.get_object(object_id, OBJECT.AUTHENTICATION_KEY)
-        auth_key.get_info()  # needed to cause OBJECT_NOT_FOUND
-    except YubiHsmDeviceError as e:
-        if e.code == ERROR.OBJECT_NOT_FOUND:
-            auth_key = AuthenticationKey.put_derived(
-                session=session,
-                object_id=object_id,
-                label=label,
-                domains=0xFFFF,  # all
-                capabilities=capabilities,
-                delegated_capabilities=delegated_capabilities,
-                password=password,
-            )
-            print(f"Generated {label} with ID {auth_key.id}")
-            return
-        raise e
-    print(f"NOT GENERATING {label} {object_id}, BECAUSE ALREADY EXISTS!")
+    print(f"Generated {label} with ID {auth_key.id}")
 
 
 def save_audit_log(session, hsm_name):
