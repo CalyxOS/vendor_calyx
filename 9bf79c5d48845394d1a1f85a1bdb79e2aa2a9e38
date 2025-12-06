@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "93984280_dc2ef1fe",
+        "filename": "scripts/hsm_provisioning/setup.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 191,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2025-12-06T00:12:30Z",
+      "side": 1,
+      "message": "This is incorrect",
+      "range": {
+        "startLine": 191,
+        "startChar": 67,
+        "endLine": 191,
+        "endChar": 96
+      },
+      "revId": "9bf79c5d48845394d1a1f85a1bdb79e2aa2a9e38",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
