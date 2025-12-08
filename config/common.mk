@@ -196,11 +196,11 @@ include vendor/calyx/config/audio.mk
 PRODUCT_DEXPREOPT_SPEED_APPS += \
     SystemUI
 
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+PRODUCT_PRODUCT_PROPERTIES += \
     dalvik.vm.systemuicompilerfilter=speed
 
 # Enforce privapp-permissions allowlist
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+PRODUCT_PRODUCT_PROPERTIES += \
     ro.control_privapp_permissions=enforce
 
 # Helper script for enabling USB data based on the current type-C role
@@ -215,7 +215,7 @@ endif
 
 # Make sure vendor knows not to start enable_usb_data service. Vendor will always start it for
 # other-system GSIs that lack this property.
-PRODUCT_SYSTEM_PROPERTIES += \
+PRODUCT_PRODUCT_PROPERTIES += \
     ro.boot.system_supports_restrict_usb=1
 
 # Include AOSP initial package stopped states.
