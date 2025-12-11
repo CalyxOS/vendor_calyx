@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a74f8dba_35a01186",
+        "filename": "scripts/metadata",
+        "patchSetId": 1
+      },
+      "lineNbr": 137,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-12-11T19:31:30Z",
+      "side": 0,
+      "message": "The idea is that we add this app to a prebuilt repo already signed using the package name to find the key.",
+      "revId": "049c24d0c49cd574186cbf55a940d715ca7838e7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}

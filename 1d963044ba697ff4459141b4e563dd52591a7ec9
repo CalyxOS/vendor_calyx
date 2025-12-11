@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "66f47c44_ac922cc0",
+        "filename": "scripts/sign-app.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2025-12-11T19:31:30Z",
+      "side": 1,
+      "message": "This script still needs to get tested by someone with an actual HSM, because so far I only tested it with a remote connector using `NEVER_START_YUBIHSM_CONNECTOR\u003dy`",
+      "revId": "1d963044ba697ff4459141b4e563dd52591a7ec9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
