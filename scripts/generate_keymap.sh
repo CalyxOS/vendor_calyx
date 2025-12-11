@@ -14,14 +14,13 @@ source "${DEVICES_FILE:-$scriptpath/../../../calyx/scripts/vars/devices}" || exi
 main() {
   export KEYMAPPER=${KEYMAPPER:-legacy}
   load_keymapper || return $?
-  echo "Using keymapper: $KEYMAPPER" >&2
   if [ -z "${devices+x}" ] || [ "${#devices[@]}" -lt 1 ]; then
     echo "ERROR: No defined devices for which to generate keys." >&2
     echo "       Ensure the devices array is populated in \$DEVICES_FILE ($DEVICES_FILE)." >&2
     return 1
   fi
   declare -A already_generated
-  printf "%s\t%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key" "Exportable"
+  printf "%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key"
   local key_type
   for key_type in "${key_types[@]}"; do
     local array_name
@@ -52,9 +51,7 @@ main() {
         local value
         value=$(KEY_DIR= DEVICE=$device get_key "$key_type" "$key" || exit $?) || return $?
         if [ -z "$value" ]; then continue; fi
-        local exportable
-        exportable=$(DEVICE=$device get_key_id_is_exportable_yn "$value") || return $?
-        printf "%s\t%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key" "$exportable"
+        printf "%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key"
       done
     done || return $?
   done | sort

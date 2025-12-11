@@ -1,0 +1,439 @@
+ID	Device	Key Type	Key
+0x1100		core	build/make/target/product/security/testkey
+0x1101		core	build/make/target/product/security/media
+0x1102		core	build/make/target/product/security/shared
+0x1103		core	build/make/target/product/security/platform
+0x1104		core	build/make/target/product/security/networkstack
+0x1105		core	build/make/target/product/security/bluetooth
+0x1106		core	build/make/target/product/security/sdk_sandbox
+0x1107		core	build/make/target/product/security/nfc
+0x1200		apex_apk	device/google/gs-common/uwb-certs/com.qorvo.uwb
+0x1200		apex_apk	packages/modules/AdServices/adservices/apk/com.android.adservices.api
+0x1200		apex_apk	packages/modules/AppSearch/apk/com.android.appsearch.apk
+0x1200		apex_apk	packages/modules/Bluetooth/android/app/certs/com.android.bluetooth
+0x1200		apex_apk	packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet
+0x1200		apex_apk	packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources
+0x1200		apex_apk	packages/modules/HealthFitness/apk/com.android.healthconnect.controller
+0x1200		apex_apk	packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
+0x1200		apex_apk	packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute
+0x1200		apex_apk	packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
+0x1200		apex_apk	packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
+0x1200		apex_apk	packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin
+0x1200		apex_apk	packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
+0x1200		apex_apk	packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources
+0x1200		apex_apk	packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf
+0x1200		apex_container	com.android.adbd
+0x1200		apex_container	com.android.adservices
+0x1200		apex_container	com.android.appsearch
+0x1200		apex_container	com.android.art
+0x1200		apex_container	com.android.bluetooth
+0x1200		apex_container	com.android.bt
+0x1200		apex_container	com.android.btservices
+0x1200		apex_container	com.android.cellbroadcast
+0x1200		apex_container	com.android.compos
+0x1200		apex_container	com.android.configinfrastructure
+0x1200		apex_container	com.android.conscrypt
+0x1200		apex_container	com.android.crashrecovery
+0x1200		apex_container	com.android.devicelock
+0x1200		apex_container	com.android.extservices
+0x1200		apex_container	com.android.hardware.authsecret
+0x1200		apex_container	com.android.hardware.biometrics.face.virtual
+0x1200		apex_container	com.android.hardware.biometrics.fingerprint.virtual
+0x1200		apex_container	com.android.hardware.boot
+0x1200		apex_container	com.android.hardware.cas
+0x1200		apex_container	com.android.hardware.neuralnetworks
+0x1200		apex_container	com.android.hardware.rebootescrow
+0x1200		apex_container	com.android.hardware.wifi
+0x1200		apex_container	com.android.healthfitness
+0x1200		apex_container	com.android.i18n
+0x1200		apex_container	com.android.ipsec
+0x1200		apex_container	com.android.media
+0x1200		apex_container	com.android.media.swcodec
+0x1200		apex_container	com.android.mediaprovider
+0x1200		apex_container	com.android.neuralnetworks
+0x1200		apex_container	com.android.nfcservices
+0x1200		apex_container	com.android.ondevicepersonalization
+0x1200		apex_container	com.android.os.statsd
+0x1200		apex_container	com.android.permission
+0x1200		apex_container	com.android.profiling
+0x1200		apex_container	com.android.resolv
+0x1200		apex_container	com.android.rkpd
+0x1200		apex_container	com.android.runtime
+0x1200		apex_container	com.android.scheduling
+0x1200		apex_container	com.android.sdkext
+0x1200		apex_container	com.android.support.apexer
+0x1200		apex_container	com.android.telephonymodules
+0x1200		apex_container	com.android.tethering
+0x1200		apex_container	com.android.tzdata
+0x1200		apex_container	com.android.uprobestats
+0x1200		apex_container	com.android.uwb
+0x1200		apex_container	com.android.vibrator.drv2624
+0x1200		apex_container	com.android.vibrator.sunfish
+0x1200		apex_container	com.android.virt
+0x1200		apex_container	com.android.vndk.current
+0x1200		apex_container	com.android.vndk.current.on_vendor
+0x1200		apex_container	com.android.wifi
+0x1200		apex_container	com.google.pixel.vibrator.hal
+0x1300		apex_payload	com.android.adbd
+0x1300		apex_payload	com.android.adservices
+0x1300		apex_payload	com.android.appsearch
+0x1300		apex_payload	com.android.art
+0x1300		apex_payload	com.android.bluetooth
+0x1300		apex_payload	com.android.bt
+0x1300		apex_payload	com.android.btservices
+0x1300		apex_payload	com.android.cellbroadcast
+0x1300		apex_payload	com.android.compos
+0x1300		apex_payload	com.android.configinfrastructure
+0x1300		apex_payload	com.android.conscrypt
+0x1300		apex_payload	com.android.crashrecovery
+0x1300		apex_payload	com.android.devicelock
+0x1300		apex_payload	com.android.extservices
+0x1300		apex_payload	com.android.hardware.authsecret
+0x1300		apex_payload	com.android.hardware.biometrics.face.virtual
+0x1300		apex_payload	com.android.hardware.biometrics.fingerprint.virtual
+0x1300		apex_payload	com.android.hardware.boot
+0x1300		apex_payload	com.android.hardware.cas
+0x1300		apex_payload	com.android.hardware.neuralnetworks
+0x1300		apex_payload	com.android.hardware.rebootescrow
+0x1300		apex_payload	com.android.hardware.wifi
+0x1300		apex_payload	com.android.healthfitness
+0x1300		apex_payload	com.android.i18n
+0x1300		apex_payload	com.android.ipsec
+0x1300		apex_payload	com.android.media
+0x1300		apex_payload	com.android.media.swcodec
+0x1300		apex_payload	com.android.mediaprovider
+0x1300		apex_payload	com.android.neuralnetworks
+0x1300		apex_payload	com.android.nfcservices
+0x1300		apex_payload	com.android.ondevicepersonalization
+0x1300		apex_payload	com.android.os.statsd
+0x1300		apex_payload	com.android.permission
+0x1300		apex_payload	com.android.profiling
+0x1300		apex_payload	com.android.resolv
+0x1300		apex_payload	com.android.rkpd
+0x1300		apex_payload	com.android.runtime
+0x1300		apex_payload	com.android.scheduling
+0x1300		apex_payload	com.android.sdkext
+0x1300		apex_payload	com.android.support.apexer
+0x1300		apex_payload	com.android.telephonymodules
+0x1300		apex_payload	com.android.tethering
+0x1300		apex_payload	com.android.tzdata
+0x1300		apex_payload	com.android.uprobestats
+0x1300		apex_payload	com.android.uwb
+0x1300		apex_payload	com.android.vibrator.drv2624
+0x1300		apex_payload	com.android.vibrator.sunfish
+0x1300		apex_payload	com.android.virt
+0x1300		apex_payload	com.android.vndk.current
+0x1300		apex_payload	com.android.vndk.current.on_vendor
+0x1300		apex_payload	com.android.wifi
+0x1300		apex_payload	com.google.pixel.vibrator.hal
+0x1500		app	prebuilts/calyx/microg/certs/microg
+0x1501		app	external/calyx/chromium/certs/chromium
+0x1502		app	com.google.android.apps.photos
+0x2000	bramble	avb	boot
+0x2000	bramble	avb	dtbo
+0x2000	bramble	avb	init_boot
+0x2000	bramble	avb	recovery
+0x2000	bramble	avb	system
+0x2000	bramble	avb	system_other
+0x2000	bramble	avb	vbmeta
+0x2000	bramble	avb	vbmeta_system
+0x2000	bramble	avb	vbmeta_vendor
+0x2000	bramble	avb	vendor
+0x2000	bramble	other	ota
+0x2100	redfin	avb	boot
+0x2100	redfin	avb	dtbo
+0x2100	redfin	avb	init_boot
+0x2100	redfin	avb	recovery
+0x2100	redfin	avb	system
+0x2100	redfin	avb	system_other
+0x2100	redfin	avb	vbmeta
+0x2100	redfin	avb	vbmeta_system
+0x2100	redfin	avb	vbmeta_vendor
+0x2100	redfin	avb	vendor
+0x2100	redfin	other	ota
+0x2200	barbet	avb	boot
+0x2200	barbet	avb	dtbo
+0x2200	barbet	avb	init_boot
+0x2200	barbet	avb	recovery
+0x2200	barbet	avb	system
+0x2200	barbet	avb	system_other
+0x2200	barbet	avb	vbmeta
+0x2200	barbet	avb	vbmeta_system
+0x2200	barbet	avb	vbmeta_vendor
+0x2200	barbet	avb	vendor
+0x2200	barbet	other	ota
+0x2300	oriole	avb	boot
+0x2300	oriole	avb	dtbo
+0x2300	oriole	avb	init_boot
+0x2300	oriole	avb	recovery
+0x2300	oriole	avb	system
+0x2300	oriole	avb	system_other
+0x2300	oriole	avb	vbmeta
+0x2300	oriole	avb	vbmeta_system
+0x2300	oriole	avb	vbmeta_vendor
+0x2300	oriole	avb	vendor
+0x2300	oriole	other	ota
+0x2400	raven	avb	boot
+0x2400	raven	avb	dtbo
+0x2400	raven	avb	init_boot
+0x2400	raven	avb	recovery
+0x2400	raven	avb	system
+0x2400	raven	avb	system_other
+0x2400	raven	avb	vbmeta
+0x2400	raven	avb	vbmeta_system
+0x2400	raven	avb	vbmeta_vendor
+0x2400	raven	avb	vendor
+0x2400	raven	other	ota
+0x2500	FP4	avb	boot
+0x2500	FP4	avb	dtbo
+0x2500	FP4	avb	init_boot
+0x2500	FP4	avb	recovery
+0x2500	FP4	avb	system
+0x2500	FP4	avb	system_other
+0x2500	FP4	avb	vbmeta
+0x2500	FP4	avb	vbmeta_system
+0x2500	FP4	avb	vbmeta_vendor
+0x2500	FP4	avb	vendor
+0x2500	FP4	other	ota
+0x2600	bluejay	avb	boot
+0x2600	bluejay	avb	dtbo
+0x2600	bluejay	avb	init_boot
+0x2600	bluejay	avb	recovery
+0x2600	bluejay	avb	system
+0x2600	bluejay	avb	system_other
+0x2600	bluejay	avb	vbmeta
+0x2600	bluejay	avb	vbmeta_system
+0x2600	bluejay	avb	vbmeta_vendor
+0x2600	bluejay	avb	vendor
+0x2600	bluejay	other	ota
+0x2700	cheetah	avb	boot
+0x2700	cheetah	avb	dtbo
+0x2700	cheetah	avb	init_boot
+0x2700	cheetah	avb	recovery
+0x2700	cheetah	avb	system
+0x2700	cheetah	avb	system_other
+0x2700	cheetah	avb	vbmeta
+0x2700	cheetah	avb	vbmeta_system
+0x2700	cheetah	avb	vbmeta_vendor
+0x2700	cheetah	avb	vendor
+0x2700	cheetah	other	ota
+0x2800	panther	avb	boot
+0x2800	panther	avb	dtbo
+0x2800	panther	avb	init_boot
+0x2800	panther	avb	recovery
+0x2800	panther	avb	system
+0x2800	panther	avb	system_other
+0x2800	panther	avb	vbmeta
+0x2800	panther	avb	vbmeta_system
+0x2800	panther	avb	vbmeta_vendor
+0x2800	panther	avb	vendor
+0x2800	panther	other	ota
+0x2900	lynx	avb	boot
+0x2900	lynx	avb	dtbo
+0x2900	lynx	avb	init_boot
+0x2900	lynx	avb	recovery
+0x2900	lynx	avb	system
+0x2900	lynx	avb	system_other
+0x2900	lynx	avb	vbmeta
+0x2900	lynx	avb	vbmeta_system
+0x2900	lynx	avb	vbmeta_vendor
+0x2900	lynx	avb	vendor
+0x2900	lynx	other	ota
+0x2a00	devon	avb	boot
+0x2a00	devon	avb	dtbo
+0x2a00	devon	avb	init_boot
+0x2a00	devon	avb	recovery
+0x2a00	devon	avb	system
+0x2a00	devon	avb	system_other
+0x2a00	devon	avb	vbmeta
+0x2a00	devon	avb	vbmeta_system
+0x2a00	devon	avb	vbmeta_vendor
+0x2a00	devon	avb	vendor
+0x2a00	devon	other	ota
+0x2b00	hawao	avb	boot
+0x2b00	hawao	avb	dtbo
+0x2b00	hawao	avb	init_boot
+0x2b00	hawao	avb	recovery
+0x2b00	hawao	avb	system
+0x2b00	hawao	avb	system_other
+0x2b00	hawao	avb	vbmeta
+0x2b00	hawao	avb	vbmeta_system
+0x2b00	hawao	avb	vbmeta_vendor
+0x2b00	hawao	avb	vendor
+0x2b00	hawao	other	ota
+0x2c00	rhode	avb	boot
+0x2c00	rhode	avb	dtbo
+0x2c00	rhode	avb	init_boot
+0x2c00	rhode	avb	recovery
+0x2c00	rhode	avb	system
+0x2c00	rhode	avb	system_other
+0x2c00	rhode	avb	vbmeta
+0x2c00	rhode	avb	vbmeta_system
+0x2c00	rhode	avb	vbmeta_vendor
+0x2c00	rhode	avb	vendor
+0x2c00	rhode	other	ota
+0x2d00	tangorpro	avb	boot
+0x2d00	tangorpro	avb	dtbo
+0x2d00	tangorpro	avb	init_boot
+0x2d00	tangorpro	avb	recovery
+0x2d00	tangorpro	avb	system
+0x2d00	tangorpro	avb	system_other
+0x2d00	tangorpro	avb	vbmeta
+0x2d00	tangorpro	avb	vbmeta_system
+0x2d00	tangorpro	avb	vbmeta_vendor
+0x2d00	tangorpro	avb	vendor
+0x2d00	tangorpro	other	ota
+0x2e00	felix	avb	boot
+0x2e00	felix	avb	dtbo
+0x2e00	felix	avb	init_boot
+0x2e00	felix	avb	recovery
+0x2e00	felix	avb	system
+0x2e00	felix	avb	system_other
+0x2e00	felix	avb	vbmeta
+0x2e00	felix	avb	vbmeta_system
+0x2e00	felix	avb	vbmeta_vendor
+0x2e00	felix	avb	vendor
+0x2e00	felix	other	ota
+0x2f00	husky	avb	boot
+0x2f00	husky	avb	dtbo
+0x2f00	husky	avb	init_boot
+0x2f00	husky	avb	recovery
+0x2f00	husky	avb	system
+0x2f00	husky	avb	system_other
+0x2f00	husky	avb	vbmeta
+0x2f00	husky	avb	vbmeta_system
+0x2f00	husky	avb	vbmeta_vendor
+0x2f00	husky	avb	vendor
+0x2f00	husky	other	ota
+0x3000	shiba	avb	boot
+0x3000	shiba	avb	dtbo
+0x3000	shiba	avb	init_boot
+0x3000	shiba	avb	recovery
+0x3000	shiba	avb	system
+0x3000	shiba	avb	system_other
+0x3000	shiba	avb	vbmeta
+0x3000	shiba	avb	vbmeta_system
+0x3000	shiba	avb	vbmeta_vendor
+0x3000	shiba	avb	vendor
+0x3000	shiba	other	ota
+0x3100	FP5	avb	boot
+0x3100	FP5	avb	dtbo
+0x3100	FP5	avb	init_boot
+0x3100	FP5	avb	recovery
+0x3100	FP5	avb	system
+0x3100	FP5	avb	system_other
+0x3100	FP5	avb	vbmeta
+0x3100	FP5	avb	vbmeta_system
+0x3100	FP5	avb	vbmeta_vendor
+0x3100	FP5	avb	vendor
+0x3100	FP5	other	ota
+0x3200	akita	avb	boot
+0x3200	akita	avb	dtbo
+0x3200	akita	avb	init_boot
+0x3200	akita	avb	recovery
+0x3200	akita	avb	system
+0x3200	akita	avb	system_other
+0x3200	akita	avb	vbmeta
+0x3200	akita	avb	vbmeta_system
+0x3200	akita	avb	vbmeta_vendor
+0x3200	akita	avb	vendor
+0x3200	akita	other	ota
+0x3300	caiman	avb	boot
+0x3300	caiman	avb	dtbo
+0x3300	caiman	avb	init_boot
+0x3300	caiman	avb	recovery
+0x3300	caiman	avb	system
+0x3300	caiman	avb	system_other
+0x3300	caiman	avb	vbmeta
+0x3300	caiman	avb	vbmeta_system
+0x3300	caiman	avb	vbmeta_vendor
+0x3300	caiman	avb	vendor
+0x3300	caiman	other	ota
+0x3400	comet	avb	boot
+0x3400	comet	avb	dtbo
+0x3400	comet	avb	init_boot
+0x3400	comet	avb	recovery
+0x3400	comet	avb	system
+0x3400	comet	avb	system_other
+0x3400	comet	avb	vbmeta
+0x3400	comet	avb	vbmeta_system
+0x3400	comet	avb	vbmeta_vendor
+0x3400	comet	avb	vendor
+0x3400	comet	other	ota
+0x3500	komodo	avb	boot
+0x3500	komodo	avb	dtbo
+0x3500	komodo	avb	init_boot
+0x3500	komodo	avb	recovery
+0x3500	komodo	avb	system
+0x3500	komodo	avb	system_other
+0x3500	komodo	avb	vbmeta
+0x3500	komodo	avb	vbmeta_system
+0x3500	komodo	avb	vbmeta_vendor
+0x3500	komodo	avb	vendor
+0x3500	komodo	other	ota
+0x3600	tokay	avb	boot
+0x3600	tokay	avb	dtbo
+0x3600	tokay	avb	init_boot
+0x3600	tokay	avb	recovery
+0x3600	tokay	avb	system
+0x3600	tokay	avb	system_other
+0x3600	tokay	avb	vbmeta
+0x3600	tokay	avb	vbmeta_system
+0x3600	tokay	avb	vbmeta_vendor
+0x3600	tokay	avb	vendor
+0x3600	tokay	other	ota
+0x3700	otter	avb	boot
+0x3700	otter	avb	dtbo
+0x3700	otter	avb	init_boot
+0x3700	otter	avb	recovery
+0x3700	otter	avb	system
+0x3700	otter	avb	system_other
+0x3700	otter	avb	vbmeta
+0x3700	otter	avb	vbmeta_system
+0x3700	otter	avb	vbmeta_vendor
+0x3700	otter	avb	vendor
+0x3700	otter	other	ota
+0x3800	bangkk	avb	boot
+0x3800	bangkk	avb	dtbo
+0x3800	bangkk	avb	init_boot
+0x3800	bangkk	avb	recovery
+0x3800	bangkk	avb	system
+0x3800	bangkk	avb	system_other
+0x3800	bangkk	avb	vbmeta
+0x3800	bangkk	avb	vbmeta_system
+0x3800	bangkk	avb	vbmeta_vendor
+0x3800	bangkk	avb	vendor
+0x3800	bangkk	other	ota
+0x3900	fogo	avb	boot
+0x3900	fogo	avb	dtbo
+0x3900	fogo	avb	init_boot
+0x3900	fogo	avb	recovery
+0x3900	fogo	avb	system
+0x3900	fogo	avb	system_other
+0x3900	fogo	avb	vbmeta
+0x3900	fogo	avb	vbmeta_system
+0x3900	fogo	avb	vbmeta_vendor
+0x3900	fogo	avb	vendor
+0x3900	fogo	other	ota
+0x3a00	fogos	avb	boot
+0x3a00	fogos	avb	dtbo
+0x3a00	fogos	avb	init_boot
+0x3a00	fogos	avb	recovery
+0x3a00	fogos	avb	system
+0x3a00	fogos	avb	system_other
+0x3a00	fogos	avb	vbmeta
+0x3a00	fogos	avb	vbmeta_system
+0x3a00	fogos	avb	vbmeta_vendor
+0x3a00	fogos	avb	vendor
+0x3a00	fogos	other	ota
+0x3b00	tegu	avb	boot
+0x3b00	tegu	avb	dtbo
+0x3b00	tegu	avb	init_boot
+0x3b00	tegu	avb	recovery
+0x3b00	tegu	avb	system
+0x3b00	tegu	avb	system_other
+0x3b00	tegu	avb	vbmeta
+0x3b00	tegu	avb	vbmeta_system
+0x3b00	tegu	avb	vbmeta_vendor
+0x3b00	tegu	avb	vendor
+0x3b00	tegu	other	ota
