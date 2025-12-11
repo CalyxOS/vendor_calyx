@@ -185,7 +185,8 @@ generate_keys() {
         if [ -z "$mapped_value" ]; then
           continue
         fi
-        local msg="# VALUE: $mapped_value${device:+ (DEVICE: $device)}"
+        label=${device:-"$key_type"}
+        local msg="# VALUE: $mapped_value${device:+ (DEVICE: $device)} LABEL: $label"
         if [ -n "${already_generated[$mapped_value]:-}" ]; then
           printf "%s\n" "$msg: skipping, generated ${already_generated[$mapped_value]}" >&2
           continue
@@ -206,7 +207,7 @@ generate_keys() {
             || key_algorithm=$(get_key_algorithm "$key_type" "$key_name") || return $?
           printf "%s\n" "$msg"
           DEVICE=$device \
-          generate_keypair "$key_id" "$mapped_value" "$key_type" "$key_name" "$key_algorithm" \
+          generate_keypair "$key_id" "$label" "$key_type" "$key_name" "$key_algorithm" \
             || return $?
           _any_key_generated=y
         else

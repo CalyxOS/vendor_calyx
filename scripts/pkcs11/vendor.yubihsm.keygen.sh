@@ -85,7 +85,7 @@ initialize_post_metadata() {
 
 generate_keypair() {
   local key_id=$1
-  local key_label=$2  # unused
+  local key_label=$2
   local key_type=$3   # unused
   local key_name=$4   # unused
   local key_algorithm=$5
@@ -101,8 +101,8 @@ generate_keypair() {
     --algorithm "$yubico_key_algorithm" \
     --domain "$domain" \
     --capabilities "$capabilities" \
+    --label="$key_label" \
     || return $?
-  # --label="$key_label"
 
   local is_key_id_exportable
   is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
@@ -269,7 +269,11 @@ save_yubihsm_deviceinfo() {
 save_keymap() {
   # Save the keymap used during this generation.
   local out=$unique_key_out_dir/keymap.tsv
-  "$keygen_scriptpath/generate_keymap.sh" > "$out" || return $?
+  if [ "$KEYMAPPER" = "static" ]; then
+    cat "$KEYMAP_FILE" > "$out" || return $?
+  else
+    "$keygen_scriptpath/generate_keymap.sh" > "$out" || return $?
+  fi
   copy_exported_file_to_other_dirs "$out" || return $?
 }
 

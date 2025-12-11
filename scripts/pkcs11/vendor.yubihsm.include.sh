@@ -1,4 +1,4 @@
-export KEYMAPPER=id2b
+export KEYMAPPER=static
 export USE_APKSIGNER=y
 export FIND_KEYS_BY_ID=y
 export OPENSSL_PKCS11_URI_USES_HEX_KEY_ID=y
@@ -34,6 +34,8 @@ _our_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit;pwd -P)
 for_restore=
 verify_key_ids=
 declare -g -A fully_loaded_keys_map=()
+
+export KEYMAP_FILE=${KEYMAP_FILE:-"$_our_path/keymap.tsv"}
 
 maybe_dry_run=${maybe_dry_run:-}
 
