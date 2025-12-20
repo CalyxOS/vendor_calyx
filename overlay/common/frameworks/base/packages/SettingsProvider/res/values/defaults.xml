@@ -37,4 +37,7 @@
 
     <!-- Default for Settings.Secure.LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS -->
     <bool name="def_lock_screen_allow_private_notifications">false</bool>
+
+    <!-- Whether vibrate icon is shown in the status bar by default. -->
+    <integer name="def_statusBarVibrateIconEnabled">1</integer>
 </resources>
