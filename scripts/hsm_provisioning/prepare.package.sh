@@ -5,6 +5,7 @@ set -euo pipefail
 our_path=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 manifest_filename=manifest.tsv
+timestamp="201001010000.00"
 # tmp_dir will get removed in cleanup()
 tmp_dir=
 
@@ -27,6 +28,8 @@ main() {
   fi
   generate_start_script > "$output_directory/start.sh" || return $?
   chmod +x "$output_directory/start.sh" || true # If this does not work, oh well.
+  TZ="UTC" touch --no-dereference -t "$timestamp" "$output_directory/start.sh"
+  chmod 755 "$output_directory/start.sh"
   # copy files over to output dir
   prepare_manifest_and_files "$output_directory" || return $?
   # verify copied files
@@ -39,14 +42,15 @@ main() {
   rmdir "$output_directory/vendor/calyx/scripts"
   rmdir "$output_directory/vendor/calyx"
   rmdir "$output_directory/vendor"
+  # adjust final timestamps for reproducibility
+  TZ="UTC" touch --no-dereference -t "$timestamp" "$output_directory"
+  chmod 755 "$output_directory"
   # create a zip file
   rm "$zip_file" 2> /dev/null || true
   (
-    cd $tmp_dir && \
-    zip -r "$zip_file" ceremony
+  cd "$tmp_dir" && find ceremony | LC_ALL=C sort | TZ="UTC" zip -@ -X "$zip_file"
   )
   # print out zip file name and hash
-  echo "$zip_file"
   sha256sum "$zip_file"
 }
 
@@ -141,6 +145,18 @@ prepare_manifest_and_files() {
         file_size=$(stat -c%s "$dest_file") || return $?
       fi
     fi
+    # reset timestamp of dest_file
+    TZ="UTC" touch --no-dereference -t "$timestamp" "$dest_file"
+    if [[ "$dest_file" =~ \.py$ ]]; then
+        chmod 755 "$dest_file"
+    elif [[ "$dest_file" =~ calyx-shamir-split$ ]]; then
+        chmod 755 "$dest_file"
+    else
+        chmod 644 "$dest_file"
+    fi
+    # reset timestamp of folder of dest_file
+    TZ="UTC" touch --no-dereference -t "$timestamp" "$(dirname "$dest_file")"
+    chmod 755 "$(dirname "$dest_file")"
     if [ -z "$sha256sum" ]; then
       sha256sum=$(sha256sum "$dest_file" | cut -d' ' -f1) || return $?
     fi
