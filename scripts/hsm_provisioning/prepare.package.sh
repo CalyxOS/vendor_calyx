@@ -5,6 +5,7 @@ set -euo pipefail
 our_path=$(cd "$(dirname "$0")";pwd -P)
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 manifest_filename=manifest.tsv
+timestamp="201001010000.00"
 # tmp_dir will get removed in cleanup()
 tmp_dir=
 
@@ -27,6 +28,7 @@ main() {
   fi
   generate_start_script > "$output_directory/start.sh" || return $?
   chmod +x "$output_directory/start.sh" || true # If this does not work, oh well.
+  touch --no-dereference -t "$timestamp" "$output_directory/start.sh"
   # copy files over to output dir
   prepare_manifest_and_files "$output_directory" || return $?
   # verify copied files
@@ -39,14 +41,15 @@ main() {
   rmdir "$output_directory/vendor/calyx/scripts"
   rmdir "$output_directory/vendor/calyx"
   rmdir "$output_directory/vendor"
+  # adjust final timestamps for reproducibility
+  touch --no-dereference -t "$timestamp" "$output_directory"
   # create a zip file
   rm "$zip_file" 2> /dev/null || true
   (
     cd $tmp_dir && \
-    zip -r "$zip_file" ceremony
+    zip -X -r "$zip_file" ceremony
   )
   # print out zip file name and hash
-  echo "$zip_file"
   sha256sum "$zip_file"
 }
 
@@ -141,6 +144,10 @@ prepare_manifest_and_files() {
         file_size=$(stat -c%s "$dest_file") || return $?
       fi
     fi
+    # reset timestamp of dest_file
+    touch --no-dereference -t "$timestamp" "$dest_file"
+    # reset timestamp of folder of dest_file
+    touch --no-dereference -t "$timestamp" "$(dirname "$dest_file")"
     if [ -z "$sha256sum" ]; then
       sha256sum=$(sha256sum "$dest_file" | cut -d' ' -f1) || return $?
     fi
