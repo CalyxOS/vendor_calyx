@@ -172,7 +172,7 @@ def main():
 def create_auth_password(auth_key_dir, name, public_key_id):
     # generate password
     alphabet = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    password = ''.join(secrets.choice(alphabet) for _ in range(40))
 
     # encrypt password with age
     public_key_path = os.path.join(script_dir, "keys", f"{public_key_id}.pub")
