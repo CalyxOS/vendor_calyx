@@ -143,8 +143,8 @@ def main():
     os.makedirs(auth_key_dir, exist_ok=True)
 
     # create and get auth keys
-    password_signing = create_auth_password(auth_key_dir, "signing", "5")
-    admin_private_key, admin_public_key = create_auth_key(auth_key_dir, "admin", "4")
+    password_signing = create_auth_password(auth_key_dir, "signing", "3")
+    admin_private_key, admin_public_key = create_auth_key(auth_key_dir, "admin", "3")
     _, audit_public_key = create_auth_key(auth_key_dir, "audit", "3")
 
     # provision primary HSM
