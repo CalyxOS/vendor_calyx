@@ -10,13 +10,14 @@ import string
 import subprocess
 import sys
 from datetime import datetime, timezone
+from time import sleep
 
 import yubihsm.defs
 import yubihsm.objects
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryption, Encoding, PublicFormat
 from yubihsm import YubiHsm
-from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT, ERROR
+from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm.objects import WrapKey, AuthenticationKey, Opaque
 
@@ -208,11 +209,19 @@ def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_p
     hsm = YubiHsm.connect(connector_url)
     try:
         # establish session (using factory default credentials)
-        session = hsm.create_session_derived(0x0001, "password")
+        reset_session = hsm.create_session_derived(0x0001, "password")
     except yubihsm.exceptions.YubiHsmAuthenticationError as e:
         # if we can't authenticate with default credentials, the HSM isn't factory reset
         on_not_factory_reset()
         raise e
+    # factory reset HSM to guarantee clean state
+    print("Connected to HSM. Resetting...")
+    reset_session.reset_device()
+    reset_session.close()
+    # open new session after HSM was reset
+    sleep(5)  # give HSM some time to reboot
+    hsm = YubiHsm.connect(connector_url)
+    session = hsm.create_session_derived(0x0001, "password")
     try:
         hsm_name = print_and_get_info(hsm, session)
         enable_auditing(session)
@@ -233,13 +242,6 @@ def print_and_get_info(hsm, session):
     version = f"v{device_info.version[0]}.{device_info.version[1]}.{device_info.version[2]}"
     hsm_name = f"{device_info.part_number}-{device_info.serial}"
     print(f"Connected to YubiHSM 2 {version} Serial: {device_info.serial} Part: {device_info.part_number}\n")
-
-    # get all keys on device and check if this is factory default
-    keys = session.list_objects()
-    if len(keys) != 1 or keys[0].get_info().label != "DEFAULT AUTHKEY CHANGE THIS ASAP":
-        on_not_factory_reset()
-    else:
-        print("\nDevice seems to be factory reset, continuing...\n")
 
     # get and print attestation certificate
     attestation_cert = Opaque(session, 0).get_certificate()
