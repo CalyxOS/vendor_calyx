@@ -395,20 +395,15 @@ def provision_admin_auth_key(session, admin_key):
 
 
 def delete_default_auth_key(hsm, session, admin_private_key):
-    # first double check that new admin auth key really exists, or we lock ourselves out
-    admin_key = session.get_object(ADMIN_AUTHKEY_ID, OBJECT.AUTHENTICATION_KEY)
-    admin_key.get_info()
-    try:
-        default_auth_key = session.get_object(0x0001, OBJECT.AUTHENTICATION_KEY)
-        default_auth_key.get_info()  # causes OBJECT_NOT_FOUND if key doesn't exist
-        default_auth_key.delete()
-        print("Deleted default auth key")
-        return hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
-    except YubiHsmDeviceError as e:
-        if e.code == ERROR.OBJECT_NOT_FOUND:
-            print("ALREADY DELETED DEFAULT AUTH KEY, NOT DELETING AGAIN!")
-            return session
-        raise e
+    # close old session and open new one
+    session.close()
+    new_session = hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
+
+    default_auth_key = new_session.get_object(0x0001, OBJECT.AUTHENTICATION_KEY)
+    default_auth_key.get_info()  # causes OBJECT_NOT_FOUND if key doesn't exist
+    default_auth_key.delete()
+    print("Deleted default auth key")
+    return new_session
 
 
 def provision_signing_auth_key(session, password):
