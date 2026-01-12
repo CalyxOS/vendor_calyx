@@ -6,9 +6,23 @@ See [dedicated documentation on provisioning](../hsm_provisioning/README.md).
 
 ## Key generation
 
-The following Debian packages are needed
+The following Debian 13 packages are needed:
 
     sudo apt install yubihsm-pkcs11 python3-yubihsm python3-usb python3-git yubihsm-shell yubihsm-connector opensc openssl libengine-pkcs11-openssl
+
+Alternatively for Ubuntu 24.04/Mint 22.2, install the following packages:
+
+    sudo apt install python3-usb python3-git opensc openssl libengine-pkcs11-openssl
+
+and manually install the YubiHSM packages:
+
+[python3-yubihsm](http://ftp.us.debian.org/debian/pool/main/p/python-yubihsm/python3-yubihsm_3.1.1-1_all.deb),
+[yubihsm-connector](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-connector/yubihsm-connector_3.0.5-2_amd64.deb),
+[libykhsmauth2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libykhsmauth2_2.6.0-5_amd64.deb),
+[libyubihsm2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm2_2.6.0-5_amd64.deb),
+[libyubihsm-http2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm-http2_2.6.0-5_amd64.deb),
+[yubihsm-pkcs11](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-pkcs11_2.6.0-5_amd64.deb),
+[yubihsm-shell](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-shell_2.6.0-5_amd64.deb)
 
 Creating keys is a manual step that is required before signing anything.
 
@@ -16,9 +30,14 @@ Before generating keys, make sure the audit log git repository is set up locally
 under in your otatools root under `./logs`
 and that the log file from provisioning is commited.
 
+You should have `CalyxHSM/auth-keys/signing.key` from the provisioning process.
+For the next step you will have to decrypt it using your private key:
+`age --decrypt --identity ~/.ssh/calyxos_shard_ed25519 signing.key`
+
 Build and extract `otatools-keys.zip`.
 Run `./vendor/calyx/scripts/pkcs11/vendor.yubihsm.keygen.sh ./keys` in the folder
 where you extracted `otatools-keys.zip`.
+You will be asked for a password which was the one decrypted in the previous step.
 It generates **all** keys and exports them wrapped (i.e. encrypted)
 to the provided `./keys` folder.
 It automatically removes keys from HSM when it runs out of storage.
@@ -30,6 +49,10 @@ In case the machine was offline during key generation,
 the audit logs in the `./logs` repository must be manually pushed to the remote.
 
 ## Signing
+
+Additionally to the packages installed in the key generation step, the following packages are needed:
+
+    sudo apt install parallel openjdk-21-jdk zip
 
 ### Environment variables
 
@@ -49,6 +72,16 @@ It supports signing different build numbers in one go,
 and most importantly it ensures that devices' required keys are loaded into the HSM
 prior to launching parallel signing;
 devices whose keys are not loaded will be signed in parallel *after* devices whose keys *are* loaded.
+
+You will be asked for a password which is the one you decrypted in the key generation step.
+
+### Example with a local machine
+
+In extracted `otatools-keys.zip` directory:
+```bash
+PKCS11_VENDOR=yubihsm \
+vendor/calyx/scripts/sign.sh
+```
 
 ### Example with a remote server
 
