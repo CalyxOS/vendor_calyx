@@ -47,11 +47,8 @@ engine_id = pkcs11
 dynamic_path = ${PKCS11_OPENSSL_ENGINE_LIBRARY_PATH:-}
 MODULE_PATH = ${PKCS11_MODULE:-}
 init = 0
+PIN = \${ENV::PKCS11_PIN}
 EOF
-
-if [ -n "${PKCS11_PIN:-}" ]; then
-  printf "PIN = %s\n" "$PKCS11_PIN"
-fi
 
 if [ -n "${PKCS11_OPENSSL_CONFIG_EXTRA:-}" ]; then
   printf "%s\n" "$PKCS11_OPENSSL_CONFIG_EXTRA"
