@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e4edcac1_33468588",
+        "filename": "scripts/generate_keymap.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-01-14T21:06:59Z",
+      "side": 1,
+      "message": "```suggestion\n  printf \"%s\\t%s\\t%s\\t%s\\n\" \"ID\" \"Device\" \"Key Type\" \"Key\"\n```",
+      "range": {
+        "startLine": 23,
+        "startChar": 2,
+        "endLine": 23,
+        "endChar": 62
+      },
+      "revId": "049c24d0c49cd574186cbf55a940d715ca7838e7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
