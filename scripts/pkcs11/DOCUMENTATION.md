@@ -108,7 +108,7 @@ and the various APEX keys: `apex_apk`, `apex_container`, `apex_payload`.
 The only keys unique to each device is the `avb` key (Android Verified Boot).
 However, that same device specific key is being used for OTA as well as
 the other AVB variants
-(`boot`, `dtbo`, `init_boot`, `recovery`, `system`, `system_other`, `vbmeta`, `vbmeta_system`, `vbmeta_vendor`, `vendor`).
+(`boot`, `dtbo`, `init_boot`, `pvmfw`, `recovery`, `system`, `system_other`, `vbmeta`, `vbmeta_system`, `vbmeta_vendor`, `vendor`).
 These multiple AVB partitions could be signed by separate keys.
 However, historically, we just have been signing all those partitions
 with the same avb key (with the exception of `vbmeta_system`,

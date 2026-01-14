@@ -23,6 +23,7 @@ keys_avb=(
   vendor
   vbmeta_system
   vbmeta_vendor
+  pvmfw
 )
 
 # Standalone key types that do not belong in the other categories.

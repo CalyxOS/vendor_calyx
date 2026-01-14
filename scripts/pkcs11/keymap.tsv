@@ -132,6 +132,7 @@ ID	Device	Key Type	Key
 0x2000	bramble	avb	boot
 0x2000	bramble	avb	dtbo
 0x2000	bramble	avb	init_boot
+0x2000	bramble	avb	pvmfw
 0x2000	bramble	avb	recovery
 0x2000	bramble	avb	system
 0x2000	bramble	avb	system_other
@@ -143,6 +144,7 @@ ID	Device	Key Type	Key
 0x2100	redfin	avb	boot
 0x2100	redfin	avb	dtbo
 0x2100	redfin	avb	init_boot
+0x2100	redfin	avb	pvmfw
 0x2100	redfin	avb	recovery
 0x2100	redfin	avb	system
 0x2100	redfin	avb	system_other
@@ -154,6 +156,7 @@ ID	Device	Key Type	Key
 0x2200	barbet	avb	boot
 0x2200	barbet	avb	dtbo
 0x2200	barbet	avb	init_boot
+0x2200	barbet	avb	pvmfw
 0x2200	barbet	avb	recovery
 0x2200	barbet	avb	system
 0x2200	barbet	avb	system_other
@@ -165,6 +168,7 @@ ID	Device	Key Type	Key
 0x2300	oriole	avb	boot
 0x2300	oriole	avb	dtbo
 0x2300	oriole	avb	init_boot
+0x2300	oriole	avb	pvmfw
 0x2300	oriole	avb	recovery
 0x2300	oriole	avb	system
 0x2300	oriole	avb	system_other
@@ -176,6 +180,7 @@ ID	Device	Key Type	Key
 0x2400	raven	avb	boot
 0x2400	raven	avb	dtbo
 0x2400	raven	avb	init_boot
+0x2400	raven	avb	pvmfw
 0x2400	raven	avb	recovery
 0x2400	raven	avb	system
 0x2400	raven	avb	system_other
@@ -187,6 +192,7 @@ ID	Device	Key Type	Key
 0x2500	FP4	avb	boot
 0x2500	FP4	avb	dtbo
 0x2500	FP4	avb	init_boot
+0x2500	FP4	avb	pvmfw
 0x2500	FP4	avb	recovery
 0x2500	FP4	avb	system
 0x2500	FP4	avb	system_other
@@ -198,6 +204,7 @@ ID	Device	Key Type	Key
 0x2600	bluejay	avb	boot
 0x2600	bluejay	avb	dtbo
 0x2600	bluejay	avb	init_boot
+0x2600	bluejay	avb	pvmfw
 0x2600	bluejay	avb	recovery
 0x2600	bluejay	avb	system
 0x2600	bluejay	avb	system_other
@@ -209,6 +216,7 @@ ID	Device	Key Type	Key
 0x2700	cheetah	avb	boot
 0x2700	cheetah	avb	dtbo
 0x2700	cheetah	avb	init_boot
+0x2700	cheetah	avb	pvmfw
 0x2700	cheetah	avb	recovery
 0x2700	cheetah	avb	system
 0x2700	cheetah	avb	system_other
@@ -220,6 +228,7 @@ ID	Device	Key Type	Key
 0x2800	panther	avb	boot
 0x2800	panther	avb	dtbo
 0x2800	panther	avb	init_boot
+0x2800	panther	avb	pvmfw
 0x2800	panther	avb	recovery
 0x2800	panther	avb	system
 0x2800	panther	avb	system_other
@@ -231,6 +240,7 @@ ID	Device	Key Type	Key
 0x2900	lynx	avb	boot
 0x2900	lynx	avb	dtbo
 0x2900	lynx	avb	init_boot
+0x2900	lynx	avb	pvmfw
 0x2900	lynx	avb	recovery
 0x2900	lynx	avb	system
 0x2900	lynx	avb	system_other
@@ -242,6 +252,7 @@ ID	Device	Key Type	Key
 0x2a00	devon	avb	boot
 0x2a00	devon	avb	dtbo
 0x2a00	devon	avb	init_boot
+0x2a00	devon	avb	pvmfw
 0x2a00	devon	avb	recovery
 0x2a00	devon	avb	system
 0x2a00	devon	avb	system_other
@@ -253,6 +264,7 @@ ID	Device	Key Type	Key
 0x2b00	hawao	avb	boot
 0x2b00	hawao	avb	dtbo
 0x2b00	hawao	avb	init_boot
+0x2b00	hawao	avb	pvmfw
 0x2b00	hawao	avb	recovery
 0x2b00	hawao	avb	system
 0x2b00	hawao	avb	system_other
@@ -264,6 +276,7 @@ ID	Device	Key Type	Key
 0x2c00	rhode	avb	boot
 0x2c00	rhode	avb	dtbo
 0x2c00	rhode	avb	init_boot
+0x2c00	rhode	avb	pvmfw
 0x2c00	rhode	avb	recovery
 0x2c00	rhode	avb	system
 0x2c00	rhode	avb	system_other
@@ -275,6 +288,7 @@ ID	Device	Key Type	Key
 0x2d00	tangorpro	avb	boot
 0x2d00	tangorpro	avb	dtbo
 0x2d00	tangorpro	avb	init_boot
+0x2d00	tangorpro	avb	pvmfw
 0x2d00	tangorpro	avb	recovery
 0x2d00	tangorpro	avb	system
 0x2d00	tangorpro	avb	system_other
@@ -286,6 +300,7 @@ ID	Device	Key Type	Key
 0x2e00	felix	avb	boot
 0x2e00	felix	avb	dtbo
 0x2e00	felix	avb	init_boot
+0x2e00	felix	avb	pvmfw
 0x2e00	felix	avb	recovery
 0x2e00	felix	avb	system
 0x2e00	felix	avb	system_other
@@ -297,6 +312,7 @@ ID	Device	Key Type	Key
 0x2f00	husky	avb	boot
 0x2f00	husky	avb	dtbo
 0x2f00	husky	avb	init_boot
+0x2f00	husky	avb	pvmfw
 0x2f00	husky	avb	recovery
 0x2f00	husky	avb	system
 0x2f00	husky	avb	system_other
@@ -308,6 +324,7 @@ ID	Device	Key Type	Key
 0x3000	shiba	avb	boot
 0x3000	shiba	avb	dtbo
 0x3000	shiba	avb	init_boot
+0x3000	shiba	avb	pvmfw
 0x3000	shiba	avb	recovery
 0x3000	shiba	avb	system
 0x3000	shiba	avb	system_other
@@ -319,6 +336,7 @@ ID	Device	Key Type	Key
 0x3100	FP5	avb	boot
 0x3100	FP5	avb	dtbo
 0x3100	FP5	avb	init_boot
+0x3100	FP5	avb	pvmfw
 0x3100	FP5	avb	recovery
 0x3100	FP5	avb	system
 0x3100	FP5	avb	system_other
@@ -330,6 +348,7 @@ ID	Device	Key Type	Key
 0x3200	akita	avb	boot
 0x3200	akita	avb	dtbo
 0x3200	akita	avb	init_boot
+0x3200	akita	avb	pvmfw
 0x3200	akita	avb	recovery
 0x3200	akita	avb	system
 0x3200	akita	avb	system_other
@@ -341,6 +360,7 @@ ID	Device	Key Type	Key
 0x3300	caiman	avb	boot
 0x3300	caiman	avb	dtbo
 0x3300	caiman	avb	init_boot
+0x3300	caiman	avb	pvmfw
 0x3300	caiman	avb	recovery
 0x3300	caiman	avb	system
 0x3300	caiman	avb	system_other
@@ -352,6 +372,7 @@ ID	Device	Key Type	Key
 0x3400	comet	avb	boot
 0x3400	comet	avb	dtbo
 0x3400	comet	avb	init_boot
+0x3400	comet	avb	pvmfw
 0x3400	comet	avb	recovery
 0x3400	comet	avb	system
 0x3400	comet	avb	system_other
@@ -363,6 +384,7 @@ ID	Device	Key Type	Key
 0x3500	komodo	avb	boot
 0x3500	komodo	avb	dtbo
 0x3500	komodo	avb	init_boot
+0x3500	komodo	avb	pvmfw
 0x3500	komodo	avb	recovery
 0x3500	komodo	avb	system
 0x3500	komodo	avb	system_other
@@ -374,6 +396,7 @@ ID	Device	Key Type	Key
 0x3600	tokay	avb	boot
 0x3600	tokay	avb	dtbo
 0x3600	tokay	avb	init_boot
+0x3600	tokay	avb	pvmfw
 0x3600	tokay	avb	recovery
 0x3600	tokay	avb	system
 0x3600	tokay	avb	system_other
@@ -385,6 +408,7 @@ ID	Device	Key Type	Key
 0x3700	otter	avb	boot
 0x3700	otter	avb	dtbo
 0x3700	otter	avb	init_boot
+0x3700	otter	avb	pvmfw
 0x3700	otter	avb	recovery
 0x3700	otter	avb	system
 0x3700	otter	avb	system_other
@@ -396,6 +420,7 @@ ID	Device	Key Type	Key
 0x3800	bangkk	avb	boot
 0x3800	bangkk	avb	dtbo
 0x3800	bangkk	avb	init_boot
+0x3800	bangkk	avb	pvmfw
 0x3800	bangkk	avb	recovery
 0x3800	bangkk	avb	system
 0x3800	bangkk	avb	system_other
@@ -407,6 +432,7 @@ ID	Device	Key Type	Key
 0x3900	fogo	avb	boot
 0x3900	fogo	avb	dtbo
 0x3900	fogo	avb	init_boot
+0x3900	fogo	avb	pvmfw
 0x3900	fogo	avb	recovery
 0x3900	fogo	avb	system
 0x3900	fogo	avb	system_other
@@ -418,6 +444,7 @@ ID	Device	Key Type	Key
 0x3a00	fogos	avb	boot
 0x3a00	fogos	avb	dtbo
 0x3a00	fogos	avb	init_boot
+0x3a00	fogos	avb	pvmfw
 0x3a00	fogos	avb	recovery
 0x3a00	fogos	avb	system
 0x3a00	fogos	avb	system_other
@@ -429,6 +456,7 @@ ID	Device	Key Type	Key
 0x3b00	tegu	avb	boot
 0x3b00	tegu	avb	dtbo
 0x3b00	tegu	avb	init_boot
+0x3b00	tegu	avb	pvmfw
 0x3b00	tegu	avb	recovery
 0x3b00	tegu	avb	system
 0x3b00	tegu	avb	system_other
@@ -440,6 +468,7 @@ ID	Device	Key Type	Key
 0x3c00	FP6	avb	boot
 0x3c00	FP6	avb	dtbo
 0x3c00	FP6	avb	init_boot
+0x3c00	FP6	avb	pvmfw
 0x3c00	FP6	avb	recovery
 0x3c00	FP6	avb	system
 0x3c00	FP6	avb	system_other
@@ -451,6 +480,7 @@ ID	Device	Key Type	Key
 0x3d00	frankel	avb	boot
 0x3d00	frankel	avb	dtbo
 0x3d00	frankel	avb	init_boot
+0x3d00	frankel	avb	pvmfw
 0x3d00	frankel	avb	recovery
 0x3d00	frankel	avb	system
 0x3d00	frankel	avb	system_other
@@ -462,6 +492,7 @@ ID	Device	Key Type	Key
 0x3e00	blazer	avb	boot
 0x3e00	blazer	avb	dtbo
 0x3e00	blazer	avb	init_boot
+0x3e00	blazer	avb	pvmfw
 0x3e00	blazer	avb	recovery
 0x3e00	blazer	avb	system
 0x3e00	blazer	avb	system_other
@@ -473,6 +504,7 @@ ID	Device	Key Type	Key
 0x3f00	mustang	avb	boot
 0x3f00	mustang	avb	dtbo
 0x3f00	mustang	avb	init_boot
+0x3f00	mustang	avb	pvmfw
 0x3f00	mustang	avb	recovery
 0x3f00	mustang	avb	system
 0x3f00	mustang	avb	system_other
@@ -484,6 +516,7 @@ ID	Device	Key Type	Key
 0x4000	rango	avb	boot
 0x4000	rango	avb	dtbo
 0x4000	rango	avb	init_boot
+0x4000	rango	avb	pvmfw
 0x4000	rango	avb	recovery
 0x4000	rango	avb	system
 0x4000	rango	avb	system_other
