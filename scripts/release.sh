@@ -59,7 +59,8 @@ if [[
     $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
     $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == felix ||
     $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
+    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu ||
+    $DEVICE == frankel || $DEVICE == blazer || $DEVICE == mustang || $DEVICE == rango
 ]]; then
   BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   RADIO=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
@@ -70,6 +71,9 @@ elif [[ $DEVICE == FP4 ]]; then
   QCOM_FIRMWARE="true"
 elif [[ $DEVICE == FP5 ]]; then
   FP5="true"
+  QCOM_FIRMWARE="true"
+elif [[ $DEVICE == FP6 ]]; then
+  FP6="true"
   QCOM_FIRMWARE="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
@@ -130,6 +134,7 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   if [[
     $DEVICE == FP4 ||
     $DEVICE == FP5 ||
+    $DEVICE == FP6 ||
     $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ||
     $DEVICE == otter
