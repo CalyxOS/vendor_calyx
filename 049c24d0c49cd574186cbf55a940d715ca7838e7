@@ -3,6 +3,29 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "1a7a3981_df7e351c",
+        "filename": "scripts/generate_keymap.sh",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-01-14T21:16:06Z",
+      "side": 1,
+      "message": "This is no longer used in this file after this commit",
+      "range": {
+        "startLine": 5,
+        "startChar": 0,
+        "endLine": 8,
+        "endChar": 1
+      },
+      "revId": "049c24d0c49cd574186cbf55a940d715ca7838e7",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "e4edcac1_33468588",
         "filename": "scripts/generate_keymap.sh",
         "patchSetId": 2
