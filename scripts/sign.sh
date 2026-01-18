@@ -277,7 +277,7 @@ maybe_ask_about_missing_target_files() {
   local -a missing_target_files
   mapfile -d "" -t missing_target_files < <(comm -z --nocheck-order -23 \
     <(printf "%s\0" "${signable_devices[@]}" | sort -z) \
-    <(printf "%s\0" "${device_to_next_build[@]}" | sort -z)) || return $?
+    <(printf "%s\0" "${!device_to_next_build[@]}" | sort -z)) || return $?
   if [ "${#missing_target_files[@]}" -gt 0 ]; then
     echo
     echo "Out of ${#signable_devices[@]} signable devices, only found "\
