@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "72453182_01beac18",
+        "filename": "scripts/hsm_provisioning/prepare.package.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-01-19T21:45:19Z",
+      "side": 1,
+      "message": "tab vs spaces",
+      "range": {
+        "startLine": 49,
+        "startChar": 0,
+        "endLine": 49,
+        "endChar": 1
+      },
+      "revId": "3720661768d21a14e971e064e92772def0d6f480",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
