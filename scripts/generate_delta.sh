@@ -39,7 +39,6 @@ else
   EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
-BUILD_NUMBER=${NEW}_$OLD \
 prepare_for_signing_full "$0" "$@" || error "failed to prepare for signing"
 
 OTAKEY=$(get_key other ota || exit $?)

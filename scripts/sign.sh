@@ -154,8 +154,8 @@ generate_incrementals() {
   echo
   echo "Generating incremental updates for: $*"
 
-  parallel -j "$NUM_DELTA_JOBS" --colsep ',' --tag --line-buffer \
-    "$sign_scriptpath/generate_delta.sh" "{1}" "{2}" "{3}" \
+  parallel -j "$NUM_INCREMENTAL_JOBS" --colsep ',' --tag --line-buffer \
+    "BUILD_NUMBER={3}_{2}" "$sign_scriptpath/generate_delta.sh" "{1}" "{2}" "{3}" \
     ::: "$@" || err=$?
 
   if [ -n "$err" ]; then
