@@ -257,5 +257,6 @@ initialize_keymapper() {
     echo "Cannot find KEYMAP_FILE $KEYMAP_FILE" >&2
     return 1
   fi
+  [ -z "${DEVICE:-}" ] || declare -g AVB_CUSTOM_KEY=$PWD/${KEY_DIR}$(get_key_id avb vbmeta).avbpubkey
   _generate_device_specific_key_ids_map || return $?
 }
