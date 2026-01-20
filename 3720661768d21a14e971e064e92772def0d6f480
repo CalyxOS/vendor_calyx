@@ -22,6 +22,30 @@
       },
       "revId": "3720661768d21a14e971e064e92772def0d6f480",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8eedf2b7_854a3ab0",
+        "filename": "scripts/hsm_provisioning/prepare.package.sh",
+        "patchSetId": 7
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-01-20T00:27:55Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "72453182_01beac18",
+      "range": {
+        "startLine": 49,
+        "startChar": 0,
+        "endLine": 49,
+        "endChar": 1
+      },
+      "revId": "3720661768d21a14e971e064e92772def0d6f480",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
