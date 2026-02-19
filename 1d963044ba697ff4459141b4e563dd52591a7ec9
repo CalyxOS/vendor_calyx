@@ -16,6 +16,24 @@
       "message": "This script still needs to get tested by someone with an actual HSM, because so far I only tested it with a remote connector using `NEVER_START_YUBIHSM_CONNECTOR\u003dy`",
       "revId": "1d963044ba697ff4459141b4e563dd52591a7ec9",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e6530b93_9e832a93",
+        "filename": "scripts/sign-app.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-02-19T20:05:06Z",
+      "side": 1,
+      "message": "Worked for GCamPhotosPreview signing",
+      "parentUuid": "66f47c44_ac922cc0",
+      "revId": "1d963044ba697ff4459141b4e563dd52591a7ec9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
