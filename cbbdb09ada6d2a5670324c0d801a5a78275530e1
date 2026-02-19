@@ -16,6 +16,24 @@
       "message": "Fix this",
       "revId": "cbbdb09ada6d2a5670324c0d801a5a78275530e1",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0547e05c_159fe233",
+        "filename": "scripts/keymapper.static.include.sh",
+        "patchSetId": 5
+      },
+      "lineNbr": 157,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-02-19T19:44:48Z",
+      "side": 1,
+      "message": "I am not able to find a reference to this issue on gitlab or signal, so I will assume it got fixed between patchset 5 when this comment was made and patchset 21. If there is a real issue it will be fixed in a future commit, it\u0027s too late to mess with this confirmed working commit chain now.",
+      "parentUuid": "ca74223b_6c3e5744",
+      "revId": "cbbdb09ada6d2a5670324c0d801a5a78275530e1",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
