@@ -95,6 +95,32 @@ PKCS11_VENDOR=yubihsm \
 vendor/calyx/scripts/sign.sh
 ```
 
+## Signing individual apps
+
+You will be asked for a password which is the one you decrypted in the key generation step.
+Copy the apk you want to sign (in this example `app-release-unsigned.apk` for GCamPhotosPreview)
+to the top of your extracted `otatools-keys.zip` directory.
+
+### Example with a local machine
+
+In extracted `otatools-keys.zip` directory:
+```bash
+PKCS11_VENDOR=yubihsm \
+vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsigned.apk
+```
+
+### Example with a remote server
+
+1. Start yubihsm-connector locally (install package if necessary): `yubihsm-connector`
+2. Connect to remote server, forwarding the yubihsm-connector port: `ssh -R 12345:localhost:12345 user@hostname`
+
+On server, in extracted `otatools-keys.zip` directory:
+```bash
+NEVER_START_YUBIHSM_CONNECTOR=y \
+PKCS11_VENDOR=yubihsm \
+vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsigned.apk
+```
+
 ### Signing Internals
 
 * payload signer is just for OTA payloads
