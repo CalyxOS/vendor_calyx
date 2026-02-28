@@ -100,8 +100,7 @@ PRODUCT_PACKAGES += \
     TrichromeWebView \
     Twelve \
     Recorder \
-    Seedvault \
-    Ripple
+    Seedvault
 
 # Config
 PRODUCT_PACKAGES += \
