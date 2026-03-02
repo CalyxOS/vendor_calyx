@@ -64,17 +64,13 @@ PRODUCT_PACKAGES += \
     ThemePicker \
     ThemesStub
 
-# Include {GoogleSansFlex,Lato,Rubik} fonts
+# Include GoogleSansFlex font
 $(call inherit-product-if-exists, external/google-fonts/google-sans-flex/fonts.mk)
-$(call inherit-product-if-exists, external/google-fonts/lato/fonts.mk)
-$(call inherit-product-if-exists, external/google-fonts/rubik/fonts.mk)
 
 # Fonts
 PRODUCT_PACKAGES += \
     fonts_customization.xml \
-    FontGoogleSansFlexOverlay \
-    FontLatoOverlay \
-    FontRubikOverlay
+    FontGoogleSansFlexOverlay
 
 # Local F-droid repo
 $(call inherit-product, prebuilts/calyx/fdroid/fdroid-repo.mk)
