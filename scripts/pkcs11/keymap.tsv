@@ -62,6 +62,7 @@ ID	Device	Key Type	Key
 0x1200		apex_container	com.android.scheduling
 0x1200		apex_container	com.android.sdkext
 0x1200		apex_container	com.android.support.apexer
+0x1200		apex_container	com.android.telephonycore
 0x1200		apex_container	com.android.telephonymodules
 0x1200		apex_container	com.android.tethering
 0x1200		apex_container	com.android.tzdata
@@ -114,6 +115,7 @@ ID	Device	Key Type	Key
 0x1300		apex_payload	com.android.scheduling
 0x1300		apex_payload	com.android.sdkext
 0x1300		apex_payload	com.android.support.apexer
+0x1300		apex_payload	com.android.telephonycore
 0x1300		apex_payload	com.android.telephonymodules
 0x1300		apex_payload	com.android.tethering
 0x1300		apex_payload	com.android.tzdata
