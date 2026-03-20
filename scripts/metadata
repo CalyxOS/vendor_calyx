@@ -106,6 +106,7 @@ keys_apex=(
   com.android.vndk.current.on_vendor
   com.android.wifi
   com.google.pixel.vibrator.hal
+  com.android.telephonycore
 )
 
 # APKs inside of APEXes.
