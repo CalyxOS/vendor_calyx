@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b907fc66_5d875871",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 11
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-03-23T18:20:35Z",
+      "side": 1,
+      "message": "There seems to be a strangeness when it switches from abstract art to calyx logo, but not so bad that this would block shipping for me.",
+      "revId": "50561cfeb6609d4ca11fede6167aa73d1e66c8d9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
