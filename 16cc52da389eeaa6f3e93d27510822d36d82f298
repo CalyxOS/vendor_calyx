@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f05d7798_90ba90b7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-03-24T14:38:28Z",
+      "side": 1,
+      "message": "I did a fresh build and wiped user data, then I created a work profile. I am able to access files from the work profile in files app with that change.",
+      "revId": "16cc52da389eeaa6f3e93d27510822d36d82f298",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
