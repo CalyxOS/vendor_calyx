@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The Calyx Institute
+     SPDX-License-Identifier: Apache-2.0
+-->
+<user-types version='0'>
+    <!-- see https://source.android.com/docs/devices/admin/custom-user-types -->
+    <profile-type
+        name="android.os.usertype.profile.MANAGED">
+      <user-properties crossProfileContentSharingStrategy="1" />
+    </profile-type>
+</user-types>
