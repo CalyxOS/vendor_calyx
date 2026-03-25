@@ -147,4 +147,9 @@
          value is left empty.  When this is non-empty then config_rawContactsLocalAccountName
          should also be non-empty.-->
     <string name="config_rawContactsLocalAccountType" translatable="false">com.android.contacts</string>
+
+    <string-array name="config_rawContactsEligibleDefaultAccountTypes">
+        <item>com.google</item>
+        <item>at.bitfire.davdroid.address_book</item>
+    </string-array>
 </resources>
