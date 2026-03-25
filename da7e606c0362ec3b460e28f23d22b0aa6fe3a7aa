@@ -16,6 +16,23 @@
       "message": "Awesome, so you tested this again locally?",
       "revId": "da7e606c0362ec3b460e28f23d22b0aa6fe3a7aa",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e5c81285_630f23de",
+        "filename": "scripts/pkcs11/README.md",
+        "patchSetId": 3
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-03-25T14:33:59Z",
+      "side": 1,
+      "message": "This may be confusing if you read this long after key generation. Maybe just say `asked for the signing password`?",
+      "revId": "da7e606c0362ec3b460e28f23d22b0aa6fe3a7aa",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
