@@ -1,0 +1,45 @@
+//
+// SPDX-FileCopyrightText: The Calyx Institute
+// SPDX-License-Identifier: Apache-2.0
+//
+
+genrule {
+    name: "otatools_package_calyx_scripts",
+    tools: ["soong_zip"],
+    srcs: [
+        "common.include.sh",
+        "generate_delta.sh",
+        "generate_keymap.sh",
+        "generate_metadata.py",
+        "release.sh",
+        "sign.sh",
+        "sign-app.sh",
+        "**/*keymapper*",
+        "**/*metadata*",
+        "pkcs11/**/*",
+    ],
+    cmd: "find vendor/calyx/scripts -type f -o -type l | " +
+         "grep -v 'pkcs11/.*keygen' | " +
+         "grep -v 'pkcs11/\\.' | " +
+         "sort > $(genDir)/files.txt && " +
+         "$(location soong_zip) -o $(out) -l $(genDir)/files.txt",
+    out: ["otatools_package_calyx_scripts.zip"],
+}
+
+genrule {
+    name: "otatools_package_calyx_keys_scripts",
+    tools: ["soong_zip"],
+    srcs: [
+        "mkcommonkeys.sh",
+        "mkkey.sh",
+        "mkkeys.sh",
+        "updatecommonkeys.sh",
+        "updatekeys.sh",
+        "pkcs11/**/*keygen*",
+    ],
+    cmd: "find vendor/calyx/scripts -type f -o -type l | " +
+         "grep -v 'pkcs11/\\.' | " +
+         "sort > $(genDir)/files.txt && " +
+         "$(location soong_zip) -o $(out) -l $(genDir)/files.txt",
+    out: ["otatools_package_calyx_scripts.zip"],
+}
