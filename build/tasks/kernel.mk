@@ -76,6 +76,9 @@
 #   TARGET_DTB_LIST_WILDCARD           = Optional, limits the .dtb files used to generate the
 #                                          final DTB image when NOT using QCOM's merge_dtbs
 #                                          script. Allows multiple patterns.
+#
+#   TARGET_MERGE_DTBOS_WILDCARD        = Optional, limits the .dtbo files used to generate the
+#                                          final DTBO image when using QCOM's merge_dtbs script.
 
 ifneq ($(TARGET_NO_KERNEL),true)
 ifneq ($(TARGET_NO_KERNEL_OVERRIDE),true)
@@ -92,6 +95,8 @@ KERNEL_DEFCONFIG_EXT := $(TARGET_KERNEL_CONFIG_EXT)
 # dtb generation - optional
 TARGET_MERGE_DTBS_WILDCARD ?= *
 TARGET_DTB_LIST_WILDCARD ?= *
+# dtbo generation - optional
+TARGET_MERGE_DTBOS_WILDCARD ?= *
 # recovery modules.load fallback - optional
 BOARD_RECOVERY_KERNEL_MODULES_LOAD ?= $(BOARD_RECOVERY_RAMDISK_KERNEL_MODULES_LOAD)
 
@@ -554,7 +559,7 @@ $(BOARD_PREBUILT_DTBOIMAGE): $(DTC) $(MKDTIMG) $(MKDTBOIMG)
 $(BOARD_PREBUILT_DTBOIMAGE):
 	@echo "Building dtbo.img"
 ifeq ($(BOARD_USES_QCOM_MERGE_DTBS_SCRIPT),true)
-	$(MKDTBOIMG) create $@ --page_size=$(BOARD_KERNEL_PAGESIZE) $(shell find $(DTBS_OUT) -type f -name "*.dtbo" | sort)
+	$(MKDTBOIMG) create $@ --page_size=$(BOARD_KERNEL_PAGESIZE) $(shell find $(DTBS_OUT) -type f -name "${TARGET_MERGE_DTBOS_WILDCARD}.dtbo" | sort)
 else
 	$(hide) find $(DTBO_OUT)/arch/$(KERNEL_ARCH)/boot/dts -type f -name "*.dtbo" | xargs rm -f
 	$(call make-dtbo-target,$(KERNEL_DEFCONFIG))
