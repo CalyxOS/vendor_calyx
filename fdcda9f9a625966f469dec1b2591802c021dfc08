@@ -16,6 +16,24 @@
       "message": "I\u0027m not sure I like the idea of allowlisting, but it does work",
       "revId": "fdcda9f9a625966f469dec1b2591802c021dfc08",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "30b5d2b7_b5f7cc5f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-04-02T23:07:24Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "293f1af5_9c4721e3",
+      "revId": "fdcda9f9a625966f469dec1b2591802c021dfc08",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
