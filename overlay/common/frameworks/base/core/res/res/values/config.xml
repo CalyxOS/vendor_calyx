@@ -154,4 +154,11 @@
         <item>com.google</item>
         <item>at.bitfire.davdroid.address_book</item>
     </string-array>
+
+    <!-- Whether all secondary users (and the system user) are eligible to have profiles.
+         If false, only the MainUser is eligible to have profiles.
+          NOTE: this feature not supported yet, and CTS will fail if it's set to
+          true.
+    -->
+    <bool name="config_supportProfilesOnNonMainUser">true</bool>
 </resources>
