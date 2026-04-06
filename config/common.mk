@@ -95,7 +95,6 @@ PRODUCT_PACKAGES += \
     Etar \
     ExactCalculator \
     Glimpse \
-    Panic \
     Talkback \
     TrichromeChrome \
     TrichromeWebView \
