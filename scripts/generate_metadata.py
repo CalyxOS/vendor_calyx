@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # SPDX-FileCopyrightText: 2018 Daniel Micay
-# SPDX-FileCopyrightText: 2020 The Calyx Institute
+# SPDX-FileCopyrightText: 2020-2026 The Calyx Institute
 # SPDX-License-Identifier: MIT OR Apache-2.0
 #
 
@@ -33,9 +33,9 @@ with ZipFile(parser.parse_args().zip) as f:
                 build_id = data["post-build"].split("/")[3]
                 incremental = data["post-build"].split("/")[4].split(":")[0]
                 print(incremental, data["post-timestamp"], build_id, file=output)
-    elif "SYSTEM/build.prop" in f.namelist():
-        data = LoadBuildProp(f, "SYSTEM/build.prop")
-        with open(data["ro.build.product"] + "-" + parser.parse_args().channel, "w") as output:
+    elif "PRODUCT/etc/build.prop" in f.namelist():
+        data = LoadBuildProp(f, "PRODUCT/etc/build.prop")
+        with open(data["ro.product.product.device"] + "-" + parser.parse_args().channel, "w") as output:
             build_id = data["ro.build.id"]
             incremental = data["ro.build.version.incremental"]
             timestamp = data["ro.build.date.utc"]
