@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "524969dd_e64b1649",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 16
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-04-14T13:35:01Z",
+      "side": 1,
+      "message": "PS16 fixes 5 frames that remained incorrectly named, adds a blank frame after part0 and reduces the part0 pause from 90 to 60. IMO it looks good enough now, we can always improve it later",
+      "revId": "1d8a78cb656923c1da46207a823229cb499a85c4",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
