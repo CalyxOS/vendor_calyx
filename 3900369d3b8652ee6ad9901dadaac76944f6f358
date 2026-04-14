@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a445f8a9_00994eb9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 10
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-04-14T23:31:52Z",
+      "side": 1,
+      "message": "Further improvements can be done in a separate commit",
+      "revId": "3900369d3b8652ee6ad9901dadaac76944f6f358",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
