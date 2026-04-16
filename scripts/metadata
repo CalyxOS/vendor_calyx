@@ -118,7 +118,6 @@ keys_apex_apk=(
   packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin
   packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources
   packages/modules/AdServices/adservices/apk/com.android.adservices.api
-  packages/modules/Bluetooth/android/app/certs/com.android.bluetooth
   packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
   packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
   packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
