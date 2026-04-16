@@ -10,7 +10,6 @@ ID	Device	Key Type	Key
 0x1200		apex_apk	device/google/gs-common/uwb-certs/com.qorvo.uwb
 0x1200		apex_apk	packages/modules/AdServices/adservices/apk/com.android.adservices.api
 0x1200		apex_apk	packages/modules/AppSearch/apk/com.android.appsearch.apk
-0x1200		apex_apk	packages/modules/Bluetooth/android/app/certs/com.android.bluetooth
 0x1200		apex_apk	packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet
 0x1200		apex_apk	packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources
 0x1200		apex_apk	packages/modules/HealthFitness/apk/com.android.healthconnect.controller
