@@ -121,8 +121,6 @@ keys_apex_apk=(
   packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
   packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
   packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
-  packages/modules/Connectivity/nearby/halfsheet/apk-certs/com.android.nearby.halfsheet
-  packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf
   packages/modules/AppSearch/apk/com.android.appsearch.apk
   packages/modules/HealthFitness/apk/com.android.healthconnect.controller
   packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
