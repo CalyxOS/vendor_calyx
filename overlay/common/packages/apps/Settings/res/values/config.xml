@@ -32,4 +32,6 @@
     <!-- Carrier_enabled editable -->
     <bool name="config_allow_edit_carrier_enabled" translatable="false">true</bool>
 
+    <!-- Whether to show the "glanceable hub" settings on mobile. -->
+    <bool name="config_show_glanceable_hub_toggle_setting_mobile">true</bool>
 </resources>
