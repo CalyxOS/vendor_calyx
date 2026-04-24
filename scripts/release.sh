@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # SPDX-FileCopyrightText: 2018 Daniel Micay
-# SPDX-FileCopyrightText: 2018-2025 The Calyx Institute
+# SPDX-FileCopyrightText: 2018-2026 The Calyx Institute
 # SPDX-License-Identifier: MIT OR Apache-2.0
 #
 # Script to sign a target files package, and generate ota packages and factory images
@@ -169,25 +169,28 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
 else
 if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
-  echo "Create OTA update zip"
+  echo "Creating OTA update zip"
   $maybe_dry_run \
   "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
+  $maybe_dry_run pushd "$OUT" || exit 1
+
+  echo "Calculating sha256sum for OTA update zip"
   $maybe_dry_run \
-  sha256sum "$OUT/$DEVICE-ota_update-$BUILD.zip" \
-    | $maybe_dry_run_ignore awk '{printf $1}' \
-    | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$BUILD.zip.sha256sum"
+  sha256sum "$DEVICE-ota_update-$BUILD.zip" > "$DEVICE-ota_update-$BUILD.zip.sha256sum"
+
+  $maybe_dry_run popd
 fi
 
 if [ ! -z "${OTA_ONLY:-}" ]; then
-  echo "Not creating factory images due to OTA_ONLY=$OTA_ONLY"
+  echo "Not creating factory image due to OTA_ONLY=$OTA_ONLY"
   exit 0
 fi
 fi
 
 if [ "${KEEP_FACTORY:-n}" = n ] || [ ! -e "$OUT/$DEVICE-img-$BUILD.zip" ]; then
-  echo "Creating factory images"
+  echo "Creating factory image"
   $maybe_dry_run \
   "$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
@@ -205,10 +208,10 @@ fi
 
 $maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
+
+echo "Calculating sha256sum for factory image"
 $maybe_dry_run \
-sha256sum "$DEVICE-factory-$BUILD.zip" \
-  | $maybe_dry_run_ignore awk '{printf $1}' \
-  | $maybe_dry_run_ignore tee "$DEVICE-factory-$BUILD.zip.sha256sum"
+sha256sum "$DEVICE-factory-$BUILD.zip" > "$DEVICE-factory-$BUILD.zip.sha256sum"
 
 $maybe_dry_run popd
 
@@ -227,10 +230,14 @@ $maybe_dry_run \
 $maybe_dry_run \
 "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
+
+$maybe_dry_run pushd "$OUT" || exit 1
+
+echo "Calculating sha256sum for OTA test update zip"
 $maybe_dry_run \
-sha256sum "$OUT/$DEVICE-ota_update-$OTATEST.zip" \
-  | $maybe_dry_run_ignore awk '{printf $1}' \
-  | $maybe_dry_run_ignore tee "$OUT/$DEVICE-ota_update-$OTATEST.zip.sha256sum"
+sha256sum "$DEVICE-ota_update-$OTATEST.zip" > "$DEVICE-ota_update-$OTATEST.zip.sha256sum"
+
+$maybe_dry_run popd
 fi
 
 release_cleanup || true

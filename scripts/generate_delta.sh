@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # SPDX-FileCopyrightText: 2018 Daniel Micay
-# SPDX-FileCopyrightText: 2018-2025 The Calyx Institute
+# SPDX-FileCopyrightText: 2018-2026 The Calyx Institute
 # SPDX-License-Identifier: MIT OR Apache-2.0
 #
 
@@ -48,10 +48,12 @@ $maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETO
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
 
+$maybe_dry_run pushd "archive/release-$DEVICE-$NEW" || exit 1
+
 echo "Calculating sha256sum for incremental"
-$maybe_dry_run sha256sum "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip" \
-  | $maybe_dry_run_ignore awk '{printf $1}' \
-  | $maybe_dry_run_ignore tee "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
+$maybe_dry_run sha256sum "$DEVICE-incremental-$OLD-$NEW.zip" > "$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
+
+$maybe_dry_run popd
 
 release_cleanup || true
 trap "" EXIT
