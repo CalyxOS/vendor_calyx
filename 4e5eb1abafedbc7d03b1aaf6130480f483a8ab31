@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f9277a1a_2a787a4c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-04-24T18:42:07Z",
+      "side": 1,
+      "message": "This flag does nothing anymore",
+      "revId": "4e5eb1abafedbc7d03b1aaf6130480f483a8ab31",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
