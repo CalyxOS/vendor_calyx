@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "83a0c41f_0c3a7592",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000136
+      },
+      "writtenOn": "2026-04-26T16:45:55Z",
+      "side": 1,
+      "message": "Tested on 7.2.0.85; generated checksum includes filename and both format + content passes when running sha256sum -c *.sha256sum",
+      "revId": "ab56ea1d8a71fbe53b307f63c749477cc198cc50",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
