@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "28d0e53c_0dc2e791",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-04-28T21:33:16Z",
+      "side": 1,
+      "message": "W failed to find resource \u0027bool/config_wifi_support_connected_mac_randomization\u0027",
+      "revId": "2d1a009eb0b7f114b864866c7fd73365a619e568",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
