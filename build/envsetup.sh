@@ -1,9 +1,3 @@
-CLANG_VERSION=$(${ANDROID_BUILD_TOP}/build/soong/scripts/get_clang_version.py)
-export LLVM_AOSP_PREBUILTS_VERSION="${CLANG_VERSION}"
-
-RUST_VERSION=$(grep 'RustDefaultVersion =' ${ANDROID_BUILD_TOP}/build/soong/rust/config/global.go | awk '{print $3}' | awk -F '"' '{print $2}')
-export RUST_AOSP_PREBUILTS_VERSION="${RUST_VERSION}"
-
 # Find the top directory
 # Slightly modified from build/make/shell_utils.sh
 function _gettop
@@ -51,6 +45,18 @@ function _getoutdir
     fi
     echo "${out_dir}"
 }
+
+if [ -z "${ANDROID_BUILD_TOP-}" ]; then
+    export ANDROID_BUILD_TOP=$(_gettop)
+fi
+
+if [ -d "${ANDROID_BUILD_TOP}/build/soong" ]; then
+    CLANG_VERSION=$(${ANDROID_BUILD_TOP}/build/soong/scripts/get_clang_version.py)
+    export LLVM_AOSP_PREBUILTS_VERSION="${CLANG_VERSION}"
+
+    RUST_VERSION=$(grep 'RustDefaultVersion =' ${ANDROID_BUILD_TOP}/build/soong/rust/config/global.go | awk '{print $3}' | awk -F '"' '{print $2}')
+    export RUST_AOSP_PREBUILTS_VERSION="${RUST_VERSION}"
+fi
 
 if [[ ${OFFICIAL_BUILD:-} = "true" ]]; then
 export BUILD_NUMBER=$(cat $(_getoutdir)/build_number.txt 2>/dev/null || "${ANDROID_BUILD_TOP}/calyx/scripts/release/version.sh")
