@@ -57,13 +57,27 @@ main() {
 
 run_command_maybe_batch() {
   local use_apksigner_batch=
+  local cache_miss=
   local try=1
+
   if [ "$is_a_signing_command" = "y" ]; then
     source "$pkcs11_scriptpath/vendor.yubihsm.include.sh" || return $?
     if [ "$jar" = "apksigner" ] \
       && [ -n "${APKSIGNER_BATCH_RUNTIME_DIR:-}" ]; then
-      use_apksigner_batch=y
-      maybe_start_apksigner_batch || return $?
+        # If signing cache is enabled, we'll try the cache first
+        if [ -d "${YUBIHSM_SIGNING_CACHE}" ]; then
+            # cache is enabled, so check cache
+            if "$pkcs11_scriptpath/signing_cache.py" --from-cache "$cmd" "${args[@]}"; then
+              cache_miss=false
+            else
+              cache_miss=true
+            fi
+        fi
+        # Only sign again if we had a cache miss, otherwise the output file was provided from the cache
+        if [ "${cache_miss}" = true ]; then
+          use_apksigner_batch=y
+          maybe_start_apksigner_batch || return $?
+        fi
     fi
   fi
 
@@ -86,7 +100,8 @@ run_command_maybe_batch() {
       echo "apksigner batch command exited with error $err, so we will try non-batch this time." >&2
     fi
   fi
-  if [ -n "$err" ] || [ "$use_apksigner_batch" != "y" ]; then
+  # only if there was a cache miss, we sign without batch in case of error or non-batch command
+  if [ "${cache_miss}" != false ] && { [ -n "$err" ] || [ "$use_apksigner_batch" != "y" ]; }; then
     # Note: We expect nothing from stdin, so we don't handle it.
 
     # Try multiple times, just in case something flakes out.
@@ -125,9 +140,16 @@ run_command_maybe_batch() {
       break
     done
   fi
+
+  # extract audit log, if we had a signing command and didn't get the result from cache
   local log_err=
   local prepend_line=
-  if [ "$is_a_signing_command" = "y" ]; then
+  if [ "$is_a_signing_command" = "y" ] && [ "${cache_miss}" = true ]; then
+    # if cache wasn't used and there was no error, cache this output file for later use
+    if [ "${err:-0}" = "0" ]; then
+      "$pkcs11_scriptpath/signing_cache.py" --to-cache "$cmd" "${args[@]}"
+    fi
+
     # Also try multiple times to get this logged...
     local log_try
     for log_try in $(seq 1 $num_tries); do
