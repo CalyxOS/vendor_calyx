@@ -18,7 +18,7 @@ SDK_SYSIMG_XSD := \
 # $4=args
 define mk-sdk-repo-xml
 $(1): $$(XMLLINT) development/build/tools/mk_sdk_repo_xml.sh $(2) $(3)
-	XMLLINT=$$(XMLLINT) OFFICIAL_BUILD=$$(OFFICIAL_BUILD) development/build/tools/mk_sdk_repo_xml.sh $$@ $(2) $(4)
+	XMLLINT=$$(XMLLINT) PLATFORM_VERSION=$$(PLATFORM_VERSION) OFFICIAL_BUILD=$$(OFFICIAL_BUILD) development/build/tools/mk_sdk_repo_xml.sh $$@ $(2) $(4)
 endef
 
 # -----------------------------------------------------------------
