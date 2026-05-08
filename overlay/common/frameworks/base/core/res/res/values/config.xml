@@ -163,4 +163,11 @@
         <item>com.google</item>
         <item>at.bitfire.davdroid.address_book</item>
     </string-array>
+
+    <!-- Array containing the notification assistant service adjustments that are not supported by
+     default on this device-->
+    <string-array translatable="false" name="config_notificationDefaultUnsupportedAdjustments">
+        <item>key_type</item>
+        <item>key_summarization</item>
+    </string-array>
 </resources>
