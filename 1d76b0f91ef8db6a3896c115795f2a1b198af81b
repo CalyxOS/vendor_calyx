@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a75e0f20_8c97e3ea",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-05-08T17:13:53Z",
+      "side": 1,
+      "message": "This removed the items from system notification settings. However, this only worked after clearing user data, so existing installs may still show this.\n\nAlso, I couldn\u0027t yet test if the onboarding bubble above group notifications is also gone. I\u0027d assume it is, but I couldn\u0027t find evidence for this in the code.",
+      "revId": "1d76b0f91ef8db6a3896c115795f2a1b198af81b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
