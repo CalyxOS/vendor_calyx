@@ -63,5 +63,8 @@
 
         <!-- Explicitly disable the SDK sandbox -->
         <item>adservices/disable_sdk_sandbox=true</item>
+
+        <!-- Disable Close QUIC connection feature -->
+        <item>tethering/close_quic_connection=-1</item>
     </string-array>
 </resources>
