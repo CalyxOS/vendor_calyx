@@ -80,6 +80,7 @@ elif [[ $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ]]; then
 elif [[ $DEVICE == otter ]]; then
   OTTER="true"
   QCOM_FIRMWARE="true"
+  SKIP_AVB_CUSTOM_KEY="true"
 else
   error "Unsupported device $DEVICE"
 fi
@@ -131,8 +132,7 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
     $DEVICE == FP4 ||
     $DEVICE == FP5 ||
     $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-    $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ||
-    $DEVICE == otter
+    $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
   ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
   else
