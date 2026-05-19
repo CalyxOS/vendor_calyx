@@ -38,6 +38,9 @@ SYSTEMUI_OPTIMIZE_JAVA ?= true
 
 VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 
+# Build enabled vbmeta images
+WITH_AVB := true
+
 ifneq ($(TARGET_DISABLE_EPPE),true)
 # Require all requested packages to exist
 $(call enforce-product-packages-exist-internal,$(lastword $(_include_stack)),product_manifest.xml rild Calendar)
