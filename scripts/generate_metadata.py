@@ -30,16 +30,19 @@ with ZipFile(parser.parse_args().zip) as f:
         with f.open("META-INF/com/android/metadata") as metadata:
             data = dict(line[:-1].decode().split("=") for line in metadata)
             with open(data["pre-device"] + "-" + parser.parse_args().channel, "w") as output:
-                build_id = data["post-build"].split("/")[3]
                 incremental = data["post-build"].split("/")[4].split(":")[0]
-                print(incremental, data["post-timestamp"], build_id, file=output)
+                sdk_to_android = {
+                    "36": "16",
+                }
+                version = sdk_to_android.get(data.get("post-sdk-level", ""), "")
+                print(incremental, data["post-timestamp"], version, file=output)
     elif "PRODUCT/etc/build.prop" in f.namelist():
         data = LoadBuildProp(f, "PRODUCT/etc/build.prop")
         with open(data["ro.product.product.device"] + "-" + parser.parse_args().channel, "w") as output:
-            build_id = data["ro.build.id"]
             incremental = data["ro.build.version.incremental"]
             timestamp = data["ro.build.date.utc"]
-            print(incremental, timestamp, build_id, file=output)
+            version = data["ro.build.version.release"]
+            print(incremental, timestamp, version, file=output)
     else:
         print("Unsupported file: " + parser.parse_args().zip)
         parser.print_help()
