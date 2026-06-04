@@ -113,12 +113,6 @@ do_or_show() {
 finish() {
   echo
   echo "Done signing and/or generating incrementals for: $BUILD_NUMBER"
-  echo
-
-  local buildnum
-  for buildnum in $BUILD_NUMBER; do
-    echo "Please minisign -SHm archive/release-*-$buildnum/*-factory-$buildnum.zip -t 'CalyxOS x.y.z - [Message goes here]'"
-  done
 }
 
 sign_builds() {
