@@ -137,6 +137,14 @@ keys_app=(
   prebuilts/calyx/microg/certs/microg
   external/calyx/chromium/certs/chromium
   com.google.android.apps.photos
+  org.calyxos.lupin.updater
+)
+
+# Extra keys for F-Droid repos we sign
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+keys_repo=(
+  updater
 )
 
 # List of all the key types.
@@ -153,6 +161,7 @@ key_types=(
   apex_container
   apex_apk
   app
+  repo
 )
 
 # Mapping of key types to keys_ arrays.
@@ -164,6 +173,7 @@ declare -g -A key_type_to_array=(
   [apex_payload]=keys_apex
   [apex_apk]=keys_apex_apk
   [app]=keys_app
+  [repo]=keys_repo
 )
 
 # Key types whose keys are remapped by passing -k to sign_target_files_apks.
