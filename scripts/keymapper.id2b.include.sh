@@ -41,6 +41,7 @@ declare -g -A key_type_to_prefix=(
   [apex_payload]="13"
   [apex_apk]="14"
   [app]="15"
+Q  [repo]="16"
 )
 
 # Hexadecimal offset for a key type when per-device.
@@ -80,6 +81,7 @@ declare -g -A key_is_per_device=(
   [releasekey]=n
   [core]=n
   [app]=n  # This must remain at n due to having no per_device_key_type_to_offset.
+  [repo]=n
   [apex_container]=n
   [apex_payload]=n
   [apex_apk]=n
