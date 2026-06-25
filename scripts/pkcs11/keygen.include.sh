@@ -312,6 +312,8 @@ load_metadata() {
   if [ -n "$missing_something" ]; then
     return 1
   fi
+  echo "Loaded devices from $DEVICES_FILE"
+  echo "Loaded metadata from $METADATA_FILE"
 }
 
 initialize_post_metadata_common() {
