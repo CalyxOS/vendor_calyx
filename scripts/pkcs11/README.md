@@ -10,6 +10,10 @@ Edit `scripts/metadata` and run:
 
     KEYMAPPER=id2b ./scripts/generate_keymap.sh > scripts/pkcs11/keymap.tsv
 
+Note that adding new devices also requires them adding them to the following file in another repo:
+
+    ../../calyx/scripts/vars/devices
+
 ## Key generation
 
 The following Debian 13 packages are needed:
@@ -47,6 +51,9 @@ You will be asked for a password which was the one decrypted in the previous ste
 It generates **all** keys and exports them wrapped (i.e. encrypted)
 to the provided `./keys` folder.
 It automatically removes keys from HSM when it runs out of storage.
+
+If you get an error about `KEYMAP_FILE` not being found,
+prepend `KEYMAP_FILE=vendor/calyx/scripts/pkcs11/keymap.tsv` to the command line.
 
 Each time new keys have been generated,
 the contents of the `./keys` folder should get securely backed up.
