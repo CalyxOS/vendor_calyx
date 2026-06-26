@@ -52,6 +52,12 @@ VENDOR_DEVICE := $(TARGET_PRODUCT:calyx_%=%)
 # Build enabled vbmeta images
 WITH_AVB := true
 
+# fastbootd
+ifneq ($(TARGET_DISABLE_FASTBOOTD),true)
+PRODUCT_PACKAGES += \
+    fastbootd
+endif
+
 ifneq ($(TARGET_DISABLE_EPPE),true)
 # Require all requested packages to exist
 $(call enforce-product-packages-exist-internal,$(lastword $(_include_stack)),product_manifest.xml rild Calendar)
@@ -138,6 +144,12 @@ endif
 # Credential storage
 PRODUCT_PACKAGES += \
     android.software.credentials.prebuilt.xml
+
+# fastbootd
+ifneq ($(TARGET_DISABLE_FASTBOOTD),true)
+PRODUCT_PACKAGES += \
+    fastbootd
+endif
 
 # SystemUI plugins
 PRODUCT_PACKAGES += \
