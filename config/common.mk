@@ -139,6 +139,12 @@ endif
 PRODUCT_PACKAGES += \
     android.software.credentials.prebuilt.xml
 
+# fastbootd
+ifneq ($(TARGET_DISABLE_FASTBOOTD),true)
+PRODUCT_PACKAGES += \
+    fastbootd
+endif
+
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
