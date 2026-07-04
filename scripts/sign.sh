@@ -49,6 +49,9 @@ prompt_missing_variables() {
   if [ -z "${PREV_BUILD_NUMBER:-}" ]; then
     no_incremental=y
   fi
+  if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
+    echo "Build number overriden to $((BUILD_NUMBER + 1)) for AVB Rollback Index override build"
+  fi
   ask_variable NUM_SIGN_JOBS "3" n y || return $?
   ask_variable NUM_INCREMENTAL_JOBS "3" n y || return $?
 }
@@ -126,7 +129,7 @@ sign_builds() {
   parallel -j "$NUM_SIGN_JOBS" --colsep ',' --tag --line-buffer \
     "BUILD_NUMBER={2}" "$sign_scriptpath/release.sh" "{1}" \
       "calyx_{1}-target_files-{2}.zip" \
-    "&&" mv "out/release-{1}-{2}" archive/. \
+    "&&" mv "out/release-{1}-{3}" archive/. \
     ::: "$@" || err=$?
 
   if [ -n "$err" ]; then
@@ -358,13 +361,17 @@ find_prev_signed_device_builds() {
     if [ -n "${BUILD_NUMBER:-}" ]; then
       local buildnum
       for buildnum in $BUILD_NUMBER; do
-        if [ "$build" = "$buildnum" ]; then
-          device_to_preexisting_build[$device]=$build
-          local current=${preexisting_build_to_devices[$build]:-}
+        local expected_build=$buildnum
+        if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
+          expected_build=$((expected_build + 1))
+        fi
+        if [ "$build" = "$expected_build" ]; then
+          device_to_preexisting_build[$device]=$buildnum
+          local current=${preexisting_build_to_devices[$buildnum]:-}
           if [ -n "$current" ]; then
-            preexisting_build_to_devices[$build]="$current,$device"
+            preexisting_build_to_devices[$buildnum]="$current,$device"
           else
-            preexisting_build_to_devices[$build]="$device"
+            preexisting_build_to_devices[$buildnum]="$device"
           fi
           break
         fi
@@ -481,9 +488,13 @@ sort_and_separate_devices_by_key_availability() {
 
   for device in "${devices_with_loaded_keys[@]}"; do
     local next_build=${device_to_next_build[$device]:-}
+    local next_target=$next_build
+    if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
+      next_target=$((next_target + 1))
+    fi
     local preexisting_build=${device_to_preexisting_build[$device]:-}
     if [ -n "$next_build" ] && [ "$next_build" != "$preexisting_build" ]; then
-      sign_pairs_with_loaded_keys+=("$device,$next_build")
+      sign_pairs_with_loaded_keys+=("$device,$next_build,$next_target")
     fi
     local prev_build=${device_to_prev_build[$device]:-}
     if [ -n "$prev_build" ]; then
@@ -492,8 +503,12 @@ sort_and_separate_devices_by_key_availability() {
   done
   for device in "${devices_without_loaded_keys[@]}"; do
     local next_build=${device_to_next_build[$device]:-}
+    local next_target=$next_build
+    if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
+      next_target=$((next_target + 1))
+    fi
     if [ -n "$next_build" ]; then
-      sign_pairs_without_loaded_keys+=("$device,$next_build")
+      sign_pairs_without_loaded_keys+=("$device,$next_build,$next_target")
     fi
     local prev_build=${device_to_prev_build[$device]:-}
     if [ -n "$prev_build" ]; then
