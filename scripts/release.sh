@@ -34,8 +34,13 @@ source device/common/clear-factory-images-variables.sh
 
 DEVICE=$1
 PRODUCT=$1
-OUT=out/release-$DEVICE-$BUILD_NUMBER
 BUILD=$BUILD_NUMBER
+
+if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
+  BUILD=$((BUILD + 1))
+fi
+
+OUT=out/release-$DEVICE-$BUILD
 SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
 
 if [[ -z $2 ]] ; then
@@ -135,6 +140,7 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
   ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+    EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
     exit 1
