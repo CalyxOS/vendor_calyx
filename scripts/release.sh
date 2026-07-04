@@ -135,6 +135,7 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
   ]]; then
     EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+    EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
   else
     echo "Unsupported device for AVB Rollback Index override: $DEVICE"
     exit 1
@@ -167,6 +168,8 @@ fi
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
+BUILD=$((BUILD + 1))
+echo "Build number overriden to $BUILD"
 else
 if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
   echo "Creating OTA update zip"
