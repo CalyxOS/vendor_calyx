@@ -9,7 +9,8 @@ EXPORT_TO_SOONG := \
     KERNEL_MAKE_FLAGS \
     PATH_OVERRIDE_SOONG \
     TARGET_KERNEL_CONFIG \
-    TARGET_KERNEL_SOURCE
+    TARGET_KERNEL_SOURCE \
+    TARGET_MAX_PAGE_SIZE_SUPPORTED
 
 # Setup SOONG_CONFIG_* vars to export the vars listed above.
 # Documentation here:
