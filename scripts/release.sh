@@ -167,6 +167,8 @@ fi
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 echo "Skipping OTA update zip for AVB Rollback Index override build"
+BUILD=$((BUILD + 1))
+echo "Build number overriden to $BUILD"
 else
 if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
   echo "Creating OTA update zip"
