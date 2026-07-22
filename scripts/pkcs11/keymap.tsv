@@ -15,7 +15,10 @@ ID	Device	Key Type	Key
 0x1200		apex_apk	packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
 0x1200		apex_apk	packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute
 0x1200		apex_apk	packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
+0x1200		apex_apk	packages/modules/Telephony/apex/com.android.telecom.resources
+0x1200		apex_apk	packages/modules/Telephony/apex/com.android.telecomui
 0x1200		apex_apk	packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
+0x1200		apex_apk	packages/modules/WebApp/apex/com.android.webapp
 0x1200		apex_apk	packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin
 0x1200		apex_apk	packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
 0x1200		apex_apk	packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources
@@ -49,6 +52,7 @@ ID	Device	Key Type	Key
 0x1200		apex_container	com.android.mediaprovider
 0x1200		apex_container	com.android.neuralnetworks
 0x1200		apex_container	com.android.nfcservices
+0x1200		apex_container	com.android.npumanager
 0x1200		apex_container	com.android.ondevicepersonalization
 0x1200		apex_container	com.android.os.statsd
 0x1200		apex_container	com.android.permission
@@ -70,6 +74,7 @@ ID	Device	Key Type	Key
 0x1200		apex_container	com.android.virt
 0x1200		apex_container	com.android.vndk.current
 0x1200		apex_container	com.android.vndk.current.on_vendor
+0x1200		apex_container	com.android.webapp
 0x1200		apex_container	com.android.wifi
 0x1200		apex_container	com.google.pixel.vibrator.hal
 0x1300		apex_payload	com.android.adbd
@@ -102,6 +107,7 @@ ID	Device	Key Type	Key
 0x1300		apex_payload	com.android.mediaprovider
 0x1300		apex_payload	com.android.neuralnetworks
 0x1300		apex_payload	com.android.nfcservices
+0x1300		apex_payload	com.android.npumanager
 0x1300		apex_payload	com.android.ondevicepersonalization
 0x1300		apex_payload	com.android.os.statsd
 0x1300		apex_payload	com.android.permission
@@ -123,6 +129,7 @@ ID	Device	Key Type	Key
 0x1300		apex_payload	com.android.virt
 0x1300		apex_payload	com.android.vndk.current
 0x1300		apex_payload	com.android.vndk.current.on_vendor
+0x1300		apex_payload	com.android.webapp
 0x1300		apex_payload	com.android.wifi
 0x1300		apex_payload	com.google.pixel.vibrator.hal
 0x1500		app	prebuilts/calyx/microg/certs/microg
