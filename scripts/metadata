@@ -84,6 +84,7 @@ keys_apex=(
   com.android.media.swcodec
   com.android.neuralnetworks
   com.android.nfcservices
+  com.android.npumanager
   com.android.ondevicepersonalization
   com.android.os.statsd
   com.android.permission
@@ -104,6 +105,7 @@ keys_apex=(
   com.android.virt
   com.android.vndk.current
   com.android.vndk.current.on_vendor
+  com.android.webapp
   com.android.wifi
   com.google.pixel.vibrator.hal
   com.android.telephonycore
@@ -125,6 +127,9 @@ keys_apex_apk=(
   packages/modules/HealthFitness/apk/com.android.healthconnect.controller
   packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
   packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute
+  packages/modules/Telephony/apex/com.android.telecom.resources
+  packages/modules/Telephony/apex/com.android.telecomui
+  packages/modules/WebApp/apex/com.android.webapp
   # Device-specific: raven, cheetah, tangorpro, felix.
   # (It doesn't hurt to override/generate it anyway; keymappers can map it to "" to skip it.)
   device/google/gs-common/uwb-certs/com.qorvo.uwb
