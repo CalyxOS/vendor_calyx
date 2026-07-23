@@ -82,9 +82,11 @@ elif [[ $DEVICE == FP6 ]]; then
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
   QCOM_FIRMWARE="true"
+  WIPE_FRP_IN_FASTBOOTD="true"
 elif [[ $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo ]]; then
   MOTO_BLAIR="true"
   QCOM_FIRMWARE="true"
+  WIPE_FRP_IN_FASTBOOTD="true"
 elif [[ $DEVICE == otter ]]; then
   OTTER="true"
   QCOM_FIRMWARE="true"
