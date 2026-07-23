@@ -436,3 +436,14 @@ ID	Device	Key Type	Key
 0x3b00	tegu	avb	vbmeta_vendor
 0x3b00	tegu	avb	vendor
 0x3b00	tegu	other	ota
+0x3c00	FP6	avb	boot
+0x3c00	FP6	avb	dtbo
+0x3c00	FP6	avb	init_boot
+0x3c00	FP6	avb	recovery
+0x3c00	FP6	avb	system
+0x3c00	FP6	avb	system_other
+0x3c00	FP6	avb	vbmeta
+0x3c00	FP6	avb	vbmeta_system
+0x3c00	FP6	avb	vbmeta_vendor
+0x3c00	FP6	avb	vendor
+0x3c00	FP6	other	ota
