@@ -209,4 +209,5 @@ all_devices=(
   fogo
   fogos
   tegu
+  FP6
 )

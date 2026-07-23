@@ -76,6 +76,9 @@ elif [[ $DEVICE == FP4 ]]; then
 elif [[ $DEVICE == FP5 ]]; then
   FP5="true"
   QCOM_FIRMWARE="true"
+elif [[ $DEVICE == FP6 ]]; then
+  FP6="true"
+  QCOM_FIRMWARE="true"
 elif [[ $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ]]; then
   MOTO_BENGAL="true"
   QCOM_FIRMWARE="true"
