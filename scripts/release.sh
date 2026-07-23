@@ -134,7 +134,6 @@ done
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   if [[
-    $DEVICE == FP4 ||
     $DEVICE == FP5 ||
     $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
     $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
