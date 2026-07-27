@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f3c52870_2a9a7e50",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-07-27T12:20:27Z",
+      "side": 1,
+      "message": "KEYMAP_FILE should automatically be set already but let\u0027s keep this until we eventually rewrite the signing scripts",
+      "revId": "7e758c6013b0a61b0f98fc1cccc32d69eb73cab9",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
