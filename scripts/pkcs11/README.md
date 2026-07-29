@@ -75,6 +75,14 @@ devices whose keys are not loaded will be signed in parallel *after* devices who
 
 You will be asked for a password which is the one you decrypted in the key generation step.
 
+Additional optional environment variables:
+
+- `TMPDIR`: Specify a folder on disk to use as tmpdir instead of RAM.
+- `YUBIHSM_SIGNING_CACHE`: Specify a folder where signed objects will be stored and reused
+  when possible between different devices to greatly speed up the signing process.
+- `SKIP_LOG_UPLOAD`: Whether to skip uploading audit logs if the signing machine
+  does not have internet access. It is default unset and can be manually set to `true`.
+
 ### Example with a local machine
 
 In extracted `otatools-keys.zip` directory:
