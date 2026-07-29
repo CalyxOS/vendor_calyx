@@ -339,6 +339,9 @@ setup_log_dir() {
 }
 
 upload_logs() {
+  if [[ "${SKIP_LOG_UPLOAD:-}" == "true" ]]; then
+    return 0
+  fi
   if is_vendor_initialization_needed; then
     "$YUBIHSM_LOGS_DIR/upload.py" --upload-all-new || return $?
   fi
