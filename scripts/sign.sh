@@ -58,10 +58,10 @@ prompt_missing_variables() {
 
 main() {
   trap sign_cleanup EXIT
-  try setup_log_dir || return $?
   try find_target_files || return $?
   try find_prev_signed_device_builds || return $?
   try source_includes || return $?
+  try setup_log_dir || return $?
   try gather_signable_devices_from_metadata || return $?
   try gather_latest_device_builds || return $?
   try prompt_missing_variables || return $?
@@ -325,19 +325,23 @@ maybe_handle_already_existing_builds() {
 }
 
 setup_log_dir() {
-  YUBIHSM_LOGS_DIR="$(pwd)/logs"
-  if [ ! -s "$YUBIHSM_LOGS_DIR/upload.py"  ]; then
-    printf "\n" >&2
-    echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) is not the expected git repository." >&2
-    echo "Are you sure you are calling this script from the right place?" >&2
-    echo "Did you clone the audit log git repository already?" >&2
-    return 1
+  if is_vendor_initialization_needed; then
+    YUBIHSM_LOGS_DIR="$(pwd)/logs"
+    if [ ! -s "$YUBIHSM_LOGS_DIR/upload.py"  ]; then
+      printf "\n" >&2
+      echo "YUBIHSM_LOGS_DIR ($YUBIHSM_LOGS_DIR) is not the expected git repository." >&2
+      echo "Are you sure you are calling this script from the right place?" >&2
+      echo "Did you clone the audit log git repository already?" >&2
+      return 1
+    fi
+    export YUBIHSM_LOGS_DIR
   fi
-  export YUBIHSM_LOGS_DIR
 }
 
 upload_logs() {
-  "$YUBIHSM_LOGS_DIR/upload.py" --upload-all-new || return $?
+  if is_vendor_initialization_needed; then
+    "$YUBIHSM_LOGS_DIR/upload.py" --upload-all-new || return $?
+  fi
 }
 
 find_target_files() {
