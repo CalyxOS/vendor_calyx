@@ -195,6 +195,11 @@ function repopick() {
     $T/vendor/calyx/build/tools/repopick.py $@
 }
 
+function generate-factory() {
+    T=$(_gettop)
+    SKIP_SIGNING=y $T/vendor/calyx/scripts/release.sh $(_get_build_var_cached TARGET_DEVICE)
+}
+
 function fixup_common_out_dir() {
     common_out_dir=$(_get_build_var_cached OUT_DIR)/target/common
     target_device=$(_get_build_var_cached TARGET_DEVICE)
