@@ -16,15 +16,37 @@ read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
 source "$SCRIPTPATH/common.include.sh"
 source "$SCRIPTPATH/metadata"
 
-release_cleanup() {
-  cleanup_signing_full || true
-}
-trap release_cleanup EXIT
+if [ "${SKIP_SIGNING:-}" != y ]; then
+  release_cleanup() {
+    cleanup_signing_full || true
+  }
+  trap release_cleanup EXIT
+fi
 
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 device [target-files.zip]"
   exit 1
+}
+
+# Resolve the full path to a releasetools binary. In-tree, the binaries built
+# by soong live at out/soong/.intermediates/build/make/tools/releasetools/<tool>/<host_tag>/<tool>,
+# while otatools.zip has them directly at bin/<tool>.
+releasetools_binary() {
+  local tool=$1
+  local candidate
+  if [ -f "$RELEASETOOLS_BINARY_PATH/$tool" ] && [ -x "$RELEASETOOLS_BINARY_PATH/$tool" ]; then
+    echo "$RELEASETOOLS_BINARY_PATH/$tool"
+    return 0
+  fi
+  for candidate in "$RELEASETOOLS_BINARY_PATH/$tool"/*/"$tool"; do
+    if [ -f "$candidate" ] && [ -x "$candidate" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo "error: couldn't find releasetools binary '$tool' under $RELEASETOOLS_BINARY_PATH" >&2
+  return 1
 }
 
 [[ $# -le 2 ]] || error "incorrect number of arguments"
@@ -40,20 +62,25 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
   BUILD=$((BUILD + 1))
 fi
 
-OUT=out/release-$DEVICE-$BUILD
-SIGNED_TARGET_FILES=$OUT/$DEVICE-target_files-$BUILD.zip
-
-if [[ -z $2 ]] ; then
-  TARGET_FILES=out/target/product/$DEVICE/obj/PACKAGING/target_files_intermediates/calyx_$DEVICE-target_files-$BUILD.zip
-  RELEASETOOLS_PATH=build/tools
+if [[ -z ${2:-} ]] ; then
+  RELEASETOOLS_BINARY_PATH=out/soong/.intermediates/build/make/tools/releasetools
+  TARGET_FILES=out/target/product/$DEVICE/calyx_$PRODUCT-target_files-$BUILD.zip
+  OUTPUT_PATH=out/release
 else
   TARGET_FILES=$2
   # For usage with otatools.zip
   RELEASETOOLS_PATH="$(pwd -P)"
   EXTRA_RELEASETOOLS_ARGS+=(-p "$RELEASETOOLS_PATH")
+  RELEASETOOLS_BINARY_PATH="$RELEASETOOLS_PATH"/bin
+  OUTPUT_PATH=out
 fi
 
-prepare_for_signing_full "$0" "$@" || exit $?
+OUT=$OUTPUT_PATH/release-$DEVICE-$BUILD
+SIGNED_TARGET_FILES=$OUT/$PRODUCT-target_files-$BUILD.zip
+
+if [ "${SKIP_SIGNING:-}" != y ]; then
+  prepare_for_signing_full "$0" "$@" || exit $?
+fi
 
 if [ "${DRY_RUN:-}" != "y" ]; then
 
@@ -101,53 +128,6 @@ fi  # not DRY_RUN
 
 $maybe_dry_run mkdir -p "$OUT" || exit 1
 
-# Get AVB arguments from keymapper.
-avb_arguments=()
-fill_avb_arguments
-
-# Populate key mappings for APEXes.
-for key in "${keys_apex[@]}"; do
-  EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key" || exit $?)")
-  EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem || exit $?)")
-done
-
-# Populate key mappings for everything else.
-declare -A already_remapped
-for key in build/make/target/product/security/devkey "${keys_core[@]}"; do
-  [ -z "${already_remapped[$key]:-}" ] || continue
-  value=$(get_key core "$key" || exit $?)
-  [ -n "$value" ] || continue
-  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-  already_remapped[$key]=1
-done
-for key in "${keys_apex_apk[@]}"; do
-  [ -z "${already_remapped[$key]:-}" ] || continue
-  value=$(get_key apex_apk "$key" || exit $?)
-  [ -n "$value" ] || continue
-  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-  already_remapped[$key]=1
-done
-for key in "${keys_app[@]}"; do
-  [ -z "${already_remapped[$key]:-}" ] || continue
-  value=$(get_key app "$key" || exit $?)
-  [ -n "$value" ] || continue
-  EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-  already_remapped[$key]=1
-done
-
-if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
-  if [[
-    $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-    $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
-  ]]; then
-    EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
-    EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
-  else
-    echo "Unsupported device for AVB Rollback Index override: $DEVICE"
-    exit 1
-  fi
-fi
-
 case "${KEEP_EXISTING:-}" in
   *target*|all)
     KEEP_TARGET_FILES=y
@@ -160,46 +140,106 @@ case "${KEEP_EXISTING:-}" in
     ;;
 esac
 
-OTAKEY=$(get_key other ota || exit $?)
-EXTRA_SIGNING_ARGS+=(--package_key "$OTAKEY")
-EXTRA_OTA_ARGS+=(--package_key "$OTAKEY")
-
-if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
-  echo "Creating signed targetfiles zip"
-  $maybe_dry_run \
-    "$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o \
-      "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
-      "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
-fi
-
-if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
-echo "Skipping OTA update zip for AVB Rollback Index override build"
+if [ "${SKIP_SIGNING:-}" = y ]; then
+  if [ ! -z "${OTA_ONLY:-}" ]; then
+    echo "Not creating factory image due to OTA_ONLY=$OTA_ONLY"
+    exit 0
+  fi
+  echo "Skipping signing and OTA generation, creating factory image from unsigned target files"
+  if [ -e "$SIGNED_TARGET_FILES" ]; then
+    rm $SIGNED_TARGET_FILES
+  fi
+  cp $TARGET_FILES $SIGNED_TARGET_FILES
 else
-if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
-  echo "Creating OTA update zip"
-  $maybe_dry_run \
-  "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
-    "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
+  # Get AVB arguments from keymapper.
+  avb_arguments=()
+  fill_avb_arguments
 
-  $maybe_dry_run pushd "$OUT" || exit 1
+  # Populate key mappings for APEXes.
+  for key in "${keys_apex[@]}"; do
+    EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key" || exit $?)")
+    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem || exit $?)")
+  done
 
-  echo "Calculating sha256sum for OTA update zip"
-  $maybe_dry_run \
-  sha256sum "$DEVICE-ota_update-$BUILD.zip" > "$DEVICE-ota_update-$BUILD.zip.sha256sum"
+  # Populate key mappings for everything else.
+  declare -A already_remapped
+  for key in build/make/target/product/security/devkey "${keys_core[@]}"; do
+    [ -z "${already_remapped[$key]:-}" ] || continue
+    value=$(get_key core "$key" || exit $?)
+    [ -n "$value" ] || continue
+    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+    already_remapped[$key]=1
+  done
+  for key in "${keys_apex_apk[@]}"; do
+    [ -z "${already_remapped[$key]:-}" ] || continue
+    value=$(get_key apex_apk "$key" || exit $?)
+    [ -n "$value" ] || continue
+    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+    already_remapped[$key]=1
+  done
+  for key in "${keys_app[@]}"; do
+    [ -z "${already_remapped[$key]:-}" ] || continue
+    value=$(get_key app "$key" || exit $?)
+    [ -n "$value" ] || continue
+    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+    already_remapped[$key]=1
+  done
 
-  $maybe_dry_run popd
-fi
+  if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
+    if [[
+      $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+      $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
+    ]]; then
+      EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+      EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
+    else
+      echo "Unsupported device for AVB Rollback Index override: $DEVICE"
+      exit 1
+    fi
+  fi
 
-if [ ! -z "${OTA_ONLY:-}" ]; then
-  echo "Not creating factory image due to OTA_ONLY=$OTA_ONLY"
-  exit 0
-fi
-fi
+  OTAKEY=$(get_key other ota || exit $?)
+  EXTRA_SIGNING_ARGS+=(--package_key "$OTAKEY")
+  EXTRA_OTA_ARGS+=(--package_key "$OTAKEY")
+
+  if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
+    echo "Creating signed targetfiles zip"
+    $maybe_dry_run \
+      "$(releasetools_binary sign_target_files_apks)" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o \
+        "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
+        "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
+  fi
+
+  if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
+    echo "Skipping OTA update zip for AVB Rollback Index override build"
+  else
+    if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
+      echo "Creating OTA update zip"
+      $maybe_dry_run \
+      "$(releasetools_binary ota_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+        "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
+
+      $maybe_dry_run pushd "$OUT" || exit 1
+
+      echo "Calculating sha256sum for OTA update zip"
+      $maybe_dry_run \
+      sha256sum "$DEVICE-ota_update-$BUILD.zip" > "$DEVICE-ota_update-$BUILD.zip.sha256sum"
+
+      $maybe_dry_run popd
+    fi
+
+    if [ ! -z "${OTA_ONLY:-}" ]; then
+      echo "Not creating factory image due to OTA_ONLY=$OTA_ONLY"
+      exit 0
+    fi
+  fi
+
+fi  # ! SKIP_SIGNING
 
 if [ "${KEEP_FACTORY:-n}" = n ] || [ ! -e "$OUT/$DEVICE-img-$BUILD.zip" ]; then
   echo "Creating factory image"
   $maybe_dry_run \
-  "$RELEASETOOLS_PATH/bin/img_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
+  "$(releasetools_binary img_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
 fi
 
@@ -226,16 +266,16 @@ echo "Removing intermediate file after factory image generation: $DEVICE-img-$BU
 $maybe_dry_run \
 rm "$OUT/$DEVICE-img-$BUILD.zip"
 
-if [[ -n ${OTATEST:-} ]]; then
+if [[ -n ${OTATEST:-} && "${SKIP_SIGNING:-}" != y ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/sign_target_files_apks" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o \
+"$(releasetools_binary sign_target_files_apks)" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o \
  "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
 $maybe_dry_run \
-"$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
+"$(releasetools_binary ota_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
 
 $maybe_dry_run pushd "$OUT" || exit 1
@@ -247,5 +287,7 @@ sha256sum "$DEVICE-ota_update-$OTATEST.zip" > "$DEVICE-ota_update-$OTATEST.zip.s
 $maybe_dry_run popd
 fi
 
-release_cleanup || true
+if [ "${SKIP_SIGNING:-}" != y ]; then
+  release_cleanup || true
+fi
 trap "" EXIT
