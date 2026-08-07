@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5480ac54_22b21cb4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000235
+      },
+      "writtenOn": "2026-08-07T20:14:19Z",
+      "side": 1,
+      "message": "Not ready yet, this is a precursor to inheriting directly from lineage_* makefiles",
+      "revId": "0f70f4bb2c7f2a6382ad858ec2df1c22833e31d6",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
