@@ -7,10 +7,12 @@
 
 from argparse import ArgumentParser
 from zipfile import ZipFile
+import os
 
 parser = ArgumentParser(description="Generate update server metadata")
 parser.add_argument("zip", help="ota_update or target_files")
 parser.add_argument("channel", default="testing", nargs='?', help="ota channel (default: testing)")
+args = parser.parse_args()
 
 # From build/make/tools/releasetools/common.py
 def LoadBuildProp(input_file, prop_file):
@@ -29,7 +31,10 @@ with ZipFile(parser.parse_args().zip) as f:
     if "META-INF/com/android/metadata" in f.namelist():
         with f.open("META-INF/com/android/metadata") as metadata:
             data = dict(line[:-1].decode().split("=") for line in metadata)
-            with open(data["pre-device"] + "-" + parser.parse_args().channel, "w") as output:
+            device = data["pre-device"]
+            filename = f"{device}-{args.channel}"
+            os.makedirs(device, exist_ok=True)
+            with open(os.path.join(device, filename), "w") as output:
                 incremental = data["post-build"].split("/")[4].split(":")[0]
                 sdk_to_android = {
                     "36": "16",
@@ -38,11 +43,14 @@ with ZipFile(parser.parse_args().zip) as f:
                 print(incremental, data["post-timestamp"], version, file=output)
     elif "PRODUCT/etc/build.prop" in f.namelist():
         data = LoadBuildProp(f, "PRODUCT/etc/build.prop")
-        with open(data["ro.product.product.device"] + "-" + parser.parse_args().channel, "w") as output:
+        device = data["ro.product.product.device"]
+        filename = f"{device}-{args.channel}"
+        os.makedirs(device, exist_ok=True)
+        with open(os.path.join(device, filename), "w") as output:
             incremental = data["ro.build.version.incremental"]
             timestamp = data["ro.build.date.utc"]
             version = data["ro.build.version.release"]
             print(incremental, timestamp, version, file=output)
     else:
-        print("Unsupported file: " + parser.parse_args().zip)
+        print("Unsupported file: " + args.zip)
         parser.print_help()
