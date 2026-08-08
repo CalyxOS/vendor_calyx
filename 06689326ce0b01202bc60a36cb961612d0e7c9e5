@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c4901afc_0a1c7866",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-08-08T14:32:20Z",
+      "side": 1,
+      "message": "This isn\u0027t needed for calyx since we build the kernel in separate tree and check-in the prebuilts",
+      "revId": "06689326ce0b01202bc60a36cb961612d0e7c9e5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
