@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "67f67498_711d4cd5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 7
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-08-10T15:29:25Z",
+      "side": 1,
+      "message": "Changes look alright, but I haven\u0027t inspected them in detail for correctness.",
+      "revId": "65b0077ca0e3911b811262bffa1403d963a8a64d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
