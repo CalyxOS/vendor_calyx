@@ -456,3 +456,14 @@ ID	Device	Key Type	Key
 0x3c00	FP6	avb	vbmeta_vendor
 0x3c00	FP6	avb	vendor
 0x3c00	FP6	other	ota
+0x3d00	stallion	avb	boot
+0x3d00	stallion	avb	dtbo
+0x3d00	stallion	avb	init_boot
+0x3d00	stallion	avb	recovery
+0x3d00	stallion	avb	system
+0x3d00	stallion	avb	system_other
+0x3d00	stallion	avb	vbmeta
+0x3d00	stallion	avb	vbmeta_system
+0x3d00	stallion	avb	vbmeta_vendor
+0x3d00	stallion	avb	vendor
+0x3d00	stallion	other	ota

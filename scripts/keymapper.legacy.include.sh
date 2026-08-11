@@ -55,7 +55,7 @@ _get_key_avb() {
   [ -z "${KEY_SUFFIX+x}" ] || key_suffix=$KEY_SUFFIX
   if [ "$key_name" = "vbmeta_system" ]; then
     case "$DEVICE" in
-      panther|cheetah|lynx|tangorpro|felix|shiba|husky|akita|tokay|caiman|komodo|comet|tegu)
+      panther|cheetah|lynx|tangorpro|felix|shiba|husky|akita|tokay|caiman|komodo|comet|tegu|stallion)
         printf "%s\n" "$KEY_DIR$DEVICE/avb_vbmeta_system$key_suffix"
         return 0 ;;
     esac

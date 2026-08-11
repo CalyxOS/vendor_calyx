@@ -225,4 +225,5 @@ all_devices=(
   fogos
   tegu
   FP6
+  stallion
 )

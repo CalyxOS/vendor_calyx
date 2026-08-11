@@ -64,7 +64,7 @@ if [[
     $DEVICE == oriole || $DEVICE == raven || $DEVICE == bluejay ||
     $DEVICE == panther || $DEVICE == cheetah || $DEVICE == lynx || $DEVICE == felix ||
     $DEVICE == shiba || $DEVICE == husky || $DEVICE == akita ||
-    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu
+    $DEVICE == tokay || $DEVICE == caiman || $DEVICE == komodo || $DEVICE == comet || $DEVICE == tegu || $DEVICE == stallion
 ]]; then
   BOOTLOADER=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-bootloader | cut -d = -f 2)
   RADIO=$(unzip -c "$TARGET_FILES" OTA/android-info.txt | grep version-baseband | cut -d = -f 2)
