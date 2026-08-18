@@ -128,7 +128,7 @@ ID	Device	Key Type	Key
 0x1500		app	prebuilts/calyx/microg/certs/microg
 0x1501		app	external/calyx/chromium/certs/chromium
 0x1502		app	com.google.android.apps.photos
-0x1503		app	org.calyxos.lupin.updater
+0x1503		app	prebuilts/calyx/lupin/updater/certs/org.calyxos.lupin.updater
 0x1600		repo	updater
 0x2000	bramble	avb	boot
 0x2000	bramble	avb	dtbo
