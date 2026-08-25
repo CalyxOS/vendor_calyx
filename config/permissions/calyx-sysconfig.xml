@@ -20,4 +20,11 @@
          delivery restrictions. -->
     <allow-implicit-broadcast action="lineageos.intent.action.INITIALIZE_LINEAGE_HARDWARE" />
 
+    <update-ownership package="com.android.vending" installer="org.calyxos.lupin.updater" />
+    <update-ownership package="com.google.android.gms" installer="org.calyxos.lupin.updater" />
+    <update-ownership package="org.calyxos.chromium" installer="org.calyxos.lupin.updater" />
+    <update-ownership package="org.calyxos.trichromelibrary" installer="org.calyxos.lupin.updater" />
+    <update-ownership package="org.calyxos.webview" installer="org.calyxos.lupin.updater" />
+    <update-ownership package="com.stevesoltys.seedvault" installer="org.calyxos.lupin.updater" />
+
 </config>
