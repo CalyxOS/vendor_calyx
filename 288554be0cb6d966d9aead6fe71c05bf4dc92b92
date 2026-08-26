@@ -16,6 +16,24 @@
       "message": "Works for new install. Existing installs still need testing.",
       "revId": "288554be0cb6d966d9aead6fe71c05bf4dc92b92",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3b8f73db_e0c4970e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-08-26T08:31:46Z",
+      "side": 1,
+      "message": "To test if it worked: `adb shell pm dump org.calyxos.webview | grep -E \"updateOwnerPackage|installerPackageName\"`",
+      "parentUuid": "dd821729_0cbadd82",
+      "revId": "288554be0cb6d966d9aead6fe71c05bf4dc92b92",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
