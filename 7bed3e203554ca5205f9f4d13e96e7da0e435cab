@@ -23,7 +23,7 @@
         "value": {"expression":{"expressionString":"label:Builds=MAX AND -label:Builds=MIN"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":[],"failingAtoms":["label:Builds=MAX","label:Builds=MIN"],"atomExplanations":{"value":{"label:Builds=MAX":"","label:Builds=MIN":""}}}
       },
       "overrideExpressionResult": {
-        "value": {"expression":{"expressionString":"label:Builds=0 AND (label:Works=MAX OR label:Bypass-Verification=MAX)"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":["label:Builds=0"],"failingAtoms":["label:Works=MAX","label:Bypass-Verification=MAX"],"atomExplanations":{"value":{"label:Works=MAX":"","label:Bypass-Verification=MAX":"","label:Builds=0":""}}}
+        "value": {"expression":{"expressionString":"label:Builds=0 AND (label:Works=MAX OR label:Bypass-Verification=MAX)"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Bypass-Verification=MAX","label:Builds=0"],"failingAtoms":["label:Works=MAX"],"atomExplanations":{"value":{"label:Works=MAX":"","label:Bypass-Verification=MAX":"","label:Builds=0":""}}}
       },
       "patchSetCommitId": "7bed3e203554ca5205f9f4d13e96e7da0e435cab",
       "legacy": {
@@ -47,7 +47,7 @@
       },
       "applicabilityExpressionResult": {},
       "submittabilityExpressionResult": {
-        "value": {"expression":{"expressionString":"label:Code-Review=MAX AND -label:Code-Review=MIN"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":[],"failingAtoms":["label:Code-Review=MAX","label:Code-Review=MIN"],"atomExplanations":{"value":{"label:Code-Review=MAX":"","label:Code-Review=MIN":""}}}
+        "value": {"expression":{"expressionString":"label:Code-Review=MAX AND -label:Code-Review=MIN"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Code-Review=MAX"],"failingAtoms":["label:Code-Review=MIN"],"atomExplanations":{"value":{"label:Code-Review=MAX":"","label:Code-Review=MIN":""}}}
       },
       "overrideExpressionResult": {},
       "patchSetCommitId": "7bed3e203554ca5205f9f4d13e96e7da0e435cab",
@@ -79,7 +79,7 @@
         "value": {"expression":{"expressionString":"label:Works=MAX AND -label:Works=MIN"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":[],"failingAtoms":["label:Works=MAX","label:Works=MIN"],"atomExplanations":{"value":{"label:Works=MAX":"","label:Works=MIN":""}}}
       },
       "overrideExpressionResult": {
-        "value": {"expression":{"expressionString":"label:Works=0 AND label:Bypass-Verification=MAX"},"status":"FAIL","errorMessage":{"value":null},"passingAtoms":["label:Works=0"],"failingAtoms":["label:Bypass-Verification=MAX"],"atomExplanations":{"value":{"label:Bypass-Verification=MAX":"","label:Works=0":""}}}
+        "value": {"expression":{"expressionString":"label:Works=0 AND label:Bypass-Verification=MAX"},"status":"PASS","errorMessage":{"value":null},"passingAtoms":["label:Bypass-Verification=MAX","label:Works=0"],"failingAtoms":[],"atomExplanations":{"value":{"label:Bypass-Verification=MAX":"","label:Works=0":""}}}
       },
       "patchSetCommitId": "7bed3e203554ca5205f9f4d13e96e7da0e435cab",
       "legacy": {
