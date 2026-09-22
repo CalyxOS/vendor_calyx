@@ -61,6 +61,10 @@ endif
 ifeq ($(OFFICIAL_BUILD),true)
 PRODUCT_PACKAGES += \
     Updater
+
+# Lupin
+PRODUCT_PACKAGES += \
+    LupinOverlay
 endif
 
 # Boot animation
