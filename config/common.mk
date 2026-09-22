@@ -61,6 +61,10 @@ ifeq ($(OFFICIAL_BUILD),true)
 # OTA Updater
 PRODUCT_PACKAGES += \
     Updater
+
+# Lupin
+PRODUCT_PACKAGES += \
+    LupinOverlay
 endif
 
 # Boot animation
