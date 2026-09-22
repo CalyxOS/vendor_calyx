@@ -16,6 +16,23 @@
       "message": "Untested as of right now. Will test today",
       "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "772791ab_1025651d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000235
+      },
+      "writtenOn": "2026-09-22T18:01:39Z",
+      "side": 1,
+      "message": "Just waiting on the certificate",
+      "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
