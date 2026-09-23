@@ -33,6 +33,23 @@
       "message": "Just waiting on the certificate",
       "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0688b677_c06eb081",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-09-23T14:46:43Z",
+      "side": 1,
+      "message": "-1 only so we don\u0027t merge this before we have the real cert.",
+      "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
