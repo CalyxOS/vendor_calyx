@@ -16,6 +16,24 @@
       "message": "This works but seeing that dynamic_disable is a qcom specific dwc3 node I don\u0027t think this is the best place for it. Open to suggestions",
       "revId": "561dd3909e5ae9740a8730e97e9577c4c1beb454",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f7e676b1_445834a5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-09-24T22:54:07Z",
+      "side": 1,
+      "message": "usb_data_enabled is also google specific and not generic to the linux kernel, so this works for now. It\u0027s hardcoded unlike the other paths but we can improve it in future commits",
+      "parentUuid": "20739c87_31d67dd6",
+      "revId": "561dd3909e5ae9740a8730e97e9577c4c1beb454",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
