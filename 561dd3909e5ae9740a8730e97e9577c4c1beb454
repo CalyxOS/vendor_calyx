@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "20739c87_31d67dd6",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000235
+      },
+      "writtenOn": "2026-09-24T05:45:26Z",
+      "side": 1,
+      "message": "This works but seeing that dynamic_disable is a qcom specific dwc3 node I don\u0027t think this is the best place for it. Open to suggestions",
+      "revId": "561dd3909e5ae9740a8730e97e9577c4c1beb454",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
