@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1dfdb2b1_e00bb8bd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-09-24T14:37:58Z",
+      "side": 1,
+      "message": "Blocking this until the production repo is up and usable",
+      "revId": "a612af630a9b53f6e3db8253aaffbe09d50e43dc",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
