@@ -7,8 +7,6 @@
     <!-- Indicates if showing as search bar design -->
     <bool name="show_search_bar">true</bool>
 
-    <string name="default_root_uri" translatable="false">content://com.android.externalstorage.documents/root/primary</string>
-
     <!-- Whether to show capitalize string on Button -->
     <bool name="config_button_all_caps">false</bool>
 
