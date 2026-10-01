@@ -50,6 +50,24 @@
       "message": "-1 only so we don\u0027t merge this before we have the real cert.",
       "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7339c146_9f972672",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-01T14:15:14Z",
+      "side": 1,
+      "message": "@nreuter85@gmail.com I updated the real cert. Do you want to test if that works now? The repo is still empty, so there won\u0027t be updated, but successful connection should show in logcat.",
+      "parentUuid": "0688b677_c06eb081",
+      "revId": "5a0278566279480d1d00d1b50b2efe89abe27f45",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
