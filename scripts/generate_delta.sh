@@ -31,6 +31,14 @@ DEVICE=$1
 OLD=$2
 NEW=$3
 
+INCREMENTAL="archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
+
+if [ -e "$INCREMENTAL" ]; then
+  echo "Incremental update already exists, skipping: $INCREMENTAL"
+  echo "(If you want it to be regenerated, remove it first.)"
+  exit 0
+fi
+
 if [[ -d build/tools/releasetools ]]; then
   RELEASETOOLS_PATH=build/tools
 else
@@ -46,7 +54,7 @@ OTAKEY=$(get_key other ota || exit $?)
 $maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
   -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
-  "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
+  "$INCREMENTAL"
 
 $maybe_dry_run pushd "archive/release-$DEVICE-$NEW" || exit 1
 
