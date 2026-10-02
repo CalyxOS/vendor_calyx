@@ -92,7 +92,13 @@ find_id_for_cert() {
   result=$(PKCS11_PIN=${PKCS11_PIN:-} PKCS11_SO_PIN=${PKCS11_SO_PIN:-} \
     "$PKCS11_TOOL_BIN" --list-objects --type cert \
     --label "$key" "${args[@]}") || return $?
-  printf "%s\n" "$result" | sed -n -e 's/^  ID: \+//p' || true
+  printf "%s\n" "$result" | pkcs11_tool_listing_ids || true
+}
+
+# Print each ID field of a pkcs11-tool object listing as plain hex. OpenSC 0.27 prints
+# "8192 (0x20:00)" where older versions print "2000".
+pkcs11_tool_listing_ids() {
+  sed -n -e 's/^  ID: \+[0-9]\+ (0x\([0-9a-fA-F:]\+\))$/\1/p' -e 's/^  ID: \+//p' | tr -d :
 }
 
 does_id_exist_for_type_yn_pkcs11() {
@@ -109,7 +115,7 @@ does_id_exist_for_type_yn_pkcs11() {
   output=$(PKCS11_PIN=${PKCS11_PIN:-} PKCS11_SO_PIN=${PKCS11_SO_PIN:-} \
     "$PKCS11_TOOL_BIN" --list-objects --type "$type" --id "$id" \
     "${args[@]}") || return $?
-  if ! printf "%s\n" "$output" | sed -n -e 's/^  ID: \+//p' | grep -qFx -- "$id"; then
+  if ! printf "%s\n" "$output" | pkcs11_tool_listing_ids | grep -qixF -- "${id#0x}"; then
     echo n
   else
     echo y
@@ -162,7 +168,7 @@ get_id_and_rsa_key_size_for_key() {
   if [ "${FIND_KEYS_BY_ID:-n}" = "y" ]; then
     key_id=$key
   else
-    key_id=$(printf "%s\n" "$output" | sed -n -e 's/^  ID: \+//p') || return $?
+    key_id=$(printf "%s\n" "$output" | pkcs11_tool_listing_ids) || return $?
   fi
   local rsa_key_size
   rsa_key_size=$(printf "%s\n" "$output" |
