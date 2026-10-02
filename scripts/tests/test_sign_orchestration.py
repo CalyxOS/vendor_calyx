@@ -168,6 +168,47 @@ printf 'loaded-sign=%s\n' "${sign_pairs_with_loaded_keys[*]:-<empty>}"
     ]
 
 
+def test_confirm_auto_answers_yes_when_sign_assume_yes_is_set() -> None:
+    result = run_sign_functions(
+        r"""
+SIGN_ASSUME_YES=y
+status=0
+confirm "Test prompt?" || status=$?
+printf 'exit=%s\n' "$status"
+""",
+    )
+
+    assert result.stdout.splitlines()[-1] == "exit=0"
+    assert "auto-answered by SIGN_ASSUME_YES=y" in result.stdout
+
+
+def test_try_fails_fast_under_sign_assume_yes_instead_of_retrying() -> None:
+    """
+    Under SIGN_ASSUME_YES a failing step must surface instead of being
+    retried forever.
+    """
+    result = run_sign_functions(
+        r"""
+SIGN_ASSUME_YES=y
+call_count_file=$(mktemp)
+always_fails() {
+  count=$(cat "$call_count_file" 2>/dev/null || echo 0)
+  count=$((count + 1))
+  echo "$count" > "$call_count_file"
+  return 1
+}
+status=0
+try always_fails || status=$?
+printf 'exit=%s\n' "$status"
+printf 'calls=%s\n' "$(cat "$call_count_file")"
+rm -f "$call_count_file"
+""",
+    )
+
+    assert result.stdout.splitlines() == ["exit=1", "calls=1"]
+    assert "not retrying" in result.stderr
+
+
 def test_sign_execution_loads_missing_keys_between_device_groups() -> None:
     result = run_sign_functions(
         r"""
@@ -322,3 +363,31 @@ done
         "next redfin=2026081500",
         "prev redfin=2026080100",
     ]
+
+
+def test_provisioning_try_fails_fast_under_sign_assume_yes() -> None:
+    program = r"""
+eval "$(sed -n '/^try() {/,/^}/p' "$1")"
+source "$2"
+SIGN_ASSUME_YES=y
+no_recover=
+calls=0
+always_fails() { calls=$((calls + 1)); return 1; }
+status=0
+try always_fails || status=$?
+printf 'exit=%s calls=%s\n' "$status" "$calls"
+"""
+    result = run(
+        [
+            "bash",
+            "-c",
+            program,
+            "provision-try-test",
+            SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.provision.sh",
+            SCRIPTS_DIR / "common.include.sh",
+        ],
+        check=False,
+    )
+
+    assert result.stdout.splitlines() == ["exit=1 calls=1"], result.stderr
+    assert "not retrying" in result.stderr

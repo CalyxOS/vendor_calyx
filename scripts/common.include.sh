@@ -352,6 +352,10 @@ maybe_start_logging_all_output() {
 }
 
 confirm() {
+  if [ "${SIGN_ASSUME_YES:-}" = "y" ]; then
+    printf "%s (Y/N) Y  [auto-answered by SIGN_ASSUME_YES=y]\n" "$1"
+    return 0
+  fi
   while true; do
     printf "%s" "$1 (Y/N) "
     local response
