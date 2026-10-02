@@ -953,6 +953,33 @@ def test_release_vendor_keymapper_sets_payload_signature_size(
     assert "--payload_signer_maximum_signature_size 512" in result.stderr
 
 
+@implementations
+@pytest.mark.parametrize("opted_in", (True, False), ids=("opt-in", "default"))
+def test_release_signs_ota_package_with_the_payload_signer(
+    release_tree: Path,
+    python: bool,
+    opted_in: bool,
+) -> None:
+    environment = dict(PKCS11_ENVIRONMENT)
+    if opted_in:
+        environment["USE_SIGNAPK_EXTERNAL_SIGNER"] = "y"
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment=environment,
+        python=python,
+    )
+
+    assert result.returncode == 0, result.stderr
+    ota_command = _command_line(result.stderr, "ota_from_target_files")
+    assert (
+        f"--payload_signer {SCRIPTS_DIR}/pkcs11/payload_signer.openssl.sh"
+        in ota_command
+    )
+    assert ("--signapk_external_signer" in ota_command) is opted_in
+
+
 @pytest.mark.parametrize(
     ("environment", "helper", "payload_signer"),
     (
