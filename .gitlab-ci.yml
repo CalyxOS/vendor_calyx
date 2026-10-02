@@ -11,5 +11,9 @@ python-checks:
   stage: build
   image: python:3.11-bookworm
   script:
+    - apt-get update
+    - >-
+      apt-get install -y --no-install-recommends
+      default-jre-headless libengine-pkcs11-openssl
     - python -m pip install -r scripts/requirements-checks.txt
     - ./scripts/check-python.sh
