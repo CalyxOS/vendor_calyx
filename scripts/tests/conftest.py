@@ -9,13 +9,23 @@ import hashlib
 import os
 import signal
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from yubihsm_emulator import Connector, EmulatedYubiHsm, serve_connector
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 TEST_METADATA = Path(__file__).parent / "fixtures" / "metadata.py"
+
+
+@pytest.fixture
+def yubihsm() -> Iterator[Connector]:
+    """An emulated YubiHSM 2 behind a local yubihsm-connector stand-in."""
+    with serve_connector() as connector:
+        connector.plug(EmulatedYubiHsm())
+        yield connector
 
 
 @pytest.fixture(scope="session")
