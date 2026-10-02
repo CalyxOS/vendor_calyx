@@ -301,6 +301,55 @@ def _yubihsm_connector_config(
     )
 
 
+def read_yubihsm_password_file(environment: MutableMapping[str, str]) -> bool:
+    """
+    Set YUBIHSM_PASSWORD from YUBIHSM_PASSWORD_FILE when only the file is
+    given.
+
+    Args:
+        environment: Process environment, mutated in place.
+
+    Returns:
+        Whether the password was read from the file.
+
+    Raises:
+        RuntimeError: If the file breaks the --password-file rules.
+    """
+    password_file = environment.get("YUBIHSM_PASSWORD_FILE")
+    if environment.get("YUBIHSM_PASSWORD") or not password_file:
+        return False
+    path = Path(password_file)
+    if not path.is_file():
+        raise RuntimeError(
+            f"YUBIHSM_PASSWORD_FILE ({password_file}) is not a file.",
+        )
+    if path.stat().st_mode & 0o077:
+        raise RuntimeError(
+            f"YUBIHSM_PASSWORD_FILE ({password_file}) must not have group or "
+            "other permissions.",
+        )
+    try:
+        text = path.read_bytes().decode()
+    except OSError as error:
+        raise RuntimeError(
+            f"YUBIHSM_PASSWORD_FILE ({password_file}) cannot be read "
+            f"({error.strerror}).",
+        ) from error
+    except UnicodeDecodeError as error:
+        raise RuntimeError(
+            f"YUBIHSM_PASSWORD_FILE ({password_file}) is not valid UTF-8.",
+        ) from error
+    lines = text.removesuffix("\n").split("\n") if text else []
+    if len(lines) != 1 or not lines[0].removesuffix("\r"):
+        raise RuntimeError(
+            f"YUBIHSM_PASSWORD_FILE ({password_file}) must contain exactly "
+            "one non-empty line.",
+        )
+    environment["YUBIHSM_PASSWORD"] = lines[0].removesuffix("\r")
+    print("Using YUBIHSM_PASSWORD from YUBIHSM_PASSWORD_FILE.")
+    return True
+
+
 def maybe_initialize_vendor_interactive(
     environment: MutableMapping[str, str],
     *,
@@ -824,13 +873,14 @@ class YubiHsmVendor(Vendor):
             default="0x0001",
             needs_value=True,
         )
-        ask_variable(
-            "YUBIHSM_PASSWORD",
-            environment,
-            default="",
-            private=True,
-            needs_value=True,
-        )
+        if not read_yubihsm_password_file(environment):
+            ask_variable(
+                "YUBIHSM_PASSWORD",
+                environment,
+                default="",
+                private=True,
+                needs_value=True,
+            )
 
     def initialize(
         self,
@@ -842,6 +892,7 @@ class YubiHsmVendor(Vendor):
         Prepare the YubiHSM for signing, failing when no password is given or
         the audit-log repository is missing.
         """
+        read_yubihsm_password_file(environment)
         missing = [
             name
             for name in ("YUBIHSM_AUTHKEY", "YUBIHSM_PASSWORD")
