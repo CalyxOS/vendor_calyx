@@ -117,6 +117,8 @@ initialize_vendor() {
 
     maybe_start_yubihsm_connector "$YUBIHSM_TMPDIR/yubihsm_connector.pid"
     if [ "${PKCS11_PYTHON_INTERCEPTOR:-}" != "y" ]; then
+      # The Python interceptor runs apksigner through the Python release's
+      # batch server when one runs, never through this batch process.
       maybe_start_apksigner_batch "$YUBIHSM_TMPDIR"
     fi
 

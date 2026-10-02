@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import sign_environment
+from .apksigner_batch import ApksignerBatch
 from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
 from .metadata import SigningMetadata
 from .release_arguments import (
@@ -36,6 +37,7 @@ from .release_execution import (
     render_release_tool,
     run_release_tool,
 )
+from .signing_server import SigningServer
 
 _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
 
@@ -544,6 +546,7 @@ class SigningSession:
                 and self.environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE")
                 == "y"
             )
+            self._maybe_start_signing_server()
             prepare_signing_args(
                 self.environment,
                 self.args,
@@ -556,6 +559,35 @@ class SigningSession:
             raise ReleaseAbort(1) from error
 
         sys.stderr.write("Command: " + render_release_tool(command_argv))
+
+    def _maybe_start_signing_server(self) -> None:
+        """
+        Host a SigningServer with an "apksigner batch" handler for the rest
+        of the release when the Python YubiHSM interceptor signs APKs,
+        unless NEVER_START_APKSIGNER_BATCH=y.
+        """
+        interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
+        if (
+            self.dry_run
+            or self.environment.get("NEVER_START_APKSIGNER_BATCH") == "y"
+            or Path(interceptor).name != "vendor.yubihsm.interceptor.py"
+        ):
+            return
+        assert self.tmpdir is not None
+        socket_path = self.tmpdir / "signing-server.sock"
+        server = SigningServer(
+            socket_path,
+            {"apksigner": ApksignerBatch(cwd=self.cwd, env=self.environment)},
+        )
+        try:
+            self._resources.enter_context(server)
+        except OSError as error:
+            print(
+                f"Warning: not starting the signing server ({error}).",
+                file=sys.stderr,
+            )
+            return
+        self.environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:
