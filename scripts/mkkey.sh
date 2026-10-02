@@ -26,6 +26,12 @@ MKKEY=$TOP/development/tools/make_key
 [[ -e ${MKKEY} ]] || error "${MKKEY} not found"
 [[ -e $(which openssl) ]] || error "openssl not found in PATH."
 
+if [[ -e ${KEY_NAME}.pk8 && ! -e ${KEY_NAME}.x509.pem ]]; then
+  echo "error: key $KEY_NAME exists without ${KEY_NAME}.x509.pem." >&2
+  echo "Restore the certificate from a backup, or delete ${KEY_NAME}.pk8 if the key was never used." >&2
+  exit 1
+fi
+
 [[ ! -e ${KEY_NAME}.pk8 ]] || error "key $KEY_NAME already exists"
 [[ ! -e ${KEY_NAME}.pem ]] || error "key $KEY_NAME already exists"
 [[ ! -e ${KEY_NAME}.x509.pem ]] || error "key $KEY_NAME already exists"
