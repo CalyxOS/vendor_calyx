@@ -259,7 +259,7 @@ else
 
   if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
     echo "Creating signed targetfiles zip"
-    $maybe_dry_run \
+    release_tool_invoke \
       "$(releasetools_binary sign_target_files_apks)" "${EXTRA_RELEASETOOLS_ARGS[@]}" -o \
         "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
         "$TARGET_FILES" "$SIGNED_TARGET_FILES" || exit 1
@@ -270,15 +270,15 @@ else
   else
     if [ "${KEEP_OTA:-n}" = n ] || [ ! -e "$OUT/$DEVICE-ota_update-$BUILD.zip" ]; then
       echo "Creating OTA update zip"
-      $maybe_dry_run \
+      release_tool_invoke \
       "$(releasetools_binary ota_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$SIGNED_TARGET_FILES" \
         "$OUT/$DEVICE-ota_update-$BUILD.zip" || exit 1
 
       $maybe_dry_run pushd "$OUT" || exit 1
 
       echo "Calculating sha256sum for OTA update zip"
-      $maybe_dry_run \
-      sha256sum "$DEVICE-ota_update-$BUILD.zip" > "$DEVICE-ota_update-$BUILD.zip.sha256sum"
+      release_checksum \
+      "$DEVICE-ota_update-$BUILD.zip" > "$DEVICE-ota_update-$BUILD.zip.sha256sum"
 
       $maybe_dry_run popd
     fi
@@ -293,7 +293,7 @@ fi  # ! SKIP_SIGNING
 
 if [ "${KEEP_FACTORY:-n}" = n ] || [ ! -e "$OUT/$DEVICE-img-$BUILD.zip" ]; then
   echo "Creating factory image"
-  $maybe_dry_run \
+  release_tool_invoke \
   "$(releasetools_binary img_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "$SIGNED_TARGET_FILES" \
     "$OUT/$DEVICE-img-$BUILD.zip" || exit 1
 fi
@@ -312,8 +312,8 @@ $maybe_dry_run \
 mv "$DEVICE-$VERSION-factory-"*.zip "$DEVICE-factory-$BUILD.zip"
 
 echo "Calculating sha256sum for factory image"
-$maybe_dry_run \
-sha256sum "$DEVICE-factory-$BUILD.zip" > "$DEVICE-factory-$BUILD.zip.sha256sum"
+release_checksum \
+"$DEVICE-factory-$BUILD.zip" > "$DEVICE-factory-$BUILD.zip.sha256sum"
 
 $maybe_dry_run popd
 
@@ -324,20 +324,20 @@ rm "$OUT/$DEVICE-img-$BUILD.zip"
 if [[ -n ${OTATEST:-} && "${SKIP_SIGNING:-}" != y ]]; then
 OTATEST_TARGET_FILES=$OUT/$DEVICE-target_files-$OTATEST.zip
 echo "Creating OTA test update zip"
-$maybe_dry_run \
+release_tool_invoke \
 "$(releasetools_binary sign_target_files_apks)" "${EXTRA_RELEASETOOLS_ARGS[@]}" --otatest -o \
  "${EXTRA_SIGNING_ARGS[@]}" "${avb_arguments[@]}" \
   "$TARGET_FILES" "$OTATEST_TARGET_FILES" || exit 1
 
-$maybe_dry_run \
+release_tool_invoke \
 "$(releasetools_binary ota_from_target_files)" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" "$OTATEST_TARGET_FILES" \
   "$OUT/$DEVICE-ota_update-$OTATEST.zip" || exit 1
 
 $maybe_dry_run pushd "$OUT" || exit 1
 
 echo "Calculating sha256sum for OTA test update zip"
-$maybe_dry_run \
-sha256sum "$DEVICE-ota_update-$OTATEST.zip" > "$DEVICE-ota_update-$OTATEST.zip.sha256sum"
+release_checksum \
+"$DEVICE-ota_update-$OTATEST.zip" > "$DEVICE-ota_update-$OTATEST.zip.sha256sum"
 
 $maybe_dry_run popd
 fi
