@@ -239,6 +239,9 @@ prepare_signing_args() {
     )
     EXTRA_SIGNING_ARGS+=("${common_args[@]}")
     EXTRA_OTA_ARGS+=("${common_args[@]}")
+    if [ "${USE_SIGNAPK_EXTERNAL_SIGNER:-}" = "y" ]; then
+      EXTRA_OTA_ARGS+=(--signapk_external_signer "$payload_signer_tool")
+    fi
   fi
 
   if [ -n "${SIGNING_COMMAND_INTERCEPTOR:-}" ]; then

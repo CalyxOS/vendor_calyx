@@ -391,6 +391,8 @@ def prepare_signing_args(
         ]
         args.signing += ["--payload_signer", payload_signer_tool]
         args.ota += ["--payload_signer", payload_signer_tool]
+        if environment.get("USE_SIGNAPK_EXTERNAL_SIGNER") == "y":
+            args.ota += ["--signapk_external_signer", payload_signer_tool]
 
     interceptor = environment.get("SIGNING_COMMAND_INTERCEPTOR")
     if interceptor:
