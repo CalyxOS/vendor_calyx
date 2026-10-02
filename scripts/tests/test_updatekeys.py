@@ -17,26 +17,41 @@ AOSP_TOP = REPO_ROOT.parents[1]
 AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 
 
+@pytest.fixture(params=("make_key", "python"))
+def signing_mode(request: pytest.FixtureRequest) -> str:
+    return str(request.param)
+
+
 @pytest.fixture
 def updatekeys_tree(tmp_path: Path) -> Path:
     (tmp_path / "keys" / "bramble").mkdir(parents=True)
     return tmp_path
 
 
-def run_updatekeys(root: Path) -> subprocess.CompletedProcess[str]:
+def run_updatekeys(
+    root: Path,
+    signing_mode: str,
+) -> subprocess.CompletedProcess[str]:
+    environment = {
+        "KEYMAPPER": "id2b",
+        "METADATA_FILE": str(TEST_METADATA),
+        "AVBTOOL_BIN": str(AVBTOOL),
+        "GENERATE_VERITY_KEY_BIN": "/bin/true",
+    }
+    input_text = None
+    if signing_mode == "python":
+        environment["USE_PYTHON_SIGNING"] = "y"
+        environment["MAKE_KEY_BIN"] = str(root / "missing-make_key")
+    else:
+        environment["MAKE_KEY_BIN"] = str(
+            AOSP_TOP / "development" / "tools" / "make_key",
+        )
+        input_text = "\n" * 32
     return run(
         [SCRIPTS_DIR / "updatekeys.sh", "keys/bramble", SUBJECT],
         cwd=root,
-        env={
-            "KEYMAPPER": "id2b",
-            "METADATA_FILE": str(TEST_METADATA),
-            "MAKE_KEY_BIN": str(
-                AOSP_TOP / "development" / "tools" / "make_key",
-            ),
-            "AVBTOOL_BIN": str(AVBTOOL),
-            "GENERATE_VERITY_KEY_BIN": "/bin/true",
-        },
-        input_text="\n" * 32,
+        env=environment,
+        input_text=input_text,
         check=False,
     )
 
@@ -65,8 +80,9 @@ def assert_avb_public_key_matches(
 
 def test_updatekeys_generates_complete_id2b_key_set(
     updatekeys_tree: Path,
+    signing_mode: str,
 ) -> None:
-    result = run_updatekeys(updatekeys_tree)
+    result = run_updatekeys(updatekeys_tree, signing_mode)
     assert result.returncode == 0, result.stderr
     keys = updatekeys_tree / "keys"
 
@@ -91,8 +107,11 @@ def test_updatekeys_generates_complete_id2b_key_set(
         )
 
 
-def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
-    first = run_updatekeys(updatekeys_tree)
+def test_updatekeys_is_idempotent(
+    updatekeys_tree: Path,
+    signing_mode: str,
+) -> None:
+    first = run_updatekeys(updatekeys_tree, signing_mode)
     assert first.returncode == 0, first.stderr
     keys = updatekeys_tree / "keys"
     before = {
@@ -101,7 +120,7 @@ def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
         if path.is_file()
     }
 
-    second = run_updatekeys(updatekeys_tree)
+    second = run_updatekeys(updatekeys_tree, signing_mode)
     assert second.returncode == 0, second.stderr
     after = {
         path.relative_to(keys): sha256(path)
