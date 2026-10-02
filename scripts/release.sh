@@ -140,60 +140,122 @@ if [ "${SKIP_SIGNING:-}" = y ]; then
   fi
   $maybe_dry_run cp "$TARGET_FILES" "$SIGNED_TARGET_FILES"
 else
-  # Get AVB arguments from keymapper.
-  avb_arguments=()
-  fill_avb_arguments
-
-  # Populate key mappings for APEXes.
-  for key in "${keys_apex[@]}"; do
-    [ -n "$key" ] || continue
-    EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key" || exit $?)")
-    EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem || exit $?)")
-  done
-
-  # Populate key mappings for everything else.
-  declare -A already_remapped
-  for key in build/make/target/product/security/devkey "${keys_core[@]}"; do
-    [ -n "$key" ] || continue
-    [ -z "${already_remapped[$key]:-}" ] || continue
-    value=$(get_key core "$key" || exit $?)
-    [ -n "$value" ] || continue
-    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-    already_remapped[$key]=1
-  done
-  for key in "${keys_apex_apk[@]}"; do
-    [ -n "$key" ] || continue
-    [ -z "${already_remapped[$key]:-}" ] || continue
-    value=$(get_key apex_apk "$key" || exit $?)
-    [ -n "$value" ] || continue
-    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-    already_remapped[$key]=1
-  done
-  for key in "${keys_app[@]}"; do
-    [ -n "$key" ] || continue
-    [ -z "${already_remapped[$key]:-}" ] || continue
-    value=$(get_key app "$key" || exit $?)
-    [ -n "$value" ] || continue
-    EXTRA_SIGNING_ARGS+=(-k "$key=$value")
-    already_remapped[$key]=1
-  done
-
-  if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
-    if [[
-      $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
-      $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
-    ]]; then
-      EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
-      EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
+  if [ "${USE_PYTHON_RELEASE_ARGS:-}" = "y" ]; then
+    [ -z "${KEYMAPPER_FILE:-}" ] \
+      || error "USE_PYTHON_RELEASE_ARGS does not support KEYMAPPER_FILE"
+    case "${KEYMAPPER:-legacy}" in
+      legacy|id2b) ;;
+      *) error "USE_PYTHON_RELEASE_ARGS supports only the legacy and id2b keymappers" ;;
+    esac
+    if [ "${KEYMAPPER:-legacy}" = legacy ]; then
+      avb_algorithm=SHA256_RSA${AVB_RSA_KEY_SIZE:-4096}
+    elif declare -F get_key_algorithm >/dev/null; then
+      avb_algorithm=SHA256_RSA${RSA_KEY_SIZE:-4096}
     else
-      echo "Unsupported device for AVB Rollback Index override: $DEVICE"
+      avb_algorithm=SHA256_RSA${AVB_RSA_KEY_SIZE:-${RSA_KEY_SIZE:-4096}}
+    fi
+    extra_signing_arg_flags=()
+    for arg in "${EXTRA_SIGNING_ARGS[@]}"; do
+      extra_signing_arg_flags+=(--extra-signing-arg="$arg")
+    done
+    extra_ota_arg_flags=()
+    for arg in "${EXTRA_OTA_ARGS[@]}"; do
+      extra_ota_arg_flags+=(--extra-ota-arg="$arg")
+    done
+    rollback_flag=()
+    if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
+      rollback_flag=(--avb-rollback-index-override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+    fi
+
+    release_args_output=$(mktemp)
+    if ! PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" python3 -P -m signing build-release-args \
+      --metadata "${METADATA_FILE:-$SCRIPTPATH/metadata.py}" \
+      --keymapper "${KEYMAPPER:-legacy}" \
+      --device "$DEVICE" \
+      --key-dir "$KEY_DIR" \
+      --key-suffix "${KEY_SUFFIX-.pem}" \
+      --avb-algorithm "$avb_algorithm" \
+      "${rollback_flag[@]}" \
+      "${extra_signing_arg_flags[@]}" \
+      "${extra_ota_arg_flags[@]}" \
+      > "$release_args_output"; then
+      # The unsupported rollback device error goes to stdout, like the echo in
+      # the Bash branch.
+      cat "$release_args_output"
+      rm -f "$release_args_output"
       exit 1
+    fi
+
+    avb_arguments=()
+    EXTRA_SIGNING_ARGS=()
+    EXTRA_OTA_ARGS=()
+    while IFS= read -r -d '' stream && IFS= read -r -d '' value; do
+      case "$stream" in
+        avb) avb_arguments+=("$value") ;;
+        signing) EXTRA_SIGNING_ARGS+=("$value") ;;
+        ota) EXTRA_OTA_ARGS+=("$value") ;;
+      esac
+    done < "$release_args_output"
+    rm -f "$release_args_output"
+  else
+    # Get AVB arguments from keymapper.
+    avb_arguments=()
+    fill_avb_arguments
+
+    # Populate key mappings for APEXes.
+    for key in "${keys_apex[@]}"; do
+      [ -n "$key" ] || continue
+      EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key" || exit $?)")
+      EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem || exit $?)")
+    done
+
+    # Populate key mappings for everything else.
+    declare -A already_remapped
+    for key in build/make/target/product/security/devkey "${keys_core[@]}"; do
+      [ -n "$key" ] || continue
+      [ -z "${already_remapped[$key]:-}" ] || continue
+      value=$(get_key core "$key" || exit $?)
+      [ -n "$value" ] || continue
+      EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+      already_remapped[$key]=1
+    done
+    for key in "${keys_apex_apk[@]}"; do
+      [ -n "$key" ] || continue
+      [ -z "${already_remapped[$key]:-}" ] || continue
+      value=$(get_key apex_apk "$key" || exit $?)
+      [ -n "$value" ] || continue
+      EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+      already_remapped[$key]=1
+    done
+    for key in "${keys_app[@]}"; do
+      [ -n "$key" ] || continue
+      [ -z "${already_remapped[$key]:-}" ] || continue
+      value=$(get_key app "$key" || exit $?)
+      [ -n "$value" ] || continue
+      EXTRA_SIGNING_ARGS+=(-k "$key=$value")
+      already_remapped[$key]=1
+    done
+
+    if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
+      if [[
+        $DEVICE == devon || $DEVICE == hawao || $DEVICE == rhode ||
+        $DEVICE == fogos || $DEVICE == bangkk || $DEVICE == fogo
+      ]]; then
+        EXTRA_SIGNING_ARGS+=(--avb_rollback_index_override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+        EXTRA_SIGNING_ARGS+=(--bump_date_and_version "1")
+      else
+        echo "Unsupported device for AVB Rollback Index override: $DEVICE"
+        exit 1
+      fi
     fi
   fi
 
-  OTAKEY=$(get_key other ota || exit $?)
-  EXTRA_SIGNING_ARGS+=(--package_key "$OTAKEY")
-  EXTRA_OTA_ARGS+=(--package_key "$OTAKEY")
+  if [ "${USE_PYTHON_RELEASE_ARGS:-}" != "y" ]; then
+    # build-release-args already adds --package_key.
+    OTAKEY=$(get_key other ota || exit $?)
+    EXTRA_SIGNING_ARGS+=(--package_key "$OTAKEY")
+    EXTRA_OTA_ARGS+=(--package_key "$OTAKEY")
+  fi
 
   if [ "${KEEP_TARGET_FILES:-n}" = n ] || [ ! -e "$SIGNED_TARGET_FILES" ]; then
     echo "Creating signed targetfiles zip"
