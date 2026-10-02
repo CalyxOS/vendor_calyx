@@ -367,6 +367,8 @@ def prepare_signing_args(
         payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
         if payload_tool == "python":
             payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.py"
+        elif payload_tool == "server":
+            payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.server.py"
         else:
             payload_signer_tool = (
                 f"{_PKCS11_DIR}/payload_signer.{payload_tool}.sh"
@@ -569,9 +571,10 @@ class SigningSession:
 
         The server holds one YubiHSM session for AVB signatures and
         audit-log extraction, and, unless NEVER_START_APKSIGNER_BATCH=y, one
-        "apksigner batch" process. avbtool's signing helper defaults to
-        signing_helper.server.py unless AVB_SIGNING_HELPER_TOOL or
-        SIGNING_HELPER_TOOL chooses one.
+        "apksigner batch" process. avbtool's signing helper and the OTA
+        payload signer default to signing_helper.server.py and
+        payload_signer.server.py unless AVB_SIGNING_HELPER_TOOL,
+        PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL chooses them.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
         if Path(interceptor).name != "vendor.yubihsm.interceptor.py":
@@ -617,10 +620,10 @@ class SigningSession:
         Point the release at the signing paths the signing server serves,
         unless the variables that choose them are set.
         """
-        if not self.environment.get(
-            "AVB_SIGNING_HELPER_TOOL",
-        ) and not self.environment.get("SIGNING_HELPER_TOOL"):
-            self.environment["AVB_SIGNING_HELPER_TOOL"] = "server"
+        if not self.environment.get("SIGNING_HELPER_TOOL"):
+            for variable in ("AVB_SIGNING_HELPER_TOOL", "PAYLOAD_SIGNER_TOOL"):
+                if not self.environment.get(variable):
+                    self.environment[variable] = "server"
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:
