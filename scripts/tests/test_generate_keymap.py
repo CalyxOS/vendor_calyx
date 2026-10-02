@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import os
+import stat
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,12 +26,17 @@ def generate_keymap(
     devices: tuple[str, ...] = DEVICES,
     *,
     keymapper: str = "id2b",
+    use_python: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     devices_file = tmp_path / "devices"
     devices_file.write_text(f"devices=({' '.join(devices)})\n")
+    environment = {"DEVICES_FILE": str(devices_file), "KEYMAPPER": keymapper}
+    if use_python:
+        environment["USE_PYTHON_GENERATE_KEYMAP"] = "y"
+        environment["PYTHONPATH"] = str(SCRIPTS_DIR)
     return run(
         [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={"DEVICES_FILE": str(devices_file), "KEYMAPPER": keymapper},
+        env=environment,
         check=False,
     )
 
@@ -64,10 +72,16 @@ def test_id2b_keymap_cli_matches_complete_golden_output() -> None:
     assert result.stdout == GOLDEN_KEYMAP.read_text()
 
 
+@pytest.mark.parametrize("use_python", (False, True))
 def test_id2b_keymap_rejects_device_missing_from_metadata(
     tmp_path: Path,
+    use_python: bool,
 ) -> None:
-    result = generate_keymap(tmp_path, ("not-a-supported-device",))
+    result = generate_keymap(
+        tmp_path,
+        ("not-a-supported-device",),
+        use_python=use_python,
+    )
 
     assert result.returncode != 0
     assert result.stdout == ""
@@ -112,6 +126,115 @@ def test_load_keymapper_fails_when_the_keymapper_does_not_load(
 
     assert "status=3" in result.stdout
     assert "Loading keymapper script failed!" in result.stderr
+
+
+@pytest.mark.parametrize("keymapper", ("id2b", "legacy"))
+def test_generate_keymap_python_flag_matches_bash_without_devices(
+    tmp_path: Path,
+    keymapper: str,
+) -> None:
+    bash = generate_keymap(tmp_path, (), keymapper=keymapper)
+    python = generate_keymap(tmp_path, (), keymapper=keymapper, use_python=True)
+
+    assert python.returncode == bash.returncode
+    assert python.stdout == bash.stdout
+    if bash.returncode != 0:
+        expected = "ERROR: No defined devices for which to generate keys."
+        assert expected in bash.stderr
+        assert expected in python.stderr
+
+
+@pytest.mark.parametrize(
+    ("keymapper", "devices"),
+    (("id2b", DEVICES), ("legacy", LEGACY_DEVICES)),
+)
+def test_generate_keymap_python_flag_matches_bash(
+    tmp_path: Path,
+    keymapper: str,
+    devices: tuple[str, ...],
+) -> None:
+    bash = generate_keymap(tmp_path, devices, keymapper=keymapper)
+    python = generate_keymap(
+        tmp_path,
+        devices,
+        keymapper=keymapper,
+        use_python=True,
+    )
+
+    assert bash.returncode == 0, bash.stderr
+    assert python.returncode == 0, python.stderr
+    assert python.stdout == bash.stdout
+
+
+def test_generate_keymap_python_flag_invokes_python(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "fake-path-bin"
+    fake_bin.mkdir()
+    fake_python3 = fake_bin / "python3"
+    fake_python3.write_text(
+        "#!/bin/sh\n"
+        'case " $* " in *" generate-keymap "*)\n'
+        "  echo FAKE_PYTHON3_INVOKED >&2\n"
+        "  exit 1\n"
+        "esac\n"
+        f'exec {sys.executable} "$@"\n',
+    )
+    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
+    devices_file = tmp_path / "devices"
+    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
+    path_with_fake = f"{fake_bin}:{os.environ['PATH']}"
+
+    with_flag = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env={
+            "DEVICES_FILE": str(devices_file),
+            "KEYMAPPER": "id2b",
+            "USE_PYTHON_GENERATE_KEYMAP": "y",
+            "PATH": path_with_fake,
+        },
+        check=False,
+    )
+    assert "FAKE_PYTHON3_INVOKED" in with_flag.stderr
+    assert with_flag.returncode != 0
+
+    without_flag = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env={
+            "DEVICES_FILE": str(devices_file),
+            "KEYMAPPER": "id2b",
+            "PATH": path_with_fake,
+        },
+        check=False,
+    )
+    assert "FAKE_PYTHON3_INVOKED" not in without_flag.stderr
+    assert without_flag.returncode == 0, without_flag.stderr
+
+
+@pytest.mark.parametrize(
+    "environment",
+    ({"KEYMAPPER": "static"}, {"KEYMAPPER_FILE": "keymapper.id2b.include.sh"}),
+    ids=("static", "keymapper-file"),
+)
+def test_generate_keymap_python_flag_rejects_other_keymappers(
+    tmp_path: Path,
+    environment: dict[str, str],
+) -> None:
+    devices_file = tmp_path / "devices"
+    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
+
+    result = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env={
+            "DEVICES_FILE": str(devices_file),
+            "USE_PYTHON_GENERATE_KEYMAP": "y",
+            **environment,
+        },
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "supports only the legacy and id2b keymappers" in result.stderr
 
 
 def test_python_legacy_keymap_cli_matches_bash(tmp_path: Path) -> None:
