@@ -230,7 +230,8 @@ ask_variable() {
     fi
   fi
   while [ -z "${!var:-}" ]; do
-    read -r $private -p "$prompt: " "$var"
+    local read_failed=
+    read -r $private -p "$prompt: " "$var" || read_failed=y
     if [ -n "$private" ]; then
       echo
     fi
@@ -240,6 +241,9 @@ ask_variable() {
         declare -g "$var="
       fi
       break
+    fi
+    if [ -n "$read_failed" ] && [ -z "${!var:-}" ]; then
+      return 1
     fi
   done
 }
@@ -286,7 +290,7 @@ confirm() {
   while true; do
     printf "%s" "$1 (Y/N) "
     local response
-    read -r response
+    read -r response || [ -n "$response" ] || return 1
     case "$response" in
       Y|y)
         break ;;
