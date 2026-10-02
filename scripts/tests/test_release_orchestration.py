@@ -327,9 +327,15 @@ def _signing_arguments(stderr: str) -> list[str]:
     return shlex.split(re.sub(r"/signing\.\w+/", "/signing.X/", line))
 
 
+@pytest.mark.parametrize(
+    "flags",
+    ({}, {"USE_PYTHON_RELEASE_ARGS": "y"}),
+    ids=("bash", "python"),
+)
 def test_release_leaves_out_the_metadata_placeholders(
     release_tree: Path,
     tmp_path: Path,
+    flags: dict[str, str],
 ) -> None:
     from test_generate_keymap import metadata_with_placeholders
 
@@ -338,11 +344,11 @@ def test_release_leaves_out_the_metadata_placeholders(
         tmp_path / "metadata.py",
     )
 
-    full = run_release(release_tree, "bramble")
+    full = run_release(release_tree, "bramble", environment=flags)
     placeholders = run_release(
         release_tree,
         "bramble",
-        environment={"METADATA_FILE": str(metadata)},
+        environment={**flags, "METADATA_FILE": str(metadata)},
     )
 
     assert full.returncode == 0, full.stderr

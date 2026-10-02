@@ -300,6 +300,48 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("id2b", "legacy"),
         default="id2b",
     )
+
+    release_args = subparsers.add_parser("build-release-args")
+    release_args.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+    )
+    release_args.add_argument(
+        "--keymapper",
+        choices=("id2b", "legacy"),
+        default="id2b",
+    )
+    release_args.add_argument(
+        "--device",
+        required=True,
+    )
+    release_args.add_argument(
+        "--key-dir",
+        default="keys/",
+    )
+    release_args.add_argument(
+        "--key-suffix",
+        default=".pem",
+    )
+    release_args.add_argument(
+        "--avb-algorithm",
+        default="SHA256_RSA4096",
+    )
+    release_args.add_argument(
+        "--avb-rollback-index-override",
+        default=None,
+    )
+    release_args.add_argument(
+        "--extra-signing-arg",
+        action="append",
+        default=[],
+    )
+    release_args.add_argument(
+        "--extra-ota-arg",
+        action="append",
+        default=[],
+    )
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -718,6 +760,55 @@ def _cmd_generate_keymap(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_build_release_args(args: argparse.Namespace) -> int:
+    """
+    Print a release's null-delimited avb/signing/ota argument streams.
+
+    Args:
+        args: Parsed namespace containing metadata path and device.
+
+    Returns:
+        Zero on success, one if the device has no rollback support.
+    """
+    from .metadata import default_metadata_path, load_metadata
+    from .release_arguments import (
+        UnsupportedRollbackDeviceError,
+        build_release_arguments,
+        make_get_key,
+    )
+
+    metadata = load_metadata(args.metadata or default_metadata_path())
+    keymapper = _keymapper_from_args(args, metadata)
+    get_key = make_get_key(
+        keymapper,
+        device=args.device,
+        key_dir=args.key_dir,
+        key_suffix=args.key_suffix,
+    )
+    try:
+        result = build_release_arguments(
+            metadata,
+            get_key,
+            device=args.device,
+            avb_rollback_index_override=args.avb_rollback_index_override,
+            avb_algorithm=args.avb_algorithm,
+            extra_signing_args=tuple(args.extra_signing_arg),
+            extra_ota_args=tuple(args.extra_ota_arg),
+        )
+    except UnsupportedRollbackDeviceError as error:
+        print(error)
+        return 1
+    out = sys.stdout.buffer
+    for stream, values in (
+        ("avb", result.avb_arguments),
+        ("signing", result.signing_args),
+        ("ota", result.ota_args),
+    ):
+        for value in values:
+            out.write(stream.encode() + b"\0" + value.encode() + b"\0")
+    return 0
+
+
 def _cmd_provision_avb_key(args: argparse.Namespace) -> int:
     """
     Provision an AVB signing key pair.
@@ -1038,6 +1129,7 @@ _CommandHandler = Callable[[argparse.Namespace], int]
 _HANDLERS: dict[str, _CommandHandler] = {
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
+    "build-release-args": _cmd_build_release_args,
     "provision-avb-key": _cmd_provision_avb_key,
     "provision-rsa-key": _cmd_provision_rsa_key,
     "migrate-runtime-key": _cmd_migrate_runtime_key,
