@@ -65,7 +65,7 @@ fi
 "$AVBTOOL" extract_public_key --key "$keyval_vbmeta" --output "$AVB_CUSTOM_KEY"
 
 keyval_vbmeta_system=$(get_key avb vbmeta_system || exit $?)
-if [ "$keyval_vbmeta_system" != "$keyval" ]; then
+if [[ ! -e "$keyval_vbmeta_system" ]]; then
   openssl genrsa -out "$keyval_vbmeta_system" 4096
 fi
 
