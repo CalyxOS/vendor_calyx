@@ -132,6 +132,71 @@ def test_initialize_yubihsm_interactive_prompts_for_authkey_and_password(
     assert environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] == "y"
 
 
+def _no_password_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(prompt: str = "") -> str:
+        raise AssertionError(f"unexpected prompt: {prompt}")
+
+    monkeypatch.setattr("signing.confirmation.getpass.getpass", refuse)
+
+
+def test_initialize_yubihsm_interactive_reads_password_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _no_password_prompt(monkeypatch)
+    password_file = tmp_path / "signing.txt"
+    password_file.write_text("hunter2\n")
+    password_file.chmod(0o600)
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "NEVER_START_YUBIHSM_CONNECTOR": "y",
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD_FILE": str(password_file),
+    }
+
+    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+
+    assert environment["YUBIHSM_PASSWORD"] == "hunter2"
+
+
+def test_initialize_yubihsm_interactive_prefers_password_over_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _no_password_prompt(monkeypatch)
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "NEVER_START_YUBIHSM_CONNECTOR": "y",
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "from-environment",
+        "YUBIHSM_PASSWORD_FILE": str(tmp_path / "missing.txt"),
+    }
+
+    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+
+    assert environment["YUBIHSM_PASSWORD"] == "from-environment"
+
+
+def test_initialize_yubihsm_interactive_refuses_readable_password_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _no_password_prompt(monkeypatch)
+    password_file = tmp_path / "signing.txt"
+    password_file.write_text("hunter2\n")
+    password_file.chmod(0o644)
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "NEVER_START_YUBIHSM_CONNECTOR": "y",
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD_FILE": str(password_file),
+    }
+
+    with pytest.raises(RuntimeError, match="group or other permissions"):
+        maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    assert "YUBIHSM_PASSWORD" not in environment
+
+
 def test_initialize_yubihsm_interactive_warns_and_confirms_when_running(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -219,6 +284,31 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
     assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
         "vendor.yubihsm.interceptor.py",
     )
+
+
+def test_maybe_initialize_vendor_reads_the_password_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
+    password_file = tmp_path / "signing.txt"
+    password_file.write_text("hunter2\n")
+    password_file.chmod(0o600)
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "PKCS11_PYTHON_INTERCEPTOR": "y",
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD_FILE": str(password_file),
+        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
+    }
+
+    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+
+    assert environment["YUBIHSM_PASSWORD"] == "hunter2"
+    assert environment["PKCS11_PIN"] == "0001hunter2"
 
 
 def test_maybe_initialize_vendor_rejects_empty_upload_script(
@@ -810,6 +900,61 @@ def test_yubihsm_finalize_release_extracts_under_the_lock(
 
     assert "Finished BUILD_NUMBER=1 DEVICE=bramble release.sh" in (
         audit_log.read_text()
+    )
+
+
+@pytest.mark.parametrize(
+    ("contents", "mode", "message"),
+    (
+        (None, 0o600, "is not a file."),
+        ("secret\n", 0o640, "must not have group or other permissions."),
+        ("one\ntwo\n", 0o600, "must contain exactly one non-empty line."),
+        ("secret\n\n", 0o600, "must contain exactly one non-empty line."),
+        (b"caf\xe9\n", 0o600, "is not valid UTF-8."),
+    ),
+    ids=("missing", "shared", "two-lines", "blank-line", "latin-1"),
+)
+def test_read_yubihsm_password_file_reports_as_bash_does(
+    tmp_path: Path,
+    contents: str | bytes | None,
+    mode: int,
+    message: str,
+) -> None:
+    password_file = tmp_path / "password"
+    if contents is not None:
+        password_file.write_bytes(
+            contents if isinstance(contents, bytes) else contents.encode(),
+        )
+        password_file.chmod(mode)
+    environment = {"YUBIHSM_PASSWORD_FILE": str(password_file)}
+
+    with pytest.raises(RuntimeError) as raised:
+        sign_environment.read_yubihsm_password_file(environment)
+
+    assert str(raised.value) == (
+        f"YUBIHSM_PASSWORD_FILE ({password_file}) {message}"
+    )
+
+
+@pytest.mark.parametrize(
+    "contents",
+    ("pass\fword\n", "secret\r\n", "secret"),
+    ids=("form-feed", "crlf", "no-newline"),
+)
+def test_read_yubihsm_password_file_splits_lines_as_mapfile(
+    tmp_path: Path,
+    contents: str,
+) -> None:
+    password_file = tmp_path / "password"
+    password_file.write_text(contents)
+    password_file.chmod(0o600)
+    environment = {"YUBIHSM_PASSWORD_FILE": str(password_file)}
+
+    assert sign_environment.read_yubihsm_password_file(environment)
+    assert environment["YUBIHSM_PASSWORD"] == contents.split("\n")[
+        0
+    ].removesuffix(
+        "\r",
     )
 
 
