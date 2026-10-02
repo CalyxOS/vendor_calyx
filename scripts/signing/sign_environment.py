@@ -213,8 +213,8 @@ def require_python_interceptor(environment: Mapping[str, str]) -> None:
     ):
         raise UnsupportedVendorError(
             "The Python orchestrator requires PKCS11_PYTHON_INTERCEPTOR=y "
-            "for the yubihsm vendor, since the apksigner batch mode of "
-            "the Bash interceptor has no Python equivalent.",
+            "for the yubihsm vendor, since the Python vendor setup starts "
+            "no apksigner batch process for the Bash interceptor.",
         )
 
 
