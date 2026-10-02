@@ -361,6 +361,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
     )
+    release_args.add_argument(
+        "--extra-devices",
+        nargs="*",
+        default=[],
+    )
 
     signable_devices = subparsers.add_parser("gather-signable-devices")
     signable_devices.add_argument(
@@ -983,7 +988,9 @@ def _keymapper_from_args(
     """
     Construct the explicitly selected metadata keymapper.
 
-    The static mapper reads --keymap-file.
+    The id2b mapper takes extra devices from --extra-devices where the
+    subcommand has it, and from EXTRA_DEVICES otherwise. The static
+    mapper reads --keymap-file.
 
     Args:
         args: Parsed namespace containing a ``keymapper`` selection.
@@ -997,12 +1004,15 @@ def _keymapper_from_args(
     """
     from .keymap import select_keymapper
 
+    extra_devices = getattr(args, "extra_devices", None)
+    if extra_devices is None:
+        extra_devices = os.environ.get("EXTRA_DEVICES", "").split()
     keymap_file = getattr(args, "keymap_file", None)
     environment = {
         "KEYMAPPER": args.keymapper,
         "KEYMAP_FILE": str(keymap_file) if keymap_file else "",
     }
-    return select_keymapper(environment, metadata)
+    return select_keymapper(environment, metadata, extra_devices=extra_devices)
 
 
 def _yubihsm_password_from_args(args: argparse.Namespace) -> str:
