@@ -11,4 +11,5 @@ ruff check . || status=1
 ruff format --check . || status=1
 mypy || status=1
 pyright || status=1
+pytest || status=1
 exit "$status"
