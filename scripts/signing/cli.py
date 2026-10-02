@@ -419,6 +419,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--avb-rollback-index-override",
         default=None,
     )
+
+    subparsers.add_parser("run-release-tool")
+
+    checksum = subparsers.add_parser("compute-sha256sum")
+    checksum.add_argument("path")
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -971,6 +976,42 @@ def _build_backend(args: argparse.Namespace) -> Pkcs11Backend:
         _UsageError: If required backend-specific arguments are missing.
     """
     return _pkcs11_configuration_from_args(args).create_backend()
+
+
+def _cmd_run_release_tool(args: argparse.Namespace) -> int:
+    """
+    Run the wrapped release tool with the arguments following ``--``.
+
+    Args:
+        args: Parsed namespace carrying the pre-separated ``tool_argv``.
+
+    Returns:
+        The wrapped tool's exit status.
+
+    Raises:
+        _UsageError: If no tool invocation followed ``--``.
+    """
+    from .release_execution import run_release_tool
+
+    if not args.tool_argv:
+        raise _UsageError("run-release-tool requires -- <tool> [args...]")
+    return run_release_tool(args.tool_argv)
+
+
+def _cmd_compute_sha256sum(args: argparse.Namespace) -> int:
+    """
+    Print the release tool's sha256sum-format digest of one file.
+
+    Args:
+        args: Parsed namespace containing the target path.
+
+    Returns:
+        Zero on success.
+    """
+    from .release_execution import format_sha256sum
+
+    print(format_sha256sum(args.path), end="")
+    return 0
 
 
 def _cmd_mkkey(args: argparse.Namespace) -> int:
@@ -1728,6 +1769,8 @@ class _UsageError(Exception):
 _CommandHandler = Callable[[argparse.Namespace], int]
 
 _HANDLERS: dict[str, _CommandHandler] = {
+    "run-release-tool": _cmd_run_release_tool,
+    "compute-sha256sum": _cmd_compute_sha256sum,
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
@@ -1776,6 +1819,11 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
+    tool_argv: list[str] | None = None
+    if argv[:1] == ["run-release-tool"] and "--" in argv:
+        separator = argv.index("--")
+        tool_argv = argv[separator + 1 :]
+        argv = argv[:separator]
     script_argv: list[str] = []
     if argv[:1] == ["mkkey"]:
         script_argv = argv[1:]
@@ -1783,6 +1831,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = build_parser()
     args = parser.parse_args(argv)
+    args.tool_argv = tool_argv
     args.arguments = script_argv
     try:
         return _HANDLERS[args.command](args)
