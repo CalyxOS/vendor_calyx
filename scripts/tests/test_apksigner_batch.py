@@ -526,13 +526,15 @@ def test_release_hosts_the_signing_server_for_its_tools(
         assert _starts(fake_java) == []
     argv = " ".join(recorded["argv"])
     assert f"--signing_helper {HELPERS}/signing_helper.server.py" in argv
+    assert f"--payload_signer {HELPERS}/payload_signer.server.py" in argv
 
 
 @pytest.mark.parametrize(
-    ("tool", "avb"),
+    ("tool", "avb", "payload"),
     [
-        ({"AVB_SIGNING_HELPER_TOOL": "openssl"}, "openssl.sh"),
-        ({"SIGNING_HELPER_TOOL": "python"}, "py"),
+        ({"AVB_SIGNING_HELPER_TOOL": "openssl"}, "openssl.sh", "server.py"),
+        ({"PAYLOAD_SIGNER_TOOL": "python"}, "server.py", "py"),
+        ({"SIGNING_HELPER_TOOL": "python"}, "py", "py"),
     ],
 )
 def test_release_keeps_a_chosen_signing_helper(
@@ -541,6 +543,7 @@ def test_release_keeps_a_chosen_signing_helper(
     fake_java: Path,
     tool: dict[str, str],
     avb: str,
+    payload: str,
 ) -> None:
     result, recorded = _release(
         tmp_path,
@@ -552,6 +555,7 @@ def test_release_keeps_a_chosen_signing_helper(
     assert recorded is not None
     argv = " ".join(recorded["argv"])
     assert f"--signing_helper {HELPERS}/signing_helper.{avb} " in argv + " "
+    assert f"--payload_signer {HELPERS}/payload_signer.{payload} " in argv + " "
 
 
 @pytest.mark.parametrize(
@@ -589,6 +593,7 @@ def test_release_dry_run_has_no_server(
     assert recorded is None
     assert "sign_target_files_apks" in result.stderr
     assert "signing_helper.server.py" in result.stderr
+    assert "payload_signer.server.py" in result.stderr
 
 
 def test_batch_process_sees_environment_set_after_the_handler(
