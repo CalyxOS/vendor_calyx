@@ -202,6 +202,14 @@ run_parallel() {
 
 sign_builds() {
   # Sign
+  if [ "${USE_PYTHON_SIGN_EXECUTION:-}" = "y" ]; then
+    PYTHONPATH="$sign_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing sign-builds --jobs "$NUM_SIGN_JOBS" \
+        --release-script "$sign_scriptpath/release.sh" \
+        --original-tmpdir "${ORIGINAL_TMPDIR:-/dev/shm}" --pairs "$@"
+    return $?
+  fi
+
   local err=
   echo
   echo "Signing release for: $*"
@@ -229,6 +237,14 @@ sign_builds() {
 }
 
 generate_incrementals() {
+  if [ "${USE_PYTHON_SIGN_EXECUTION:-}" = "y" ]; then
+    PYTHONPATH="$sign_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing generate-incrementals --jobs "$NUM_INCREMENTAL_JOBS" \
+        --generate-delta-script "$sign_scriptpath/generate_delta.sh" \
+        --original-tmpdir "${ORIGINAL_TMPDIR:-/dev/shm}" --triples "$@"
+    return $?
+  fi
+
   local err=
   # Deltas
   local -x TMPDIR
