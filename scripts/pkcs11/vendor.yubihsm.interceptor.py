@@ -30,6 +30,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 sys.path.insert(0, str(SCRIPT_DIR))
 
+from signing.apksigner_batch import run_in_batch
 from signing.vendor_yubihsm import (
     YubiHsmConfig,
     extract_and_save_audit_log,
@@ -288,7 +289,36 @@ def run_command(
             print(f"Signing cache lookup failed: {error}", file=sys.stderr)
             cache_miss = True
 
-    if cache_miss is not False:
+    server_socket = os.environ.get("SIGNING_SERVER_SOCKET", "")
+    ran_in_batch = False
+    if (
+        server_socket
+        and is_signing_command
+        and jar == "apksigner"
+        and cache_miss is not False
+    ):
+        batch_result = run_in_batch(
+            Path(server_socket),
+            args[args.index("-jar") + 2 :],
+            cwd=Path.cwd(),
+        )
+        if batch_result is not None:
+            need_log_export = True
+            err, stdout, stderr = batch_result
+            sys.stdout.buffer.write(stdout)
+            sys.stdout.buffer.flush()
+            sys.stderr.buffer.write(stderr)
+            sys.stderr.buffer.flush()
+            if err == 0:
+                ran_in_batch = True
+            else:
+                print(
+                    f"apksigner batch command exited with error {err}, so "
+                    "we will try non-batch this time.",
+                    file=sys.stderr,
+                )
+
+    if cache_miss is not False and not ran_in_batch:
         for try_number in range(1, _NUM_TRIES + 1):
             need_log_export = True
             result = _run_wrapped_command(cmd, args)
