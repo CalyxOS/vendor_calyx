@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 from conftest import REPO_ROOT, SCRIPTS_DIR, TEST_METADATA, run, sha256
+from signing.keymap import Id2bKeymapper
+from signing.metadata import load_metadata
+from signing.release_arguments import build_release_arguments, make_get_key
 
 pytestmark = [pytest.mark.aosp, pytest.mark.usefixtures("aosp_top")]
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys integration test"
@@ -153,6 +156,35 @@ def test_updatekeys_is_idempotent(
         if path.is_file()
     }
     assert after == before
+
+
+def test_updatekeys_avb_key_paths_match_release_signing_expectation(
+    updatekeys_tree: Path,
+    signing_mode: str,
+) -> None:
+    """
+    build_release_arguments() looks up the AVB keys updatekeys.sh
+    generates, so every path it requests must exist after a run.
+    """
+    result = run_updatekeys(updatekeys_tree, signing_mode)
+    assert result.returncode == 0, result.stderr
+
+    metadata = load_metadata(TEST_METADATA)
+    keymapper = Id2bKeymapper(metadata)
+    get_key = make_get_key(keymapper, device="bramble", key_dir="keys/")
+    release_args = build_release_arguments(metadata, get_key, device="bramble")
+
+    avb_key_paths = [
+        release_args.avb_arguments[index + 1]
+        for index, arg in enumerate(release_args.avb_arguments)
+        if arg.endswith("_key")
+    ]
+    assert avb_key_paths
+    for path in avb_key_paths:
+        assert (updatekeys_tree / path).is_file(), (
+            f"release.sh's own AVB signing invocation would look for "
+            f"{path!r}, which updatekeys.sh never created"
+        )
 
 
 @pytest.mark.parametrize("signing_mode", ("updatekeys",))
