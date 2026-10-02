@@ -621,14 +621,38 @@ class SignOrchestrator:
 
     def check_free_space(self) -> None:
         print()
-        estimated_required = 20 * len(self.state.device_to_next_build)
+        devices = len(self.state.device_to_next_build)
+        estimated_required = 20 * devices
+        try:
+            completed = subprocess.run(
+                ["df", "--output=avail", "-B1", str(self.cwd)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            available_bytes = int(completed.stdout.splitlines()[-1].strip())
+        except subprocess.CalledProcessError as error:
+            sys.stderr.write(error.stderr or "")
+            raise _reported_step_error("df failed") from error
+        except (OSError, ValueError, IndexError) as error:
+            raise _reported_step_error(
+                f"Could not read the free space ({error})",
+            ) from error
+        available = available_bytes >> 30
         subprocess.run(["df", "-h", str(self.cwd)], check=False)
         print()
-        if not confirm(
-            f"Is there at least {estimated_required}GB of free space?",
-            assume_yes=self.assume_yes,
-        ):
-            raise SignStepError("declined the free space check")
+        if available_bytes < estimated_required << 30:
+            print(
+                f"ERROR: Only {available}GB free, but an estimated "
+                f"{estimated_required}GB is needed "
+                f"(20GB x {devices} device(s)).",
+                file=sys.stderr,
+            )
+            raise SignStepError("insufficient free space")
+        print(
+            f"Free space check passed, {available}GB available, "
+            f"{estimated_required}GB estimated required.",
+        )
 
     def initialize(self) -> None:
         if self.tmpdir is None:
