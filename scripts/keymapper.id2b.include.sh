@@ -388,6 +388,29 @@ has_device_specific_key_ids_map() {
   true
 }
 
+_append_extra_devices_to_all_devices() {
+  local -a extra_devices
+  if declare -p EXTRA_DEVICES &>/dev/null \
+      && [[ "$(declare -p EXTRA_DEVICES)" == "declare -a"* ]]; then
+    extra_devices=("${EXTRA_DEVICES[@]}")
+  else
+    read -ra extra_devices <<< "${EXTRA_DEVICES:-}"
+  fi
+  local device existing already_present
+  for device in "${extra_devices[@]}"; do
+    [ -n "$device" ] || continue
+    already_present=n
+    for existing in "${all_devices[@]}"; do
+      [ -n "$existing" ] || continue
+      if [ "$existing" = "$device" ]; then
+        already_present=y
+        break
+      fi
+    done
+    [ "$already_present" = "y" ] || all_devices+=("$device")
+  done
+}
+
 initialize_keymapper() {
   local err
   if [ -z "${devices+x}" ] || [ "${#devices[@]}" = "0" ]; then
@@ -395,6 +418,7 @@ initialize_keymapper() {
     local devices_path=${DEVICES_FILE:-$(dirname "$BASH_SOURCE")/../../../calyx/scripts/vars/devices}
     source <(cat "$devices_path" | sed -e 's/^readonly /declare -g /') || true
   fi
+  _append_extra_devices_to_all_devices
   _generate_key_id_maps \
     || { err=$?; echo "Failed to generate ID maps." >&2; return $err; }
   _generate_reverse_key_id_map \
