@@ -191,6 +191,7 @@ def test_extract_audit_log_retry_writes_the_entries_once(
     assert len(log_path.read_text().splitlines()) == 2
 
 
+PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.server.py"
 INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
 
 
@@ -324,6 +325,69 @@ def test_interceptor_appends_the_audit_log_through_the_server(
     assert device.unread_log() == []
 
 
+def test_payload_signer_signs_with_the_server_key_its_path_names(
+    tmp_path: Path,
+    yubihsm_server: tuple[SigningServer, EmulatedYubiHsm],
+) -> None:
+    server, _ = yubihsm_server
+    digest = hashlib.sha256(b"payload").digest()
+    (tmp_path / "hash.bin").write_bytes(digest)
+    signature = tmp_path / "sig.bin"
+    _public_key_file(tmp_path / "keys", "0x2000", "server-a")
+
+    result = subprocess.run(
+        [
+            PAYLOAD_SIGNER,
+            "-in",
+            tmp_path / "hash.bin",
+            "-out",
+            signature,
+            "-inkey",
+            tmp_path / "keys" / "0x2000",
+        ],
+        env={
+            **_without_signing_variables(),
+            "SIGNING_SERVER_SOCKET": str(server.socket_path),
+            "KEY_DIR": f"{tmp_path / 'keys'}/",
+        },
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(rsa_key("server-a"), signature.read_bytes(), digest)
+    assert not verifies(rsa_key("server-b"), signature.read_bytes(), digest)
+
+
+def test_payload_signer_signs_through_openssl_without_a_server(
+    tmp_path: Path,
+) -> None:
+    environment, private_key = _openssl_fallback_env(tmp_path)
+    digest = hashlib.sha256(b"payload").digest()
+    (tmp_path / "hash.bin").write_bytes(digest)
+    signature = tmp_path / "sig.bin"
+
+    result = subprocess.run(
+        [
+            PAYLOAD_SIGNER,
+            "-in",
+            tmp_path / "hash.bin",
+            "-out",
+            signature,
+            "-inkey",
+            "keys/ota.pem",
+        ],
+        env={**environment, "PYTHONSAFEPATH": "1"},
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(
+        _load_private_key(private_key),
+        signature.read_bytes(),
+        digest,
+    )
+
+
 def _public_key_file(directory: Path, name: str, key_name: str) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{name}.pem"
@@ -416,3 +480,35 @@ def test_extract_audit_log_refuses_another_log(
 
     assert response == {"status": "unavailable"}
     assert not (tmp_path / "elsewhere.log").exists()
+
+
+def test_payload_signer_refuses_a_signature_its_public_key_does_not_verify(
+    tmp_path: Path,
+    yubihsm_server: tuple[SigningServer, EmulatedYubiHsm],
+) -> None:
+    server, _ = yubihsm_server
+    (tmp_path / "hash.bin").write_bytes(hashlib.sha256(b"payload").digest())
+    signature = tmp_path / "sig.bin"
+    _public_key_file(tmp_path / "keys", "0x2000", "server-b")
+
+    result = subprocess.run(
+        [
+            PAYLOAD_SIGNER,
+            "-in",
+            tmp_path / "hash.bin",
+            "-out",
+            signature,
+            "-inkey",
+            tmp_path / "keys" / "0x2000",
+        ],
+        env={
+            **_without_signing_variables(),
+            "SIGNING_SERVER_SOCKET": str(server.socket_path),
+            "KEY_DIR": f"{tmp_path / 'keys'}/",
+        },
+        capture_output=True,
+    )
+
+    assert result.returncode != 0
+    assert not signature.exists()
+    assert b"does not verify under the supplied public key" in result.stderr
