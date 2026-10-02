@@ -111,10 +111,6 @@ if [ "${DEBUG_PAYLOAD_SIGNER:-y}" = "y" ]; then
   cat "$input_file" > "$outdir/input.bin"
   cat "$output_file" > "$outdir/output-pkcs11-tool.bin"
   printf "%s\n" "$@" > "$outdir/arguments.txt"
-  set > "$outdir/environment.txt"
-  if [ -e "$key_file" ]; then
-    cat "$key_file" > "$outdir/$(basename "$key_file")"
-  fi
   "$pkcs11_scriptpath/payload_signer.openssl.sh" "$@" || exit $?
   cat "$output_file" > "$outdir/output-openssl.bin"
 
