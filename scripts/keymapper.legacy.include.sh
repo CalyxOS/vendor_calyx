@@ -25,6 +25,8 @@ get_key() {
       _get_key_apex_apk "$@" || return $? ;;
     app)
       _get_key_app "$@" || return $? ;;
+    repo)
+      _get_key_repo "$@" || return $? ;;
     *)
       echo "ERROR: Key type '$key_type' is not handled by get_key." >&2
       return 1 ;;
@@ -39,9 +41,9 @@ get_key_is_per_device_yn() {
   local key_type=$1
   local key_name=${2:-}
   case "$key_type" in
-    app)
+    app|repo)
       echo n ;;
-    avb|core|apex_container|apex_payload|apex_apk)
+    avb|other|core|apex_container|apex_payload|apex_apk)
       echo y ;;
     *)
       echo "ERROR: Key type '$key_type' is not handled by get_key_is_per_device_yn." >&2
@@ -99,6 +101,11 @@ _get_key_apex_apk() {
 _get_key_app() {
   local key=$1
   printf "%s\n" "${KEY_DIR}common/${app_key[$key]:-$(basename "$key")}"
+}
+
+_get_key_repo() {
+  local key=$1
+  printf "%s\n" "${KEY_DIR}common/$(basename "$key")"
 }
 
 fill_avb_arguments() {
