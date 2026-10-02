@@ -59,7 +59,7 @@ main() {
         printf "%s\t%s\t%s\t%s\n" "$value" "$device" "$key_type" "$key"
       done
     done || return $?
-  done | sort
+  done | LC_ALL=C sort
 }
 
 main "$@"
