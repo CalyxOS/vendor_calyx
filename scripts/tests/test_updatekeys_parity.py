@@ -498,3 +498,17 @@ def test_partial_runtime_key_pair_migrates(
         manifests.append(manifest)
 
     assert_parity(manifests)
+
+
+def test_extra_device_gets_its_own_avb_key(tmp_path: Path) -> None:
+    manifests = [
+        tree.succeed(
+            device="newdevice",
+            KEYMAPPER="id2b",
+            EXTRA_DEVICES="newdevice",
+        )
+        for tree in install_trees(tmp_path)
+    ]
+
+    assert "0x3e00.pem" in manifests[0]
+    assert_parity(manifests)
