@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run, run_bytes
+from conftest import SCRIPTS_DIR, aosp_jar_command, run, run_bytes
 
 SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
 PKCS11_ENGINE = Path("/usr/lib/engines-3/pkcs11.so")
@@ -847,3 +847,73 @@ do_or_show
         for line in result.stdout.splitlines()
         if not line.startswith("Running:")
     ] == ["sign bramble,2,2 redfin,3,3", "delta bramble,1,2"]
+
+
+SIGN_WHOLE_FILE = """
+import sys
+import common
+
+common.OPTIONS.search_path = sys.argv[1]
+common.OPTIONS.java_path = sys.argv[2]
+common.OPTIONS.pkcs11_config = sys.argv[3]
+common.OPTIONS.signapk_external_signer = sys.argv[4]
+common.SignFile(sys.argv[5], sys.argv[6], "keys/0x2000", None, whole_file=True)
+"""
+
+
+@pytest.mark.aosp
+@pytest.mark.parametrize(
+    "payload_signer",
+    (
+        "payload_signer.openssl.sh",
+        "payload_signer.pkcs11-tool.sh",
+        "payload_signer.py",
+        "payload_signer.server.py",
+    ),
+)
+def test_releasetools_signs_packages_through_the_external_signer(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+    aosp_top: Path,
+    payload_signer: str,
+) -> None:
+    _, base_environment = generated_softhsm_keys
+    java, *_ = aosp_jar_command(aosp_top, "signapk.jar")
+    package = aosp_top / "build/make/tools/releasetools/testdata/TestApp.apk"
+    releasetools = aosp_top / "build/make/tools/releasetools"
+
+    signed = run(
+        [
+            "python3",
+            "-c",
+            SIGN_WHOLE_FILE,
+            aosp_top / "out" / "host" / "linux-x86",
+            java,
+            "/dev/null",
+            SCRIPTS_DIR / "pkcs11" / payload_signer,
+            package,
+            "signed.zip",
+        ],
+        cwd=tmp_path,
+        env={
+            **signing_environment(base_environment, "2000"),
+            "PYTHONPATH": str(releasetools),
+        },
+        check=False,
+    )
+
+    assert signed.returncode == 0, signed.stderr
+    verified = run(
+        [
+            "python3",
+            "-c",
+            "import sys; import check_ota_package_signature as check; "
+            "check.VerifyPackage(sys.argv[1], sys.argv[2])",
+            tmp_path / "keys" / "0x2000.x509.pem",
+            tmp_path / "signed.zip",
+        ],
+        env={"PYTHONPATH": str(releasetools)},
+        check=False,
+    )
+    assert verified.returncode == 0, verified.stderr
+    assert "Whole package signature VERIFIED" in verified.stdout
