@@ -119,6 +119,55 @@ printf 'missing-delta=%s\n' "${incremental_triples_without_loaded_keys[*]}"
     ]
 
 
+def test_gather_signable_devices_propagates_python_failure() -> None:
+    """
+    A planner command that fails must fail the step instead of yielding
+    an empty, successful result.
+    """
+    result = run_sign_functions(
+        r"""
+python3() { return 7; }
+USE_PYTHON_SIGN_PLANNING=y
+devices=(bramble)
+all_devices=(bramble redfin)
+status=0
+gather_signable_devices_from_metadata || status=$?
+printf 'exit=%s\n' "$status"
+printf 'devices=%s\n' "${signable_devices[*]:-<empty>}"
+""",
+    )
+
+    assert result.stdout.splitlines() == [
+        "exit=7",
+        "devices=<empty>",
+    ]
+
+
+def test_sort_and_separate_devices_propagates_python_failure() -> None:
+    result = run_sign_functions(
+        r"""
+python3() { return 9; }
+USE_PYTHON_SIGN_PLANNING=y
+all_devices=(bramble redfin)
+device_to_next_build[bramble]=2026081500
+device_to_next_build[redfin]=2026081500
+populate_devices_with_loaded_keys_arrays() {
+  devices_with_loaded_keys+=(bramble)
+  devices_without_loaded_keys+=(redfin)
+}
+status=0
+sort_and_separate_devices_by_key_availability || status=$?
+printf 'exit=%s\n' "$status"
+printf 'loaded-sign=%s\n' "${sign_pairs_with_loaded_keys[*]:-<empty>}"
+""",
+    )
+
+    assert result.stdout.splitlines() == [
+        "exit=9",
+        "loaded-sign=<empty>",
+    ]
+
+
 def test_sign_execution_loads_missing_keys_between_device_groups() -> None:
     result = run_sign_functions(
         r"""
@@ -235,3 +284,41 @@ printf 'exit=%s\n' "$status"
     )
 
     assert result.stdout.strip().endswith("exit=0")
+
+
+@pytest.mark.parametrize("python", (False, True), ids=("bash", "python"))
+def test_sign_planning_skips_names_without_a_numeric_build(
+    tmp_path: Path,
+    python: bool,
+) -> None:
+    for name in (
+        "calyx_bramble-target_files-latest.zip",
+        "calyx_redfin-target_files-2026081500.zip",
+    ):
+        (tmp_path / name).touch()
+    for device, build in (("bramble", "latest"), ("redfin", "2026080100")):
+        archived = tmp_path / "archive" / f"release-{device}-{build}"
+        archived.mkdir(parents=True)
+        (archived / f"{device}-target_files-{build}.zip").touch()
+    body = r"""
+find_target_files
+gather_latest_device_builds
+find_prev_signed_device_builds
+for device in "${!device_to_next_build[@]}"; do
+  printf 'next %s=%s\n' "$device" "${device_to_next_build[$device]}"
+done
+for device in "${!device_to_prev_build[@]}"; do
+  printf 'prev %s=%s\n' "$device" "${device_to_prev_build[$device]}"
+done
+"""
+    env = {"PYTHONPATH": str(SCRIPTS_DIR)}
+    if python:
+        env["USE_PYTHON_SIGN_PLANNING"] = "y"
+    result = run_sign_functions(body, cwd=tmp_path, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert "integer expression expected" not in result.stderr
+    assert sorted(result.stdout.splitlines()) == [
+        "next redfin=2026081500",
+        "prev redfin=2026080100",
+    ]
