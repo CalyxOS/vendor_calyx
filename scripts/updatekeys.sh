@@ -13,6 +13,18 @@ error() {
   exit 1
 }
 
+extract_avb_public_key() {
+  local private_key=$1 public_key=$2
+  local derived="$public_key.tmp"
+  "$AVBTOOL" extract_public_key --key "$private_key" --output "$derived" \
+    || { rm -f "$derived"; return 1; }
+  if cmp -s "$derived" "$public_key"; then
+    rm -f "$derived"
+  else
+    mv "$derived" "$public_key"
+  fi
+}
+
 [[ $# -eq 2 ]] ||  error "incorrect number of arguments"
 
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
@@ -64,7 +76,7 @@ keyval_vbmeta=$(get_key avb vbmeta || exit $?)
 if [[ ! -e "$keyval_vbmeta" ]]; then
   openssl genrsa -out "$keyval_vbmeta" 4096
 fi
-"$AVBTOOL" extract_public_key --key "$keyval_vbmeta" --output "$AVB_CUSTOM_KEY"
+extract_avb_public_key "$keyval_vbmeta" "$AVB_CUSTOM_KEY"
 
 keyval_vbmeta_system=$(get_key avb vbmeta_system || exit $?)
 if [[ ! -e "$keyval_vbmeta_system" ]]; then
@@ -100,6 +112,6 @@ for apex in "${keys_apex[@]}"; do
   [ -n "$keyval" ] || continue
   if [[ ! -e $keyval.pem ]]; then
     openssl genrsa -out "$keyval.pem" 4096
-    "$AVBTOOL" extract_public_key --key "$keyval.pem" --output "$keyval.avbpubkey"
   fi
+  extract_avb_public_key "$keyval.pem" "$keyval.avbpubkey"
 done
