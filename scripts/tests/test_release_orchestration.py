@@ -1051,6 +1051,23 @@ def test_release_signs_ota_package_with_the_payload_signer(
     assert ("--signapk_external_signer" in ota_command) is opted_in
 
 
+@implementations
+def test_release_signs_target_files_with_threads(
+    release_tree: Path,
+    python: bool,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"EXTRA_SIGNING_ARGS": "--threads 2"},
+        python=python,
+    )
+
+    assert result.returncode == 0, result.stderr
+    signing_command = _command_line(result.stderr, "sign_target_files_apks")
+    assert "--threads 8 --threads 2" in signing_command
+
+
 @pytest.mark.parametrize(
     ("environment", "helper", "payload_signer"),
     (
