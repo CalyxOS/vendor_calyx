@@ -210,6 +210,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         required=True,
     )
+    subparsers.add_parser("mkkey", add_help=False)
 
     for name in _BACKEND_COMMANDS:
         command = subparsers.add_parser(name)
@@ -348,6 +349,22 @@ def _build_backend(args: argparse.Namespace) -> Pkcs11Backend:
     return _pkcs11_configuration_from_args(args).create_backend()
 
 
+def _cmd_mkkey(args: argparse.Namespace) -> int:
+    """
+    Generate one key for mkkey.sh.
+
+    Args:
+        args: Parsed namespace containing the script path and arguments.
+
+    Returns:
+        The script's exit status.
+    """
+    from .key_scripts import mkkey_main
+
+    program, *arguments = args.arguments or ["mkkey.sh"]
+    return mkkey_main(program, arguments)
+
+
 def _cmd_generate_keymap(args: argparse.Namespace) -> int:
     """
     Print the TSV keymap for the requested devices.
@@ -442,6 +459,7 @@ class _UsageError(Exception):
 _CommandHandler = Callable[[argparse.Namespace], int]
 
 _HANDLERS: dict[str, _CommandHandler] = {
+    "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "key-exists": _cmd_key_exists,
     "certificate-exists": _cmd_certificate_exists,
@@ -463,8 +481,16 @@ def main(argv: list[str] | None = None) -> int:
     Raises:
         SystemExit: If command-line arguments or capabilities are invalid.
     """
+    if argv is None:
+        argv = sys.argv[1:]
+    script_argv: list[str] = []
+    if argv[:1] == ["mkkey"]:
+        script_argv = argv[1:]
+        argv = argv[:1]
+
     parser = build_parser()
     args = parser.parse_args(argv)
+    args.arguments = script_argv
     try:
         return _HANDLERS[args.command](args)
     except _UsageError as error:
