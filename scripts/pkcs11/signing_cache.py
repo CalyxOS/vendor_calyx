@@ -19,6 +19,8 @@ from typing import NoReturn
 apksigner_parser = argparse.ArgumentParser()
 apksigner_parser.add_argument("--out", nargs=2)
 apksigner_parser.add_argument("--ks-key-alias", dest="key")
+apksigner_parser.add_argument("--kms-key-alias", dest="key")
+apksigner_parser.add_argument("--cert")
 
 use_log = False
 
@@ -54,7 +56,7 @@ def from_cache(args: list[str]) -> NoReturn:
     # calculate hash of input file and use it for hash key
     with open(signing_obj.in_file, "rb") as f:
         digest = hashlib.file_digest(f, "sha256")
-    key = f"{digest.hexdigest()}-{signing_obj.key_id}"
+    key = cache_key(signing_obj, digest.hexdigest())
 
     # check if hash key is in cache, if so copy to output file
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
@@ -76,7 +78,7 @@ def to_cache(args: list[str]) -> None:
     # calculate hash of input file and use it for hash key
     with open(signing_obj.in_file, "rb") as f:
         digest = hashlib.file_digest(f, "sha256")
-    key = f"{digest.hexdigest()}-{signing_obj.key_id}"
+    key = cache_key(signing_obj, digest.hexdigest())
 
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
     if (cache_dir / key).is_file():
@@ -94,7 +96,17 @@ def apksigner_get_apks(arg_str: list[str]) -> SigningObj:
         in_file=args.out[1],
         out_file=args.out[0],
         key_id=args.key,
+        cert=args.cert,
     )
+
+
+# A certificate can be replaced in place, so it is keyed by its contents.
+def cache_key(signing_obj: SigningObj, input_digest: str) -> str:
+    if signing_obj.cert is None:
+        return f"{input_digest}-{signing_obj.key_id}"
+    with open(signing_obj.cert, "rb") as f:
+        cert_digest = hashlib.file_digest(f, "sha256").hexdigest()
+    return f"{input_digest}-{signing_obj.key_id}-{cert_digest}"
 
 
 def link_or_copy(src: Path, dst: Path) -> None:
@@ -117,6 +129,7 @@ class SigningObj:
     in_file: str
     out_file: str
     key_id: str | None
+    cert: str | None
 
 
 if __name__ == "__main__":
