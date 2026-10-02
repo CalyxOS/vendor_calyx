@@ -307,10 +307,19 @@ check_free_space() {
   # Estimating 20GB required per device.
   echo
   local estimated_required_free_space=$((20 * ${#device_to_next_build[@]}))
+  local available_bytes
+  available_bytes=$(df --output=avail -B1 . | tail -n1 | tr -d ' ') || return $?
+  local available_space=$((available_bytes >> 30))
   df -h .
   echo
-  confirm "Is there at least ${estimated_required_free_space}GB of free space?" \
-    || return $?
+  if [ "$available_bytes" -lt $((estimated_required_free_space << 30)) ]; then
+    echo "ERROR: Only ${available_space}GB free, but an estimated" \
+      "${estimated_required_free_space}GB is needed" \
+      "(20GB x ${#device_to_next_build[@]} device(s))." >&2
+    return 1
+  fi
+  echo "Free space check passed," \
+    "${available_space}GB available, ${estimated_required_free_space}GB estimated required."
 }
 
 gather_signable_devices_from_metadata() {
