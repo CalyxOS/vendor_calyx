@@ -18,7 +18,10 @@ genrule {
         "**/*metadata*",
         "pkcs11/**/*",
     ],
-    exclude_srcs: ["**/__pycache__/*"],
+    exclude_srcs: [
+        "**/__pycache__/*",
+        "tests/**/*",
+    ],
     cmd: "find vendor/calyx/scripts -type f -o -type l | " +
          "grep -v 'pkcs11/.*keygen' | " +
          "grep -v 'pkcs11/\\.' | " +
