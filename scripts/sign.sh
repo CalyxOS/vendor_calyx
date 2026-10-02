@@ -16,6 +16,7 @@ STATEDIR=
 no_sign=
 no_incremental=
 maybe_dry_run=
+PYTHON_SIGNING_OUTPUT=
 
 declare -ga signable_devices=()
 declare -ga target_files=()
@@ -37,6 +38,15 @@ source_includes() {
   source "$sign_scriptpath/common.include.sh" || return $?
   source "$sign_devices_path" || return $?
   source "$sign_scriptpath/metadata" || return $?
+}
+
+# Leaves the output in PYTHON_SIGNING_OUTPUT, so that the caller sees the
+# planner's exit status, which a process substitution would hide.
+run_python_signing() {
+  PYTHON_SIGNING_OUTPUT=$(mktemp -p "$ORIGINAL_TMPDIR" python_signing.XXXXXXXX) \
+    || return $?
+  PYTHONPATH="$sign_scriptpath${PYTHONPATH:+:$PYTHONPATH}" python3 -P -m signing "$@" \
+    > "$PYTHON_SIGNING_OUTPUT"
 }
 
 prompt_missing_variables() {
@@ -282,6 +292,16 @@ check_free_space() {
 }
 
 gather_signable_devices_from_metadata() {
+  if [ "${USE_PYTHON_SIGN_PLANNING:-}" = "y" ]; then
+    local err=
+    run_python_signing gather-signable-devices --devices "${devices[@]}" \
+      --all-devices "${all_devices[@]}" || err=$?
+    if [ -z "$err" ]; then
+      mapfile -d "" -t signable_devices < "$PYTHON_SIGNING_OUTPUT" || err=$?
+    fi
+    rm -f "$PYTHON_SIGNING_OUTPUT"
+    return "${err:-0}"
+  fi
   mapfile -d "" -t signable_devices < \
     <(comm -z --nocheck-order -12 \
       <(printf '%s\0' "${devices[@]}" | sort -z) \
@@ -290,6 +310,21 @@ gather_signable_devices_from_metadata() {
 }
 
 gather_latest_device_builds() {
+  if [ "${USE_PYTHON_SIGN_PLANNING:-}" = "y" ]; then
+    device_to_next_build=()
+    local err=
+    run_python_signing gather-device-builds --target-files "${target_files[@]}" \
+      || err=$?
+    if [ -z "$err" ]; then
+      while IFS= read -r -d '' device && IFS= read -r -d '' build; do
+        device_to_next_build[$device]=$build
+      done < "$PYTHON_SIGNING_OUTPUT"
+    fi
+    rm -f "$PYTHON_SIGNING_OUTPUT"
+    [ -z "$err" ] || return "$err"
+    _update_next_builds
+    return $?
+  fi
   local file
   for file in "${target_files[@]}"; do
     local build=${file##*-}
@@ -309,6 +344,20 @@ gather_latest_device_builds() {
 
 gather_device_builds_to_sign() {
   device_to_next_build=()
+  if [ "${USE_PYTHON_SIGN_PLANNING:-}" = "y" ]; then
+    local err=
+    run_python_signing gather-device-builds --target-files "${target_files[@]}" \
+      --build-numbers $BUILD_NUMBER || err=$?
+    if [ -z "$err" ]; then
+      while IFS= read -r -d '' device && IFS= read -r -d '' build; do
+        device_to_next_build[$device]=$build
+      done < "$PYTHON_SIGNING_OUTPUT"
+    fi
+    rm -f "$PYTHON_SIGNING_OUTPUT"
+    [ -z "$err" ] || return "$err"
+    _update_next_builds
+    return $?
+  fi
   local file
   for file in "${target_files[@]}"; do
     local build=${file##*-}
@@ -439,6 +488,75 @@ find_prev_signed_device_builds() {
   mapfile -d "" -t prev_signed_dirs < \
     <(find archive -maxdepth 1 -type d -regextype posix-extended \
         -regex 'archive/release-.+-[0-9]+' -printf '%f\0')
+
+  if [ "${USE_PYTHON_SIGN_PLANNING:-}" = "y" ]; then
+    local -a device_next_build_flags=()
+    local device
+    for device in "${!device_to_next_build[@]}"; do
+      device_next_build_flags+=(--device-next-build="$device=${device_to_next_build[$device]}")
+    done
+    local -a build_number_flags=()
+    [ -z "${BUILD_NUMBER:-}" ] || build_number_flags=(--build-numbers $BUILD_NUMBER)
+    local -a prev_build_number_flags=()
+    [ -z "${PREV_BUILD_NUMBER:-}" ] || prev_build_number_flags=(--prev-build-numbers $PREV_BUILD_NUMBER)
+    local -a rollback_flag=()
+    [ -z "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ] \
+      || rollback_flag=(--avb-rollback-index-override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+
+    device_to_prev_build=()
+    prev_builds_sorted=()
+    local err=
+    run_python_signing find-prev-builds \
+      --archive-dirs "${prev_signed_dirs[@]}" \
+      "${device_next_build_flags[@]}" \
+      "${build_number_flags[@]}" \
+      "${prev_build_number_flags[@]}" \
+      "${rollback_flag[@]}" || err=$?
+    if [ -z "$err" ]; then
+      while IFS= read -r -d '' tag; do
+        case "$tag" in
+          prev)
+            IFS= read -r -d '' device
+            IFS= read -r -d '' build
+            device_to_prev_build[$device]=$build
+            ;;
+          preexisting)
+            IFS= read -r -d '' device
+            IFS= read -r -d '' build
+            device_to_preexisting_build[$device]=$build
+            ;;
+          sorted)
+            IFS= read -r -d '' build
+            prev_builds_sorted+=("$build")
+            ;;
+        esac
+      done < "$PYTHON_SIGNING_OUTPUT"
+    fi
+    rm -f "$PYTHON_SIGNING_OUTPUT"
+    [ -z "$err" ] || return "$err"
+
+    prev_build_to_devices=()
+    for device in "${!device_to_prev_build[@]}"; do
+      local build=${device_to_prev_build[$device]}
+      local current=${prev_build_to_devices[$build]:-}
+      if [ -n "$current" ]; then
+        prev_build_to_devices[$build]="$current,$device"
+      else
+        prev_build_to_devices[$build]="$device"
+      fi
+    done
+    preexisting_build_to_devices=()
+    for device in "${!device_to_preexisting_build[@]}"; do
+      local buildnum=${device_to_preexisting_build[$device]}
+      local current=${preexisting_build_to_devices[$buildnum]:-}
+      if [ -n "$current" ]; then
+        preexisting_build_to_devices[$buildnum]="$current,$device"
+      else
+        preexisting_build_to_devices[$buildnum]="$device"
+      fi
+    done
+    return 0
+  fi
   local dir
   device_to_prev_build=()
   for dir in "${prev_signed_dirs[@]}"; do
@@ -572,6 +690,45 @@ sort_and_separate_devices_by_key_availability() {
       echo "Could not determine which devices have keys loaded."
     } >&2
     return $err
+  fi
+
+  if [ "${USE_PYTHON_SIGN_PLANNING:-}" = "y" ]; then
+    local -a next_build_flags=()
+    for device in "${!device_to_next_build[@]}"; do
+      next_build_flags+=(--device-next-build="$device=${device_to_next_build[$device]}")
+    done
+    local -a prev_build_flags=()
+    for device in "${!device_to_prev_build[@]}"; do
+      prev_build_flags+=(--device-prev-build="$device=${device_to_prev_build[$device]}")
+    done
+    local -a preexisting_build_flags=()
+    for device in "${!device_to_preexisting_build[@]}"; do
+      preexisting_build_flags+=(--device-preexisting-build="$device=${device_to_preexisting_build[$device]}")
+    done
+    local -a rollback_flag=()
+    [ -z "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ] \
+      || rollback_flag=(--avb-rollback-index-override "$AVB_ROLLBACK_INDEX_OVERRIDE")
+
+    local err=
+    run_python_signing partition-signing-plan \
+      --devices-with-loaded-keys "${devices_with_loaded_keys[@]}" \
+      --devices-without-loaded-keys "${devices_without_loaded_keys[@]}" \
+      "${next_build_flags[@]}" \
+      "${prev_build_flags[@]}" \
+      "${preexisting_build_flags[@]}" \
+      "${rollback_flag[@]}" || err=$?
+    if [ -z "$err" ]; then
+      while IFS= read -r -d '' bucket && IFS= read -r -d '' value; do
+        case "$bucket" in
+          sign_with) sign_pairs_with_loaded_keys+=("$value") ;;
+          sign_without) sign_pairs_without_loaded_keys+=("$value") ;;
+          incr_with) incremental_triples_with_loaded_keys+=("$value") ;;
+          incr_without) incremental_triples_without_loaded_keys+=("$value") ;;
+        esac
+      done < "$PYTHON_SIGNING_OUTPUT"
+    fi
+    rm -f "$PYTHON_SIGNING_OUTPUT"
+    return "${err:-0}"
   fi
 
   for device in "${devices_with_loaded_keys[@]}"; do
