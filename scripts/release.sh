@@ -20,6 +20,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
 read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
 read -a EXTRA_SIGNING_ARGS <<< "${EXTRA_SIGNING_ARGS:-}"
+read -a EXTRA_DEVICES <<< "${EXTRA_DEVICES:-}"
 
 source "$SCRIPTPATH/common.include.sh"
 source "$SCRIPTPATH/metadata"
@@ -105,6 +106,8 @@ elif [[ $DEVICE == otter ]]; then
   OTTER="true"
   QCOM_FIRMWARE="true"
   SKIP_AVB_CUSTOM_KEY="true"
+elif printf '%s\n' "${EXTRA_DEVICES[@]}" | grep -qxF "$DEVICE"; then
+  :
 else
   error "Unsupported device $DEVICE"
 fi
@@ -186,6 +189,7 @@ else
       "${keymap_file_flag[@]}" \
       "${extra_signing_arg_flags[@]}" \
       "${extra_ota_arg_flags[@]}" \
+      --extra-devices "${EXTRA_DEVICES[@]}" \
       > "$release_args_output"; then
       # The unsupported rollback device error goes to stdout, like the echo in
       # the Bash branch.
