@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import stat
 import subprocess
 import zipfile
@@ -145,3 +146,36 @@ def test_generate_delta_removes_its_temporaries(
 
     assert (result.returncode != 0) == fails, result.stderr
     assert list(tmpdir.iterdir()) == []
+
+
+@pytest.mark.parametrize("flag", ("", "y"))
+def test_use_python_release_tools_checksums_without_sha256sum(
+    delta_tree: Path,
+    flag: str,
+) -> None:
+    _install_fake_ota_tool(delta_tree)
+    stubs = delta_tree / "stubs"
+    stubs.mkdir()
+    stub = stubs / "sha256sum"
+    stub.write_text("#!/bin/sh\nexit 127\n")
+    stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    result = run_generate_delta(
+        delta_tree,
+        dry_run=False,
+        environment={
+            "PATH": f"{stubs}:{os.environ['PATH']}",
+            "USE_PYTHON_RELEASE_TOOLS": flag,
+        },
+    )
+
+    incremental = _incremental_out_dir(delta_tree) / (
+        f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip"
+    )
+    checksum = incremental.with_name(incremental.name + ".sha256sum")
+    if not flag:
+        assert result.returncode != 0
+        assert incremental.exists()
+        return
+    assert result.returncode == 0, result.stderr
+    digest = hashlib.sha256(incremental.read_bytes()).hexdigest()
+    assert checksum.read_text() == f"{digest}  {incremental.name}\n"
