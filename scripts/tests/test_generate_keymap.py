@@ -237,6 +237,36 @@ def test_generate_keymap_python_flag_rejects_other_keymappers(
     assert "supports only the legacy and id2b keymappers" in result.stderr
 
 
+@pytest.mark.parametrize("keymapper", ("id2b", "legacy"))
+def test_generate_keymap_python_flag_matches_bash_for_extra_devices(
+    tmp_path: Path,
+    keymapper: str,
+) -> None:
+    devices_file = tmp_path / "devices"
+    devices_file.write_text(f"devices=({' '.join(DEVICES)} cerro)\n")
+    environment = {
+        "DEVICES_FILE": str(devices_file),
+        "KEYMAPPER": keymapper,
+        "EXTRA_DEVICES": "cerro",
+    }
+
+    bash = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env=environment,
+        check=False,
+    )
+    python = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env={**environment, "USE_PYTHON_GENERATE_KEYMAP": "y"},
+        check=False,
+    )
+
+    assert bash.returncode == 0, bash.stderr
+    assert python.returncode == 0, python.stderr
+    assert "\tcerro\t" in bash.stdout
+    assert python.stdout == bash.stdout
+
+
 def test_python_legacy_keymap_cli_matches_bash(tmp_path: Path) -> None:
     bash = generate_keymap(tmp_path, LEGACY_DEVICES, keymapper="legacy")
     python = python_generate_keymap("legacy", LEGACY_DEVICES)

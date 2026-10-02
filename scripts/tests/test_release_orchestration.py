@@ -788,6 +788,29 @@ def test_release_normalizes_key_dir_for_child_processes(
     assert ota_zip.read_text() == "KEY_DIR=[/some/key/dir/]"
 
 
+@implementations
+def test_release_rejects_unrecognized_device_by_default(
+    release_tree: Path,
+    python: bool,
+) -> None:
+    device = "unlisteddevice"
+    _write_target_files_zip(
+        release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
+    )
+
+    result = run_release(
+        release_tree,
+        device,
+        dry_run=False,
+        environment={"KEYMAPPER": "legacy"},
+        python=python,
+    )
+
+    assert result.returncode != 0
+    assert f"Unsupported device {device}" in result.stderr
+    assert not (release_tree / f"out/release-{device}-{BUILD_NUMBER}").exists()
+
+
 def test_release_orchestration_reports_vendor_initialization_failure(
     release_tree: Path,
 ) -> None:
@@ -880,6 +903,54 @@ def test_release_orchestration_refuses_keymapper_file(
 
     assert result.returncode == 1
     assert "does not support KEYMAPPER_FILE" in result.stderr
+
+
+@implementations
+@pytest.mark.parametrize("keymapper", ("legacy", "id2b"))
+def test_release_allows_extra_device_via_environment(
+    release_tree: Path,
+    python: bool,
+    keymapper: str,
+) -> None:
+    device = "unlisteddevice"
+    _write_target_files_zip(
+        release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
+    )
+    mapper = load_keymapper(
+        {"KEYMAPPER": keymapper, "EXTRA_DEVICES": device},
+        load_metadata(TEST_METADATA),
+    )
+    (release_tree / "keys" / mapper.avb_custom_key(device)).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    (release_tree / "keys" / mapper.avb_custom_key(device)).touch()
+
+    result = run_release(
+        release_tree,
+        device,
+        environment={
+            "KEYMAPPER": keymapper,
+            "EXTRA_DEVICES": device,
+            "OTA_ONLY": "",
+            "ANDROID_BUILD_TOP": "",
+        },
+        dry_run=False,
+        python=python,
+    )
+
+    assert result.returncode == 0, result.stderr
+    out = release_tree / f"out/release-{device}-{BUILD_NUMBER}"
+    assert (out / f"{device}-ota_update-{BUILD_NUMBER}.zip").is_file()
+    assert (out / f"{device}-factory-{BUILD_NUMBER}.zip").is_file()
+    signing_command = result.stderr.split("sign_target_files_apks", 1)[1]
+    if keymapper == "legacy":
+        assert f"--avb_vbmeta_key keys/{device}/avb.pem" in signing_command
+    else:
+        assert re.search(
+            r"--avb_vbmeta_key keys/0x[0-9a-f]+\.pem",
+            signing_command,
+        )
 
 
 @implementations
