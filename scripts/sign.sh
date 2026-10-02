@@ -553,7 +553,7 @@ confirm() {
   while true; do
     printf "%s" "$1 (Y/N) "
     local response
-    read -r response
+    read -r response || [ -n "$response" ] || return 1
     case "$response" in
       Y|y)
         break ;;
