@@ -143,11 +143,14 @@ def _run_signing_cli(
     env: dict[str, str] | None,
     input_data: bytes | None,
     check: bool,
+    replace_env: bool,
 ) -> subprocess.CompletedProcess[bytes]:
     from signing import cli
 
     argv = [str(arg) for arg in args]
-    environment = {**os.environ, **(env or {})}
+    environment = (
+        dict(env or {}) if replace_env else {**os.environ, **(env or {})}
+    )
     saved_environment = dict(os.environ)
     saved_cwd = os.getcwd()
     saved_streams = (sys.stdin, sys.stdout, sys.stderr)
@@ -215,6 +218,7 @@ def run_cli(
     env: dict[str, str] | None = None,
     input_text: str | None = None,
     check: bool = True,
+    replace_env: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """
     Run `python3 -m signing ARGS` in this process, as run() runs a command.
@@ -225,6 +229,7 @@ def run_cli(
         env,
         None if input_text is None else input_text.encode(),
         check,
+        replace_env,
     )
     return subprocess.CompletedProcess(
         result.args,
@@ -232,6 +237,22 @@ def run_cli(
         result.stdout.decode(),
         result.stderr.decode(),
     )
+
+
+def run_cli_bytes(
+    args: list[str | Path],
+    *,
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+    input_data: bytes | None = None,
+    check: bool = True,
+    replace_env: bool = False,
+) -> subprocess.CompletedProcess[bytes]:
+    """
+    Run `python3 -m signing ARGS` in this process, as run_bytes() runs a
+    command.
+    """
+    return _run_signing_cli(args, cwd, env, input_data, check, replace_env)
 
 
 SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
