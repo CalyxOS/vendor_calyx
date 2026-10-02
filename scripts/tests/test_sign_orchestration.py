@@ -235,6 +235,67 @@ printf 'exit=%s\\n' "$status"
     assert "failed for 9 devices." in result.stderr
 
 
+def test_check_free_space_passes_when_space_is_sufficient() -> None:
+    result = run_sign_functions(
+        r"""
+df() {
+  case "$1" in
+    --output=avail) printf 'Avail\n%s\n' "$((999 << 30))" ;;
+    *) printf 'Filesystem 1G-blocks Used Avail Use%% Mounted\n' ;;
+  esac
+}
+device_to_next_build=([bramble]=1 [redfin]=2)
+status=0
+check_free_space || status=$?
+printf 'exit=%s\n' "$status"
+""",
+    )
+
+    assert result.stdout.splitlines()[-1] == "exit=0"
+    assert "Free space check passed" in result.stdout
+
+
+def test_check_free_space_fails_when_space_is_insufficient() -> None:
+    result = run_sign_functions(
+        r"""
+df() {
+  case "$1" in
+    --output=avail) printf 'Avail\n%s\n' "$((5 << 30))" ;;
+    *) printf 'Filesystem 1G-blocks Used Avail Use%% Mounted\n' ;;
+  esac
+}
+device_to_next_build=([bramble]=1 [redfin]=2)
+status=0
+check_free_space || status=$?
+printf 'exit=%s\n' "$status"
+""",
+    )
+
+    assert result.stdout.splitlines()[-1] == "exit=1"
+    assert "Only 5GB free" in result.stderr
+    assert "40GB is needed" in result.stderr
+
+
+def test_check_free_space_fails_just_below_the_estimate() -> None:
+    result = run_sign_functions(
+        r"""
+df() {
+  case "$1" in
+    --output=avail) printf 'Avail\n%s\n' "$(((20 << 30) - 1))" ;;
+    *) printf 'Filesystem 1G-blocks Used Avail Use%% Mounted\n' ;;
+  esac
+}
+device_to_next_build=([bramble]=1)
+status=0
+check_free_space || status=$?
+printf 'exit=%s\n' "$status"
+""",
+    )
+
+    assert result.stdout.splitlines()[-1] == "exit=1"
+    assert "Only 19GB free" in result.stderr
+
+
 def test_sign_execution_loads_missing_keys_between_device_groups() -> None:
     result = run_sign_functions(
         r"""

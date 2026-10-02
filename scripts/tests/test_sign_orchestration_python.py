@@ -77,7 +77,10 @@ printf '%s' "delta-$1-$2-$3" > "$out/$1-incremental-$2-$3.zip"
 
 FAKE_DF = """\
 #!/bin/sh
-printf 'Filesystem Size Used Avail Use%% Mounted on\\n'
+case "$1" in
+  --output=avail) printf 'Avail\\n%s\\n' "${FAKE_DF_AVAIL:-1073741824000}" ;;
+  *) printf 'Filesystem Size Used Avail Use%% Mounted on\\n' ;;
+esac
 """
 
 
@@ -367,7 +370,7 @@ def test_sign_orchestrate_asks_for_yubihsm_credentials_after_free_space(
     result = run_sign_orchestrate(
         sign_tree,
         environment=environment,
-        answers="y\nsecret\nn\nn\n",
+        answers="secret\nn\nn\n",
     )
 
     output = result.stdout.lower()
@@ -376,12 +379,34 @@ def test_sign_orchestrate_asks_for_yubihsm_credentials_after_free_space(
     assert output.index("free space") < output.index("yubihsm_authkey")
 
 
+@pytest.mark.parametrize(
+    ("available", "expected"),
+    ((5 << 30, "Only 5GB free"), ((20 << 30) - 1, "Only 19GB free")),
+)
+def test_sign_orchestrate_aborts_on_insufficient_free_space(
+    sign_tree: Path,
+    available: int,
+    expected: str,
+) -> None:
+    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        environment={"SIGN_ASSUME_YES": "y", "FAKE_DF_AVAIL": str(available)},
+    )
+
+    assert result.returncode != 0
+    assert expected in result.stderr
+    assert "20GB is needed" in result.stderr
+    assert _archive_manifest(sign_tree) == {}
+
+
 def test_sign_orchestrate_aborts_when_final_confirmation_declined(
     sign_tree: Path,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
 
-    result = run_sign_orchestrate(sign_tree, answers="y\nn\nn\n")
+    result = run_sign_orchestrate(sign_tree, answers="n\nn\n")
 
     assert result.returncode != 0
     assert "Ready?" in result.stdout
@@ -828,8 +853,6 @@ def test_sign_orchestrate_cleans_up_when_terminated(
         preexec_fn=default_signal_dispositions,
     )
     assert process.stdin is not None and process.stdout is not None
-    process.stdin.write("y\n")
-    process.stdin.flush()
     output = ""
     while "Ready?" not in output:
         character = process.stdout.read(1)
@@ -842,6 +865,21 @@ def test_sign_orchestrate_cleans_up_when_terminated(
 
     assert process.wait(timeout=30) == 128 + signum
     assert not list((sign_tree / "tmp").glob("signing_tmp.*"))
+
+
+def test_sign_orchestrate_reports_an_unreadable_free_space(
+    sign_tree: Path,
+) -> None:
+    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        environment={"SIGN_ASSUME_YES": "y", "FAKE_DF_AVAIL": "unknown"},
+    )
+
+    assert result.returncode != 0
+    assert "Could not read the free space" in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 def test_sign_orchestrate_offers_no_previous_build_newer_than_the_one_signed(
