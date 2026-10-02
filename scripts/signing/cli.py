@@ -342,6 +342,83 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
     )
+
+    signable_devices = subparsers.add_parser("gather-signable-devices")
+    signable_devices.add_argument(
+        "--devices",
+        nargs="*",
+        default=[],
+    )
+    signable_devices.add_argument(
+        "--all-devices",
+        nargs="+",
+        required=True,
+    )
+
+    device_builds = subparsers.add_parser("gather-device-builds")
+    device_builds.add_argument(
+        "--target-files",
+        nargs="*",
+        default=[],
+    )
+    device_builds.add_argument("--build-numbers", nargs="*")
+
+    prev_builds = subparsers.add_parser("find-prev-builds")
+    prev_builds.add_argument(
+        "--archive-dirs",
+        nargs="*",
+        default=[],
+    )
+    prev_builds.add_argument(
+        "--device-next-build",
+        action="append",
+        default=[],
+    )
+    prev_builds.add_argument(
+        "--build-numbers",
+        nargs="*",
+        default=[],
+    )
+    prev_builds.add_argument(
+        "--prev-build-numbers",
+        nargs="*",
+        default=None,
+    )
+    prev_builds.add_argument(
+        "--avb-rollback-index-override",
+        default=None,
+    )
+
+    partition = subparsers.add_parser("partition-signing-plan")
+    partition.add_argument(
+        "--devices-with-loaded-keys",
+        nargs="*",
+        default=[],
+    )
+    partition.add_argument(
+        "--devices-without-loaded-keys",
+        nargs="*",
+        default=[],
+    )
+    partition.add_argument(
+        "--device-next-build",
+        action="append",
+        default=[],
+    )
+    partition.add_argument(
+        "--device-prev-build",
+        action="append",
+        default=[],
+    )
+    partition.add_argument(
+        "--device-preexisting-build",
+        action="append",
+        default=[],
+    )
+    partition.add_argument(
+        "--avb-rollback-index-override",
+        default=None,
+    )
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -668,6 +745,30 @@ def _spec_from_args(args: argparse.Namespace) -> KeySpec:
     )
 
 
+def _parse_key_value_ints(values: list[str]) -> dict[str, int]:
+    """
+    Parse repeated --flag=key=value build number arguments into a mapping.
+
+    Args:
+        values: Strings of the form "key=value", value a build number.
+
+    Returns:
+        The parsed key to BuildNumber mapping.
+
+    Raises:
+        ValueError: If a value is malformed or missing its "=" separator.
+    """
+    from .sign_planning import BuildNumber
+
+    result: dict[str, int] = {}
+    for entry in values:
+        key, separator, value = entry.partition("=")
+        if not separator:
+            raise ValueError(f"expected key=value, got: {entry}")
+        result[key] = BuildNumber(value)
+    return result
+
+
 def _read_binary(location: str) -> bytes:
     """
     Read binary input from a file or standard input.
@@ -806,6 +907,153 @@ def _cmd_build_release_args(args: argparse.Namespace) -> int:
     ):
         for value in values:
             out.write(stream.encode() + b"\0" + value.encode() + b"\0")
+    return 0
+
+
+def _cmd_gather_signable_devices(args: argparse.Namespace) -> int:
+    """
+    Print the null-delimited subset of devices eligible to be signed.
+
+    Args:
+        args: Parsed namespace containing device selection.
+
+    Returns:
+        Zero on success.
+    """
+    from .sign_planning import gather_signable_devices
+
+    result = gather_signable_devices(args.devices, args.all_devices)
+    out = sys.stdout.buffer
+    for device in result:
+        out.write(device.encode() + b"\0")
+    return 0
+
+
+def _cmd_gather_device_builds(args: argparse.Namespace) -> int:
+    """
+    Print the null-delimited device-to-build mapping to sign.
+
+    Args:
+        args: Parsed namespace containing target files and build numbers.
+
+    Returns:
+        Zero on success.
+    """
+    from .sign_planning import (
+        gather_device_builds_to_sign,
+        gather_latest_device_builds,
+        parse_build_numbers,
+    )
+
+    if args.build_numbers is not None:
+        device_to_build = gather_device_builds_to_sign(
+            args.target_files,
+            parse_build_numbers(args.build_numbers),
+        )
+    else:
+        device_to_build = gather_latest_device_builds(args.target_files)
+    out = sys.stdout.buffer
+    for device, build in device_to_build.items():
+        out.write(device.encode() + b"\0" + str(build).encode() + b"\0")
+    return 0
+
+
+def _cmd_find_prev_builds(args: argparse.Namespace) -> int:
+    """
+    Print the null-delimited previously-signed and preexisting builds.
+
+    Args:
+        args: Parsed namespace containing archive dirs and build numbers.
+
+    Returns:
+        Zero on success.
+    """
+    from .sign_planning import (
+        find_prev_signed_device_builds,
+        parse_build_numbers,
+    )
+
+    device_to_next_build = _parse_key_value_ints(args.device_next_build)
+
+    def target_files_exists(
+        archive_dir: str,
+        device: str,
+        build: int,
+    ) -> bool:
+        return Path(
+            f"archive/{archive_dir}/{device}-target_files-{build}.zip",
+        ).is_file()
+
+    prev_result = find_prev_signed_device_builds(
+        args.archive_dirs,
+        device_to_next_build=device_to_next_build,
+        build_numbers=parse_build_numbers(args.build_numbers),
+        prev_build_numbers=(
+            None
+            if args.prev_build_numbers is None
+            else parse_build_numbers(args.prev_build_numbers)
+        ),
+        avb_rollback_index_override=args.avb_rollback_index_override,
+        target_files_exists=target_files_exists,
+    )
+    out = sys.stdout.buffer
+    for device, build in prev_result.device_to_prev_build.items():
+        out.write(
+            b"prev\0" + device.encode() + b"\0" + str(build).encode() + b"\0",
+        )
+    for device, build in prev_result.device_to_preexisting_build.items():
+        out.write(
+            b"preexisting\0"
+            + device.encode()
+            + b"\0"
+            + str(build).encode()
+            + b"\0",
+        )
+    for build in prev_result.prev_builds_sorted:
+        out.write(b"sorted\0" + str(build).encode() + b"\0")
+    return 0
+
+
+def _cmd_partition_signing_plan(args: argparse.Namespace) -> int:
+    """
+    Print the null-delimited signing plan partitioned by key availability.
+
+    Args:
+        args: Parsed namespace containing device and build buckets.
+
+    Returns:
+        Zero on success.
+    """
+    from .sign_planning import partition_by_key_availability
+
+    plan = partition_by_key_availability(
+        args.devices_with_loaded_keys,
+        args.devices_without_loaded_keys,
+        device_to_next_build=_parse_key_value_ints(args.device_next_build),
+        device_to_prev_build=_parse_key_value_ints(args.device_prev_build),
+        device_to_preexisting_build=_parse_key_value_ints(
+            args.device_preexisting_build,
+        ),
+        avb_rollback_index_override=args.avb_rollback_index_override,
+    )
+    out = sys.stdout.buffer
+    for bucket, sign_pairs in (
+        ("sign_with", plan.sign_pairs_with_loaded_keys),
+        ("sign_without", plan.sign_pairs_without_loaded_keys),
+    ):
+        for pair in sign_pairs:
+            value = f"{pair.device},{pair.build},{pair.target_build}"
+            out.write(bucket.encode() + b"\0" + value.encode() + b"\0")
+    for bucket, triples in (
+        ("incr_with", plan.incremental_triples_with_loaded_keys),
+        ("incr_without", plan.incremental_triples_without_loaded_keys),
+    ):
+        for triple in triples:
+            new_build = (
+                "" if triple.new_build is None else str(triple.new_build)
+            )
+            value = f"{triple.device},{triple.old_build},{new_build}"
+            out.write(bucket.encode() + b"\0" + value.encode() + b"\0")
     return 0
 
 
@@ -1130,6 +1378,10 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
+    "gather-signable-devices": _cmd_gather_signable_devices,
+    "gather-device-builds": _cmd_gather_device_builds,
+    "find-prev-builds": _cmd_find_prev_builds,
+    "partition-signing-plan": _cmd_partition_signing_plan,
     "provision-avb-key": _cmd_provision_avb_key,
     "provision-rsa-key": _cmd_provision_rsa_key,
     "migrate-runtime-key": _cmd_migrate_runtime_key,
