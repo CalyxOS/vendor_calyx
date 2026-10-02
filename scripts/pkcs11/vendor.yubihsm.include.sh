@@ -86,11 +86,40 @@ initialize_vendor_interactive() {
   fi
 
   ask_variable YUBIHSM_AUTHKEY "0x0001" n y || return $?
-  ask_variable YUBIHSM_PASSWORD "" y y || return $?
+  if [ -z "${YUBIHSM_PASSWORD:-}" ] && [ -n "${YUBIHSM_PASSWORD_FILE:-}" ]; then
+    read_yubihsm_password_file || return $?
+  else
+    ask_variable YUBIHSM_PASSWORD "" y y || return $?
+  fi
   export YUBIHSM_AUTHKEY YUBIHSM_PASSWORD
 }
 
+read_yubihsm_password_file() {
+  local file=$YUBIHSM_PASSWORD_FILE
+  if [ ! -f "$file" ]; then
+    echo "YUBIHSM_PASSWORD_FILE ($file) is not a file." >&2
+    return 1
+  fi
+  if [ $(( 8#$(stat -L -c %a "$file") & 8#077 )) -ne 0 ]; then
+    echo "YUBIHSM_PASSWORD_FILE ($file) must not have group or other permissions." >&2
+    return 1
+  fi
+  local -a lines
+  mapfile -t lines < "$file" || return $?
+  if [ "${#lines[@]}" -ne 1 ] || [ -z "${lines[0]%$'\r'}" ]; then
+    echo "YUBIHSM_PASSWORD_FILE ($file) must contain exactly one non-empty line." >&2
+    return 1
+  fi
+  YUBIHSM_PASSWORD=${lines[0]%$'\r'}
+  echo "Using YUBIHSM_PASSWORD from YUBIHSM_PASSWORD_FILE."
+}
+
 initialize_vendor() {
+  if [ -z "${YUBIHSM_PASSWORD:-}" ] && [ -n "${YUBIHSM_PASSWORD_FILE:-}" ]; then
+    read_yubihsm_password_file || return $?
+    export YUBIHSM_PASSWORD
+  fi
+
   # Construct PKCS11_PIN from YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.
   # See: https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-pkcs11-guide.html#logging-in
   export PKCS11_PIN=$(printf "%4s" "${YUBIHSM_AUTHKEY#0x}" | tr ' ' 0)$YUBIHSM_PASSWORD

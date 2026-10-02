@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import datetime
+import os
 import stat
 import subprocess
 from pathlib import Path
@@ -709,6 +710,113 @@ printf 'exit=%s\n' "$status"
     assert yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
     assert yubihsm.device.get(0x2000, OBJECT.OPAQUE) is not None
     assert "restore_all_keys_and_certs" in audit_log.read_text()
+
+
+@pytest.mark.parametrize(
+    ("content", "mode", "symlink", "expected_password", "expected_error"),
+    [
+        ("hunter2\n", 0o600, False, "hunter2", None),
+        ("hunter2", 0o600, False, "hunter2", None),
+        ("hunter2\n", 0o600, True, "hunter2", None),
+        (
+            "hunter2\n",
+            0o640,
+            False,
+            None,
+            "must not have group or other permissions",
+        ),
+        ("one\ntwo\n", 0o600, False, None, "exactly one non-empty line"),
+    ],
+)
+def test_initialize_vendor_interactive_reads_password_file(
+    tmp_path: Path,
+    content: str,
+    mode: int,
+    symlink: bool,
+    expected_password: str | None,
+    expected_error: str | None,
+) -> None:
+    password_file = tmp_path / "signing.txt"
+    password_file.write_text(content)
+    password_file.chmod(mode)
+    if symlink:
+        link = tmp_path / "signing-link.txt"
+        link.symlink_to(password_file)
+        password_file = link
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key != "YUBIHSM_PASSWORD"
+    }
+
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'source "$1" || exit $?; source "$2" || exit $?; '
+            "initialize_vendor_interactive || exit $?; "
+            'printf "password=%s\\n" "$YUBIHSM_PASSWORD"',
+            "yubihsm-wiring-test",
+            SCRIPTS_DIR / "common.include.sh",
+            SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.include.sh",
+        ],
+        env={
+            **environment,
+            "NEVER_START_YUBIHSM_CONNECTOR": "y",
+            "YUBIHSM_AUTHKEY": "0x0001",
+            "YUBIHSM_PASSWORD_FILE": str(password_file),
+        },
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+    )
+
+    if expected_error is None:
+        assert result.returncode == 0, result.stderr
+        assert f"password={expected_password}" in result.stdout
+    else:
+        assert result.returncode != 0
+        assert expected_error in result.stderr
+
+
+def test_initialize_vendor_reads_password_file_under_nounset(
+    tmp_path: Path,
+) -> None:
+    password_file = tmp_path / "signing.txt"
+    password_file.write_text("hunter2\n")
+    password_file.chmod(0o600)
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key != "YUBIHSM_PASSWORD"
+    }
+
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'set -u; source "$1" || exit $?; source "$2" || exit $?; '
+            "initialize_vendor || exit $?; "
+            'printf "pin=%s\\n" "$PKCS11_PIN"; '
+            'bash -c \'printf "child=%s\\n" "$YUBIHSM_PASSWORD"\'',
+            "yubihsm-wiring-test",
+            SCRIPTS_DIR / "common.include.sh",
+            SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.include.sh",
+        ],
+        env={
+            **environment,
+            "DRY_RUN": "y",
+            "YUBIHSM_AUTHKEY": "0x0001",
+            "YUBIHSM_PASSWORD_FILE": str(password_file),
+        },
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "pin=0001hunter2" in result.stdout
+    assert "child=hunter2" in result.stdout
 
 
 def test_limit_ondemand_objects_deletes_nothing_under_dry_run(
