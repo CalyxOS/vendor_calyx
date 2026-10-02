@@ -810,6 +810,10 @@ try() {
     local err=
     "$@" || err=$?
     if [ -n "$err" ]; then
+      if [ "${SIGN_ASSUME_YES:-}" = "y" ]; then
+        echo "$* failed (code $err). SIGN_ASSUME_YES=y is set, not retrying." >&2
+        return $err
+      fi
       if ! confirm "$(printf "%s failed%s (code %s). Try again?" "$1" "$failed_again" "$err")"; then
         echo "$* failed (code $err). Giving up..." >&2
         return $err
