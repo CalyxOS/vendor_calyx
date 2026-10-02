@@ -40,20 +40,22 @@ load_keymapper
 for k in "${keys_core[@]}"; do
   keyval=$(get_key core "$k" || exit $?)
   [ -n "$keyval" ] || continue
-  if [[ ! -e ${keyval}.pk8 ]]; then
+  if [[ ! -e ${keyval}.pk8 || ! -e ${keyval}.x509.pem ]]; then
     "$SCRIPTPATH/mkkey.sh" "$keyval" "$SUBJECT" \
       || true  # Broken script. Always returns failure.
     [[ -e $keyval.pk8 ]] || exit $?  # Exit if the private key does not exist after the above.
+    [[ -e $keyval.x509.pem ]] || exit $?
   fi
 done
 
 for k in "${keys_apex_apk[@]}"; do
   keyval=$(get_key apex_apk "$k" || exit $?)
   [ -n "$keyval" ] || continue
-  if [[ ! -e ${keyval}.pk8 ]]; then
+  if [[ ! -e ${keyval}.pk8 || ! -e ${keyval}.x509.pem ]]; then
     "$SCRIPTPATH/mkkey.sh" "$keyval" "$SUBJECT" \
       || true  # Broken script. Always returns failure.
     [[ -e $keyval.pk8 ]] || exit $?  # Exit if the private key does not exist after the above.
+    [[ -e $keyval.x509.pem ]] || exit $?
   fi
 done
 
@@ -85,10 +87,11 @@ fi
 for apex in "${keys_apex[@]}"; do
   keyval=$(get_key apex_container "$apex" || exit $?)
   [ -n "$keyval" ] || continue
-  if [[ ! -e $keyval.pk8 ]]; then
+  if [[ ! -e $keyval.pk8 || ! -e $keyval.x509.pem ]]; then
     "$SCRIPTPATH/mkkey.sh" "$keyval" "$SUBJECT" \
       || true  # Broken script. Always returns failure.
     [[ -e $keyval.pk8 ]] || exit $?  # Exit if the private key does not exist after the above.
+    [[ -e $keyval.x509.pem ]] || exit $?
   fi
 done
 
