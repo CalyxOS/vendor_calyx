@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import stat
 import subprocess
 from pathlib import Path
 
@@ -209,6 +210,31 @@ rm -f "$call_count_file"
     assert "not retrying" in result.stderr
 
 
+@pytest.mark.parametrize(
+    ("function", "item"),
+    (("sign_builds", "bramble,1,1"), ("generate_incrementals", "bramble,1,2")),
+)
+def test_sign_execution_returns_1_whatever_parallel_reports(
+    tmp_path: Path,
+    function: str,
+    item: str,
+) -> None:
+    result = run_sign_functions(
+        f"""
+NUM_SIGN_JOBS=2
+NUM_INCREMENTAL_JOBS=2
+parallel() {{ return 9; }}
+status=0
+{function} '{item}' || status=$?
+printf 'exit=%s\\n' "$status"
+""",
+        env={"TMPDIR": str(tmp_path)},
+    )
+
+    assert result.stdout.splitlines()[-1] == "exit=1"
+    assert "failed for 9 devices." in result.stderr
+
+
 def test_sign_execution_loads_missing_keys_between_device_groups() -> None:
     result = run_sign_functions(
         r"""
@@ -235,6 +261,74 @@ do_or_show
         "sign redfin,2,2",
         "delta redfin,1,2",
     ]
+
+
+FAKE_RELEASE_SH = """\
+#!/bin/sh
+set -e
+[ -e "keys/$1" ]
+mkdir -p "out/release-$1-$BUILD_NUMBER"
+printf '%s' "signed-$1" > "out/release-$1-$BUILD_NUMBER/output.bin"
+"""
+
+FAKE_GENERATE_DELTA_SH = """\
+#!/bin/sh
+set -e
+[ -e "keys/$1" ]
+printf '%s' "delta-$1" > "archive/release-$1-$3/$1-incremental-$2-$3.zip"
+"""
+
+
+def test_do_or_show_loads_missing_keys_before_signing_through_python(
+    tmp_path: Path,
+) -> None:
+    for name, content in (
+        ("release.sh", FAKE_RELEASE_SH),
+        ("generate_delta.sh", FAKE_GENERATE_DELTA_SH),
+    ):
+        tool = tmp_path / name
+        tool.write_text(content)
+        tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
+    (tmp_path / "keys").mkdir()
+    (tmp_path / "keys" / "bramble").touch()
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+
+    result = run_sign_functions(
+        r"""
+USE_PYTHON_SIGN_EXECUTION=y
+NUM_SIGN_JOBS=2
+NUM_INCREMENTAL_JOBS=2
+no_sign=n
+no_incremental=n
+sign_pairs_with_loaded_keys=('bramble,2,2')
+incremental_triples_with_loaded_keys=('bramble,1,2')
+devices_without_loaded_keys=(redfin)
+sign_pairs_without_loaded_keys=('redfin,2,2')
+incremental_triples_without_loaded_keys=('redfin,1,2')
+ensure_all_keys_available_for_devices() { touch "${@/#/keys/}"; }
+SKIP_LOG_UPLOAD=true
+do_or_show
+""",
+        cwd=tmp_path,
+        env={
+            "TMPDIR": str(tmp_path / "tmp"),
+            "PYTHONPATH": str(SCRIPTS_DIR),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    archive = tmp_path / "archive"
+    assert {
+        str(path.relative_to(archive)): path.read_text()
+        for path in archive.rglob("*")
+        if path.is_file()
+    } == {
+        "release-bramble-2/output.bin": "signed-bramble",
+        "release-bramble-2/bramble-incremental-1-2.zip": "delta-bramble",
+        "release-redfin-2/output.bin": "signed-redfin",
+        "release-redfin-2/redfin-incremental-1-2.zip": "delta-redfin",
+    }
 
 
 @pytest.mark.parametrize("parallel_status", (0, 1), ids=("success", "failure"))
@@ -363,6 +457,42 @@ done
         "next redfin=2026081500",
         "prev redfin=2026080100",
     ]
+
+
+def test_use_python_sign_execution_signs_without_gnu_parallel(
+    tmp_path: Path,
+) -> None:
+    tool = tmp_path / "release.sh"
+    tool.write_text(FAKE_RELEASE_SH)
+    tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
+    (tmp_path / "keys").mkdir()
+    (tmp_path / "keys" / "bramble").touch()
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    body = r"""
+NUM_SIGN_JOBS=2
+parallel() { echo "parallel: command not found" >&2; return 127; }
+status=0
+sign_builds 'bramble,2,2' || status=$?
+printf 'exit=%s\n' "$status"
+"""
+    results = {
+        flag: run_sign_functions(
+            body,
+            cwd=tmp_path,
+            env={
+                "TMPDIR": str(tmp_path / "tmp"),
+                "PYTHONPATH": str(SCRIPTS_DIR),
+                "USE_PYTHON_SIGN_EXECUTION": flag,
+            },
+        )
+        for flag in ("", "y")
+    }
+
+    assert results[""].stdout.splitlines()[-1] == "exit=1"
+    assert results["y"].stdout.splitlines()[-1] == "exit=0"
+    signed = tmp_path / "archive" / "release-bramble-2" / "output.bin"
+    assert signed.read_text() == "signed-bramble"
 
 
 def test_provisioning_try_fails_fast_under_sign_assume_yes() -> None:

@@ -274,6 +274,21 @@ def _add_yubihsm_connector_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _positive_int(value: str) -> int:
+    """
+    Parse a job count, which must be a positive integer, unlike the
+    0, N% and +N forms GNU parallel's -j also takes.
+
+    Raises:
+        argparse.ArgumentTypeError: If value is not a positive integer.
+    """
+    if not value.isdigit() or int(value) < 1:
+        raise argparse.ArgumentTypeError(
+            f"must be a positive number, not {value!r}",
+        )
+    return int(value)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """
     Build the command-line parser without reading configuration or state.
@@ -424,6 +439,55 @@ def build_parser() -> argparse.ArgumentParser:
 
     checksum = subparsers.add_parser("compute-sha256sum")
     checksum.add_argument("path")
+
+    sign_builds_parser = subparsers.add_parser("sign-builds")
+    sign_builds_parser.add_argument(
+        "--pairs",
+        nargs="+",
+        required=True,
+        help="device,build,target_build entries",
+    )
+    sign_builds_parser.add_argument(
+        "--release-script",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "release.sh",
+    )
+    sign_builds_parser.add_argument(
+        "--archive-dir",
+        type=Path,
+        default=Path("archive"),
+    )
+    sign_builds_parser.add_argument("--jobs", type=_positive_int, required=True)
+    sign_builds_parser.add_argument(
+        "--original-tmpdir",
+        type=Path,
+        default=Path(os.environ.get("ORIGINAL_TMPDIR", "/dev/shm")),
+    )
+
+    generate_incrementals_parser = subparsers.add_parser(
+        "generate-incrementals",
+    )
+    generate_incrementals_parser.add_argument(
+        "--triples",
+        nargs="+",
+        required=True,
+        help="device,old_build,new_build entries (new_build may be empty)",
+    )
+    generate_incrementals_parser.add_argument(
+        "--generate-delta-script",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "generate_delta.sh",
+    )
+    generate_incrementals_parser.add_argument(
+        "--jobs",
+        type=_positive_int,
+        required=True,
+    )
+    generate_incrementals_parser.add_argument(
+        "--original-tmpdir",
+        type=Path,
+        default=Path(os.environ.get("ORIGINAL_TMPDIR", "/dev/shm")),
+    )
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -920,6 +984,26 @@ def _parse_key_value_ints(values: list[str]) -> dict[str, int]:
     return result
 
 
+def _parse_sign_pair(value: str) -> tuple[str, int, int]:
+    """Parse one "device,build,target_build" --pairs entry."""
+    from .sign_planning import BuildNumber
+
+    device, build, target_build = value.split(",")
+    return device, BuildNumber(build), BuildNumber(target_build)
+
+
+def _parse_incremental_triple(value: str) -> tuple[str, int, int | None]:
+    """Parse one "device,old_build,new_build" --triples entry."""
+    from .sign_planning import BuildNumber
+
+    device, old_build, new_build = value.split(",")
+    return (
+        device,
+        BuildNumber(old_build),
+        BuildNumber(new_build) if new_build else None,
+    )
+
+
 def _read_binary(location: str) -> bytes:
     """
     Read binary input from a file or standard input.
@@ -1012,6 +1096,47 @@ def _cmd_compute_sha256sum(args: argparse.Namespace) -> int:
 
     print(format_sha256sum(args.path), end="")
     return 0
+
+
+def _cmd_sign_builds(args: argparse.Namespace) -> int:
+    """
+    Sign the requested device/build pairs and archive them.
+
+    Args:
+        args: Parsed namespace containing pairs and executor settings.
+
+    Returns:
+        The signing executor's exit status.
+    """
+    from .sign_execution import sign_builds
+
+    return sign_builds(
+        [_parse_sign_pair(pair) for pair in args.pairs],
+        release_script=args.release_script,
+        archive_dir=args.archive_dir,
+        jobs=args.jobs,
+        original_tmpdir=args.original_tmpdir,
+    )
+
+
+def _cmd_generate_incrementals(args: argparse.Namespace) -> int:
+    """
+    Generate incremental OTAs for the requested device/build triples.
+
+    Args:
+        args: Parsed namespace containing triples and executor settings.
+
+    Returns:
+        The incremental-generation executor's exit status.
+    """
+    from .sign_execution import generate_incrementals
+
+    return generate_incrementals(
+        [_parse_incremental_triple(triple) for triple in args.triples],
+        generate_delta_script=args.generate_delta_script,
+        jobs=args.jobs,
+        original_tmpdir=args.original_tmpdir,
+    )
 
 
 def _cmd_mkkey(args: argparse.Namespace) -> int:
@@ -1771,6 +1896,8 @@ _CommandHandler = Callable[[argparse.Namespace], int]
 _HANDLERS: dict[str, _CommandHandler] = {
     "run-release-tool": _cmd_run_release_tool,
     "compute-sha256sum": _cmd_compute_sha256sum,
+    "sign-builds": _cmd_sign_builds,
+    "generate-incrementals": _cmd_generate_incrementals,
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
