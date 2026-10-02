@@ -107,13 +107,14 @@ def file_digest_or_path(path: str) -> str:
 
 
 # The --provider-arg configuration is written to a new temporary
-# directory for every release, so it is keyed by its contents.
+# directory for every release, and a --cert certificate can be replaced
+# in place, so both are keyed by their contents.
 def cache_key(signing_obj: SigningObj, input_digest: str) -> str:
     parameters = [signing_obj.key_id or ""]
     is_file = False
     for arg in signing_obj.extra_args:
         parameters.append(file_digest_or_path(arg) if is_file else arg)
-        is_file = arg == "--provider-arg"
+        is_file = arg in ("--provider-arg", "--cert")
     parameters_digest = hashlib.sha256(
         "\x1f".join(parameters).encode(),
     ).hexdigest()

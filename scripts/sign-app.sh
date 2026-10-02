@@ -65,6 +65,19 @@ main() {
   # run the actual signing command via the interceptor that also gets used for build signing
   INTERCEPTOR="$SCRIPTPATH/pkcs11/vendor.yubihsm.interceptor.sh"
   export SIGNING_COMMAND=java # having to pass the actual command via this variable is an interceptor thing
+  if [ "${PKCS11_PYTHON_INTERCEPTOR:-}" = "y" ] && [ "${USE_APKSIGNER_KMS:-}" = "y" ]; then
+    CERT_PATH="${KEY_DIR%/}/${KEY_ID}.x509.pem"
+    [ -f "$CERT_PATH" ] || error "no certificate file found at $CERT_PATH for key $KEY_ID"
+    export CALYX_APKSIGNER_SIGNING_HELPER="$SCRIPTPATH/pkcs11/apksigner_signing_helper.py"
+    print_and_run "$SIGNING_COMMAND_INTERCEPTOR" \
+      -jar "$MAIN_PATH/framework/apksigner.jar" \
+      sign \
+      --v4-signing-enabled=false --min-sdk-version 30 \
+      --kms-type calyx --kms-key-alias "${KEY_ID}" \
+      --cert "$CERT_PATH" \
+      --out "${APK%.*}-signed.apk" "${APK}" && echo "Signed $APK successfully"
+    return
+  fi
   print_and_run "$INTERCEPTOR" \
     -Xmx4096m \
     --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11=ALL-UNNAMED \
