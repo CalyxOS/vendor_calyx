@@ -16,6 +16,25 @@ source "$scriptpath/common.include.sh" || exit $?
 source "$scriptpath/metadata" || exit $?
 source "${DEVICES_FILE:-$scriptpath/../../../calyx/scripts/vars/devices}" || exit $?
 
+if [ "${USE_PYTHON_GENERATE_KEYMAP:-}" = "y" ]; then
+  case "${KEYMAPPER_FILE:-}:${KEYMAPPER:-legacy}" in
+    :legacy|:id2b) ;;
+    *)
+      echo "ERROR: USE_PYTHON_GENERATE_KEYMAP supports only the legacy and id2b keymappers." >&2
+      exit 1 ;;
+  esac
+  if [ -z "${devices+x}" ] || [ "${#devices[@]}" -lt 1 ]; then
+    echo "ERROR: No defined devices for which to generate keys." >&2
+    echo "       Ensure the devices array is populated in \$DEVICES_FILE ($DEVICES_FILE)." >&2
+    exit 1
+  fi
+  PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing generate-keymap \
+      --metadata "${METADATA_FILE:-$scriptpath/metadata.py}" \
+      --keymapper "${KEYMAPPER:-legacy}" \
+      --devices "${devices[@]}"
+fi
+
 main() {
   export KEYMAPPER=${KEYMAPPER:-legacy}
   load_keymapper || return $?
