@@ -48,6 +48,30 @@ releasetools_binary() {
   return 1
 }
 
+release_tool_invoke() {
+  if [ "${DRY_RUN:-}" != "y" ] && [ "${USE_PYTHON_RELEASE_TOOLS:-}" = "y" ]; then
+    local common_scriptpath
+    common_scriptpath=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit $?;pwd -P) \
+      || return $?
+    PYTHONPATH="$common_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing run-release-tool -- "$@"
+  else
+    $maybe_dry_run "$@"
+  fi
+}
+
+release_checksum() {
+  if [ "${DRY_RUN:-}" != "y" ] && [ "${USE_PYTHON_RELEASE_TOOLS:-}" = "y" ]; then
+    local common_scriptpath
+    common_scriptpath=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit $?;pwd -P) \
+      || return $?
+    PYTHONPATH="$common_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing compute-sha256sum "$1"
+  else
+    $maybe_dry_run sha256sum "$1"
+  fi
+}
+
 load_keymapper() {
   local scriptpath
   scriptpath=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit $?;pwd -P) || return $?

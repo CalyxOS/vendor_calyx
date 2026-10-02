@@ -44,7 +44,7 @@ prepare_for_signing_full "$0" "$@" || error "failed to prepare for signing"
 
 OTAKEY=$(get_key other ota || exit $?)
 
-$maybe_dry_run "$OTA_FROM_TARGET_FILES" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
+release_tool_invoke "$OTA_FROM_TARGET_FILES" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
   -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"
@@ -52,7 +52,7 @@ $maybe_dry_run "$OTA_FROM_TARGET_FILES" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA
 $maybe_dry_run pushd "archive/release-$DEVICE-$NEW" || exit 1
 
 echo "Calculating sha256sum for incremental"
-$maybe_dry_run sha256sum "$DEVICE-incremental-$OLD-$NEW.zip" > "$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
+release_checksum "$DEVICE-incremental-$OLD-$NEW.zip" > "$DEVICE-incremental-$OLD-$NEW.zip.sha256sum"
 
 $maybe_dry_run popd
 
