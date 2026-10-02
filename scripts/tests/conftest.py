@@ -92,6 +92,23 @@ def wait_until(predicate: Callable[[], bool], timeout: float = 2.0) -> bool:
     return predicate()
 
 
+def aosp_jar_command(aosp_top: Path, jar_name: str) -> list[str]:
+    host = aosp_top / "out" / "host" / "linux-x86"
+    java = (
+        aosp_top / "prebuilts" / "jdk" / "jdk21" / "linux-x86" / "bin" / "java"
+    )
+    jar = host / "framework" / jar_name
+    missing = [str(path) for path in (java, jar) if not path.is_file()]
+    if missing:
+        pytest.skip(f"the Android tree lacks {', '.join(missing)}")
+    return [
+        str(java),
+        f"-Djava.library.path={host / 'lib64'}",
+        "-jar",
+        str(jar),
+    ]
+
+
 def default_signal_dispositions() -> None:
     """
     Give a child the default SIGINT, SIGHUP and SIGTERM handling, which a
