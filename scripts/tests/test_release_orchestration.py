@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import stat
@@ -13,7 +14,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, TEST_METADATA, run, sha256
+from conftest import SCRIPTS_DIR, TEST_METADATA, run, run_cli, sha256
 
 
 @pytest.fixture(autouse=True)
@@ -320,6 +321,116 @@ def test_release_supports_otatest(release_tree: Path) -> None:
     assert (
         out / f"bramble-ota_update-{otatest}.zip.sha256sum"
     ).read_text() == (f"{sha256(ota)}  bramble-ota_update-{otatest}.zip\n")
+
+
+_PRINT_AND_RUN = r"""
+source "$1"
+shift
+print_and_run "$@"
+"""
+
+
+@pytest.mark.parametrize("status", (0, 23))
+def test_run_release_tool_matches_print_and_run(
+    tmp_path: Path,
+    status: int,
+) -> None:
+    results: dict[str, subprocess.CompletedProcess[str]] = {}
+    outputs: dict[str, str] = {}
+    for label in ("bash", "python"):
+        root = tmp_path / label
+        root.mkdir()
+        tool = root / "tool"
+        _install_tool(
+            tool,
+            f'#!/bin/sh\neval "out=\\${{$#}}"\nprintf %s "$*" > "$out"\n'
+            f"exit {status}\n",
+        )
+        argv = [str(tool), "-k", "keys/0x2000", "in.zip", "out.zip"]
+        command: list[str | Path]
+        if label == "bash":
+            command = [
+                "bash",
+                "-c",
+                _PRINT_AND_RUN,
+                "print-and-run",
+                str(SCRIPTS_DIR / "common.include.sh"),
+                *argv,
+            ]
+        else:
+            command = [
+                "run-release-tool",
+                "--",
+                *argv,
+            ]
+        results[label] = (run if label == "bash" else run_cli)(
+            command,
+            cwd=root,
+            env={"PYTHONPATH": str(SCRIPTS_DIR)},
+            check=False,
+        )
+        outputs[label] = (root / "out.zip").read_text()
+
+    assert results["bash"].returncode == results["python"].returncode == status
+    assert outputs["bash"] == outputs["python"]
+    assert outputs["python"].endswith("-k keys/0x2000 in.zip out.zip")
+    assert results["bash"].stderr.replace(
+        str(tmp_path / "bash"),
+        "<root>",
+    ) == results["python"].stderr.replace(str(tmp_path / "python"), "<root>")
+
+
+def test_compute_sha256sum_matches_sha256sum(tmp_path: Path) -> None:
+    target = tmp_path / "artifact.zip"
+    target.write_bytes(b"release artifact bytes\n" * 100_000)
+
+    bash_result = run(["sha256sum", target.name], cwd=tmp_path)
+    python_result = run_cli(["compute-sha256sum", target.name], cwd=tmp_path)
+
+    assert python_result.stdout == bash_result.stdout
+
+
+@pytest.mark.parametrize("flag", ("", "y"))
+def test_use_python_release_tools_checksums_without_sha256sum(
+    release_tree: Path,
+    flag: str,
+) -> None:
+    stubs = release_tree / "stubs"
+    _install_tool(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
+    _write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={
+            "PATH": f"{stubs}:{os.environ['PATH']}",
+            "USE_PYTHON_RELEASE_TOOLS": flag,
+        },
+        dry_run=False,
+    )
+
+    out = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
+    ota = out / f"bramble-ota_update-{BUILD_NUMBER}.zip"
+    checksum = out / f"bramble-ota_update-{BUILD_NUMBER}.zip.sha256sum"
+    if not flag:
+        assert result.returncode != 0
+        assert ota.exists()
+        return
+    assert result.returncode == 0, result.stderr
+    assert checksum.read_text() == f"{sha256(ota)}  {ota.name}\n"
+
+
+def test_run_release_tool_reports_a_tool_it_cannot_start(
+    tmp_path: Path,
+) -> None:
+    result = run_cli(
+        ["run-release-tool", "--", str(tmp_path / "missing-tool")],
+        check=False,
+    )
+
+    assert result.returncode == 127
+    assert "Traceback" not in result.stderr
 
 
 def _signing_arguments(stderr: str) -> list[str]:
