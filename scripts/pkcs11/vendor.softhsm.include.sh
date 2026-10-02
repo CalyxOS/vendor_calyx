@@ -56,5 +56,5 @@ initialize_vendor_release() {
 
 populate_devices_with_loaded_keys_arrays() {
   # We assume all keys are loaded.
-  devices_with_loaded_keys_arrays+=("$@")
+  devices_with_loaded_keys+=("$@")
 }
