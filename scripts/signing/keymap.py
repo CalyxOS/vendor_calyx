@@ -579,12 +579,22 @@ class Id2bKeymapper(_BaseKeymapper):
     Assign deterministic two-byte IDs to configured Android signing keys.
     """
 
-    def __init__(self, metadata: SigningMetadata):
+    def __init__(
+        self,
+        metadata: SigningMetadata,
+        *,
+        extra_devices: Sequence[str] = (),
+    ):
         """
         Create a mapper for a set of metadata.
 
         Args:
             metadata: Validated key and device configuration.
+            extra_devices: Devices outside metadata's all_devices that get
+                a per-device key ID slot appended in order, as listed in
+                EXTRA_DEVICES. A device already in all_devices
+                keeps its index. The appended key IDs depend on the order of
+                extra_devices.
 
         Returns:
             None.
@@ -598,6 +608,14 @@ class Id2bKeymapper(_BaseKeymapper):
             name: {value: index for index, value in enumerate(values) if value}
             for name, values in metadata.arrays.items()
         }
+        all_devices = list(metadata.arrays["all_devices"])
+        for device in extra_devices:
+            if device and device not in all_devices:
+                all_devices.append(device)
+        self._indices["all_devices"] = {
+            value: index for index, value in enumerate(all_devices) if value
+        }
+        self._all_devices_count = len(all_devices)
         self._validate_config()
 
     def _validate_config(self) -> None:
@@ -611,7 +629,7 @@ class Id2bKeymapper(_BaseKeymapper):
             ValueError: If an ID range is exhausted or a strategy is
                 unsupported.
         """
-        device_count = len(self.metadata.all_devices)
+        device_count = self._all_devices_count
         available = (
             self.config.device_prefix_end - self.config.device_prefix_start + 1
         )
@@ -731,7 +749,10 @@ class Id2bKeymapper(_BaseKeymapper):
 
         if per_device:
             if device not in self._indices["all_devices"]:
-                raise ValueError(f"device {device!r} not found in all_devices")
+                raise ValueError(
+                    f"device {device!r} not found in all_devices "
+                    "or extra_devices",
+                )
             try:
                 offset = self.config.per_device_offsets[key_type]
             except KeyError as error:
@@ -774,7 +795,7 @@ class Id2bKeymapper(_BaseKeymapper):
 
     def _validate_devices(self, devices: Sequence[str]) -> None:
         super()._validate_devices(devices)
-        unknown = set(devices) - set(self.metadata.all_devices)
+        unknown = set(devices) - set(self._indices["all_devices"])
         if unknown:
             raise ValueError(
                 f"devices missing from all_devices: {sorted(unknown)}",
@@ -882,6 +903,8 @@ class StaticKeymapper(Keymapper):
 def select_keymapper(
     environment: Mapping[str, str],
     metadata: SigningMetadata,
+    *,
+    extra_devices: Sequence[str] = (),
 ) -> Keymapper:
     """
     Build the keymapper KEYMAPPER names, without printing the "Using
@@ -890,6 +913,7 @@ def select_keymapper(
     Args:
         environment: Variables naming the keymapper and its inputs.
         metadata: Loaded signing metadata.
+        extra_devices: Devices to map beyond the metadata's devices.
 
     Returns:
         The selected keymapper.
@@ -902,7 +926,7 @@ def select_keymapper(
     if name == "legacy":
         return LegacyKeymapper(metadata)
     if name == "id2b":
-        return Id2bKeymapper(metadata)
+        return Id2bKeymapper(metadata, extra_devices=extra_devices)
     if name == "static":
         keymap_file = environment.get("KEYMAP_FILE", "")
         if not keymap_file:
@@ -924,8 +948,8 @@ def load_keymapper(
     Select the keymapper KEYMAPPER names, as load_keymapper() does.
 
     Args:
-        environment: Process environment to read KEYMAPPER and KEYMAP_FILE
-            from.
+        environment: Process environment to read KEYMAPPER, KEYMAP_FILE and
+            EXTRA_DEVICES from.
         metadata: Validated signing metadata.
 
     Returns:
@@ -936,7 +960,11 @@ def load_keymapper(
         ValueError: If KEYMAPPER names no keymapper, or KEYMAPPER=static
             comes without KEYMAP_FILE or with one that does not exist.
     """
-    keymapper = select_keymapper(environment, metadata)
+    keymapper = select_keymapper(
+        environment,
+        metadata,
+        extra_devices=environment.get("EXTRA_DEVICES", "").split(),
+    )
     name = environment.get("KEYMAPPER") or "legacy"
     print(f"Using keymapper: {name}", file=sys.stderr)
     return keymapper
