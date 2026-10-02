@@ -74,8 +74,8 @@ run_command_maybe_batch() {
               cache_miss=true
             fi
         fi
-        # Only sign again if we had a cache miss, otherwise the output file was provided from the cache
-        if [ "${cache_miss}" = true ]; then
+        # Sign unless the cache provided the output file.
+        if [ "${cache_miss}" != false ]; then
           use_apksigner_batch=y
           maybe_start_apksigner_batch || return $?
         fi
