@@ -704,7 +704,11 @@ class ReleaseOrchestrator(SigningSession):
             cwd=cwd,
             metadata=metadata,
             device=device,
-            signing_args=read_words(environment.get("EXTRA_SIGNING_ARGS", "")),
+            signing_args=[
+                "--threads",
+                "8",
+                *read_words(environment.get("EXTRA_SIGNING_ARGS", "")),
+            ],
         )
         self.target_files_arg = target_files_arg
 
