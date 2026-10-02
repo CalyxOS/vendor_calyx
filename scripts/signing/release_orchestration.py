@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
-from collections.abc import Generator, Mapping, MutableMapping
+from collections.abc import Generator, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -154,6 +154,7 @@ def _extract_android_info_field(target_files: Path, field: str) -> str:
 
 def resolve_device_family_environment(
     device: str,
+    extra_devices: Sequence[str],
     target_files: Path,
 ) -> dict[str, str]:
     """
@@ -162,6 +163,9 @@ def resolve_device_family_environment(
 
     Args:
         device: The device being released.
+        extra_devices: EXTRA_DEVICES opt-in list. A device here skips
+            the hardcoded family checks with no vendor flags set at
+            all, for a device tree that needs none of them.
         target_files: Path to the target-files zip, read for
             BOOTLOADER/RADIO only when needed.
 
@@ -170,7 +174,8 @@ def resolve_device_family_environment(
         no key for a flag the device leaves unset.
 
     Raises:
-        ReleaseUsageError: If the device is not recognized.
+        ReleaseUsageError: If the device is not recognized and not
+            present in extra_devices.
     """
     if device in _QCOM_BOOTLOADER_RADIO_DEVICES:
         return {
@@ -206,6 +211,8 @@ def resolve_device_family_environment(
             "QCOM_FIRMWARE": "true",
             "SKIP_AVB_CUSTOM_KEY": "true",
         }
+    if device in extra_devices:
+        return {}
     raise ReleaseUsageError(f"Unsupported device {device}")
 
 
@@ -471,6 +478,7 @@ class SigningSession:
             ota=read_words(environment.get("EXTRA_OTA_ARGS", "")),
         )
         self.program = f"{self.command}.sh"
+        self.extra_devices = environment.get("EXTRA_DEVICES", "").split()
         self.tmpdir: Path | None = None
         self.vendor_release_initialized = False
         self.inherited_environment = dict(environment)
@@ -774,6 +782,7 @@ class ReleaseOrchestrator(SigningSession):
             version = self._extract_build_id(target_files)
             factory_env = resolve_device_family_environment(
                 self.device,
+                self.extra_devices,
                 target_files,
             )
             if (

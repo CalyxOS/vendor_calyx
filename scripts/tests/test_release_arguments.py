@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 import shlex
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -233,6 +234,88 @@ def test_release_sh_refuses_keymapper_file_with_python_arguments(
 
     assert result.returncode != 0
     assert "does not support KEYMAPPER_FILE" in result.stderr
+
+
+def test_build_release_args_extra_device_already_in_all_devices_is_a_noop() -> (
+    None
+):
+    without = run_build_release_args("bramble", "--extra-devices")
+    with_extra = run_build_release_args("bramble", "--extra-devices", "bramble")
+
+    assert without.returncode == with_extra.returncode == 0
+    assert with_extra.stdout == without.stdout
+
+
+def _bash_id2b_get_key_id(
+    device: str,
+    key_type: str,
+    key_name: str,
+    *,
+    known_devices: Sequence[str],
+    extra_devices: Sequence[str] = (),
+) -> subprocess.CompletedProcess[str]:
+    devices_decl = " ".join(shlex.quote(d) for d in known_devices)
+    program = f"""
+devices=({devices_decl})
+source "$1" || exit $?
+source "$2" || exit $?
+initialize_keymapper || exit $?
+get_key_id "$3" "$4"
+"""
+    return run(
+        [
+            "bash",
+            "-c",
+            program,
+            "id2b-keymapper-test",
+            SCRIPTS_DIR / "keymapper.id2b.include.sh",
+            SCRIPTS_DIR / "metadata",
+            key_type,
+            key_name,
+        ],
+        env={
+            "DEVICE": device,
+            "EXTRA_DEVICES": " ".join(extra_devices),
+            "KEY_DIR": "keys",
+        },
+        check=False,
+    )
+
+
+def test_id2b_extra_device_matches_bash() -> None:
+    bash_result = _bash_id2b_get_key_id(
+        "unlisteddevice",
+        "avb",
+        "vbmeta",
+        known_devices=("bramble", "redfin"),
+        extra_devices=("unlisteddevice",),
+    )
+    python_result = run_build_release_args(
+        "unlisteddevice",
+        "--extra-devices",
+        "unlisteddevice",
+    )
+
+    assert bash_result.returncode == 0, bash_result.stderr
+    assert python_result.returncode == 0, python_result.stderr.decode()
+    avb = _streams(python_result.stdout)["avb"]
+    vbmeta_key = avb[avb.index("--avb_vbmeta_key") + 1]
+    assert vbmeta_key == f"keys/{bash_result.stdout.strip()}.pem"
+
+
+def test_id2b_rejects_a_device_outside_all_devices_like_bash() -> None:
+    bash_result = _bash_id2b_get_key_id(
+        "unlisteddevice",
+        "avb",
+        "vbmeta",
+        known_devices=("bramble",),
+    )
+    python_result = run_build_release_args("unlisteddevice", "--extra-devices")
+
+    assert bash_result.returncode != 0
+    assert python_result.returncode != 0
+    assert "not found in all_devices" in bash_result.stderr
+    assert "not found in all_devices" in python_result.stderr.decode()
 
 
 def _bash_static_get_key(
