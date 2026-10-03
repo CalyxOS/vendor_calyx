@@ -114,12 +114,23 @@ generate_keypair() {
     local name=$key_id-asymmetric-key.yhw
     local out=$unique_key_out_dir/$name
     [ "${DRY_RUN:-}" = "y" ] || mkdir -p "$unique_key_out_dir" || return $?
-    yubihsm -a get-wrapped \
-      --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
-      --object-id "$key_id" \
-      --object-type asymmetric-key \
-      --out "$out" \
-      || return $?
+    if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+      _yubihsm_python_cli_logged export-wrapped-key \
+        --connector "$YUBIHSM_CONNECTOR" \
+        --authkey "$YUBIHSM_AUTHKEY" \
+        --password-env YUBIHSM_PASSWORD \
+        --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+        --key-id "$key_id" \
+        --output "$out" \
+        || return $?
+    else
+      yubihsm -a get-wrapped \
+        --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+        --object-id "$key_id" \
+        --object-type asymmetric-key \
+        --out "$out" \
+        || return $?
+    fi
     copy_exported_file_to_other_dirs "$out" || return $?
   fi
 }
@@ -148,11 +159,22 @@ generate_cert() {
   # key might be exported and imported under wrap later, if it is exportable.
   local attestation_cert=$unique_key_out_dir/$key_id.attestation.pem
   [ "${DRY_RUN:-}" = "y" ] || mkdir -p "$unique_key_out_dir" || return $?
-  yubihsm -a sign-attestation-certificate \
-    --object-id "$key_id" \
-    --attestation-id 0 \
-    --out "$attestation_cert" \
-    || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli_logged attest-key \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --key-id "$key_id" \
+      --attestation-id 0 \
+      --output "$attestation_cert" \
+      || return $?
+  else
+    yubihsm -a sign-attestation-certificate \
+      --object-id "$key_id" \
+      --attestation-id 0 \
+      --out "$attestation_cert" \
+      || return $?
+  fi
   copy_exported_file_to_other_dirs "$attestation_cert" || return $?
 
   # Currently, we use the key attestation certificate as the key cert directly.
