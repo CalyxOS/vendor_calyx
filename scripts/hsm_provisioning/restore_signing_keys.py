@@ -16,7 +16,7 @@ import yubihsm
 import yubihsm.exceptions
 from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from yubihsm.defs import CAPABILITY
+from yubihsm.defs import CAPABILITY, ERROR
 from yubihsm.objects import WrapKey
 
 from setup import print_and_get_info, save_audit_log, ADMIN_AUTHKEY_ID, WRAP_KEY_ID
@@ -58,7 +58,12 @@ def main():
                 wrapped_key_base64 = f.read()
             wrapped_key_bytes = base64.b64decode(wrapped_key_base64)
             print(f"Importing {key_file} ...")
-            # wrap_key.import_wrapped(wrapped_key_bytes)
+            try:
+                wrap_key.import_wrapped(wrapped_key_bytes)
+            except yubihsm.exceptions.YubiHsmDeviceError as e:
+                if e.code != ERROR.OBJECT_EXISTS:
+                    raise
+                print("  Key was already imported, skipping...")
         print(f"Successfully imported {len(key_files)} signing keys.")
         save_audit_log(session, hsm_name)
 
