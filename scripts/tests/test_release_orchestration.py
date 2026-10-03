@@ -1632,3 +1632,19 @@ def test_release_signs_plain_keys_without_its_tmpdir(
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_python_release_dry_run_warns_of_kms_without_the_server(
+    release_tree: Path,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"USE_APKSIGNER_KMS": "y"},
+        python=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Warning: USE_APKSIGNER_KMS=y signs through the signing" in (
+        result.stderr
+    )
