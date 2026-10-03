@@ -237,6 +237,10 @@ class EmulatedYubiHsm:
         """Make the next `times` uses of a command fail with an error."""
         self.failures.setdefault(command, []).extend([error] * times)
 
+    def drop_sessions(self) -> None:
+        """Forget every open session, as a device restart would."""
+        self.sessions.clear()
+
     def audit(self, *commands: COMMAND) -> None:
         """Turn on the audit log entry for each command."""
         for command in commands:
