@@ -13,9 +13,9 @@ import sys
 import tempfile
 import traceback
 import warnings
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import TextIO
+from typing import TextIO, TypeVar
 
 import pytest
 from yubihsm_emulator import Connector, EmulatedYubiHsm, serve_connector
@@ -213,3 +213,23 @@ def run_cli(
         result.stdout.decode(),
         result.stderr.decode(),
     )
+
+
+T = TypeVar("T")
+
+
+def stub(value: T) -> Callable[..., T]:
+    """
+    Return a callable that ignores its arguments and returns value.
+
+    Args:
+        value: What every call returns.
+
+    Returns:
+        The callable.
+    """
+
+    def stubbed(*args: object, **kwargs: object) -> T:
+        return value
+
+    return stubbed
