@@ -11,9 +11,102 @@ from __future__ import annotations
 import abc
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 
 from .metadata import SigningMetadata
+
+_LEGACY_CORE_ALIASES = {
+    "bluetooth": "com.android.bluetooth",
+    "nfc": "com.android.nfcservices",
+}
+_LEGACY_APEX_CONTAINER_ALIASES = {
+    "com.android.tethering": "releasekey",
+    "com.android.support.apexer": "releasekey",
+    "com.android.hardware.biometrics.face.virtual": "com.android.hardware",
+    "com.android.resolv": "testcert",
+    "com.android.bluetooth": "com.android.btservices",
+    "com.android.hardware.biometrics.fingerprint.virtual": (
+        "com.android.hardware"
+    ),
+    "com.android.ondevicepersonalization": "releasekey",
+    "com.android.vndk.current.on_vendor": "com.android.vndk.current",
+    "com.android.scheduling": "releasekey",
+    "com.android.hardware.cas": "com.android.hardware",
+}
+_LEGACY_APEX_PAYLOAD_ALIASES = {
+    "com.android.hardware.biometrics.face.virtual": "com.android.hardware",
+    "com.android.bluetooth": "com.android.btservices",
+    "com.android.hardware.biometrics.fingerprint.virtual": (
+        "com.android.hardware"
+    ),
+    "com.android.vndk.current.on_vendor": "com.android.vndk.current",
+    "com.android.hardware.cas": "com.android.hardware",
+}
+_LEGACY_APEX_APK_ALIASES = {
+    "packages/modules/Connectivity/service/"
+    "ServiceConnectivityResources/resources-certs/"
+    "com.android.connectivity.resources": "com.android.connectivity.resources",
+    "packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin": (
+        "com.android.hotspot2.osulogin"
+    ),
+    "packages/modules/Wifi/service/ServiceWifiResources/resources-certs/"
+    "com.android.wifi.resources": "com.android.wifi.resources",
+    "packages/modules/AdServices/adservices/apk/com.android.adservices.api": (
+        "com.android.adservices.api"
+    ),
+    "packages/modules/Bluetooth/android/app/certs/com.android.bluetooth": (
+        "com.android.bluetooth"
+    ),
+    "packages/modules/Permission/SafetyCenter/Resources/"
+    "com.android.safetycenter.resources": "com.android.safetycenter.resources",
+    "packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog": (
+        "com.android.wifi.dialog"
+    ),
+    "packages/modules/Uwb/service/ServiceUwbResources/resources-certs/"
+    "com.android.uwb.resources": "com.android.uwb.resources",
+    "packages/modules/Connectivity/nearby/halfsheet/apk-certs/"
+    "com.android.nearby.halfsheet": "com.android.nearby.halfsheet",
+    "packages/providers/MediaProvider/pdf/apk/com.android.graphics.pdf": (
+        "com.android.graphics.pdf"
+    ),
+    "packages/modules/AppSearch/apk/com.android.appsearch.apk": (
+        "com.android.appsearch.apk"
+    ),
+    "packages/modules/HealthFitness/apk/com.android.healthconnect.controller": (
+        "com.android.healthconnect.controller"
+    ),
+    "packages/modules/HealthFitness/backuprestore/"
+    "com.android.health.connect.backuprestore": (
+        "com.android.health.connect.backuprestore"
+    ),
+    "packages/modules/OnDevicePersonalization/federatedcompute/apk/"
+    "com.android.federatedcompute": "com.android.federatedcompute",
+    "device/google/gs-common/uwb-certs/com.qorvo.uwb": "com.qorvo.uwb",
+}
+_LEGACY_APP_ALIASES = {
+    "prebuilts/calyx/microg/certs/microg": "microg",
+    "external/calyx/chromium/certs/chromium": "chromium",
+}
+_LEGACY_SEPARATE_VBMETA_SYSTEM_DEVICES = frozenset(
+    {
+        "panther",
+        "cheetah",
+        "lynx",
+        "tangorpro",
+        "felix",
+        "shiba",
+        "husky",
+        "akita",
+        "tokay",
+        "caiman",
+        "komodo",
+        "comet",
+        "tegu",
+        "stallion",
+    },
+)
+_LEGACY_QORVO_DEVICES = frozenset({"raven", "cheetah", "tangorpro", "felix"})
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -45,6 +138,35 @@ class Keymapper(abc.ABC):
     """
 
     @abc.abstractmethod
+    def key(
+        self,
+        key_type: str,
+        key_name: str,
+        device: str = "",
+        *,
+        suffix: str = "",
+        key_suffix: str = ".pem",
+    ) -> str:
+        """
+        Resolve one logical key to its path below KEY_DIR.
+
+        Args:
+            key_type: Metadata key category.
+            key_name: Logical key name from that category.
+            device: Device for per-device keys.
+            suffix: Suffix the caller asks for, which a keymapper keeps
+                only for the key types whose files carry one.
+            key_suffix: Value of KEY_SUFFIX.
+
+        Returns:
+            The key's path below KEY_DIR, or an empty string for a key the
+            keymapper does not map.
+
+        Raises:
+            ValueError: If the keymapper knows no such key.
+        """
+
+    @abc.abstractmethod
     def rows(self, devices: Sequence[str]) -> tuple[KeymapRow, ...]:
         """
         Build physical mappings for selected devices.
@@ -58,6 +180,19 @@ class Keymapper(abc.ABC):
         Raises:
             ValueError: If devices or mapper configuration are invalid.
         """
+
+    def avb_custom_key(self, device: str) -> str:
+        """
+        Return the AVB public key a factory image flashes as
+        avb_custom_key, below KEY_DIR.
+
+        Args:
+            device: Device being released.
+
+        Returns:
+            The vbmeta key's .avbpubkey file.
+        """
+        return f"{self.key('avb', 'vbmeta', device)}.avbpubkey"
 
     def to_tsv(self, devices: Sequence[str]) -> str:
         """
@@ -160,6 +295,114 @@ class _BaseKeymapper(Keymapper):
         Returns:
             The row's identity value, or an empty string to omit the row.
         """
+
+
+class LegacyKeymapper(_BaseKeymapper):
+    """
+    Map metadata keys to the historical device/common directory layout.
+    """
+
+    def __init__(self, metadata: SigningMetadata) -> None:
+        """
+        Configure the validated signing metadata.
+
+        Args:
+            metadata: Key categories and supported devices to map.
+
+        Returns:
+            None.
+        """
+        self.metadata = metadata
+
+    def _is_per_device_row(self, key_type: str, key_name: str) -> bool:
+        return key_type not in {"app", "repo"}
+
+    def _row_value(self, key_type: str, key_name: str, device: str) -> str:
+        return self.key_value(key_type, key_name, device)
+
+    def key(
+        self,
+        key_type: str,
+        key_name: str,
+        device: str = "",
+        *,
+        suffix: str = "",
+        key_suffix: str = ".pem",
+    ) -> str:
+        """
+        Resolve a key to its path, ignoring the suffix asked for and giving
+        avb and apex_payload keys KEY_SUFFIX.
+        """
+        del suffix
+        return self.key_value(key_type, key_name, device, suffix=key_suffix)
+
+    def avb_custom_key(self, device: str) -> str:
+        vbmeta = self.key_value("avb", "vbmeta", device)
+        return str(Path(vbmeta).parent / "avb_custom_key.img")
+
+    def key_value(
+        self,
+        key_type: str,
+        key_name: str,
+        device: str = "",
+        *,
+        suffix: str = ".pem",
+    ) -> str:
+        """
+        Resolve one logical key to its legacy relative path.
+
+        Args:
+            key_type: Metadata key category.
+            key_name: Logical key name from that category.
+            device: Device name for per-device categories.
+            suffix: Suffix of avb and apex_payload keys, like KEY_SUFFIX.
+
+        Returns:
+            Relative key path, or an empty string for an inapplicable key.
+
+        Raises:
+            ValueError: If the key type is unsupported, or a per-device key
+                type is resolved without a device. Any device name is
+                accepted.
+        """
+        if key_type not in {"app", "repo"} and not device:
+            raise ValueError(f"device is required for key type: {key_type}")
+        if key_type == "other" and key_name == "ota":
+            return f"{device}/releasekey"
+        if key_type == "avb":
+            basename = "avb"
+            if (
+                key_name == "vbmeta_system"
+                and device in _LEGACY_SEPARATE_VBMETA_SYSTEM_DEVICES
+            ):
+                basename = "avb_vbmeta_system"
+            return f"{device}/{basename}{suffix}"
+        if key_type == "core":
+            basename = Path(key_name).name
+            if basename in {"testkey", "devkey"}:
+                basename = "releasekey"
+            basename = _LEGACY_CORE_ALIASES.get(basename, basename)
+            return f"{device}/{basename}"
+        if key_type == "apex_container":
+            basename = Path(key_name).name
+            basename = _LEGACY_APEX_CONTAINER_ALIASES.get(basename, basename)
+            return f"{device}/{basename}"
+        if key_type == "apex_payload":
+            basename = Path(key_name).name
+            basename = _LEGACY_APEX_PAYLOAD_ALIASES.get(basename, basename)
+            return f"{device}/{basename}{suffix}"
+        if key_type == "apex_apk":
+            qorvo = "device/google/gs-common/uwb-certs/com.qorvo.uwb"
+            if key_name == qorvo and device not in _LEGACY_QORVO_DEVICES:
+                return ""
+            basename = _LEGACY_APEX_APK_ALIASES.get(key_name, key_name)
+            return f"{device}/{basename}"
+        if key_type == "app":
+            basename = _LEGACY_APP_ALIASES.get(key_name, Path(key_name).name)
+            return f"common/{basename}"
+        if key_type == "repo":
+            return f"common/{Path(key_name).name}"
+        raise ValueError(f"unsupported legacy key type: {key_type}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -401,6 +644,24 @@ class Id2bKeymapper(_BaseKeymapper):
 
     def _row_value(self, key_type: str, key_name: str, device: str) -> str:
         return self.key_id(key_type, key_name, device)
+
+    def key(
+        self,
+        key_type: str,
+        key_name: str,
+        device: str = "",
+        *,
+        suffix: str = "",
+        key_suffix: str = ".pem",
+    ) -> str:
+        """
+        Resolve a key to its key ID, keeping the suffix asked for only for
+        avb and apex_payload keys.
+        """
+        del key_suffix
+        if key_type not in {"avb", "apex_payload"}:
+            suffix = ""
+        return f"{self.key_id(key_type, key_name, device)}{suffix}"
 
     def _validate_devices(self, devices: Sequence[str]) -> None:
         super()._validate_devices(devices)

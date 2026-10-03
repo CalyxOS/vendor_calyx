@@ -16,10 +16,16 @@ from conftest import SCRIPTS_DIR, TEST_METADATA, run
 from signing.metadata import load_metadata
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys parity"
-MODES = ("bash", "guarded")
+MODES = ("bash", "guarded", "full")
+GUARDED_FLAGS = {
+    "USE_PYTHON_SIGNING": "y",
+    "USE_PYTHON_AVB": "y",
+    "USE_PYTHON_KEY_MIGRATION": "y",
+}
 FLAGS = {
     "bash": {},
-    "guarded": {"USE_PYTHON_SIGNING": "y"},
+    "guarded": GUARDED_FLAGS,
+    "full": {"USE_PYTHON_UPDATEKEYS": "y"},
 }
 GENERATION = re.compile(rb"#[0-9a-f]{16}")
 NONCE = "$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')"
@@ -77,6 +83,14 @@ case "$command" in
     ;;
   *) echo "unexpected openssl command: $command" >&2; exit 2 ;;
 esac
+"""
+
+
+MOVE = """#!/bin/bash
+set -euo pipefail
+[ -z "${FAIL_MOVE_SOURCE:-}" ] || \\
+  [ "$FAIL_MOVE_SOURCE" != "$1" ] || exit 40
+exec /usr/bin/mv "$@"
 """
 
 
@@ -176,6 +190,7 @@ def install_tree(
     mock_directory = root / "mock-bin"
     mock_directory.mkdir()
     _write_executable(mock_directory / "openssl", OPENSSL)
+    _write_executable(mock_directory / "mv", MOVE)
 
     keymapper_file = None
     if keymapper_replacement:
@@ -253,6 +268,57 @@ def test_rerun_restores_avb_public_keys(
         assert tree.succeed() == original
 
 
+def test_avb_pkmd_bin_replaces_the_vbmeta_public_key(tmp_path: Path) -> None:
+    manifests: list[Manifest] = []
+    for tree in install_trees(tmp_path):
+        tree.seed("avb_pkmd.bin", "CUSTOM PUBLIC KEY\n")
+
+        manifest = tree.succeed()
+        assert "avb_pkmd.bin" not in manifest
+        assert manifest["0x2000.avbpubkey"][1] == b"CUSTOM PUBLIC KEY\n"
+        manifests.append(manifest)
+
+    assert_parity(manifests)
+
+
+def test_legacy_vbmeta_system_failure_recovers(tmp_path: Path) -> None:
+    failed_manifests: list[Manifest] = []
+    recovered_manifests: list[Manifest] = []
+    for tree in install_trees(tmp_path):
+        failed = tree.fail(
+            device="cheetah",
+            KEYMAPPER="legacy",
+            FAIL_OPENSSL_OUTPUT="keys/cheetah/avb_vbmeta_system.pem",
+        )
+        assert "cheetah/avb.pem" in failed
+        assert "cheetah/avb_vbmeta_system.pem" not in failed
+
+        recovered = tree.succeed(device="cheetah", KEYMAPPER="legacy")
+        assert "cheetah/avb_vbmeta_system.pem" in recovered
+        assert recovered["cheetah/avb.pem"] == failed["cheetah/avb.pem"]
+        assert_derived_from_private_keys(recovered)
+        failed_manifests.append(failed)
+        recovered_manifests.append(recovered)
+
+    assert_parity(failed_manifests)
+    assert_parity(recovered_manifests)
+
+
+@pytest.mark.parametrize("keymapper", ("id2b", "legacy"))
+@pytest.mark.parametrize("key_suffix", (".key", ""))
+def test_key_suffix_names_the_vbmeta_keys(
+    tmp_path: Path,
+    keymapper: str,
+    key_suffix: str,
+) -> None:
+    manifests = [
+        tree.succeed(KEYMAPPER=keymapper, KEY_SUFFIX=key_suffix)
+        for tree in install_trees(tmp_path)
+    ]
+
+    assert_parity(manifests)
+
+
 def test_key_without_certificate_is_refused_until_removed(
     tmp_path: Path,
 ) -> None:
@@ -267,6 +333,7 @@ def test_key_without_certificate_is_refused_until_removed(
         assert refused.returncode != 0
         assert "exists without" in refused.stderr
         assert "restore the certificate" in refused.stderr.lower()
+        assert "Traceback" not in refused.stderr
         assert tree.manifest() == failed
 
         (tree.keys / "0x1100.pk8").unlink()
@@ -346,6 +413,7 @@ def test_separate_vbmeta_system_key_recovers_and_is_kept(
     recovered_manifests: list[Manifest] = []
     trees = install_trees(
         tmp_path,
+        ("bash", "guarded"),
         keymapper_replacement=(
             "key_avb_consolidation=all",
             "key_avb_consolidation=none",
@@ -370,6 +438,7 @@ def test_separate_apex_payload_keys(tmp_path: Path) -> None:
     manifests: list[Manifest] = []
     trees = install_trees(
         tmp_path,
+        ("bash", "guarded"),
         keymapper_replacement=(
             "key_apex_consolidation=dual",
             "key_apex_consolidation=none",
@@ -386,3 +455,46 @@ def test_separate_apex_payload_keys(tmp_path: Path) -> None:
         assert sum(path.endswith(suffix) for path in payload_keys) == len(
             load_metadata(TEST_METADATA).arrays["keys_apex"],
         )
+
+
+def test_runtime_key_migration_recovers_from_move_failure(
+    tmp_path: Path,
+) -> None:
+    failed_manifests: list[Manifest] = []
+    recovered_manifests: list[Manifest] = []
+    for tree in install_trees(tmp_path):
+        tree.seed("com.android.runtime.release.pk8", "LEGACY KEY\n")
+        tree.seed("com.android.runtime.release.x509.pem", "LEGACY CERT\n")
+
+        failed = tree.fail(
+            FAIL_MOVE_SOURCE="keys/com.android.runtime.release.x509.pem",
+        )
+        assert failed["com.android.runtime.pk8"][1] == b"LEGACY KEY\n"
+        assert "com.android.runtime.release.x509.pem" in failed
+
+        recovered = tree.succeed()
+        assert not any(".release." in path for path in recovered)
+        assert recovered["com.android.runtime.pk8"][1] == b"LEGACY KEY\n"
+        assert recovered["com.android.runtime.x509.pem"][1] == b"LEGACY CERT\n"
+        failed_manifests.append(failed)
+        recovered_manifests.append(recovered)
+
+    assert_parity(failed_manifests)
+    assert_parity(recovered_manifests)
+
+
+@pytest.mark.parametrize("suffix", (".pk8", ".x509.pem"))
+def test_partial_runtime_key_pair_migrates(
+    tmp_path: Path,
+    suffix: str,
+) -> None:
+    manifests: list[Manifest] = []
+    for tree in install_trees(tmp_path):
+        tree.seed(f"com.android.runtime.release{suffix}", "LEGACY\n")
+
+        manifest = tree.succeed()
+        assert f"com.android.runtime.release{suffix}" not in manifest
+        assert manifest[f"com.android.runtime{suffix}"][1] == b"LEGACY\n"
+        manifests.append(manifest)
+
+    assert_parity(manifests)
