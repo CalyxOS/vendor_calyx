@@ -422,6 +422,25 @@ should_make_space_on_hsm_yn() {
 }
 
 limit_ondemand_objects() {
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    local -a audit_flags=()
+    if [ "${DRY_RUN:-}" = "y" ]; then
+      audit_flags=(--dry-run)
+    else
+      audit_flags=(--audit-log "$AUDIT_LOG_PATH")
+      [ "${NO_LOG_FAIL:-}" != "y" ] || audit_flags+=(--no-log-fail)
+    fi
+    _yubihsm_python_cli limit-ondemand-objects \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --key-dir "${KEY_DIR:-.}" \
+      --ondemand-domain "$YUBIHSM_ONDEMAND_DOMAIN" \
+      "${audit_flags[@]}" \
+      || return $?
+    return 0
+  fi
+
   local -a object_ids=()
   local -a object_types=()
   call_for_each_object _fill_object_arrays_delegate_filtered_for_restorable_types \
