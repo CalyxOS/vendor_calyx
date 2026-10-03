@@ -351,7 +351,8 @@ upload_logs() {
 
 find_target_files() {
   mapfile -d "" -t target_files < \
-    <(find -maxdepth 1 -type f -name 'calyx_*-target_files-*.zip' -printf '%f\0' | sort -z -n)
+    <(find -maxdepth 1 -type f -regextype posix-extended \
+        -regex '\./calyx_.+-target_files-[0-9]+\.zip' -printf '%f\0' | sort -z -n)
 }
 
 find_prev_signed_device_builds() {
@@ -360,7 +361,8 @@ find_prev_signed_device_builds() {
   fi
   local -a prev_signed_dirs
   mapfile -d "" -t prev_signed_dirs < \
-    <(find archive -maxdepth 1 -type d -name 'release-*-*' -printf '%f\0')
+    <(find archive -maxdepth 1 -type d -regextype posix-extended \
+        -regex 'archive/release-.+-[0-9]+' -printf '%f\0')
   local dir
   device_to_prev_build=()
   for dir in "${prev_signed_dirs[@]}"; do
