@@ -37,7 +37,7 @@ from .release_execution import (
     render_release_tool,
     run_release_tool,
 )
-from .signing_server import SigningServer
+from .signing_server import Handler, SigningServer
 
 _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
 
@@ -360,6 +360,8 @@ def prepare_signing_args(
         avb_tool = environment.get("AVB_SIGNING_HELPER_TOOL") or tool
         if avb_tool == "python":
             signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.py"
+        elif avb_tool == "server":
+            signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.server.py"
         else:
             signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.{avb_tool}.sh"
         payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
@@ -562,23 +564,36 @@ class SigningSession:
 
     def _maybe_start_signing_server(self) -> None:
         """
-        Host a SigningServer with an "apksigner batch" handler for the rest
-        of the release when the Python YubiHSM interceptor signs APKs,
-        unless NEVER_START_APKSIGNER_BATCH=y.
+        Host a SigningServer for the rest of the release when the Python
+        YubiHSM interceptor is in use.
+
+        The server holds one YubiHSM session for AVB signatures and, unless
+        NEVER_START_APKSIGNER_BATCH=y, one "apksigner batch" process.
+        avbtool's signing helper defaults to signing_helper.server.py unless
+        AVB_SIGNING_HELPER_TOOL or SIGNING_HELPER_TOOL chooses one.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
-        if (
-            self.dry_run
-            or self.environment.get("NEVER_START_APKSIGNER_BATCH") == "y"
-            or Path(interceptor).name != "vendor.yubihsm.interceptor.py"
-        ):
+        if Path(interceptor).name != "vendor.yubihsm.interceptor.py":
             return
+        if self.dry_run:
+            self._use_server_helpers()
+            return
+        from .yubihsm_session_service import YubiHsmSessionService
+
+        session_service = YubiHsmSessionService(
+            sign_environment.yubihsm_config_from_environment(self.environment),
+        )
+        handlers: dict[str, Handler] = {
+            "yubihsm_sign_pkcs1": session_service,
+        }
+        if self.environment.get("NEVER_START_APKSIGNER_BATCH") != "y":
+            handlers["apksigner"] = ApksignerBatch(
+                cwd=self.cwd,
+                env=self.environment,
+            )
         assert self.tmpdir is not None
         socket_path = self.tmpdir / "signing-server.sock"
-        server = SigningServer(
-            socket_path,
-            {"apksigner": ApksignerBatch(cwd=self.cwd, env=self.environment)},
-        )
+        server = SigningServer(socket_path, handlers)
         try:
             self._resources.enter_context(server)
         except OSError as error:
@@ -588,6 +603,17 @@ class SigningSession:
             )
             return
         self.environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
+        self._use_server_helpers()
+
+    def _use_server_helpers(self) -> None:
+        """
+        Point the release at the signing paths the signing server serves,
+        unless the variables that choose them are set.
+        """
+        if not self.environment.get(
+            "AVB_SIGNING_HELPER_TOOL",
+        ) and not self.environment.get("SIGNING_HELPER_TOOL"):
+            self.environment["AVB_SIGNING_HELPER_TOOL"] = "server"
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:
