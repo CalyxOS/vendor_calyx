@@ -72,13 +72,13 @@ for k in "${keys_apex_apk[@]}"; do
 done
 
 # AVB 2.0
-keyval_vbmeta=$(get_key avb vbmeta || exit $?)
+keyval_vbmeta=$(get_key avb vbmeta "${KEY_SUFFIX:-}" || exit $?)
 if [[ ! -e "$keyval_vbmeta" ]]; then
   openssl genrsa -out "$keyval_vbmeta" 4096
 fi
 extract_avb_public_key "$keyval_vbmeta" "$AVB_CUSTOM_KEY"
 
-keyval_vbmeta_system=$(get_key avb vbmeta_system || exit $?)
+keyval_vbmeta_system=$(get_key avb vbmeta_system "${KEY_SUFFIX:-}" || exit $?)
 if [[ ! -e "$keyval_vbmeta_system" ]]; then
   openssl genrsa -out "$keyval_vbmeta_system" 4096
 fi
