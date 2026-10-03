@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -847,6 +848,147 @@ do_or_show
         for line in result.stdout.splitlines()
         if not line.startswith("Running:")
     ] == ["sign bramble,2,2 redfin,3,3", "delta bramble,1,2"]
+
+
+def _certificate_sha256(certificate: Path) -> str:
+    fingerprint = run(
+        [
+            "openssl",
+            "x509",
+            "-in",
+            certificate,
+            "-noout",
+            "-fingerprint",
+            "-sha256",
+        ],
+    )
+    return fingerprint.stdout.split("=", 1)[1].strip().replace(":", "").lower()
+
+
+SIGN_APK = """
+import sys
+import common
+
+common.OPTIONS.search_path = sys.argv[1]
+common.OPTIONS.java_path = sys.argv[2]
+common.OPTIONS.pkcs11_config = sys.argv[3]
+common.OPTIONS.apksigner_kms_type = "calyx"
+common.SignFile(sys.argv[4], sys.argv[5], "keys/0x1100", None, min_api_level=30)
+"""
+
+
+@pytest.mark.aosp
+def test_releasetools_signs_apks_through_the_calyx_kms_provider(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+    aosp_top: Path,
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    apksigner = aosp_jar_command(aosp_top, "apksigner.jar")
+    app = aosp_top / "build/make/tools/releasetools/testdata/TestApp.apk"
+    releasetools = aosp_top / "build/make/tools/releasetools"
+
+    signed = run(
+        [
+            "python3",
+            "-c",
+            SIGN_APK,
+            aosp_top / "out" / "host" / "linux-x86",
+            apksigner[0],
+            "/dev/null",
+            app,
+            "signed.apk",
+        ],
+        cwd=tmp_path,
+        env={
+            **base_environment,
+            "KEY_DIR": "keys/",
+            "CALYX_APKSIGNER_SIGNING_HELPER": str(
+                SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py",
+            ),
+            "PYTHONPATH": str(releasetools),
+        },
+        check=False,
+    )
+
+    assert signed.returncode == 0, signed.stderr
+    verified = run(
+        [*apksigner, "verify", "--print-certs", tmp_path / "signed.apk"],
+    )
+    assert (
+        f"certificate SHA-256 digest: "
+        f"{_certificate_sha256(output / '0x1100.x509.pem')}"
+    ) in verified.stdout
+
+
+SIGN_APK_TWICE = """
+import os
+import sys
+import common
+
+common.OPTIONS.search_path = sys.argv[1]
+common.OPTIONS.java_path = sys.argv[2]
+common.OPTIONS.pkcs11_config = sys.argv[3]
+common.OPTIONS.apksigner_kms_type = "calyx"
+common.OPTIONS.signing_command_interceptor = sys.argv[4]
+key = "keys/0x1100"
+common.SignFile(sys.argv[5], "signed.apk", key, None, min_api_level=30)
+os.environ["CALYX_APKSIGNER_SIGNING_HELPER"] = "false"
+common.SignFile(sys.argv[5], "cached.apk", key, None, min_api_level=30)
+"""
+
+
+@pytest.mark.aosp
+def test_releasetools_reuses_a_cached_kms_signature(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+    aosp_top: Path,
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    apksigner = aosp_jar_command(aosp_top, "apksigner.jar")
+    app = aosp_top / "build/make/tools/releasetools/testdata/TestApp.apk"
+    releasetools = aosp_top / "build/make/tools/releasetools"
+    cache = tmp_path / "cache"
+    cache.mkdir()
+
+    signed = run(
+        [
+            "python3",
+            "-c",
+            SIGN_APK_TWICE,
+            aosp_top / "out" / "host" / "linux-x86",
+            "java",
+            "/dev/null",
+            SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py",
+            app,
+        ],
+        cwd=tmp_path,
+        env={
+            **base_environment,
+            "KEY_DIR": "keys/",
+            "CALYX_APKSIGNER_SIGNING_HELPER": str(
+                SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py",
+            ),
+            "PYTHONPATH": str(releasetools),
+            "PATH": os.pathsep.join(
+                (str(Path(apksigner[0]).parent), os.environ["PATH"]),
+            ),
+            "YUBIHSM_SIGNING_CACHE": str(cache),
+            "YUBIHSM_LOCKFILE": "",
+            "DRY_RUN": "y",
+        },
+        check=False,
+    )
+
+    assert signed.returncode == 0, signed.stderr
+    assert len(list(cache.iterdir())) == 1
+    cached = tmp_path / "cached.apk"
+    assert cached.read_bytes() == (tmp_path / "signed.apk").read_bytes()
+    verified = run([*apksigner, "verify", "--print-certs", cached])
+    assert (
+        f"certificate SHA-256 digest: "
+        f"{_certificate_sha256(output / '0x1100.x509.pem')}"
+    ) in verified.stdout
 
 
 SIGN_WHOLE_FILE = """
