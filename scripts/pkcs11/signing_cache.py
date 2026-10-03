@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import os
@@ -12,6 +14,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import NoReturn
 
 apksigner_parser = argparse.ArgumentParser(allow_abbrev=False)
 apksigner_parser.add_argument("--out", nargs=2)
@@ -20,13 +23,21 @@ apksigner_parser.add_argument("--ks-key-alias", dest="key")
 use_log = False
 
 
-def main():
+def main() -> None:
     # define command line arguments
     parser = argparse.ArgumentParser(description="signing cache test")
-    parser.add_argument('--from-cache', nargs='+', metavar=("command", "arguments"),
-                        help="use to check cache and use cached file if available")
-    parser.add_argument('--to-cache', nargs='+', metavar=("command", "arguments"),
-                        help="save output file to cache if there was a cache miss")
+    parser.add_argument(
+        "--from-cache",
+        nargs="+",
+        metavar=("command", "arguments"),
+        help="use to check cache and use cached file if available",
+    )
+    parser.add_argument(
+        "--to-cache",
+        nargs="+",
+        metavar=("command", "arguments"),
+        help="save output file to cache if there was a cache miss",
+    )
     args = parser.parse_known_args()[0]
     if args.from_cache:
         from_cache(sys.argv[2:])
@@ -36,7 +47,7 @@ def main():
         parser.print_help()
 
 
-def from_cache(args):
+def from_cache(args: list[str]) -> NoReturn:
     # parse command line
     signing_obj = apksigner_get_apks(args)
 
@@ -58,7 +69,7 @@ def from_cache(args):
 
 
 # Called if there is a cache miss, to save the new output file to the cache
-def to_cache(args):
+def to_cache(args: list[str]) -> None:
     # parse command line
     signing_obj = apksigner_get_apks(args)
 
@@ -77,12 +88,17 @@ def to_cache(args):
         log(cache_dir, f"Saving {key} from {out_file} for {in_file}")
 
 
-def apksigner_get_apks(arg_str):
+def apksigner_get_apks(arg_str: list[str]) -> SigningObj:
     args, extra_args = apksigner_parser.parse_known_args(arg_str)
-    return SigningObj(in_file=args.out[1], out_file=args.out[0], key_id=args.key, extra_args=tuple(extra_args))
+    return SigningObj(
+        in_file=args.out[1],
+        out_file=args.out[0],
+        key_id=args.key,
+        extra_args=tuple(extra_args),
+    )
 
 
-def file_digest_or_path(path):
+def file_digest_or_path(path: str) -> str:
     try:
         with open(path, "rb") as f:
             return hashlib.file_digest(f, "sha256").hexdigest()
@@ -92,13 +108,15 @@ def file_digest_or_path(path):
 
 # The --provider-arg configuration is written to a new temporary
 # directory for every release, so it is keyed by its contents.
-def cache_key(signing_obj, input_digest):
+def cache_key(signing_obj: SigningObj, input_digest: str) -> str:
     parameters = [signing_obj.key_id or ""]
     is_file = False
     for arg in signing_obj.extra_args:
         parameters.append(file_digest_or_path(arg) if is_file else arg)
         is_file = arg == "--provider-arg"
-    parameters_digest = hashlib.sha256("\x1f".join(parameters).encode()).hexdigest()
+    parameters_digest = hashlib.sha256(
+        "\x1f".join(parameters).encode(),
+    ).hexdigest()
     return f"{input_digest}-{parameters_digest}"
 
 
@@ -109,10 +127,10 @@ def link_or_copy(src: Path, dst: Path) -> None:
         shutil.copy2(src, dst)
 
 
-def log(cache_dir, msg):
+def log(cache_dir: Path, msg: str) -> None:
     if use_log:
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        with(cache_dir / "signing_cache.log").open("a") as f:
+        with (cache_dir / "signing_cache.log").open("a") as f:
             f.write(f"{time} {msg}\n")
     print(msg)
 
@@ -121,7 +139,7 @@ def log(cache_dir, msg):
 class SigningObj:
     in_file: str
     out_file: str
-    key_id: str
+    key_id: str | None
     extra_args: tuple[str, ...] = ()
 
 

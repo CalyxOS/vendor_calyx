@@ -7,16 +7,26 @@
 import argparse
 import os
 import time
+from collections.abc import Sequence
 
-from yubihsm import YubiHsm
+from yubihsm.core import AuthSession, LogEntry, YubiHsm
 
 
-def main():
+def main() -> None:
     # define command line arguments
-    parser = argparse.ArgumentParser(description="Extracts, saves and uploads YubiHSM 2 audit logs.")
-    parser.add_argument("--log-file", help="File to append audit log to", required=True)
-    parser.add_argument("--comment", help="Comment for all log entries that will get saved")
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser = argparse.ArgumentParser(
+        description="Extracts, saves and uploads YubiHSM 2 audit logs.",
+    )
+    parser.add_argument(
+        "--log-file",
+        help="File to append audit log to",
+        required=True,
+    )
+    parser.add_argument(
+        "--comment",
+        help="Comment for all log entries that will get saved",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     # connect to the YubiHSM via the connector
@@ -32,23 +42,38 @@ def main():
     password = os.getenv("YUBIHSM_PASSWORD", "password")
     session = hsm.create_session_derived(auth_key, password)
     try:
-        extract_and_save_logs(session, args.log_file, args.comment, args.verbose)
+        extract_and_save_logs(
+            session,
+            args.log_file,
+            args.comment,
+            args.verbose,
+        )
     finally:
         session.close()
 
 
-def extract_and_save_logs(session, log_file, comment, verbose=False):
+def extract_and_save_logs(
+    session: AuthSession,
+    log_file: str,
+    comment: str | None,
+    verbose: bool = False,
+) -> None:
     entries = session.get_log_entries().entries
     save_logs(entries, log_file, comment, verbose)
     if len(entries) > 0:
         session.set_log_index(entries[-1].number)
 
 
-def save_logs(entries, log_file, comment, verbose=False):
+def save_logs(
+    entries: Sequence[LogEntry],
+    log_file: str,
+    comment: str | None,
+    verbose: bool = False,
+) -> None:
     if comment is None:
         c = ""
     else:
-        c = comment.replace('\n', '').replace('\r', '')
+        c = comment.replace("\n", "").replace("\r", "")
     if len(entries) <= 0 and c == "":
         print("No logs to extract and no comment to write.")
         return
@@ -61,7 +86,14 @@ def save_logs(entries, log_file, comment, verbose=False):
         if verbose:
             print(comment_line)
         for entry in entries:
-            entry_str = f"{entry.number:>{5}} cmd: {entry.command:#0{4}x} len: {entry.length:>{5}} sKey: {entry.session_key:#0{6}x} tKey: {entry.target_key:#0{6}x} 2Key: {entry.second_key:#0{6}x} res: {entry.result:#0{4}x} tick: {entry.tick:>{10}} hash: {entry.digest.hex()}"
+            entry_str = (
+                f"{entry.number:>{5}} cmd: {entry.command:#0{4}x} "
+                f"len: {entry.length:>{5}} sKey: {entry.session_key:#0{6}x} "
+                f"tKey: {entry.target_key:#0{6}x} "
+                f"2Key: {entry.second_key:#0{6}x} "
+                f"res: {entry.result:#0{4}x} tick: {entry.tick:>{10}} "
+                f"hash: {entry.digest.hex()}"
+            )
             file.write(entry_str + "\n")
             if verbose:
                 print(entry_str)
