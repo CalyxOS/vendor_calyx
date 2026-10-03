@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -231,6 +232,110 @@ def run_cli(
         result.stdout.decode(),
         result.stderr.decode(),
     )
+
+
+SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
+SOFTHSM_TOKEN_LABEL = "softhsm-rsa-key-test"
+SOFTHSM_SO_PIN = "12345678"
+SOFTHSM_USER_PIN = "123456"
+SOFTHSM_KEY_ID = "0x2000"
+
+
+@pytest.fixture
+def softhsm_rsa_key(tmp_path: Path) -> tuple[dict[str, str], Path]:
+    """
+    A SoftHSM2 token holding an RSA-2048 keypair, plus the environment
+    the PKCS#11 helpers need to reach it.
+    """
+    missing = [
+        executable
+        for executable in ("softhsm2-util", "pkcs11-tool")
+        if shutil.which(executable) is None
+    ]
+    if not SOFTHSM_MODULE.is_file():
+        missing.append(str(SOFTHSM_MODULE))
+    if missing:
+        pytest.skip(
+            f"SoftHSM test dependencies are missing: {', '.join(missing)}",
+        )
+
+    token_directory = tmp_path / "tokens"
+    token_directory.mkdir()
+    softhsm_config = tmp_path / "softhsm2.conf"
+    softhsm_config.write_text(
+        f"""directories.tokendir = {token_directory}
+objectstore.backend = file
+log.level = WARNING
+slots.removable = true
+slots.mechanisms = ALL
+library.reset_on_fork = false
+""",
+    )
+    environment = {
+        "SOFTHSM2_CONF": str(softhsm_config),
+        "PKCS11_MODULE": str(SOFTHSM_MODULE),
+        "PKCS11_TOOL_BIN": str(shutil.which("pkcs11-tool")),
+        "PKCS11_TOKEN_LABEL": SOFTHSM_TOKEN_LABEL,
+        "PKCS11_PIN": SOFTHSM_USER_PIN,
+    }
+    initialized = run(
+        [
+            "softhsm2-util",
+            "--init-token",
+            "--free",
+            "--label",
+            SOFTHSM_TOKEN_LABEL,
+            "--so-pin",
+            SOFTHSM_SO_PIN,
+            "--pin",
+            SOFTHSM_USER_PIN,
+        ],
+        env=environment,
+        check=False,
+    )
+    assert initialized.returncode == 0, initialized.stderr
+    generated = run(
+        [
+            "pkcs11-tool",
+            "--module",
+            SOFTHSM_MODULE,
+            "--token-label",
+            SOFTHSM_TOKEN_LABEL,
+            "--pin",
+            "env:PKCS11_PIN",
+            "--keypairgen",
+            "--key-type",
+            "rsa:2048",
+            "--id",
+            SOFTHSM_KEY_ID.removeprefix("0x"),
+            "--label",
+            "apksigner-key",
+        ],
+        env=environment,
+        check=False,
+    )
+    assert generated.returncode == 0, generated.stderr
+
+    public_key = tmp_path / "public.der"
+    exported = run_bytes(
+        [
+            "pkcs11-tool",
+            "--module",
+            SOFTHSM_MODULE,
+            "--token-label",
+            SOFTHSM_TOKEN_LABEL,
+            "--pin",
+            "env:PKCS11_PIN",
+            "--read-object",
+            "--type",
+            "pubkey",
+            "--id",
+            SOFTHSM_KEY_ID.removeprefix("0x"),
+        ],
+        env=environment,
+    )
+    public_key.write_bytes(exported.stdout)
+    return environment, public_key
 
 
 T = TypeVar("T")
