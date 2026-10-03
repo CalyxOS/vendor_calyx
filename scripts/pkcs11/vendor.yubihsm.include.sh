@@ -96,7 +96,11 @@ initialize_vendor() {
   export PKCS11_PIN=$(printf "%4s" "${YUBIHSM_AUTHKEY#0x}" | tr ' ' 0)$YUBIHSM_PASSWORD
 
   local pkcs11_scriptpath="$(cd "$(dirname "$BASH_SOURCE")";pwd -P)"
-  export SIGNING_COMMAND_INTERCEPTOR=$pkcs11_scriptpath/vendor.yubihsm.interceptor.sh
+  if [ "${PKCS11_PYTHON_INTERCEPTOR:-}" = "y" ]; then
+    export SIGNING_COMMAND_INTERCEPTOR=$pkcs11_scriptpath/vendor.yubihsm.interceptor.py
+  else
+    export SIGNING_COMMAND_INTERCEPTOR=$pkcs11_scriptpath/vendor.yubihsm.interceptor.sh
+  fi
   export PKCS11_VENDOR=yubihsm
 
   if [ "${DRY_RUN:-}" != "y" ]; then
@@ -112,7 +116,9 @@ initialize_vendor() {
     fi
 
     maybe_start_yubihsm_connector "$YUBIHSM_TMPDIR/yubihsm_connector.pid"
-    maybe_start_apksigner_batch "$YUBIHSM_TMPDIR"
+    if [ "${PKCS11_PYTHON_INTERCEPTOR:-}" != "y" ]; then
+      maybe_start_apksigner_batch "$YUBIHSM_TMPDIR"
+    fi
 
     export YUBIHSM_LOCKFILE=${YUBIHSM_LOCKFILE:-$YUBIHSM_TMPDIR/yubihsm.lock}
     YUBIHSM_LOGS_DIR="$(pwd)/logs"
