@@ -8,6 +8,13 @@
 # Refer to https://source.android.com/devices/tech/ota/sign_builds for more details
 
 set -euo pipefail
+
+if [ "${USE_PYTHON_RELEASE_ORCHESTRATION:-}" = "y" ]; then
+  _release_orchestrate_scriptpath="$(cd "$(dirname "$0")";pwd -P)"
+  PYTHONPATH="$_release_orchestrate_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing release-orchestrate "$0" "$@"
+fi
+
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
