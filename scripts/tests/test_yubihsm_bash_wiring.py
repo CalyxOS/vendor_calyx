@@ -511,6 +511,206 @@ fi
     assert result.stdout.strip().splitlines()[-1] == "OK", result.stderr
 
 
+def test_populate_devices_with_loaded_keys_arrays_via_python_when_flagged(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    _key_with_certificate(yubihsm.device, 0x2000)
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n"
+        "0x2000\tbramble\tavb\tvbmeta\n"
+        "0x2001\tredfin\tavb\tvbmeta\n",
+    )
+    environment = {
+        "PYTHONPATH": str(SCRIPTS_DIR),
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+        "KEYMAP_FILE": str(keymap_file),
+        "AUDIT_LOG_PATH": str(tmp_path / "audit.log"),
+    }
+    result = run_yubihsm_functions(
+        r"""
+export YUBIHSM_PYTHON_TOOLS=y
+declare -a devices_with_loaded_keys=()
+declare -a devices_without_loaded_keys=()
+populate_devices_with_loaded_keys_arrays bramble redfin
+printf 'with=%s\n' "${devices_with_loaded_keys[*]}"
+printf 'without=%s\n' "${devices_without_loaded_keys[*]}"
+""",
+        env=environment,
+    )
+
+    assert result.stdout.strip().splitlines() == [
+        "with=bramble",
+        "without=redfin",
+    ], result.stderr
+
+
+def test_populate_devices_with_loaded_keys_fails_when_the_hsm_is_unreachable(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    yubihsm.plug(None)
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    result = run_yubihsm_functions(
+        r"""
+declare -a devices_with_loaded_keys=()
+declare -a devices_without_loaded_keys=()
+status=0
+populate_devices_with_loaded_keys_arrays bramble || status=$?
+printf 'exit=%s\n' "$status"
+printf 'with-count=%s\n' "${#devices_with_loaded_keys[@]}"
+printf 'without-count=%s\n' "${#devices_without_loaded_keys[@]}"
+""",
+        env=_hsm_environment(tmp_path, yubihsm, KEYMAP_FILE=str(keymap_file)),
+    )
+
+    lines = result.stdout.splitlines()
+    assert lines[0] != "exit=0"
+    assert lines[1:] == ["with-count=0", "without-count=0"]
+    assert "503" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("variables", "message"),
+    (
+        ({"KEYMAP_FILE": "missing.tsv"}, "Cannot read KEYMAP_FILE"),
+        (
+            {"KEYMAPPER_FILE": "keymapper.plugin.py"},
+            "does not support KEYMAPPER_FILE",
+        ),
+    ),
+    ids=("unreadable-keymap", "keymapper-file"),
+)
+def test_populate_devices_with_loaded_keys_refuses_what_it_cannot_map(
+    tmp_path: Path,
+    yubihsm: Connector,
+    variables: dict[str, str],
+    message: str,
+) -> None:
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    environment = _hsm_environment(
+        tmp_path,
+        yubihsm,
+        KEYMAP_FILE=str(keymap_file),
+    )
+    for name, value in variables.items():
+        environment[name] = str(tmp_path / value)
+    result = run_yubihsm_functions(
+        r"""
+declare -a devices_with_loaded_keys=()
+declare -a devices_without_loaded_keys=()
+status=0
+populate_devices_with_loaded_keys_arrays bramble || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=environment,
+    )
+
+    assert result.stdout.splitlines()[0] != "exit=0"
+    assert message in result.stderr
+
+
+def _backed_up_missing_key(
+    device: EmulatedYubiHsm,
+    key_dir: Path,
+    key_id: int,
+) -> None:
+    device.put_wrap_key(0x0010)
+    _key_with_certificate(device, key_id)
+    (key_dir / f"{key_id:#06x}-asymmetric-key.yhw").write_bytes(
+        base64.b64encode(device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, 0x0010)),
+    )
+    stored = device.get(key_id, OBJECT.OPAQUE)
+    assert stored is not None
+    (key_dir / f"{key_id:#06x}.x509.pem").write_bytes(
+        stored_certificate(stored).public_bytes(serialization.Encoding.PEM),
+    )
+    del device.objects[(key_id, OBJECT.ASYMMETRIC_KEY)]
+    del device.objects[(key_id, OBJECT.OPAQUE)]
+
+
+def test_ensure_all_keys_available_for_devices_via_python_when_flagged(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _backed_up_missing_key(yubihsm.device, key_dir, 0x2000)
+    environment = {
+        **_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEYMAP_FILE=str(keymap_file),
+            KEY_DIR=str(key_dir),
+        ),
+    }
+    result = run_yubihsm_functions(
+        r"""
+export YUBIHSM_PYTHON_TOOLS=y
+status=0
+ensure_all_keys_available_for_devices bramble || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=environment,
+    )
+
+    assert result.stdout.strip().splitlines() == ["exit=0"], result.stderr
+    assert yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+    assert yubihsm.device.get(0x2000, OBJECT.OPAQUE) is not None
+    assert [
+        line.split(" ", 2)[2]
+        for line in (tmp_path / "audit.log").read_text().splitlines()
+        if line.startswith("# ")
+    ] == ["Function: ensure_key_is_available Key: 0x2000 Result: 0"]
+    assert yubihsm.device.unread_log() == []
+
+
+def test_restore_all_keys_and_certs_via_python_when_flagged(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _backed_up_missing_key(yubihsm.device, key_dir, 0x2000)
+    audit_log = tmp_path / "audit.log"
+    result = run_yubihsm_functions(
+        r"""
+export YUBIHSM_PYTHON_TOOLS=y
+status=0
+restore_all_keys_and_certs || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEYMAP_FILE=str(keymap_file),
+            KEY_DIR=str(key_dir),
+        ),
+    )
+
+    assert result.stdout.strip().splitlines() == ["exit=0"], result.stderr
+    assert yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+    assert yubihsm.device.get(0x2000, OBJECT.OPAQUE) is not None
+    assert "restore_all_keys_and_certs" in audit_log.read_text()
+
+
 def test_limit_ondemand_objects_deletes_nothing_under_dry_run(
     tmp_path: Path,
     yubihsm: Connector,
