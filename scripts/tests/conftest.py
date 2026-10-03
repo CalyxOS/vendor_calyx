@@ -36,6 +36,28 @@ def yubihsm() -> Iterator[Connector]:
         yield connector
 
 
+@pytest.fixture(autouse=True)
+def fake_pkcs11_modules(
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, Path]:
+    from signing import sign_environment
+
+    directory = tmp_path_factory.mktemp("pkcs11-modules")
+    modules: dict[str, Path] = {}
+    for vendor in ("yubihsm", "softhsm"):
+        module = directory / f"{vendor}_pkcs11.so"
+        module.touch()
+        modules[vendor] = module
+    for vendor, module in modules.items():
+        monkeypatch.setattr(
+            sign_environment.VENDORS[vendor],
+            "find_pkcs11_module",
+            _find_module_at(module),
+        )
+    return modules
+
+
 @pytest.fixture(scope="session")
 def aosp_top() -> Path:
     top = REPO_ROOT.parents[1]
@@ -377,3 +399,10 @@ def stub(value: T) -> Callable[..., T]:
         return value
 
     return stubbed
+
+
+def _find_module_at(module: Path) -> Callable[[object], str | None]:
+    def find_pkcs11_module(self: object) -> str | None:
+        return str(module) if module.exists() else None
+
+    return find_pkcs11_module
