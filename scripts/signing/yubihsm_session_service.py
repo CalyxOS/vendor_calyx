@@ -21,8 +21,10 @@ from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 
 from .signing_server import Message, request
 from .vendor_yubihsm import (
+    AuditLogNotAcknowledged,
     YubiHsmConfig,
     connect_yubihsm_session,
+    save_audit_log,
 )
 
 if TYPE_CHECKING:
@@ -42,21 +44,29 @@ class YubiHsmSessionService:
     Handle YubiHSM operations over one session, opened on first use.
     """
 
-    def __init__(self, config: YubiHsmConfig) -> None:
+    def __init__(
+        self,
+        config: YubiHsmConfig,
+        *,
+        audit_log_path: Path | None = None,
+    ) -> None:
         """
         Prepare a session service that opens its session on first use.
 
         Args:
             config: Connector URL, authentication key and password.
+            audit_log_path: The release's audit log, the only one
+                "yubihsm_extract_audit_log" writes to.
         """
         self._config = config
+        self._audit_log_path = audit_log_path
         self._session: AuthSession | None = None
         self._public_keys: dict[int, rsa.RSAPublicKey] = {}
 
     def handle(self, request: Message) -> Message:
         if request["op"] == "yubihsm_sign_pkcs1":
             return self._sign(request)
-        return {"status": "unavailable"}
+        return self._extract_audit_log(request)
 
     def close(self) -> None:
         if self._session is not None:
@@ -113,6 +123,27 @@ class YubiHsmSessionService:
             "status": "ok",
             "signature": base64.b64encode(signature).decode(),
         }
+
+    def _extract_audit_log(self, request: Message) -> Message:
+        if (
+            self._audit_log_path is None
+            or Path(request["log_path"]) != self._audit_log_path
+        ):
+            return {"status": "unavailable"}
+        try:
+            save_audit_log(
+                lambda: self.with_session(
+                    lambda session: session.get_log_entries().entries,
+                ),
+                lambda number: self.with_session(
+                    lambda session: session.set_log_index(number),
+                ),
+                self._audit_log_path,
+                request.get("comment"),
+            )
+        except AuditLogNotAcknowledged as error:
+            return {"status": "ok", "unacknowledged": str(error)}
+        return {"status": "ok"}
 
 
 def sign_digest_through_server(

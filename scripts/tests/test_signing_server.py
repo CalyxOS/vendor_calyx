@@ -9,6 +9,7 @@ import base64
 import hashlib
 import os
 import socket
+import stat
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
@@ -24,6 +25,7 @@ from signing.signing_server import Message, SigningServer, request
 from signing.vendor_yubihsm import YubiHsmConfig
 from signing.yubihsm_session_service import YubiHsmSessionService
 from software_rsa import rsa_key, verifies
+from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector, EmulatedYubiHsm
 
 HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.server.py"
@@ -82,9 +84,13 @@ def test_request_without_a_server_is_none(
     assert "could not reach the signing server" in capsys.readouterr().err
 
 
-def _service(yubihsm: Connector) -> YubiHsmSessionService:
+def _service(
+    yubihsm: Connector,
+    audit_log_path: Path | None = None,
+) -> YubiHsmSessionService:
     return YubiHsmSessionService(
         YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+        audit_log_path=audit_log_path,
     )
 
 
@@ -139,6 +145,55 @@ def test_sign_rejects_a_signature_that_does_not_verify(
         service.handle(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
 
 
+def test_extract_audit_log_keeps_the_session_open(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    log_path = tmp_path / "audit.log"
+    service = _service(yubihsm, log_path)
+
+    for comment in ("first", "second"):
+        response = service.handle(
+            {
+                "op": "yubihsm_extract_audit_log",
+                "log_path": str(log_path),
+                "comment": comment,
+            },
+        )
+        assert response == {"status": "ok"}
+
+    assert yubihsm.device.sessions_opened == 1
+    assert len(yubihsm.device.sessions) == 1
+    assert yubihsm.device.unread_log() == []
+    text = log_path.read_text()
+    assert " first\n" in text and " second\n" in text
+
+
+def test_extract_audit_log_retry_writes_the_entries_once(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX)
+    log_path = tmp_path / "audit.log"
+    service = _service(yubihsm, log_path)
+
+    response = service.handle(
+        {
+            "op": "yubihsm_extract_audit_log",
+            "log_path": str(log_path),
+            "comment": "once",
+        },
+    )
+
+    assert response == {"status": "ok"}
+    assert yubihsm.device.sessions_opened == 2
+    assert yubihsm.device.unread_log() == []
+    assert len(log_path.read_text().splitlines()) == 2
+
+
+INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
+
+
 def _avb_input(message: bytes) -> tuple[bytes, bytes]:
     digest = hashlib.sha256(message).digest()
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
@@ -153,11 +208,12 @@ def yubihsm_server(
 ) -> Iterator[tuple[SigningServer, EmulatedYubiHsm]]:
     yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("server-a"))
     yubihsm.device.put_asymmetric_key(0x2100, key=rsa_key("server-b"))
-    service = _service(yubihsm)
+    service = _service(yubihsm, tmp_path / "audit.log")
     server = SigningServer(
         tmp_path / "s.sock",
         {
             "yubihsm_sign_pkcs1": service,
+            "yubihsm_extract_audit_log": service,
         },
     )
     with server:
@@ -227,6 +283,47 @@ def test_helper_signs_through_openssl_without_a_server(tmp_path: Path) -> None:
     assert verifies(_load_private_key(private_key), result.stdout, digest)
 
 
+def test_interceptor_appends_the_audit_log_through_the_server(
+    tmp_path: Path,
+    yubihsm_server: tuple[SigningServer, EmulatedYubiHsm],
+) -> None:
+    server, device = yubihsm_server
+    device.audit(COMMAND.SIGN_PKCS1)
+    request(
+        server.socket_path,
+        "yubihsm_sign_pkcs1",
+        key_id=0x2000,
+        digest=base64.b64encode(hashlib.sha256(b"x").digest()).decode(),
+    )
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    avbtool = bin_dir / "avbtool"
+    avbtool.write_text("#!/bin/sh\nexit 0\n")
+    avbtool.chmod(avbtool.stat().st_mode | stat.S_IXUSR)
+    audit_log = tmp_path / "audit.log"
+
+    result = subprocess.run(
+        [INTERCEPTOR, "add_hash_footer", "--signing_helper", "helper"],
+        env={
+            **_without_signing_variables(),
+            "PATH": f"{bin_dir}:{os.environ['PATH']}",
+            "SIGNING_COMMAND": "avbtool",
+            "AUDIT_LOG_PATH": str(audit_log),
+            "SIGNING_SERVER_SOCKET": str(server.socket_path),
+        },
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    comment, *entries = audit_log.read_text().splitlines()
+    assert comment.startswith("# ")
+    assert "add_hash_footer" in comment
+    assert entries[-1].split()[1:3] == ["cmd:", "0x47"]
+    assert "tKey: 0x2000" in entries[-1]
+    assert device.unread_log() == []
+
+
 def _public_key_file(directory: Path, name: str, key_name: str) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{name}.pem"
@@ -280,3 +377,42 @@ def test_a_client_that_never_finishes_its_request_does_not_block(
         stalled.close()
 
     assert response == {"status": "ok"}
+
+
+def test_extract_audit_log_reports_entries_it_could_not_acknowledge(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX, times=2)
+    log_path = tmp_path / "audit.log"
+    service = _service(yubihsm, log_path)
+
+    response = service.handle(
+        {
+            "op": "yubihsm_extract_audit_log",
+            "log_path": str(log_path),
+            "comment": "once",
+        },
+    )
+
+    assert response["status"] == "ok"
+    assert "could not acknowledge" in response["unacknowledged"]
+    assert len(log_path.read_text().splitlines()) == 2
+
+
+def test_extract_audit_log_refuses_another_log(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    service = _service(yubihsm, tmp_path / "audit.log")
+
+    response = service.handle(
+        {
+            "op": "yubihsm_extract_audit_log",
+            "log_path": str(tmp_path / "elsewhere.log"),
+            "comment": "comment",
+        },
+    )
+
+    assert response == {"status": "unavailable"}
+    assert not (tmp_path / "elsewhere.log").exists()
