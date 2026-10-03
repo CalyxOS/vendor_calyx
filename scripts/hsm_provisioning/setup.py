@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Generates a wrap key and imports it into two HSMs.
-# Then split the key into shards, exports those encrypted with age to public SSH keys.
+# Then split the key into shards, exports those encrypted with age to public
+# SSH keys.
 # Creates three auth keys: signing, admin, audit
 
 import os
@@ -13,153 +14,172 @@ import secrets
 import string
 import subprocess
 import sys
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from time import sleep
+from typing import NoReturn
 
-import yubihsm.defs
-import yubihsm.objects
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryption, Encoding, PublicFormat
-from yubihsm import YubiHsm
-from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OPTION, OBJECT
-from yubihsm.exceptions import YubiHsmDeviceError
-from yubihsm.objects import WrapKey, AuthenticationKey, Opaque
-
+import yubihsm.exceptions
 from audit import extract_and_save_logs
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    PublicFormat,
+)
+from yubihsm.core import AuthSession, YubiHsm
+from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, OBJECT, OPTION
+from yubihsm.objects import AuthenticationKey, Opaque, WrapKey
 
 SSS_NUM_SHARDS = 5
 SSS_THRESHOLD = 3
 
-KEEP_PATH = os.getenv("KEEP_PATH", os.path.join(pathlib.Path.home(), "CalyxHSM"))
+KEEP_PATH = os.getenv(
+    "KEEP_PATH",
+    os.path.join(pathlib.Path.home(), "CalyxHSM"),
+)
 
 WRAP_KEY_ID = 0x0010
 WRAP_KEY_LEN = 32
-WRAP_KEY_CAPS = (CAPABILITY.IMPORT_WRAPPED | CAPABILITY.EXPORT_WRAPPED)
+WRAP_KEY_CAPS = CAPABILITY.IMPORT_WRAPPED | CAPABILITY.EXPORT_WRAPPED
 WRAP_KEY_DEL_CAPS = (
-        CAPABILITY.DECRYPT_PKCS |
-        CAPABILITY.DECRYPT_OAEP |
-        CAPABILITY.SIGN_PKCS |
-        CAPABILITY.SIGN_PSS |
-        CAPABILITY.SIGN_ECDSA |
-        CAPABILITY.SIGN_EDDSA |
-        CAPABILITY.DERIVE_ECDH |
-        CAPABILITY.EXPORTABLE_UNDER_WRAP |
-        CAPABILITY.GET_LOG_ENTRIES |
-        CAPABILITY.GET_OPTION
+    CAPABILITY.DECRYPT_PKCS
+    | CAPABILITY.DECRYPT_OAEP
+    | CAPABILITY.SIGN_PKCS
+    | CAPABILITY.SIGN_PSS
+    | CAPABILITY.SIGN_ECDSA
+    | CAPABILITY.SIGN_EDDSA
+    | CAPABILITY.DERIVE_ECDH
+    | CAPABILITY.EXPORTABLE_UNDER_WRAP
+    | CAPABILITY.GET_LOG_ENTRIES
+    | CAPABILITY.GET_OPTION
 )
 SIGNING_AUTHKEY_ID = 0x0001
-# Authkey capabilities are based on yubihsm-setup, with some changes for our use cases.
+# Authkey capabilities are based on yubihsm-setup, with some changes for our
+# use cases.
 SIGNING_AUTHKEY_CAPS = (
-        CAPABILITY.GENERATE_ASYMMETRIC_KEY |
-        CAPABILITY.SIGN_PKCS |
-        CAPABILITY.SIGN_PSS |
-        CAPABILITY.SIGN_ECDSA |
-        CAPABILITY.SIGN_EDDSA |
-        CAPABILITY.DERIVE_ECDH |
-        CAPABILITY.IMPORT_WRAPPED |
-        CAPABILITY.EXPORT_WRAPPED |
-        CAPABILITY.GET_OPTION |
-        CAPABILITY.SIGN_ATTESTATION_CERTIFICATE |
-        CAPABILITY.GET_LOG_ENTRIES |
-        CAPABILITY.CHANGE_AUTHENTICATION_KEY |
-        CAPABILITY.PUT_OPAQUE |
-        CAPABILITY.GET_OPAQUE |
-        CAPABILITY.DELETE_OPAQUE |
-        CAPABILITY.DELETE_ASYMMETRIC_KEY
+    CAPABILITY.GENERATE_ASYMMETRIC_KEY
+    | CAPABILITY.SIGN_PKCS
+    | CAPABILITY.SIGN_PSS
+    | CAPABILITY.SIGN_ECDSA
+    | CAPABILITY.SIGN_EDDSA
+    | CAPABILITY.DERIVE_ECDH
+    | CAPABILITY.IMPORT_WRAPPED
+    | CAPABILITY.EXPORT_WRAPPED
+    | CAPABILITY.GET_OPTION
+    | CAPABILITY.SIGN_ATTESTATION_CERTIFICATE
+    | CAPABILITY.GET_LOG_ENTRIES
+    | CAPABILITY.CHANGE_AUTHENTICATION_KEY
+    | CAPABILITY.PUT_OPAQUE
+    | CAPABILITY.GET_OPAQUE
+    | CAPABILITY.DELETE_OPAQUE
+    | CAPABILITY.DELETE_ASYMMETRIC_KEY
 )
 SIGNING_AUTHKEY_DEL_CAPS = (
-        CAPABILITY.GENERATE_ASYMMETRIC_KEY |
-        CAPABILITY.SIGN_PKCS |
-        CAPABILITY.SIGN_PSS |
-        CAPABILITY.SIGN_ECDSA |
-        CAPABILITY.SIGN_EDDSA |
-        CAPABILITY.DERIVE_ECDH |
-        CAPABILITY.EXPORTABLE_UNDER_WRAP |
-        CAPABILITY.GET_OPTION
+    CAPABILITY.GENERATE_ASYMMETRIC_KEY
+    | CAPABILITY.SIGN_PKCS
+    | CAPABILITY.SIGN_PSS
+    | CAPABILITY.SIGN_ECDSA
+    | CAPABILITY.SIGN_EDDSA
+    | CAPABILITY.DERIVE_ECDH
+    | CAPABILITY.EXPORTABLE_UNDER_WRAP
+    | CAPABILITY.GET_OPTION
 )
 
 AUDIT_AUTHKEY_ID = 0x0002
 AUDIT_AUTHKEY_CAPS = (
-        CAPABILITY.CHANGE_AUTHENTICATION_KEY |
-        CAPABILITY.GET_LOG_ENTRIES |
-        CAPABILITY.GET_OPAQUE
+    CAPABILITY.CHANGE_AUTHENTICATION_KEY
+    | CAPABILITY.GET_LOG_ENTRIES
+    | CAPABILITY.GET_OPAQUE
 )
-AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY.NONE
+AUDIT_AUTHKEY_DEL_CAPS = CAPABILITY(0)
 
-ADMIN_AUTHKEY_ID = 0x00ad
-# Admin authkey defaults to having the same capabilities as signing, plus some more.
+ADMIN_AUTHKEY_ID = 0x00AD
+# Admin authkey defaults to having the same capabilities as signing, plus some
+# more.
 # It also needs the (delegated) capabilities of auth keys it will be creating.
 ADMIN_AUTHKEY_CAPS = (
-        SIGNING_AUTHKEY_CAPS |
-        CAPABILITY.PUT_ASYMMETRIC |
-        CAPABILITY.DELETE_SYMMETRIC_KEY |
-        CAPABILITY.GENERATE_SYMMETRIC_KEY |
-        CAPABILITY.PUT_SYMMETRIC_KEY |
-        CAPABILITY.DELETE_HMAC_KEY |
-        CAPABILITY.GENERATE_HMAC_KEY |
-        CAPABILITY.PUT_HMAC_KEY |  # put-mac-key
-        CAPABILITY.SIGN_HMAC |
-        CAPABILITY.VERIFY_HMAC |
-        CAPABILITY.DELETE_TEMPLATE |
-        CAPABILITY.GET_TEMPLATE |
-        CAPABILITY.PUT_TEMPLATE |
-        CAPABILITY.DELETE_OPAQUE |
-        CAPABILITY.DELETE_AUTHENTICATION_KEY |
-        CAPABILITY.PUT_AUTHENTICATION_KEY |
-        CAPABILITY.SET_OPTION |
-        CAPABILITY.RESET_DEVICE
+    SIGNING_AUTHKEY_CAPS
+    | CAPABILITY.PUT_ASYMMETRIC
+    | CAPABILITY.DELETE_SYMMETRIC_KEY
+    | CAPABILITY.GENERATE_SYMMETRIC_KEY
+    | CAPABILITY.PUT_SYMMETRIC_KEY
+    | CAPABILITY.DELETE_HMAC_KEY
+    | CAPABILITY.GENERATE_HMAC_KEY
+    | CAPABILITY.PUT_HMAC_KEY  # put-mac-key
+    | CAPABILITY.SIGN_HMAC
+    | CAPABILITY.VERIFY_HMAC
+    | CAPABILITY.DELETE_TEMPLATE
+    | CAPABILITY.GET_TEMPLATE
+    | CAPABILITY.PUT_TEMPLATE
+    | CAPABILITY.DELETE_OPAQUE
+    | CAPABILITY.DELETE_AUTHENTICATION_KEY
+    | CAPABILITY.PUT_AUTHENTICATION_KEY
+    | CAPABILITY.SET_OPTION
+    | CAPABILITY.RESET_DEVICE
 )
-# Admin authkey has the same delegated capabilities as the signing authkey's main capabilities, plus more.
+# Admin authkey has the same delegated capabilities as the signing authkey's
+# main capabilities, plus more.
 # It needs to be able to re-create the signing authkey, after all.
 ADMIN_AUTHKEY_DEL_CAPS = (
-        SIGNING_AUTHKEY_CAPS |
-        SIGNING_AUTHKEY_DEL_CAPS |
-        AUDIT_AUTHKEY_CAPS |
-        AUDIT_AUTHKEY_DEL_CAPS |
-        CAPABILITY.PUT_ASYMMETRIC |
-        CAPABILITY.DELETE_SYMMETRIC_KEY |
-        CAPABILITY.GENERATE_SYMMETRIC_KEY |
-        CAPABILITY.PUT_SYMMETRIC_KEY |
-        CAPABILITY.DELETE_HMAC_KEY |
-        CAPABILITY.GENERATE_HMAC_KEY |
-        CAPABILITY.PUT_HMAC_KEY |  # put-mac-key
-        CAPABILITY.SIGN_HMAC |
-        CAPABILITY.VERIFY_HMAC |
-        CAPABILITY.DELETE_TEMPLATE |
-        CAPABILITY.GET_TEMPLATE |
-        CAPABILITY.PUT_TEMPLATE |
-        CAPABILITY.SIGN_SSH_CERTIFICATE |
-        CAPABILITY.ENCRYPT_CBC |
-        CAPABILITY.DECRYPT_ECB |
-        CAPABILITY.ENCRYPT_ECB |
-        CAPABILITY.DELETE_OTP_AEAD_KEY |
-        CAPABILITY.GENERATE_OTP_AEAD_KEY |
-        CAPABILITY.PUT_OTP_AEAD_KEY |
-        CAPABILITY.CREATE_OTP_AEAD |
-        CAPABILITY.RANDOMIZE_OTP_AEAD |
-        CAPABILITY.REWRAP_FROM_OTP_AEAD_KEY |
-        CAPABILITY.REWRAP_TO_OTP_AEAD_KEY |
-        CAPABILITY.DELETE_OPAQUE
+    SIGNING_AUTHKEY_CAPS
+    | SIGNING_AUTHKEY_DEL_CAPS
+    | AUDIT_AUTHKEY_CAPS
+    | AUDIT_AUTHKEY_DEL_CAPS
+    | CAPABILITY.PUT_ASYMMETRIC
+    | CAPABILITY.DELETE_SYMMETRIC_KEY
+    | CAPABILITY.GENERATE_SYMMETRIC_KEY
+    | CAPABILITY.PUT_SYMMETRIC_KEY
+    | CAPABILITY.DELETE_HMAC_KEY
+    | CAPABILITY.GENERATE_HMAC_KEY
+    | CAPABILITY.PUT_HMAC_KEY  # put-mac-key
+    | CAPABILITY.SIGN_HMAC
+    | CAPABILITY.VERIFY_HMAC
+    | CAPABILITY.DELETE_TEMPLATE
+    | CAPABILITY.GET_TEMPLATE
+    | CAPABILITY.PUT_TEMPLATE
+    | CAPABILITY.SIGN_SSH_CERTIFICATE
+    | CAPABILITY.ENCRYPT_CBC
+    | CAPABILITY.DECRYPT_ECB
+    | CAPABILITY.ENCRYPT_ECB
+    | CAPABILITY.DELETE_OTP_AEAD_KEY
+    | CAPABILITY.GENERATE_OTP_AEAD_KEY
+    | CAPABILITY.PUT_OTP_AEAD_KEY
+    | CAPABILITY.CREATE_OTP_AEAD
+    | CAPABILITY.RANDOMIZE_OTP_AEAD
+    | CAPABILITY.REWRAP_FROM_OTP_AEAD_KEY
+    | CAPABILITY.REWRAP_TO_OTP_AEAD_KEY
+    | CAPABILITY.DELETE_OPAQUE
 )
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
 
-def main():
+def main() -> None:
     # ensure auth key dir exists
     auth_key_dir = os.path.join(KEEP_PATH, "auth-keys")
     os.makedirs(auth_key_dir, exist_ok=True)
 
     # create and get auth keys
     password_signing = create_auth_password(auth_key_dir, "signing", "5")
-    admin_private_key, admin_public_key = create_auth_key(auth_key_dir, "admin", "4")
+    admin_private_key, admin_public_key = create_auth_key(
+        auth_key_dir,
+        "admin",
+        "4",
+    )
     _, audit_public_key = create_auth_key(auth_key_dir, "audit", "3")
 
     # provision primary HSM
     print("\nPlease connect the primary YubiHSM 2.\n")
     input("Press any key when primary HSM is connected.")
-    wrap_key_bytes = provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key,
-                                   lambda session: create_and_provision_wrap_key(session))
+    wrap_key_bytes = provision_hsm(
+        admin_private_key,
+        admin_public_key,
+        password_signing,
+        audit_public_key,
+        lambda session: create_and_provision_wrap_key(session),
+    )
     # split wrap key into shards and store them encrypted
     create_and_export_shards(wrap_key_bytes)
 
@@ -167,28 +187,41 @@ def main():
     print("\n\nPlease unplug the primary YubiHSM 2")
     print("and connect the secondary YubiHSM 2\n")
     input("Press any key when secondary HSM is connected.")
-    provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key,
-                  lambda session: provision_wrap_key(session, wrap_key_bytes))
+    provision_hsm(
+        admin_private_key,
+        admin_public_key,
+        password_signing,
+        audit_public_key,
+        lambda session: provision_wrap_key(session, wrap_key_bytes),
+    )
     print("\nCongratulations! Both HSMs provisioned.")
     print()
     print(f"IMPORTANT: Save the contents of {KEEP_PATH} now!")
 
 
-def create_auth_password(auth_key_dir, name, public_key_id):
+def create_auth_password(
+    auth_key_dir: str,
+    name: str,
+    public_key_id: str,
+) -> str:
     # generate password
     alphabet = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(alphabet) for _ in range(40))
+    password = "".join(secrets.choice(alphabet) for _ in range(40))
 
     # encrypt password with age
     public_key_path = os.path.join(script_dir, "keys", f"{public_key_id}.pub")
     auth_key_path = os.path.join(auth_key_dir, f"{name}.key")
-    age_command = ['age', '-R', public_key_path, '-o', auth_key_path]
+    age_command = ["age", "-R", public_key_path, "-o", auth_key_path]
     subprocess.run(age_command, input=password, text=True, check=True)
 
     return password
 
 
-def create_auth_key(auth_key_dir, name, public_key_id):
+def create_auth_key(
+    auth_key_dir: str,
+    name: str,
+    public_key_id: str,
+) -> tuple[ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey]:
     # create key pair
     private_key = ec.generate_private_key(ec.SECP256R1())
     pem_private_key = private_key.private_bytes(
@@ -201,18 +234,24 @@ def create_auth_key(auth_key_dir, name, public_key_id):
         encoding=Encoding.PEM,
         format=PublicFormat.SubjectPublicKeyInfo,
     )
-    auth_key = pem_public_key + b'\n' + pem_private_key
+    auth_key = pem_public_key + b"\n" + pem_private_key
 
     # encrypt auth key pair with age
     public_key_path = os.path.join(script_dir, "keys", f"{public_key_id}.pub")
     auth_key_path = os.path.join(auth_key_dir, f"{name}.key")
-    age_command = ['age', '-R', public_key_path, '-o', auth_key_path]
+    age_command = ["age", "-R", public_key_path, "-o", auth_key_path]
     subprocess.run(age_command, input=auth_key, check=True)
 
     return private_key, public_key
 
 
-def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key, get_wrap_key):
+def provision_hsm(
+    admin_private_key: ec.EllipticCurvePrivateKey,
+    admin_public_key: ec.EllipticCurvePublicKey,
+    password_signing: str,
+    audit_public_key: ec.EllipticCurvePublicKey,
+    get_wrap_key: Callable[[AuthSession], bytes],
+) -> bytes:
     # Connect to the YubiHSM via the connector using the default password:
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
@@ -220,7 +259,8 @@ def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_p
         # establish session (using factory default credentials)
         reset_session = hsm.create_session_derived(0x0001, "password")
     except yubihsm.exceptions.YubiHsmAuthenticationError as e:
-        # if we can't authenticate with default credentials, the HSM isn't factory reset
+        # if we can't authenticate with default credentials, the HSM isn't
+        # factory reset
         on_not_factory_reset()
         raise e
     # factory reset HSM to guarantee clean state
@@ -236,7 +276,8 @@ def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_p
         enable_auditing(session)
         wrap_key = get_wrap_key(session)
         provision_admin_auth_key(session, admin_public_key)
-        # session will get replaced by a new one after switching to our own admin auth key
+        # session will get replaced by a new one after switching to our own
+        # admin auth key
         session = delete_default_auth_key(hsm, session, admin_private_key)
         provision_signing_auth_key(session, password_signing)
         provision_audit_auth_key(session, audit_public_key)
@@ -246,16 +287,22 @@ def provision_hsm(admin_private_key, admin_public_key, password_signing, audit_p
     return wrap_key
 
 
-def print_and_get_info(hsm, session):
+def print_and_get_info(hsm: YubiHsm, session: AuthSession) -> str:
     device_info = hsm.get_device_info()
-    version = f"v{device_info.version[0]}.{device_info.version[1]}.{device_info.version[2]}"
+    version = (
+        f"v{device_info.version[0]}.{device_info.version[1]}."
+        f"{device_info.version[2]}"
+    )
     hsm_name = f"{device_info.part_number}-{device_info.serial}"
-    print(f"Connected to YubiHSM 2 {version} Serial: {device_info.serial} Part: {device_info.part_number}\n")
+    print(
+        f"Connected to YubiHSM 2 {version} Serial: {device_info.serial} "
+        f"Part: {device_info.part_number}\n",
+    )
 
     # get and print attestation certificate
     attestation_cert = Opaque(session, 0).get_certificate()
     attestation_cert_pem = attestation_cert.public_bytes(encoding=Encoding.PEM)
-    print(attestation_cert_pem.decode('utf-8'))
+    print(attestation_cert_pem.decode("utf-8"))
     print()
 
     # save attestation certificate to file
@@ -270,7 +317,7 @@ def print_and_get_info(hsm, session):
         encoding=Encoding.PEM,
         format=PublicFormat.SubjectPublicKeyInfo,
     )
-    print(public_key_pem.decode('utf-8'))
+    print(public_key_pem.decode("utf-8"))
     print()
 
     # save public key to file
@@ -282,22 +329,27 @@ def print_and_get_info(hsm, session):
 
 
 # Turn on (forced) audit log
-def enable_auditing(session):
+def enable_auditing(session: AuthSession) -> None:
     print("Provisioning auditing...")
 
     # Much of this was gleaned from https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e
     # By default, no command is logged into the audit trail, only boot events.
     # We want everything logged, force it until factory reset (0x02).
-    session.put_option(OPTION.COMMAND_AUDIT, COMMAND.SET_OPTION.to_bytes() + b'\x02')
+    session.put_option(
+        OPTION.COMMAND_AUDIT,
+        COMMAND.SET_OPTION.to_bytes() + b"\x02",
+    )
 
-    # By default, if force-audit is turned off (0x00), when the YubiHSM internal audit log (62 entries) is reached,
-    # new operations will overwrite old ones, losing the trail.
-    # Turning it on (0x01) will cause the HSM to refuse further operations until the logs are exported;
-    # and setting it to 0x02 will lock the option in until a factory reset.
-    # We want the latter one to ensure no operation goes unnoticed.
-    session.put_option(OPTION.FORCE_AUDIT, b'\x02')
+    # By default, if force-audit is turned off (0x00), when the YubiHSM
+    # internal audit log (62 entries) is reached, new operations will
+    # overwrite old ones, losing the trail. Turning it on (0x01) will cause
+    # the HSM to refuse further operations until the logs are exported; and
+    # setting it to 0x02 will lock the option in until a factory reset. We
+    # want the latter one to ensure no operation goes unnoticed.
+    session.put_option(OPTION.FORCE_AUDIT, b"\x02")
 
-    # Enable audit log for most auditable commands, not uncritical ones that create too much noise
+    # Enable audit log for most auditable commands, not uncritical ones that
+    # create too much noise
     commands_to_audit = (
         COMMAND.CHANGE_AUTHENTICATION_KEY,
         COMMAND.DELETE_OBJECT,
@@ -349,14 +401,14 @@ def enable_auditing(session):
     print("Successfully provisioned auditing options.")
 
 
-def create_and_provision_wrap_key(session):
+def create_and_provision_wrap_key(session: AuthSession) -> bytes:
     # provision wrap key
     # https://github.com/Yubico/yubihsm-setup/blob/68bf3c7aa2d5c7e3efb05af471fafb551fa84e11/src/main.rs
     wrap_key_bytes = session.get_pseudo_random(WRAP_KEY_LEN)
     return provision_wrap_key(session, wrap_key_bytes)
 
 
-def provision_wrap_key(session, wrap_key_bytes):
+def provision_wrap_key(session: AuthSession, wrap_key_bytes: bytes) -> bytes:
     wrap_key_obj = WrapKey.put(
         session=session,
         object_id=WRAP_KEY_ID,
@@ -371,13 +423,25 @@ def provision_wrap_key(session, wrap_key_bytes):
     return wrap_key_bytes
 
 
-def create_and_export_shards(wrap_key_bytes):
+def create_and_export_shards(wrap_key_bytes: bytes) -> None:
     split_path = os.path.join(script_dir, "calyx-shamir-split")
     # ensure that split program can be executed
     os.chmod(split_path, 0o755)
     # split wrap key into shards
-    command = [split_path, '--threshold', str(SSS_THRESHOLD), '--shares', str(SSS_NUM_SHARDS)]
-    result = subprocess.run(command, input=wrap_key_bytes.hex(), capture_output=True, text=True, check=True)
+    command = [
+        split_path,
+        "--threshold",
+        str(SSS_THRESHOLD),
+        "--shares",
+        str(SSS_NUM_SHARDS),
+    ]
+    result = subprocess.run(
+        command,
+        input=wrap_key_bytes.hex(),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     shards = result.stdout.splitlines()
 
     # ensure shard dir exists
@@ -388,11 +452,14 @@ def create_and_export_shards(wrap_key_bytes):
     for i, shard in enumerate(shards):
         key_path = os.path.join(script_dir, "keys", f"{i + 1}.pub")
         shard_path = os.path.join(shard_dir, f"{i + 1}.shard")
-        age_command = ['age', '-R', key_path, '-o', shard_path]
+        age_command = ["age", "-R", key_path, "-o", shard_path]
         subprocess.run(age_command, input=shard, text=True, check=True)
 
 
-def provision_admin_auth_key(session, admin_key):
+def provision_admin_auth_key(
+    session: AuthSession,
+    admin_key: ec.EllipticCurvePublicKey,
+) -> None:
     label = "Admin auth key"
     auth_key = AuthenticationKey.put_public_key(
         session=session,
@@ -406,10 +473,17 @@ def provision_admin_auth_key(session, admin_key):
     print(f"Generated {label} with ID {auth_key.id}")
 
 
-def delete_default_auth_key(hsm, session, admin_private_key):
+def delete_default_auth_key(
+    hsm: YubiHsm,
+    session: AuthSession,
+    admin_private_key: ec.EllipticCurvePrivateKey,
+) -> AuthSession:
     # close old session and open new one
     session.close()
-    new_session = hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
+    new_session = hsm.create_session_asymmetric(
+        ADMIN_AUTHKEY_ID,
+        admin_private_key,
+    )
 
     default_auth_key = new_session.get_object(0x0001, OBJECT.AUTHENTICATION_KEY)
     default_auth_key.get_info()  # causes OBJECT_NOT_FOUND if key doesn't exist
@@ -418,7 +492,7 @@ def delete_default_auth_key(hsm, session, admin_private_key):
     return new_session
 
 
-def provision_signing_auth_key(session, password):
+def provision_signing_auth_key(session: AuthSession, password: str) -> None:
     label = "Signing auth key"
     auth_key = AuthenticationKey.put_derived(
         session=session,
@@ -432,7 +506,10 @@ def provision_signing_auth_key(session, password):
     print(f"Generated {label} with ID {auth_key.id}")
 
 
-def provision_audit_auth_key(session, audit_key):
+def provision_audit_auth_key(
+    session: AuthSession,
+    audit_key: ec.EllipticCurvePublicKey,
+) -> None:
     label = "Audit auth key"
     auth_key = AuthenticationKey.put_public_key(
         session=session,
@@ -446,9 +523,9 @@ def provision_audit_auth_key(session, audit_key):
     print(f"Generated {label} with ID {auth_key.id}")
 
 
-def audit_log_file(hsm_name):
+def audit_log_file(hsm_name: str) -> str:
     # define folder for log files and ensure it exists
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     log_path = os.path.join(KEEP_PATH, "logs", hsm_name)
     os.makedirs(log_path, exist_ok=True)
     # define log file path
@@ -456,14 +533,14 @@ def audit_log_file(hsm_name):
     return os.path.join(log_path, f"{date_str}-provision.log")
 
 
-def save_audit_log(session, hsm_name):
+def save_audit_log(session: AuthSession, hsm_name: str) -> None:
     log_file = audit_log_file(hsm_name)
     # use other python script to actually extract logs
     comment = "provisioning: 4f is for audit log options, the rest is key setup"
     extract_and_save_logs(session, log_file, comment)
 
 
-def on_not_factory_reset():
+def on_not_factory_reset() -> NoReturn:
     print()
     print("ERROR: The HSM does not seem to be factory reset.")
     print()

@@ -5,27 +5,34 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 #
 
+import os
 from argparse import ArgumentParser
 from zipfile import ZipFile
-import os
 
 parser = ArgumentParser(description="Generate update server metadata")
 parser.add_argument("zip", help="ota_update or target_files")
-parser.add_argument("channel", default="testing", nargs='?', help="ota channel (default: testing)")
+parser.add_argument(
+    "channel",
+    default="testing",
+    nargs="?",
+    help="ota channel (default: testing)",
+)
 args = parser.parse_args()
 
+
 # From build/make/tools/releasetools/common.py
-def LoadBuildProp(input_file, prop_file):
+def LoadBuildProp(input_file: ZipFile, prop_file: str) -> dict[str, str]:
     lines = input_file.read(prop_file).decode().split("\n")
-    d = {}
+    d: dict[str, str] = {}
     for line in lines:
-      line = line.strip()
-      if not line or line.startswith("#"):
-        continue
-      if "=" in line:
-        name, value = line.split("=", 1)
-        d[name] = value
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            name, value = line.split("=", 1)
+            d[name] = value
     return d
+
 
 with ZipFile(parser.parse_args().zip) as f:
     if "META-INF/com/android/metadata" in f.namelist():

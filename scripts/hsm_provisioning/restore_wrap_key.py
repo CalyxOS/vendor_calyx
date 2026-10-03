@@ -8,9 +8,17 @@ import pathlib
 import sys
 
 import setup
-from setup import create_auth_password, create_auth_key, provision_hsm, provision_wrap_key
+from setup import (
+    create_auth_key,
+    create_auth_password,
+    provision_hsm,
+    provision_wrap_key,
+)
 
-KEEP_PATH = os.getenv("KEEP_PATH", os.path.join(pathlib.Path.home(), "CalyxBackupHSM"))
+KEEP_PATH = os.getenv(
+    "KEEP_PATH",
+    os.path.join(pathlib.Path.home(), "CalyxBackupHSM"),
+)
 setup.KEEP_PATH = KEEP_PATH
 
 
@@ -19,7 +27,8 @@ setup.KEEP_PATH = KEEP_PATH
 #  If used for actual restore operation, it would need some polishing
 #
 
-def main():
+
+def main() -> None:
     # receive wrap key via STDIN
     wrap_key_hex = sys.stdin.readline().rstrip()
     wrap_key_bytes = bytes.fromhex(wrap_key_hex)
@@ -31,12 +40,21 @@ def main():
     # create and get auth keys
     # TODO adjust key IDs
     password_signing = create_auth_password(auth_key_dir, "signing", "4")
-    admin_private_key, admin_public_key = create_auth_key(auth_key_dir, "admin", "4")
+    admin_private_key, admin_public_key = create_auth_key(
+        auth_key_dir,
+        "admin",
+        "4",
+    )
     _, audit_public_key = create_auth_key(auth_key_dir, "audit", "4")
 
     # provision backup HSM
-    provision_hsm(admin_private_key, admin_public_key, password_signing, audit_public_key,
-                  lambda s: provision_wrap_key(s, wrap_key_bytes))
+    provision_hsm(
+        admin_private_key,
+        admin_public_key,
+        password_signing,
+        audit_public_key,
+        lambda s: provision_wrap_key(s, wrap_key_bytes),
+    )
 
 
 if __name__ == "__main__":
