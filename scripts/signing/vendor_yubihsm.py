@@ -17,7 +17,7 @@ import re
 import struct
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
@@ -898,6 +898,289 @@ def limit_ondemand_objects(
         raise RuntimeError(
             "Failed to make enough space on the HSM in limit_ondemand_objects.",
         )
+
+
+def _resolve_domain_and_capabilities(
+    *,
+    is_ondemand: bool,
+    exportable_domain: str,
+    ondemand_domain: str,
+    opaque_capabilities: str,
+) -> tuple[str, str]:
+    """
+    Choose the domain and capabilities to import a key ID's objects with.
+
+    A key gets exportable_domain (plus ondemand_domain if it is on-demand)
+    and the base capabilities with exportable-under-wrap appended.
+
+    Returns:
+        (domain, opaque_capabilities) to import with.
+    """
+    domain = (
+        f"{exportable_domain},{ondemand_domain}"
+        if is_ondemand
+        else exportable_domain
+    )
+    return (
+        domain,
+        f"{opaque_capabilities},exportable-under-wrap",
+    )
+
+
+def ensure_keys_are_available(
+    config: YubiHsmConfig,
+    key_dir: Path,
+    key_ids: Sequence[str],
+    *,
+    restore_mode: bool,
+    is_ondemand: Callable[[int], bool],
+    verify_key_ids: bool = True,
+    exportable_domain: str,
+    ondemand_domain: str,
+    opaque_capabilities: str,
+    after_key: Callable[[str], None] | None = None,
+) -> None:
+    """
+    Ensure each of key_ids' asymmetric key and certificate are loaded
+    onto the HSM, importing from disk (evicting other on-demand
+    objects to make room if needed) whatever is not already present.
+
+    Only objects that is_ondemand marks as on-demand are evicted, also
+    among the objects outside key_ids in the searched domains.
+
+    An object evicted to make room for a key or certificate that then
+    fails to import is imported again from its backup before the error
+    is raised. Evictions made for an object that did load stay.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_dir: Directory backups are read from.
+        key_ids: The "0x%04x"-style key IDs to ensure are available,
+            e.g. "0x2000".
+        restore_mode: If True, a key/cert missing its on-disk backup is
+            skipped rather than treated as an error, unless that leaves
+            nothing to load for the key. Every key_id, not just an
+            on-demand one, is considered, and the domain search also
+            covers exportable_domain.
+        is_ondemand: True if an object ID may be freely evicted and
+            reloaded, i.e. it was exported under wrap.
+        verify_key_ids: If False, skip filtering key_ids down to the
+            on-demand subset first, which restore_mode keeps whole.
+        exportable_domain: Domain assigned to exportable keys/certs.
+        ondemand_domain: Domain assigned to on-demand keys/certs, and
+            searched for eviction candidates.
+        opaque_capabilities: Base capabilities for imported
+            certificates, before the exportable-under-wrap suffix.
+        after_key: Called with each key ID once its key and certificate
+            are loaded, unless both were loaded already.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If a key or cert cannot be found on disk outside
+            restore_mode, if no eviction candidate can be found while
+            space is needed, or if restore_mode leaves nothing to load
+            for a key.
+        yubihsm.exceptions.YubiHsmError: If the SDK session or an
+            operation fails.
+    """
+    from yubihsm.defs import OBJECT
+
+    if verify_key_ids:
+        key_ids = [
+            key_id
+            for key_id in key_ids
+            if is_ondemand(int(key_id, 16)) or restore_mode
+        ]
+
+    deletion_ineligible_keys = {int(key_id, 16) for key_id in key_ids}
+    deletion_ineligible_certs = set(deletion_ineligible_keys)
+
+    lookup_domain = ondemand_domain
+    if restore_mode:
+        lookup_domain = f"{exportable_domain},{ondemand_domain}"
+    existing = list_restorable_objects(config, lookup_domain)
+    middle_id = existing[len(existing) // 2].id if existing else 0
+
+    for key_id in key_ids:
+        object_id = int(key_id, 16)
+        should_make_space = should_make_space_on_hsm(get_storage_info(config))
+        deletion_candidate_key_id: int | None = None
+        deletion_candidate_cert_id: int | None = None
+        key_found = False
+        cert_found = False
+        prefer_lowest_id = object_id >= middle_id
+
+        for obj in existing:
+            if obj.id == object_id:
+                if obj.object_type == OBJECT.ASYMMETRIC_KEY:
+                    key_found = True
+                elif obj.object_type == OBJECT.OPAQUE:
+                    cert_found = True
+                continue
+
+            if not should_make_space:
+                if key_found and cert_found:
+                    break
+                continue
+
+            if (
+                (
+                    deletion_candidate_key_id is None
+                    or deletion_candidate_cert_id is None
+                )
+                and is_object_available_on_disk(
+                    key_dir,
+                    obj.id,
+                    obj.object_type,
+                )
+                and is_ondemand(obj.id)
+            ):
+                if (
+                    obj.object_type == OBJECT.ASYMMETRIC_KEY
+                    and obj.id not in deletion_ineligible_keys
+                ):
+                    if not prefer_lowest_id:
+                        deletion_candidate_key_id = obj.id
+                    elif deletion_candidate_key_id is None:
+                        deletion_candidate_key_id = obj.id
+                elif (
+                    obj.object_type == OBJECT.OPAQUE
+                    and obj.id not in deletion_ineligible_certs
+                ):
+                    if not prefer_lowest_id:
+                        deletion_candidate_cert_id = obj.id
+                    elif deletion_candidate_cert_id is None:
+                        deletion_candidate_cert_id = obj.id
+
+        if key_found and cert_found:
+            continue
+
+        key_missing_on_disk = False
+        if not key_found:
+            if not _is_nonempty_regular_file(
+                key_dir / f"{key_id}-asymmetric-key.yhw",
+            ):
+                message = (
+                    f"Wanted to load key {key_id} but could not find a "
+                    "wrapped copy on disk"
+                )
+                if not restore_mode:
+                    raise RuntimeError(message)
+                print(message, file=sys.stderr)
+                key_missing_on_disk = True
+            if should_make_space and deletion_candidate_key_id is None:
+                raise RuntimeError(
+                    f"Could not find any on-demand key to delete to make "
+                    f"room for {key_id}",
+                )
+
+        cert_missing_on_disk = False
+        if not cert_found:
+            if not is_object_available_on_disk(
+                key_dir,
+                object_id,
+                OBJECT.OPAQUE,
+            ):
+                message = (
+                    f"Wanted to load cert {key_id} but could not find it "
+                    "on disk"
+                )
+                if not restore_mode:
+                    raise RuntimeError(message)
+                print(message, file=sys.stderr)
+                cert_missing_on_disk = True
+            if should_make_space and deletion_candidate_cert_id is None:
+                raise RuntimeError(
+                    f"Could not find any on-demand cert to delete to make "
+                    f"room for {key_id}",
+                )
+
+        if (
+            restore_mode
+            and (key_found or key_missing_on_disk)
+            and (cert_found or cert_missing_on_disk)
+        ):
+            raise RuntimeError(
+                f"Failed to find any on-disk keys or certs for {key_id}",
+            )
+
+        domain, resolved_opaque_capabilities = _resolve_domain_and_capabilities(
+            is_ondemand=is_ondemand(object_id),
+            exportable_domain=exportable_domain,
+            ondemand_domain=ondemand_domain,
+            opaque_capabilities=opaque_capabilities,
+        )
+
+        if not key_found and not key_missing_on_disk:
+            # Decode before evicting, so an unreadable backup fails with the
+            # HSM still untouched.
+            backup = key_dir / f"{key_id}-asymmetric-key.yhw"
+            wrapped = decode_wrapped_key_backup(
+                backup.read_bytes(),
+                str(backup),
+            )
+            if deletion_candidate_key_id is not None:
+                delete_object(
+                    config,
+                    deletion_candidate_key_id,
+                    OBJECT.ASYMMETRIC_KEY,
+                )
+                deletion_ineligible_keys.add(deletion_candidate_key_id)
+            try:
+                import_wrapped_key(config, key_id, wrapped)
+            except Exception:
+                if deletion_candidate_key_id is not None:
+                    evicted = f"0x{deletion_candidate_key_id:04x}"
+                    evicted_backup = key_dir / f"{evicted}-asymmetric-key.yhw"
+                    import_wrapped_key(
+                        config,
+                        evicted,
+                        decode_wrapped_key_backup(
+                            evicted_backup.read_bytes(),
+                            str(evicted_backup),
+                        ),
+                    )
+                raise
+
+        if not cert_found and not cert_missing_on_disk:
+            certificate_pem = (key_dir / f"{key_id}.x509.pem").read_bytes()
+            if deletion_candidate_cert_id is not None:
+                delete_object(config, deletion_candidate_cert_id, OBJECT.OPAQUE)
+                deletion_ineligible_certs.add(deletion_candidate_cert_id)
+            try:
+                import_certificate(
+                    config,
+                    key_id=key_id,
+                    domains=domain,
+                    capabilities=resolved_opaque_capabilities,
+                    certificate_pem=certificate_pem,
+                )
+            except Exception:
+                if deletion_candidate_cert_id is not None:
+                    evicted = f"0x{deletion_candidate_cert_id:04x}"
+                    evicted_domain, evicted_capabilities = (
+                        _resolve_domain_and_capabilities(
+                            is_ondemand=True,
+                            exportable_domain=exportable_domain,
+                            ondemand_domain=ondemand_domain,
+                            opaque_capabilities=opaque_capabilities,
+                        )
+                    )
+                    import_certificate(
+                        config,
+                        key_id=evicted,
+                        domains=evicted_domain,
+                        capabilities=evicted_capabilities,
+                        certificate_pem=(
+                            key_dir / f"{evicted}.x509.pem"
+                        ).read_bytes(),
+                    )
+                raise
+
+        if after_key is not None:
+            after_key(key_id)
 
 
 def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:
