@@ -80,6 +80,25 @@ class UnsupportedVendorError(RuntimeError):
     """
 
 
+def describe_vendor_error(error: Exception, flag: str) -> str:
+    """
+    Describe a vendor initialization failure, naming the flag that
+    selects Python orchestration when the vendor is unsupported.
+
+    Args:
+        error: The UnsupportedVendorError or RuntimeError raised.
+        flag: The environment flag the caller is running under.
+
+    Returns:
+        The message to report.
+    """
+    if isinstance(error, UnsupportedVendorError):
+        return (
+            f"{error}. Unset {flag} to use Bash orchestration for this vendor."
+        )
+    return str(error)
+
+
 def is_vendor_initialization_needed(
     environment: MutableMapping[str, str],
 ) -> bool:
