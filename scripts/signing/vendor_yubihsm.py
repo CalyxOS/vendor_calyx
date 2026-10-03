@@ -29,7 +29,7 @@ from .vendor_yubihsm_connector import (
 
 if TYPE_CHECKING:
     from yubihsm.core import AuthSession, DeviceInfo, LogEntry
-    from yubihsm.defs import ALGORITHM, OBJECT
+    from yubihsm.defs import ALGORITHM, CAPABILITY, OBJECT
 
 
 _RECENT_LOG_BYTES = 1 << 20
@@ -351,6 +351,59 @@ def parse_domains(value: str) -> int:
     return domains
 
 
+_SHELL_CAPABILITY_NAMES = {
+    "put-asymmetric-key": "PUT_ASYMMETRIC",
+    "put-mac-key": "PUT_HMAC_KEY",
+    "put-public-wrap-key": "PUBLIC_WRAP_KEY_WRITE",
+    "delete-public-wrap-key": "PUBLIC_WRAP_KEY_DELETE",
+}
+
+
+def parse_capabilities(value: str) -> CAPABILITY:
+    """
+    Parse a capability-list string into the SDK's CAPABILITY flag form.
+
+    Matches yubihsm-shell's yh_string_to_capabilities(). "all" and
+    "none" in any case are the full and the empty set, and anything else
+    is a list of capability names separated by any of ``:``, ``,``, ``;``
+    and ``|``. Each name matches a CAPABILITY member case-insensitively,
+    with kebab-case for SCREAMING_SNAKE_CASE ("exportable-under-wrap"
+    for CAPABILITY.EXPORTABLE_UNDER_WRAP), except for the four names
+    libyubihsm spells differently from the SDK. Empty segments are
+    skipped, as yubihsm-shell's strtok_r() parsing skips them.
+
+    Args:
+        value: A capability string as used throughout this codebase,
+            e.g. "sign-pkcs,exportable-under-wrap".
+
+    Returns:
+        The combined CAPABILITY flags.
+
+    Raises:
+        ValueError: If a name does not match any known capability.
+    """
+    from yubihsm.defs import CAPABILITY
+
+    if value.casefold() == "all":
+        return ~CAPABILITY(0)
+    if value.casefold() == "none":
+        return CAPABILITY(0)
+    capabilities = CAPABILITY(0)
+    for token in _DOMAIN_SEPARATORS.split(value):
+        if not token:
+            continue
+        name = token.casefold()
+        member = _SHELL_CAPABILITY_NAMES.get(name) or name.upper().replace(
+            "-",
+            "_",
+        )
+        try:
+            capabilities |= CAPABILITY[member]
+        except KeyError as error:
+            raise ValueError(f"unknown capability {token!r}") from error
+    return capabilities
+
+
 @dataclass(frozen=True, slots=True)
 class RestorableObject:
     """
@@ -552,6 +605,37 @@ def is_object_available_on_disk(
     return _is_nonempty_regular_file(path) and _parses_as_pem_certificate(path)
 
 
+def _run_write_with_session(
+    config: YubiHsmConfig,
+    operation: Callable[[AuthSession], None],
+    already_done: int,
+) -> None:
+    """
+    Run a device write as _run_with_session() does, and take the error
+    already_done on the retry for success, since the first attempt can take
+    effect on the device before its connection fails.
+
+    Args:
+        config: Connection settings.
+        operation: The write, run against an authenticated session.
+        already_done: The error the device answers a repeated write with.
+    """
+    from yubihsm.exceptions import YubiHsmDeviceError
+
+    attempts = 0
+
+    def write(session: AuthSession) -> None:
+        nonlocal attempts
+        attempts += 1
+        try:
+            operation(session)
+        except YubiHsmDeviceError as error:
+            if attempts == 1 or error.code != already_done:
+                raise
+
+    _run_with_session(lambda: connect_yubihsm_session(config), write)
+
+
 def delete_object(
     config: YubiHsmConfig,
     object_id: int,
@@ -574,11 +658,12 @@ def delete_object(
         RuntimeError: If a managed connector fails to restart after a
             connector-level failure.
     """
+    from yubihsm.defs import ERROR
 
     def operation(session: AuthSession) -> None:
         session.get_object(object_id, object_type).delete()
 
-    _run_with_session(lambda: connect_yubihsm_session(config), operation)
+    _run_write_with_session(config, operation, ERROR.OBJECT_NOT_FOUND)
 
 
 def _object_type_name(object_type: OBJECT) -> str:
@@ -587,6 +672,157 @@ def _object_type_name(object_type: OBJECT) -> str:
     return {OBJECT.ASYMMETRIC_KEY: "asymmetric-key", OBJECT.OPAQUE: "opaque"}[
         object_type
     ]
+
+
+_PKCS11_ALGORITHM_NAMES = {
+    "RSA:2048": "RSA_2048",
+    "RSA:3072": "RSA_3072",
+    "RSA:4096": "RSA_4096",
+}
+
+
+def generate_asymmetric_key(
+    config: YubiHsmConfig,
+    *,
+    key_id: str,
+    label: str,
+    domains: str,
+    capabilities: str,
+    algorithm: str,
+) -> None:
+    """
+    Generate a new asymmetric key on the HSM.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_id: The ID to give the new key, e.g. "0x2000".
+        label: A text label for the key.
+        domains: Domain(s) to assign the key to, e.g. "3".
+        capabilities: Capabilities to give the key, e.g. "sign-pkcs".
+        algorithm: "RSA:2048", "RSA:3072" or "RSA:4096".
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If algorithm is none of those.
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails, e.g. because an object with this ID
+            already exists.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from yubihsm.defs import ALGORITHM, ERROR
+    from yubihsm.objects import AsymmetricKey
+
+    try:
+        algorithm_name = _PKCS11_ALGORITHM_NAMES[algorithm]
+    except KeyError:
+        raise ValueError(
+            f"Unknown algorithm '{algorithm}'; cannot convert to yubico",
+        ) from None
+    yubihsm_algorithm = ALGORITHM[algorithm_name]
+    object_id = int(key_id, 16)
+    domain_bits = parse_domains(domains)
+    capability_flags = parse_capabilities(capabilities)
+
+    def operation(session: AuthSession) -> None:
+        AsymmetricKey.generate(
+            session,
+            object_id,
+            label,
+            domain_bits,
+            capability_flags,
+            yubihsm_algorithm,
+        )
+
+    _run_write_with_session(config, operation, ERROR.OBJECT_EXISTS)
+
+
+def get_certificate(config: YubiHsmConfig, key_id: str) -> bytes:
+    """
+    Return an opaque X.509 certificate object's data as PEM.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_id: The object's ID, e.g. "0x0000".
+
+    Returns:
+        The certificate, PEM-encoded.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails, e.g. because no object with this ID
+            exists.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from cryptography.hazmat.primitives.serialization import Encoding
+    from cryptography.x509 import load_der_x509_certificate
+    from yubihsm.objects import Opaque
+
+    object_id = int(key_id, 16)
+
+    def operation(session: AuthSession) -> bytes:
+        data = Opaque(session, object_id).get()
+        certificate = load_der_x509_certificate(data)
+        return certificate.public_bytes(Encoding.PEM)
+
+    return _run_with_session(lambda: connect_yubihsm_session(config), operation)
+
+
+def import_certificate(
+    config: YubiHsmConfig,
+    *,
+    key_id: str,
+    domains: str,
+    capabilities: str,
+    certificate_pem: bytes,
+) -> None:
+    """
+    Import an X.509 certificate as an opaque object.
+
+    The certificate is stored as-is, not wrapped, since it carries no
+    private key material.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_id: The ID to give the imported object, e.g. "0x2000".
+        domains: Domain(s) to assign the object to, e.g. "3".
+        capabilities: Capabilities to give the object, e.g.
+            "get-opaque".
+        certificate_pem: The certificate, PEM-encoded.
+
+    Returns:
+        None.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails, e.g. because an object with this ID
+            already exists.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from cryptography.x509 import load_pem_x509_certificate
+    from yubihsm.defs import ERROR
+    from yubihsm.objects import Opaque
+
+    object_id = int(key_id, 16)
+    domain_bits = parse_domains(domains)
+    capability_flags = parse_capabilities(capabilities)
+    certificate = load_pem_x509_certificate(certificate_pem)
+
+    def operation(session: AuthSession) -> None:
+        Opaque.put_certificate(
+            session,
+            object_id,
+            "",
+            domain_bits,
+            capability_flags,
+            certificate,
+        )
+
+    _run_write_with_session(config, operation, ERROR.OBJECT_EXISTS)
 
 
 def limit_ondemand_objects(
@@ -751,6 +987,7 @@ def import_wrapped_key(
         RuntimeError: If a managed connector fails to restart after a
             connector-level failure.
     """
+    from yubihsm.defs import ERROR
     from yubihsm.objects import WrapKey
 
     wrap_id = int(config.wrap_id, 16)
@@ -765,7 +1002,7 @@ def import_wrapped_key(
                 f"match expected key id {key_id}",
             )
 
-    _run_with_session(lambda: connect_yubihsm_session(config), operation)
+    _run_write_with_session(config, operation, ERROR.OBJECT_EXISTS)
 
 
 def connect_yubihsm_session(config: YubiHsmConfig) -> AuthSession:

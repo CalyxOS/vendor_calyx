@@ -480,6 +480,31 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
+    generate_asymmetric_key_parser = subparsers.add_parser(
+        "generate-asymmetric-key",
+    )
+    _add_yubihsm_arguments(generate_asymmetric_key_parser)
+    generate_asymmetric_key_parser.add_argument(
+        "--key-id",
+        required=True,
+    )
+    generate_asymmetric_key_parser.add_argument(
+        "--label",
+        required=True,
+    )
+    generate_asymmetric_key_parser.add_argument(
+        "--domain",
+        required=True,
+    )
+    generate_asymmetric_key_parser.add_argument(
+        "--capabilities",
+        required=True,
+    )
+    generate_asymmetric_key_parser.add_argument(
+        "--algorithm",
+        required=True,
+    )
+
     attest_key = subparsers.add_parser("attest-key")
     _add_yubihsm_arguments(attest_key)
     attest_key.add_argument(
@@ -534,6 +559,36 @@ def build_parser() -> argparse.ArgumentParser:
         default="-",
     )
 
+    get_certificate_parser = subparsers.add_parser("get-certificate")
+    _add_yubihsm_arguments(get_certificate_parser)
+    get_certificate_parser.add_argument(
+        "--key-id",
+        required=True,
+    )
+    get_certificate_parser.add_argument(
+        "--output",
+        default="-",
+    )
+
+    import_certificate_parser = subparsers.add_parser("import-certificate")
+    _add_yubihsm_arguments(import_certificate_parser)
+    import_certificate_parser.add_argument(
+        "--key-id",
+        required=True,
+    )
+    import_certificate_parser.add_argument(
+        "--input",
+        default="-",
+    )
+    import_certificate_parser.add_argument(
+        "--domain",
+        required=True,
+    )
+    import_certificate_parser.add_argument(
+        "--capabilities",
+        required=True,
+    )
+
     limit_ondemand_objects_parser = subparsers.add_parser(
         "limit-ondemand-objects",
     )
@@ -567,6 +622,15 @@ def build_parser() -> argparse.ArgumentParser:
         "get-loaded-key-status",
     )
     _add_yubihsm_arguments(get_loaded_key_status_parser)
+
+    object_exists_parser = subparsers.add_parser("yubihsm-object-exists")
+    _add_yubihsm_arguments(object_exists_parser)
+    object_exists_parser.add_argument("--key-id", required=True)
+    object_exists_parser.add_argument(
+        "--type",
+        choices=("key", "certificate"),
+        required=True,
+    )
 
     start_connector = subparsers.add_parser("start-yubihsm-connector")
     _add_yubihsm_connector_arguments(start_connector)
@@ -1168,6 +1232,30 @@ def _cmd_update_keys(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_generate_asymmetric_key(args: argparse.Namespace) -> int:
+    """
+    Generate an asymmetric key on the YubiHSM.
+
+    Args:
+        args: Parsed namespace containing connector and key settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import generate_asymmetric_key
+
+    config = _yubihsm_config_from_args(args)
+    generate_asymmetric_key(
+        config,
+        key_id=args.key_id,
+        label=args.label,
+        domains=args.domain,
+        capabilities=args.capabilities,
+        algorithm=args.algorithm,
+    )
+    return 0
+
+
 def _cmd_attest_key(args: argparse.Namespace) -> int:
     """
     Write a YubiHSM key's attestation certificate.
@@ -1229,6 +1317,46 @@ def _cmd_import_wrapped_key(args: argparse.Namespace) -> int:
         config,
         args.key_id,
         decode_wrapped_key_backup(_read_binary(args.input), args.input),
+    )
+    return 0
+
+
+def _cmd_get_certificate(args: argparse.Namespace) -> int:
+    """
+    Write a YubiHSM key's certificate.
+
+    Args:
+        args: Parsed namespace containing connector and key settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import get_certificate
+
+    config = _yubihsm_config_from_args(args)
+    write_binary(args.output, get_certificate(config, args.key_id))
+    return 0
+
+
+def _cmd_import_certificate(args: argparse.Namespace) -> int:
+    """
+    Import a certificate onto the YubiHSM.
+
+    Args:
+        args: Parsed namespace containing connector and key settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import import_certificate
+
+    config = _yubihsm_config_from_args(args)
+    import_certificate(
+        config,
+        key_id=args.key_id,
+        domains=args.domain,
+        capabilities=args.capabilities,
+        certificate_pem=_read_binary(args.input),
     )
     return 0
 
@@ -1306,6 +1434,29 @@ def _cmd_get_loaded_key_status(args: argparse.Namespace) -> int:
     status = get_loaded_key_status(config)
     for object_id in sorted(status.fully_loaded_ids):
         print(f"{object_id:#06x}")
+    return 0
+
+
+def _cmd_yubihsm_object_exists(args: argparse.Namespace) -> int:
+    """
+    Print "yes" if the YubiHSM holds the key's asymmetric key or X.509
+    certificate object, or "no".
+
+    Args:
+        args: Parsed namespace containing connector settings, the key ID
+            and which of its objects to look for.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import get_loaded_key_status
+
+    status = get_loaded_key_status(_yubihsm_config_from_args(args))
+    if args.type == "key":
+        loaded = status.loaded_key_ids
+    else:
+        loaded = status.loaded_cert_ids
+    print("yes" if int(args.key_id, 16) in loaded else "no")
     return 0
 
 
@@ -1496,12 +1647,16 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "provision-rsa-key": _cmd_provision_rsa_key,
     "migrate-runtime-key": _cmd_migrate_runtime_key,
     "update-keys": _cmd_update_keys,
+    "generate-asymmetric-key": _cmd_generate_asymmetric_key,
     "attest-key": _cmd_attest_key,
     "export-wrapped-key": _cmd_export_wrapped_key,
     "import-wrapped-key": _cmd_import_wrapped_key,
+    "get-certificate": _cmd_get_certificate,
+    "import-certificate": _cmd_import_certificate,
     "limit-ondemand-objects": _cmd_limit_ondemand_objects,
     "get-device-identity": _cmd_get_device_identity,
     "get-loaded-key-status": _cmd_get_loaded_key_status,
+    "yubihsm-object-exists": _cmd_yubihsm_object_exists,
     "extract-audit-log": _cmd_extract_audit_log,
     "start-yubihsm-connector": _cmd_start_yubihsm_connector,
     "stop-yubihsm-connector": _cmd_stop_yubihsm_connector,
