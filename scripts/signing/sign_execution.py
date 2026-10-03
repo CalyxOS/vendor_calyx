@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 from collections import deque
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import FrameType
@@ -355,6 +355,7 @@ def sign_builds(
     archive_dir: Path,
     jobs: int,
     original_tmpdir: Path,
+    environment: Mapping[str, str] | None = None,
 ) -> int:
     """
     Sign each (device, build, target_build) and archive the signed output.
@@ -368,6 +369,8 @@ def sign_builds(
         jobs: Maximum concurrent release.sh invocations (NUM_SIGN_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
             (ORIGINAL_TMPDIR, defaulting to /dev/shm).
+        environment: Environment the jobs start from, the process
+            environment unless given.
 
     Returns:
         0 if every device signed successfully, 1 otherwise, never a
@@ -384,7 +387,7 @@ def sign_builds(
         tempfile.mkdtemp(prefix="sign_tmp.", dir=str(original_tmpdir)),
     )
     base_env = {
-        **os.environ,
+        **(os.environ if environment is None else environment),
         "TMPDIR": str(tmpdir),
         "ENSURE_KEY_IS_AVAILABLE": "n",
     }
@@ -442,6 +445,7 @@ def generate_incrementals(
     generate_delta_script: Path,
     jobs: int,
     original_tmpdir: Path,
+    environment: Mapping[str, str] | None = None,
 ) -> int:
     """
     Generate each (device, old_build, new_build) incremental.
@@ -456,6 +460,8 @@ def generate_incrementals(
             (NUM_INCREMENTAL_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
             (ORIGINAL_TMPDIR, defaulting to /dev/shm).
+        environment: Environment the jobs start from, the process
+            environment unless given.
 
     Returns:
         0 if every incremental generated successfully, 1 otherwise, never
@@ -465,7 +471,7 @@ def generate_incrementals(
         tempfile.mkdtemp(prefix="incremental_tmp.", dir=str(original_tmpdir)),
     )
     base_env = {
-        **os.environ,
+        **(os.environ if environment is None else environment),
         "TMPDIR": str(tmpdir),
         "ENSURE_KEY_IS_AVAILABLE": "n",
     }

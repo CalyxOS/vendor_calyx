@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import signal
 import stat
 import subprocess
 from pathlib import Path
@@ -358,6 +359,38 @@ def test_sign_builds_leaves_no_partial_release_in_the_archive(
     ]
 
 
+def test_sign_builds_starts_its_jobs_from_the_given_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from signing import sign_execution
+
+    release_script = tmp_path / "release.sh"
+    release_script.write_text(
+        "#!/bin/sh\n"
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n'
+        'printf %s "$MARKER" > "out/release-$1-$BUILD_NUMBER/marker"\n',
+    )
+    release_script.chmod(0o755)
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("MARKER", raising=False)
+
+    status = sign_execution.sign_builds(
+        [("bramble", 100, 100)],
+        release_script=release_script,
+        archive_dir=Path("archive"),
+        jobs=1,
+        original_tmpdir=tmp_path / "tmp",
+        environment={**os.environ, "MARKER": "given"},
+    )
+
+    assert status == 0
+    marker = tmp_path / "archive" / "release-bramble-100" / "marker"
+    assert marker.read_text() == "given"
+
+
 def test_sign_builds_respects_job_concurrency_ceiling(tmp_path: Path) -> None:
     counter_lock = tmp_path / "counter.lock"
     counter_file = tmp_path / "counter"
@@ -512,6 +545,17 @@ echo "caller survived, cli exited $status"
         timeout=5,
     ), "the release job's child process was not terminated"
     assert list(original_tmpdir.iterdir()) == []
+
+
+def test_exit_on_signals_leaves_an_ignored_signal_ignored() -> None:
+    from signing.release_execution import exit_on_signals
+
+    previous = signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    try:
+        with exit_on_signals():
+            assert signal.getsignal(signal.SIGHUP) == signal.SIG_IGN
+    finally:
+        signal.signal(signal.SIGHUP, previous)
 
 
 def test_generate_incrementals_writes_deltas_and_aggregates_failures(
