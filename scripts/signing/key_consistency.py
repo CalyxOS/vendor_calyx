@@ -11,8 +11,9 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from .models import KeyReference
@@ -127,3 +128,45 @@ def require_signature_from_public_key(
             f"signature does not verify under the supplied public key "
             f"{public_key}",
         )
+
+
+_HASHES: dict[str, type[hashes.SHA256 | hashes.SHA384 | hashes.SHA512]] = {
+    "sha256": hashes.SHA256,
+    "sha384": hashes.SHA384,
+    "sha512": hashes.SHA512,
+}
+
+
+def require_signature_from_certificate(
+    certificate: Path,
+    data: bytes,
+    signature: bytes,
+    hash_name: str,
+) -> None:
+    """
+    Require an RSA PKCS#1 v1.5 signature over data to verify under a
+    certificate's public key.
+
+    Args:
+        certificate: PEM certificate the signed artifact will carry.
+        data: The signed data, before hashing.
+        signature: Raw RSA signature.
+        hash_name: "sha256", "sha384" or "sha512".
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If the certificate's key is not RSA or the signature
+            does not verify under it.
+        OSError: If the certificate cannot be read.
+    """
+    key = x509.load_pem_x509_certificate(certificate.read_bytes()).public_key()
+    if not isinstance(key, rsa.RSAPublicKey):
+        raise ValueError(f"{certificate} does not hold an RSA public key")
+    try:
+        key.verify(signature, data, padding.PKCS1v15(), _HASHES[hash_name]())
+    except InvalidSignature as error:
+        raise ValueError(
+            f"signature does not verify under the certificate {certificate}",
+        ) from error
