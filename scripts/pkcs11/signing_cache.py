@@ -27,7 +27,6 @@ def main():
                         help="use to check cache and use cached file if available")
     parser.add_argument('--to-cache', nargs='+', metavar=("command", "arguments"),
                         help="save output file to cache if there was a cache miss")
-    print(sys.argv)
     args = parser.parse_known_args()[0]
     if args.from_cache:
         from_cache(sys.argv[2:])
