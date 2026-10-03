@@ -14,6 +14,7 @@ genrule {
         "release.sh",
         "sign.sh",
         "sign-app.sh",
+        "signing/**/*.py",
         "**/*keymapper*",
         "**/*metadata*",
         "pkcs11/**/*",
