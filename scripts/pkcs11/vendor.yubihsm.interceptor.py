@@ -31,7 +31,9 @@ sys.path.insert(0, str(SCRIPT_DIR.parent))
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from signing.apksigner_batch import run_in_batch
+from signing.signing_server import request
 from signing.vendor_yubihsm import (
+    AuditLogNotAcknowledged,
     YubiHsmConfig,
     extract_and_save_audit_log,
     restart_connector,
@@ -186,6 +188,17 @@ def extract_logs(comment: str) -> None:
             "Cannot extract logs when there is nowhere appropriate to "
             "extract them to.",
         )
+    server_socket = os.environ.get("SIGNING_SERVER_SOCKET")
+    response = server_socket and request(
+        Path(server_socket),
+        "yubihsm_extract_audit_log",
+        log_path=log_path,
+        comment=comment,
+    )
+    if response:
+        if "unacknowledged" in response:
+            raise AuditLogNotAcknowledged(response["unacknowledged"])
+        return
     config = YubiHsmConfig(
         connector_url=os.environ.get(
             "YUBIHSM_CONNECTOR",
