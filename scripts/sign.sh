@@ -6,6 +6,12 @@
 
 set -euo pipefail
 
+if [ "${USE_PYTHON_SIGN_ORCHESTRATION:-}" = "y" ]; then
+  _sign_orchestrate_scriptpath=$(cd "$(dirname "$0")";pwd -P)
+  PYTHONPATH="$_sign_orchestrate_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing sign-orchestrate
+fi
+
 readonly sign_pkcs11_scriptpath=$(cd "$(dirname "$0")/pkcs11";pwd -P)
 readonly sign_scriptpath=$(cd "$(dirname "$0")";pwd -P)
 readonly sign_devices_path=$(realpath "${DEVICES_FILE:-$sign_scriptpath/../../../calyx/scripts/vars/devices}")
