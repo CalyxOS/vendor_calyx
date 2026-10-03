@@ -21,6 +21,7 @@ unset KEY_ID
 pkcs11-tool_for_yubihsm() {
   PKCS11_PIN=$PKCS11_PIN \
   YUBIHSM_PKCS11_CONF=<(generate_yubihsm_pkcs11_library_config) \
+  LD_PRELOAD=$PKCS11_MODULE${LD_PRELOAD:+:$LD_PRELOAD} \
     "$UNDERLYING_PKCS11_TOOL_BIN" "$@" || return $?
 }
 
