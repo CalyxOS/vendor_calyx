@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, TEST_METADATA, run, run_cli, sha256
+from signing.keymap import load_keymapper
+from signing.metadata import load_metadata
 
 
 @pytest.fixture(autouse=True)
@@ -49,13 +51,13 @@ def make_release_tree(root: Path) -> Path:
 
 
 def _write_avb_custom_keys(root: Path) -> None:
-    for key in (
-        "0x2000.avbpubkey",
-        "bramble/avb_custom_key.img",
-    ):
-        path = root / "keys" / key
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("avb custom key\n")
+    metadata = load_metadata(TEST_METADATA)
+    for keymapper in ("legacy", "id2b"):
+        mapper = load_keymapper({"KEYMAPPER": keymapper}, metadata)
+        for device in metadata.all_devices:
+            key = root / "keys" / mapper.avb_custom_key(device)
+            key.parent.mkdir(parents=True, exist_ok=True)
+            key.write_text("avb custom key\n")
 
 
 @pytest.fixture

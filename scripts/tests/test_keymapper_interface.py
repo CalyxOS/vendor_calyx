@@ -15,6 +15,7 @@ from signing.keymap import (
     Keymapper,
     LegacyKeymapper,
     StaticKeymapper,
+    load_keymapper,
 )
 from signing.metadata import SigningMetadata, load_metadata
 
@@ -117,7 +118,13 @@ source "$1/metadata"
 source "$1/common.include.sh"
 load_keymapper 2>/dev/null
 printf 'map\t%s\n' "${device_specific_key_ids_map[bramble]}"
+shift
+for key_id in "$@"; do
+  per_device=$(get_key_id_is_per_device_yn "$key_id")
+  printf 'per_device\t%s\t%s\n' "$key_id" "$per_device"
+done
 """
+KEY_IDS = ("0x1100", "0x1200", "0x2000", "0x2001", "0x2100", "0x2140", "0xfe00")
 
 
 @pytest.mark.parametrize("name", ("id2b", "static"))
@@ -125,7 +132,7 @@ def test_keymapper_key_id_queries_match_the_bash_keymapper(name: str) -> None:
     environment, create = KEYMAPPERS[name]
     keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
     result = run(
-        ["bash", "-c", _BASH_KEY_IDS, "key-ids-test", SCRIPTS_DIR],
+        ["bash", "-c", _BASH_KEY_IDS, "key-ids-test", SCRIPTS_DIR, *KEY_IDS],
         cwd=SCRIPTS_DIR,
         env={**environment, "DEVICE": "bramble"},
     )
@@ -134,11 +141,17 @@ def test_keymapper_key_id_queries_match_the_bash_keymapper(name: str) -> None:
     assert set(lines[0].split("\t")[1:]) - {""} == set(
         keymapper.device_key_ids("bramble"),
     )
+    assert lines[1:] == [
+        f"per_device\t{key_id}\t"
+        f"{'y' if keymapper.key_id_is_per_device(key_id) else 'n'}"
+        for key_id in KEY_IDS
+    ]
 
 
 def test_legacy_keymapper_has_no_device_key_ids() -> None:
     keymapper = LegacyKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
 
+    assert keymapper.key_id_is_per_device("0x1100")
     with pytest.raises(ValueError, match="does not assign key IDs"):
         keymapper.device_key_ids("bramble")
 
@@ -158,3 +171,39 @@ def test_static_keymapper_refuses_a_short_line(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="keymap.tsv:2: expected four"):
         StaticKeymapper.from_file(keymap_file)
+
+
+@pytest.mark.parametrize(
+    ("environment", "message"),
+    (
+        ({"KEYMAPPER": "nope"}, "Could not find keymapper 'nope'."),
+        ({"KEYMAPPER": "static"}, "Please set KEYMAP_FILE"),
+        (
+            {"KEYMAPPER": "static", "KEYMAP_FILE": "/nonexistent/keymap.tsv"},
+            "Cannot find KEYMAP_FILE /nonexistent/keymap.tsv",
+        ),
+    ),
+    ids=("unknown", "static-without-keymap", "static-missing-keymap"),
+)
+def test_load_keymapper_refuses_unknown_or_unconfigured_keymapper(
+    environment: dict[str, str],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        load_keymapper(environment, load_metadata(SCRIPTS_DIR / "metadata.py"))
+
+
+@pytest.mark.parametrize(
+    "environment",
+    ({}, {"KEYMAPPER": ""}),
+    ids=("unset", "empty"),
+)
+def test_load_keymapper_defaults_to_legacy(
+    environment: dict[str, str],
+) -> None:
+    keymapper = load_keymapper(
+        environment,
+        load_metadata(SCRIPTS_DIR / "metadata.py"),
+    )
+
+    assert isinstance(keymapper, LegacyKeymapper)
