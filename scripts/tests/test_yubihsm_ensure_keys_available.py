@@ -15,10 +15,15 @@ import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from signing.keymap import StaticKeymapper
 from signing.vendor_yubihsm import (
     YubiHsmConfig,
+    ensure_all_keys_available_for_devices,
     ensure_keys_are_available,
+    populate_devices_with_loaded_keys_arrays,
+    restore_all_keys_and_certs,
 )
+from yubihsm.core import LogEntry
 from yubihsm.defs import CAPABILITY, COMMAND, ERROR, OBJECT
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm_emulator import (
@@ -873,3 +878,310 @@ def test_failed_certificate_import_loads_the_evicted_certificate_again(
         domains=ONDEMAND_DOMAINS,
         capabilities=OPAQUE_CAPABILITIES,
     )
+
+
+def _write_keymap(path: Path, rows: list[tuple[str, str, str, str]]) -> None:
+    lines = ["ID\tDevice\tKey Type\tKey"]
+    lines.extend("\t".join(row) for row in rows)
+    path.write_text("\n".join(lines) + "\n")
+
+
+def _audit_loads(device: EmulatedYubiHsm) -> None:
+    """
+    Log every key and certificate import, with the log read up to now.
+    """
+    device.audit(COMMAND.IMPORT_WRAPPED, COMMAND.PUT_OPAQUE)
+    device.log_index = device.log[-1][0]
+
+
+def _restore(yubihsm: Connector, key_dir: Path, log_file: Path) -> None:
+    restore_all_keys_and_certs(
+        config(yubihsm),
+        key_dir,
+        log_file,
+        is_ondemand=lambda object_id: True,
+        exportable_domain="1",
+        ondemand_domain="3",
+        opaque_capabilities="get-opaque",
+    )
+
+
+def _audit_log_sections(log_file: Path) -> list[tuple[str, list[str]]]:
+    sections: list[tuple[str, list[str]]] = []
+    for line in log_file.read_text().splitlines():
+        if line.startswith("# "):
+            sections.append((line.split(" ", 2)[2], []))
+        else:
+            sections[-1][1].append(line)
+    return sections
+
+
+def _assert_load_entries(entries: list[str], object_id: int) -> None:
+    import_entry, opaque_entry = entries
+    assert f"cmd: {COMMAND.IMPORT_WRAPPED:#04x}" in import_entry
+    assert f"tKey: {WRAP_ID:#06x}" in import_entry
+    assert f"2Key: {object_id:#06x}" in import_entry
+    assert f"cmd: {COMMAND.PUT_OPAQUE:#04x}" in opaque_entry
+    assert f"tKey: {object_id:#06x}" in opaque_entry
+
+
+def test_populate_devices_partitions_by_full_key_availability(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm)
+    _key(device, tmp_path, 0x1000, backed_up=False)
+    _certificate(device, tmp_path, 0x1000, backed_up=False)
+    _key(device, tmp_path, 0x1001, backed_up=False)
+    keymap_file = tmp_path / "keymap.tsv"
+    _write_keymap(
+        keymap_file,
+        [
+            ("0x1000", "bramble", "avb", "vbmeta"),
+            ("0x1001", "partial", "avb", "vbmeta"),
+            ("0x1002", "missing", "avb", "vbmeta"),
+        ],
+    )
+
+    with_loaded, without_loaded = populate_devices_with_loaded_keys_arrays(
+        config(yubihsm),
+        StaticKeymapper.from_file(keymap_file),
+        ["bramble", "partial", "missing"],
+    )
+
+    assert with_loaded == ("bramble",)
+    assert without_loaded == ("partial", "missing")
+
+
+def test_populate_devices_rejects_a_device_without_keymap_rows(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    _plug(yubihsm)
+    keymap_file = tmp_path / "keymap.tsv"
+    _write_keymap(keymap_file, [])
+
+    with pytest.raises(RuntimeError, match="has no keys for unknown-device"):
+        populate_devices_with_loaded_keys_arrays(
+            config(yubihsm),
+            StaticKeymapper.from_file(keymap_file),
+            ["unknown-device"],
+        )
+
+
+def test_ensure_all_keys_available_for_devices_unions_multiple_devices(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm)
+    keys = {
+        object_id: _key(device, tmp_path, object_id, loaded=False)
+        for object_id in (0x2000, 0x2001)
+    }
+    for object_id in keys:
+        _certificate(device, tmp_path, object_id, loaded=False)
+    keymap_file = tmp_path / "keymap.tsv"
+    _write_keymap(
+        keymap_file,
+        [
+            ("0x2000", "bramble", "avb", "vbmeta"),
+            ("0x2001", "redfin", "avb", "vbmeta"),
+        ],
+    )
+
+    ensure_all_keys_available_for_devices(
+        config(yubihsm),
+        StaticKeymapper.from_file(keymap_file),
+        tmp_path,
+        ["bramble", "redfin"],
+        is_ondemand=lambda object_id: True,
+        exportable_domain="1",
+        ondemand_domain="3",
+        opaque_capabilities="get-opaque",
+    )
+
+    assert _stored(device) == {
+        (object_id, object_type)
+        for object_id in keys
+        for object_type in (OBJECT.ASYMMETRIC_KEY, OBJECT.OPAQUE)
+    }
+    for object_id, key in keys.items():
+        _assert_restored(device, object_id, key)
+
+
+def test_restore_all_keys_and_certs_logs_each_key_as_it_is_restored(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm)
+    _audit_loads(device)
+    audit_log = tmp_path / "audit.log"
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    for object_id in (0x3000, 0x3001):
+        _key(device, key_dir, object_id, loaded=False)
+        _certificate(device, key_dir, object_id, loaded=False)
+
+    _restore(yubihsm, key_dir, audit_log)
+
+    assert _stored(device) == {
+        (object_id, object_type)
+        for object_id in (0x3000, 0x3001)
+        for object_type in (OBJECT.ASYMMETRIC_KEY, OBJECT.OPAQUE)
+    }
+    sections = _audit_log_sections(audit_log)
+    assert [comment for comment, _ in sections] == [
+        "Function: ensure_key_is_available Result: 0",
+        "Function: ensure_key_is_available Result: 0",
+        "Function: restore_all_keys_and_certs Result: 0",
+    ]
+    _assert_load_entries(sections[0][1], 0x3000)
+    _assert_load_entries(sections[1][1], 0x3001)
+    assert sections[2][1] == []
+    assert device.unread_log() == []
+
+
+def test_restore_all_keys_and_certs_tolerates_missing_backup_half(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    """
+    restore_mode=True: a key with only a cert backup (no wrapped key
+    backup) is tolerated.
+    """
+    device = _plug(yubihsm)
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    certificate = _certificate(device, key_dir, 0x3002, loaded=False)
+
+    _restore(yubihsm, key_dir, tmp_path / "audit.log")
+
+    assert _changes(device) == [(COMMAND.PUT_OPAQUE, 0x3002)]
+    _assert_certificate(
+        device,
+        0x3002,
+        certificate,
+        domains=ONDEMAND_DOMAINS,
+        capabilities=OPAQUE_CAPABILITIES,
+    )
+
+
+def test_restore_all_keys_and_certs_restores_certified_keys_first(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm)
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    for object_id in (0x3000, 0x3002):
+        _key(device, key_dir, object_id, loaded=False)
+        _certificate(device, key_dir, object_id, loaded=False)
+    _key(device, key_dir, 0x3001, loaded=False)
+
+    _restore(yubihsm, key_dir, tmp_path / "audit.log")
+
+    assert _changes(device) == [
+        (COMMAND.IMPORT_WRAPPED, 0x3000),
+        (COMMAND.PUT_OPAQUE, 0x3000),
+        (COMMAND.IMPORT_WRAPPED, 0x3002),
+        (COMMAND.PUT_OPAQUE, 0x3002),
+        (COMMAND.IMPORT_WRAPPED, 0x3001),
+    ]
+
+
+def test_restore_all_keys_and_certs_extracts_log_even_on_failure(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm, total_records=FIXED_RECORDS + 1)
+    _audit_loads(device)
+    audit_log = tmp_path / "audit.log"
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _key(device, key_dir, 0x3003, loaded=False)
+    _certificate(device, key_dir, 0x3003, loaded=False)
+    assert device.storage()[0] == 1
+
+    with pytest.raises(RuntimeError, match="Could not find any on-demand key"):
+        _restore(yubihsm, key_dir, audit_log)
+
+    assert _audit_log_sections(audit_log) == [
+        ("Function: ensure_key_is_available Result: 1", []),
+        ("Function: restore_all_keys_and_certs Result: 1", []),
+    ]
+    assert _changes(device) == []
+
+
+def test_restore_all_keys_and_certs_reports_failure_when_logging_a_key_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    """
+    The device cannot make writing the log file fail, so the per-key
+    extraction raises in its place. The entries it left unread are
+    written with the closing comment, which reports the failure.
+    """
+    import signing.vendor_yubihsm as vendor_yubihsm
+
+    device = _plug(yubihsm)
+    _audit_loads(device)
+    audit_log = tmp_path / "audit.log"
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _key(device, key_dir, 0x3000, loaded=False)
+    _certificate(device, key_dir, 0x3000, loaded=False)
+    comments: list[str] = []
+    extract_and_save = vendor_yubihsm.extract_and_save_audit_log
+
+    def extract(
+        hsm_config: YubiHsmConfig,
+        log_file: Path,
+        comment: str | None = None,
+    ) -> tuple[LogEntry, ...]:
+        assert comment is not None
+        comments.append(comment)
+        if comment.startswith("Function: ensure_key_is_available"):
+            raise OSError("audit log unavailable")
+        return extract_and_save(hsm_config, log_file, comment)
+
+    monkeypatch.setattr(vendor_yubihsm, "extract_and_save_audit_log", extract)
+
+    with pytest.raises(OSError, match="audit log unavailable"):
+        _restore(yubihsm, key_dir, audit_log)
+
+    assert comments == [
+        "Function: ensure_key_is_available Result: 0",
+        "Function: restore_all_keys_and_certs Result: 1",
+    ]
+    sections = _audit_log_sections(audit_log)
+    assert [comment for comment, _ in sections] == [
+        "Function: restore_all_keys_and_certs Result: 1",
+    ]
+    _assert_load_entries(sections[0][1], 0x3000)
+    assert device.unread_log() == []
+
+
+def test_restore_all_keys_and_certs_reports_failure_when_reading_the_log_fails(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    device = _plug(yubihsm)
+    _audit_loads(device)
+    audit_log = tmp_path / "audit.log"
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _key(device, key_dir, 0x3000, loaded=False)
+    _certificate(device, key_dir, 0x3000, loaded=False)
+    device.fail_next(COMMAND.GET_LOG_ENTRIES, ERROR.INVALID_DATA)
+
+    with pytest.raises(YubiHsmDeviceError) as raised:
+        _restore(yubihsm, key_dir, audit_log)
+
+    assert raised.value.code == ERROR.INVALID_DATA
+    sections = _audit_log_sections(audit_log)
+    assert [comment for comment, _ in sections] == [
+        "Function: restore_all_keys_and_certs Result: 1",
+    ]
+    _assert_load_entries(sections[0][1], 0x3000)
+    assert device.unread_log() == []
