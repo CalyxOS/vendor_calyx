@@ -8,7 +8,9 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+import pytest
 from conftest import SCRIPTS_DIR, run
+from signing.metadata import load_metadata
 
 ARRAYS = (
     "keys_avb",
@@ -152,3 +154,63 @@ def test_sourcing_metadata_refuses_a_key_type_map_of_other_values(
 
     assert result.returncode == 7
     assert "does not map strings to strings" in result.stderr
+
+
+def test_metadata_refuses_a_module_without_an_array(
+    tmp_path: Path,
+) -> None:
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    module = tmp_path / "metadata.py"
+    module.write_text(source.replace("ALL_DEVICES = (", "OTHER_DEVICES = ("))
+
+    with pytest.raises(ValueError, match="defines no ALL_DEVICES"):
+        load_metadata(module)
+
+
+def test_metadata_refuses_an_array_that_is_not_a_tuple(
+    tmp_path: Path,
+) -> None:
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    module = tmp_path / "metadata.py"
+    module.write_text(
+        source.replace('KEYS_REPO = ("updater",)', 'KEYS_REPO = ("updater")'),
+    )
+
+    with pytest.raises(ValueError, match="KEYS_REPO .* not a tuple of strings"):
+        load_metadata(module)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    ('"avb": ("keys_avb",),', '1: "keys_avb",'),
+    ids=("tuple-value", "int-key"),
+)
+def test_metadata_refuses_a_key_type_map_of_other_values(
+    tmp_path: Path,
+    entry: str,
+) -> None:
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    module = tmp_path / "metadata.py"
+    module.write_text(source.replace('"avb": "keys_avb",', entry))
+
+    with pytest.raises(ValueError, match="does not map strings to strings"):
+        load_metadata(module)
+
+
+def test_metadata_refuses_a_mapping_to_another_array(tmp_path: Path) -> None:
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    module = tmp_path / "metadata.py"
+    module.write_text(
+        source.replace('"repo": "keys_repo",', '"repo": "keys_extra",')
+        + '\nKEYS_EXTRA = ("updater",)\n',
+    )
+
+    with pytest.raises(ValueError, match="maps repo to keys_extra"):
+        load_metadata(module)
+
+
+def test_metadata_loads_a_module_without_a_py_suffix(tmp_path: Path) -> None:
+    module = tmp_path / "metadata"
+    module.write_text((SCRIPTS_DIR / "metadata.py").read_text())
+
+    assert load_metadata(module) == load_metadata(SCRIPTS_DIR / "metadata.py")
