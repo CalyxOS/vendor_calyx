@@ -159,6 +159,7 @@ prepare_signing_args() {
      [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
     local tmpdir
     tmpdir=$(mktemp -d -p "${TMPDIR:-/dev/shm}" signing.XXXXXXXX) || return $?
+    _signing_args_tmpdir=$tmpdir
     $maybe_dry_run generate_sunpkcs11_config \
       | $maybe_dry_run_ignore tee "$tmpdir/sunpkcs11.cfg" >/dev/null
     local tool=${SIGNING_HELPER_TOOL:-openssl}
@@ -275,6 +276,10 @@ common_cleanup_with_vendor() {
 
 cleanup_signing_full() {
   common_cleanup_with_vendor || true
+  if [ -n "${_signing_args_tmpdir:-}" ]; then
+    rm -rf "$_signing_args_tmpdir" || true
+    _signing_args_tmpdir=
+  fi
 }
 
 maybe_start_logging_all_output() {
