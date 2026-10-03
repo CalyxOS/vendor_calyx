@@ -10,30 +10,38 @@ from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, run, run_cli
+from signing.keymap import LegacyKeymapper
+from signing.metadata import load_metadata
 
 DEVICES = ("bramble", "redfin")
+LEGACY_DEVICES = ("bramble", "raven", "cheetah")
 GOLDEN_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
 
 
 def generate_keymap(
     tmp_path: Path,
     devices: tuple[str, ...] = DEVICES,
+    *,
+    keymapper: str = "id2b",
 ) -> subprocess.CompletedProcess[str]:
     devices_file = tmp_path / "devices"
     devices_file.write_text(f"devices=({' '.join(devices)})\n")
     return run(
         [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={"DEVICES_FILE": str(devices_file), "KEYMAPPER": "id2b"},
+        env={"DEVICES_FILE": str(devices_file), "KEYMAPPER": keymapper},
         check=False,
     )
 
 
 def python_generate_keymap(
+    keymapper: str,
     devices: tuple[str, ...],
 ) -> subprocess.CompletedProcess[str]:
     return run_cli(
         [
             "generate-keymap",
+            "--keymapper",
+            keymapper,
             "--metadata",
             SCRIPTS_DIR / "metadata.py",
             "--devices",
@@ -50,7 +58,7 @@ def test_id2b_keymap_matches_complete_golden_output(tmp_path: Path) -> None:
 
 
 def test_id2b_keymap_cli_matches_complete_golden_output() -> None:
-    result = python_generate_keymap(DEVICES)
+    result = python_generate_keymap("id2b", DEVICES)
 
     assert result.returncode == 0, result.stderr
     assert result.stdout == GOLDEN_KEYMAP.read_text()
@@ -104,6 +112,26 @@ def test_load_keymapper_fails_when_the_keymapper_does_not_load(
 
     assert "status=3" in result.stdout
     assert "Loading keymapper script failed!" in result.stderr
+
+
+def test_python_legacy_keymap_cli_matches_bash(tmp_path: Path) -> None:
+    bash = generate_keymap(tmp_path, LEGACY_DEVICES, keymapper="legacy")
+    python = python_generate_keymap("legacy", LEGACY_DEVICES)
+
+    assert bash.returncode == 0, bash.stderr
+    assert python.returncode == 0, python.stderr
+    assert python.stdout == bash.stdout
+
+
+def test_legacy_keymapper_requires_only_some_device() -> None:
+    keymapper = LegacyKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+
+    assert (
+        keymapper.key_value("other", "ota", "notadevice")
+        == "notadevice/releasekey"
+    )
+    with pytest.raises(ValueError, match="device is required"):
+        keymapper.key_value("other", "ota")
 
 
 PLACEHOLDERS = (

@@ -49,6 +49,23 @@ load_keymapper
 
 [[ -d $1 ]] || error "key directory does not exist"
 
+if [ "${USE_PYTHON_UPDATEKEYS:-}" = y ]; then
+  [ -z "${KEYMAPPER_FILE:-}" ] \
+    || error "USE_PYTHON_UPDATEKEYS does not support KEYMAPPER_FILE"
+  case "${KEYMAPPER:-legacy}" in
+    legacy|id2b) ;;
+    *) error "USE_PYTHON_UPDATEKEYS supports only the legacy and id2b keymappers" ;;
+  esac
+  PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing update-keys \
+      --metadata "${METADATA_FILE:-$SCRIPTPATH/metadata.py}" \
+      --keymapper "${KEYMAPPER:-legacy}" \
+      --key-directory "$KEY_DIR" \
+      --device "$DEVICE" \
+      --subject "$SUBJECT" \
+      --avbtool "$AVBTOOL"
+fi
+
 for k in "${keys_core[@]}"; do
   [ -n "$k" ] || continue
   keyval=$(get_key core "$k" || exit $?)
@@ -75,14 +92,28 @@ done
 
 # AVB 2.0
 keyval_vbmeta=$(get_key avb vbmeta "${KEY_SUFFIX:-}" || exit $?)
-if [[ ! -e "$keyval_vbmeta" ]]; then
-  openssl genrsa -out "$keyval_vbmeta" 4096
+if [ "${USE_PYTHON_AVB:-}" = y ]; then
+  PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 -P -m signing provision-avb-key \
+      --private-key "$keyval_vbmeta" \
+      --public-key "$AVB_CUSTOM_KEY" \
+      --avbtool "$AVBTOOL"
+else
+  if [[ ! -e "$keyval_vbmeta" ]]; then
+    openssl genrsa -out "$keyval_vbmeta" 4096
+  fi
+  extract_avb_public_key "$keyval_vbmeta" "$AVB_CUSTOM_KEY"
 fi
-extract_avb_public_key "$keyval_vbmeta" "$AVB_CUSTOM_KEY"
 
 keyval_vbmeta_system=$(get_key avb vbmeta_system "${KEY_SUFFIX:-}" || exit $?)
 if [[ ! -e "$keyval_vbmeta_system" ]]; then
-  openssl genrsa -out "$keyval_vbmeta_system" 4096
+  if [ "${USE_PYTHON_AVB:-}" = y ]; then
+    PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing provision-rsa-key \
+        --private-key "$keyval_vbmeta_system"
+  else
+    openssl genrsa -out "$keyval_vbmeta_system" 4096
+  fi
 fi
 
 if [[ -e "${KEY_DIR%/}/avb_pkmd.bin" ]]; then
@@ -91,11 +122,17 @@ fi
 
 # Migration from 10 to 11
 # ART apex was renamed, and bionic runtime was split out into a new apex
-if [[ -e ${KEY_DIR%/}/com.android.runtime.release.pk8 ]]; then
-  mv "${KEY_DIR%/}/com.android.runtime.release.pk8" "${KEY_DIR%/}/com.android.runtime.pk8"
-fi
-if [[ -e ${KEY_DIR%/}/com.android.runtime.release.x509.pem ]]; then
-  mv "${KEY_DIR%/}/com.android.runtime.release.x509.pem" "${KEY_DIR%/}/com.android.runtime.x509.pem"
+if [ "${USE_PYTHON_KEY_MIGRATION:-}" = y ]; then
+  PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 -P -m signing migrate-runtime-key \
+      --key-directory "${KEY_DIR%/}"
+else
+  if [[ -e ${KEY_DIR%/}/com.android.runtime.release.pk8 ]]; then
+    mv "${KEY_DIR%/}/com.android.runtime.release.pk8" "${KEY_DIR%/}/com.android.runtime.pk8"
+  fi
+  if [[ -e ${KEY_DIR%/}/com.android.runtime.release.x509.pem ]]; then
+    mv "${KEY_DIR%/}/com.android.runtime.release.x509.pem" "${KEY_DIR%/}/com.android.runtime.x509.pem"
+  fi
 fi
 
 for apex in "${keys_apex[@]}"; do
@@ -114,8 +151,16 @@ for apex in "${keys_apex[@]}"; do
   [ -n "$apex" ] || continue
   keyval=$(KEY_SUFFIX= get_key apex_payload "$apex" || exit $?)
   [ -n "$keyval" ] || continue
-  if [[ ! -e $keyval.pem ]]; then
-    openssl genrsa -out "$keyval.pem" 4096
+  if [ "${USE_PYTHON_AVB:-}" = y ]; then
+    PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -P -m signing provision-avb-key \
+        --private-key "$keyval.pem" \
+        --public-key "$keyval.avbpubkey" \
+        --avbtool "$AVBTOOL"
+  else
+    if [[ ! -e $keyval.pem ]]; then
+      openssl genrsa -out "$keyval.pem" 4096
+    fi
+    extract_avb_public_key "$keyval.pem" "$keyval.avbpubkey"
   fi
-  extract_avb_public_key "$keyval.pem" "$keyval.avbpubkey"
 done
