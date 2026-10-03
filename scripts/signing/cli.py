@@ -324,8 +324,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     release_args.add_argument(
         "--keymapper",
-        choices=("id2b", "legacy"),
+        choices=("id2b", "legacy", "static"),
         default="id2b",
+    )
+    release_args.add_argument(
+        "--keymap-file",
+        type=Path,
     )
     release_args.add_argument(
         "--device",
@@ -977,18 +981,26 @@ def _keymapper_from_args(
     """
     Construct the explicitly selected metadata keymapper.
 
+    The static mapper reads --keymap-file.
+
     Args:
         args: Parsed namespace containing a ``keymapper`` selection.
         metadata: Validated signing metadata to map.
 
     Returns:
-        Legacy path mapper or the default two-byte ID mapper.
-    """
-    from .keymap import Id2bKeymapper, LegacyKeymapper
+        The selected keymapper.
 
-    if args.keymapper == "legacy":
-        return LegacyKeymapper(metadata)
-    return Id2bKeymapper(metadata)
+    Raises:
+        ValueError: If --keymapper static comes without --keymap-file.
+    """
+    from .keymap import select_keymapper
+
+    keymap_file = getattr(args, "keymap_file", None)
+    environment = {
+        "KEYMAPPER": args.keymapper,
+        "KEYMAP_FILE": str(keymap_file) if keymap_file else "",
+    }
+    return select_keymapper(environment, metadata)
 
 
 def _yubihsm_password_from_args(args: argparse.Namespace) -> str:
@@ -1340,6 +1352,8 @@ def _cmd_build_release_args(args: argparse.Namespace) -> int:
     )
 
     metadata = load_metadata(args.metadata or default_metadata_path())
+    if args.keymapper == "static" and args.keymap_file is None:
+        raise _UsageError("--keymapper static requires --keymap-file")
     keymapper = _keymapper_from_args(args, metadata)
     get_key = make_get_key(
         keymapper,
