@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import shutil
 import subprocess
 import sys
@@ -867,6 +868,57 @@ def test_so_pin_backend_refuses_a_key_id_whose_private_key_exists(
         so_pin_backend.generate_key(spec)
 
     assert len(token_object_ids(environment, "0x3003")) == 1
+
+
+def test_certificate_generation_under_so_pin_against_softhsm(
+    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
+    tmp_path: Path,
+) -> None:
+    """
+    An SO-authenticated SoftHSM session cannot use a private key, so
+    generate_certificate() must sign through signing_pin, never the SO
+    PIN it imports the certificate with.
+    """
+    generation_backend, environment, _ = pkcs11_token
+    so_pin_config = Pkcs11Config(
+        module=SOFTHSM_MODULE,
+        token_label=TOKEN_LABEL,
+        openssl_engine=PKCS11_ENGINE,
+        certificate_days=1,
+        pin=SO_PIN,
+        use_so_pin=True,
+        # Without a discovery PIN, the existence checks before signing
+        # would fail first, since an SO session cannot see private objects.
+        discovery_pin=USER_PIN,
+        environment={"SOFTHSM2_CONF": environment["SOFTHSM2_CONF"]},
+    )
+
+    broken_reference = KeyReference("0x3001", "so-pin-broken")
+    broken_spec = KeySpec(broken_reference, 2048)
+    generation_backend.generate_key(broken_spec)
+    broken_backend = Pkcs11Backend(so_pin_config)
+    with pytest.raises(subprocess.CalledProcessError):
+        broken_backend.generate_certificate(broken_spec, "/CN=so-pin-broken/")
+    assert not generation_backend.certificate_exists(broken_reference)
+
+    fixed_reference = KeyReference("0x3002", "so-pin-fixed")
+    fixed_spec = KeySpec(fixed_reference, 2048)
+    generation_backend.generate_key(fixed_spec)
+    fixed_backend = Pkcs11Backend(
+        dataclasses.replace(so_pin_config, signing_pin=USER_PIN),
+    )
+    certificate = fixed_backend.generate_certificate(
+        fixed_spec,
+        "/CN=so-pin-fixed/",
+    )
+
+    assert generation_backend.certificate_exists(fixed_reference)
+    certificate_path = tmp_path / "certificate.pem"
+    certificate_path.write_bytes(certificate)
+    rendered_subject = run(
+        ["openssl", "x509", "-in", certificate_path, "-noout", "-subject"],
+    )
+    assert "so-pin-fixed" in rendered_subject.stdout
 
 
 def test_pkcs11_cli_complete_lifecycle(
