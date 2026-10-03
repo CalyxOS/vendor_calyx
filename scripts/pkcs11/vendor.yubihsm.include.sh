@@ -962,6 +962,11 @@ maybe_stop_yubihsm_connector() {
     if ps -p "$pid" >/dev/null; then
       kill "$pid" || return $?
     fi
+    local i
+    for i in $(seq 1 200); do
+      ps -p "$pid" >/dev/null || break
+      sleep 0.05
+    done
     if ps -p "$pid" >/dev/null; then
       echo "Could not kill existing yubihsm-connector." >&2
       return 1
