@@ -18,6 +18,90 @@ _any_cert_generated=
 
 unset no_check_exist
 
+_pkcs11_python_cli() {
+  PKCS11_PIN=${PKCS11_PIN:-} PKCS11_SO_PIN=${PKCS11_SO_PIN:-} \
+    PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 -P -m signing "$@"
+}
+
+# The Python path runs PKCS11_TOOL_BIN and OPENSSL_BIN as programs, so it
+# cannot use the shell functions vendor.yubihsm.keygen.sh puts there.
+_pkcs11_python_require_programs() {
+  local name
+  for name in "$PKCS11_TOOL_BIN" "${OPENSSL_BIN:-openssl}"; do
+    if declare -F "$name" >/dev/null; then
+      echo "PKCS11_PYTHON_TOOLS cannot run the shell function '$name'." >&2
+      return 1
+    fi
+  done
+}
+
+_pkcs11_python_backend_arguments() {
+  _pkcs11_python_require_programs || return $?
+  declare -g -a pkcs11_python_backend_args=(
+    --module "$PKCS11_MODULE" --pkcs11-tool "$PKCS11_TOOL_BIN"
+  )
+  [ -z "${PKCS11_TOKEN_LABEL:-}" ] \
+    || pkcs11_python_backend_args+=(--token-label "$PKCS11_TOKEN_LABEL")
+  [ -z "${PKCS11_SLOT:-}" ] \
+    || pkcs11_python_backend_args+=(--slot "$PKCS11_SLOT")
+  if [ "${MODIFICATION_USES_SO_PIN:-}" = "y" ]; then
+    [ -z "${PKCS11_SO_PIN:-}" ] \
+      || pkcs11_python_backend_args+=(--use-so-pin --pin-env PKCS11_SO_PIN)
+    if [ -n "${PKCS11_PIN:-}" ]; then
+      pkcs11_python_backend_args+=(
+        --signing-pin-env PKCS11_PIN --discovery-pin-env PKCS11_PIN
+      )
+    fi
+  else
+    [ -z "${PKCS11_PIN:-}" ] \
+      || pkcs11_python_backend_args+=(--pin-env PKCS11_PIN)
+  fi
+}
+
+_pkcs11_python_discovery_backend_arguments() {
+  _pkcs11_python_require_programs || return $?
+  declare -g -a pkcs11_python_backend_args=(
+    --module "$PKCS11_MODULE" --pkcs11-tool "$PKCS11_TOOL_BIN"
+  )
+  [ -z "${PKCS11_TOKEN_LABEL:-}" ] \
+    || pkcs11_python_backend_args+=(--token-label "$PKCS11_TOKEN_LABEL")
+  [ -z "${PKCS11_SLOT:-}" ] \
+    || pkcs11_python_backend_args+=(--slot "$PKCS11_SLOT")
+  if [ "${LIST_REQUIRES_NO_PIN:-n}" = "y" ]; then
+    pkcs11_python_backend_args+=(--list-requires-no-pin)
+  else
+    [ -z "${PKCS11_PIN:-}" ] \
+      || pkcs11_python_backend_args+=(--pin-env PKCS11_PIN)
+  fi
+}
+
+_pkcs11_python_algorithm_arguments() {
+  local key_algorithm=$1
+  case "$key_algorithm" in
+    RSA:*)
+      declare -g -a pkcs11_python_algorithm_args=(
+        --algorithm RSA --key-size "${key_algorithm#RSA:}"
+      ) ;;
+    *)
+      echo "PKCS11_PYTHON_TOOLS does not support key algorithm '$key_algorithm'." >&2
+      return 1 ;;
+  esac
+}
+
+_pkcs11_python_exportable_arguments() {
+  declare -g -a pkcs11_python_exportable_args=()
+  case "${EXTRACTION_ARGS:-}" in
+    "--sensitive --extractable")
+      pkcs11_python_exportable_args=(--exportable) ;;
+    "--sensitive")
+      pkcs11_python_exportable_args=() ;;
+    *)
+      echo "PKCS11_PYTHON_TOOLS does not support EXTRACTION_ARGS='$EXTRACTION_ARGS'." >&2
+      return 1 ;;
+  esac
+}
+
 keygen_usage() {
   echo "usage: $(basename "$0") [public_key_output_dir]"
   echo
@@ -270,21 +354,32 @@ maybe_initialize_token_pkcs11() {
     export PKCS11_TOKEN_LABEL=$_default_pkcs11_token_label
     refresh_pkcs11_tool_args || return $?
   fi
-  PKCS11_SO_PIN=$PKCS11_SO_PIN \
-    "$PKCS11_TOOL_BIN" \
-      --label "$PKCS11_TOKEN_LABEL" \
+  if [ "${PKCS11_PYTHON_TOOLS:-}" = "y" ]; then
+    _pkcs11_python_require_programs || return $?
+    _pkcs11_python_cli init-pkcs11-token \
       --module "$PKCS11_MODULE" \
-      --init-token \
-      --so-pin env:PKCS11_SO_PIN || return $?
-  if ! is_any_token_initialized_pkcs11; then
-    echo "ERROR: Initialized token, but our check doesn't confirm that it is intialized." >&2
-    return 1
+      --pkcs11-tool "$PKCS11_TOOL_BIN" \
+      --label "$PKCS11_TOKEN_LABEL" \
+      --so-pin-env PKCS11_SO_PIN \
+      --pin-env PKCS11_PIN \
+      || return $?
+  else
+    PKCS11_SO_PIN=$PKCS11_SO_PIN \
+      "$PKCS11_TOOL_BIN" \
+        --label "$PKCS11_TOKEN_LABEL" \
+        --module "$PKCS11_MODULE" \
+        --init-token \
+        --so-pin env:PKCS11_SO_PIN || return $?
+    if ! is_any_token_initialized_pkcs11; then
+      echo "ERROR: Initialized token, but our check doesn't confirm that it is intialized." >&2
+      return 1
+    fi
+    PKCS11_PIN=$PKCS11_PIN PKCS11_SO_PIN=$PKCS11_SO_PIN \
+      "$PKCS11_TOOL_BIN" \
+        "${pkcs11_tool_args_so_pin[@]}" \
+        --init-pin \
+        --pin env:PKCS11_PIN || return $?
   fi
-  PKCS11_PIN=$PKCS11_PIN PKCS11_SO_PIN=$PKCS11_SO_PIN \
-    "$PKCS11_TOOL_BIN" \
-      "${pkcs11_tool_args_so_pin[@]}" \
-      --init-pin \
-      --pin env:PKCS11_PIN || return $?
 }
 
 is_any_token_initialized_pkcs11() {
@@ -413,6 +508,22 @@ generate_keypair_pkcs11() {
   key_id=$(get_key_id_for_pkcs11-tool "$key_id")
   local key_label=$2
   local key_algorithm=$3
+
+  if [ "${PKCS11_PYTHON_TOOLS:-}" = "y" ]; then
+    _pkcs11_python_backend_arguments || return $?
+    _pkcs11_python_algorithm_arguments "$key_algorithm" || return $?
+    _pkcs11_python_exportable_arguments || return $?
+    _pkcs11_python_cli generate-key \
+      "${pkcs11_python_backend_args[@]}" \
+      --key-id "$key_id" \
+      --label "$key_label" \
+      "${pkcs11_python_algorithm_args[@]}" \
+      "${pkcs11_python_exportable_args[@]}" \
+      || return $?
+    # Note: The public key will be pulled out of the certificate later.
+    return 0
+  fi
+
   local -a args=()
   if [ "${MODIFICATION_USES_SO_PIN:-}" = "y" ]; then
     args=("${pkcs11_tool_args_so_pin[@]}")
@@ -454,31 +565,48 @@ generate_cert_pkcs11() {
   esac
 
   local err=0
-  # Generate a self-signed certificate as usual, but using the HSM.
-  # Capture the public key into the cert variable.
-  # TODO: Should -sha256 be overridable?
-  OPENSSL_CONF=<(generate_openssl_config) \
-    "$OPENSSL_BIN" req -new -x509 -engine pkcs11 \
-      -subj "${SIGNING_SUBJECT_TEMPLATE//_KEY_LABEL_/$escaped_key_label_for_signing_subject}" \
-      $sha_arg \
-      -keyform engine \
-      -key "$(get_privkey_uri "$key_label")" \
-      -days "$CERT_EXPIRY_DAYS" \
-      -out "$tmpfile" || { err=$?; rm -f "$tmpfile"; return $err; }
-  if [ "${MODIFICATION_USES_SO_PIN:-}" = "y" ]; then
-    args=("${pkcs11_tool_args_so_pin[@]}")
+  if [ "${PKCS11_PYTHON_TOOLS:-}" = "y" ]; then
+    _pkcs11_python_backend_arguments || { err=$?; rm -f "$tmpfile"; return $err; }
+    _pkcs11_python_algorithm_arguments "$key_algorithm" \
+      || { err=$?; rm -f "$tmpfile"; return $err; }
+    _pkcs11_python_cli generate-certificate \
+      "${pkcs11_python_backend_args[@]}" \
+      --openssl "$OPENSSL_BIN" \
+      --openssl-engine "$PKCS11_OPENSSL_ENGINE_LIBRARY_PATH" \
+      --certificate-days "$CERT_EXPIRY_DAYS" \
+      --key-id "$key_id" \
+      --label "$key_label" \
+      "${pkcs11_python_algorithm_args[@]}" \
+      --subject "${SIGNING_SUBJECT_TEMPLATE//_KEY_LABEL_/$escaped_key_label_for_signing_subject}" \
+      --output "$tmpfile" \
+      || err=$?
   else
-    args=("${pkcs11_tool_args[@]}")
-  fi
+    # Generate a self-signed certificate as usual, but using the HSM.
+    # Capture the public key into the cert variable.
+    # TODO: Should -sha256 be overridable?
+    OPENSSL_CONF=<(generate_openssl_config) \
+      "$OPENSSL_BIN" req -new -x509 -engine pkcs11 \
+        -subj "${SIGNING_SUBJECT_TEMPLATE//_KEY_LABEL_/$escaped_key_label_for_signing_subject}" \
+        $sha_arg \
+        -keyform engine \
+        -key "$(get_privkey_uri "$key_label")" \
+        -days "$CERT_EXPIRY_DAYS" \
+        -out "$tmpfile" || { err=$?; rm -f "$tmpfile"; return $err; }
+    if [ "${MODIFICATION_USES_SO_PIN:-}" = "y" ]; then
+      args=("${pkcs11_tool_args_so_pin[@]}")
+    else
+      args=("${pkcs11_tool_args[@]}")
+    fi
 
-  # Import the self-signed certificate.
-  PKCS11_PIN=$PKCS11_PIN \
-    "$PKCS11_TOOL_BIN" \
-      "${args[@]}" \
-      --write-object "$tmpfile" \
-      --type cert \
-      --id "$key_id" \
-      --label "$key_label" || err=$?
+    # Import the self-signed certificate.
+    PKCS11_PIN=$PKCS11_PIN \
+      "$PKCS11_TOOL_BIN" \
+        "${args[@]}" \
+        --write-object "$tmpfile" \
+        --type cert \
+        --id "$key_id" \
+        --label "$key_label" || err=$?
+  fi
 
   if [ $err -eq 0 ] && [ -n "${key_out_dir:-}" ]; then
     # Output the certificate and the public key.
@@ -542,10 +670,36 @@ _does_key_or_cert_exist_yn_pkcs11() {
   fi
 }
 
+_pkcs11_python_exists_yn() {
+  local id=$1
+  local command=$2
+  id=$(get_key_id_for_pkcs11-tool "$id")
+  _pkcs11_python_discovery_backend_arguments || return $?
+  local result
+  result=$(_pkcs11_python_cli "$command" \
+    "${pkcs11_python_backend_args[@]}" \
+    --key-id "$id") || return $?
+  case "$result" in
+    yes) echo y ;;
+    no) echo n ;;
+    *)
+      echo "Unexpected $command output from Python signing package: '$result'" >&2
+      return 1 ;;
+  esac
+}
+
 does_key_exist_yn_pkcs11() {
+  if [ "${PKCS11_PYTHON_TOOLS:-}" = "y" ] && [ "${FIND_KEYS_BY_ID:-}" = "y" ]; then
+    _pkcs11_python_exists_yn "$1" key-exists || return $?
+    return 0
+  fi
   _does_key_or_cert_exist_yn_pkcs11 "$@" pubkey || return $?
 }
 
 does_cert_exist_yn_pkcs11() {
+  if [ "${PKCS11_PYTHON_TOOLS:-}" = "y" ] && [ "${FIND_KEYS_BY_ID:-}" = "y" ]; then
+    _pkcs11_python_exists_yn "$1" certificate-exists || return $?
+    return 0
+  fi
   _does_key_or_cert_exist_yn_pkcs11 "$@" cert || return $?
 }

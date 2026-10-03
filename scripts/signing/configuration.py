@@ -140,6 +140,7 @@ class Pkcs11BackendConfiguration:
     module: Path
     pin_source: PinSource | None = None
     discovery_pin_source: PinSource | None = None
+    signing_pin_source: PinSource | None = None
     token_label: str | None = None
     slot: str | None = None
     tool: str = "pkcs11-tool"
@@ -185,11 +186,15 @@ class Pkcs11BackendConfiguration:
         discovery_pin = None
         if self.discovery_pin_source is not None:
             discovery_pin = self.discovery_pin_source.resolve(environment)
+        signing_pin = None
+        if self.signing_pin_source is not None:
+            signing_pin = self.signing_pin_source.resolve(environment)
         return Pkcs11Backend(
             Pkcs11Config(
                 module=self.module,
                 pin=pin,
                 discovery_pin=discovery_pin,
+                signing_pin=signing_pin,
                 token_label=self.token_label,
                 slot=self.slot,
                 tool=self.tool,
