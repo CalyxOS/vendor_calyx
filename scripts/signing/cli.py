@@ -9,6 +9,7 @@ Command-line entry points for backend-neutral signing operations.
 from __future__ import annotations
 
 import argparse
+import base64
 import os
 import subprocess
 import sys
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from .metadata import SigningMetadata
     from .models import KeyReference, KeySpec
     from .pkcs11 import Pkcs11Backend
+    from .vendor_yubihsm import YubiHsmConfig
 
 _BACKEND_COMMANDS = (
     "key-exists",
@@ -192,6 +194,65 @@ def _add_algorithm_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_yubihsm_arguments(parser: argparse.ArgumentParser) -> None:
+    """
+    Add YubiHSM connector and credential arguments to a command.
+
+    Args:
+        parser: Subcommand parser to configure.
+
+    Returns:
+        None.
+    """
+    parser.add_argument(
+        "--connector",
+        default="http://127.0.0.1:12345",
+    )
+    parser.add_argument(
+        "--authkey",
+        default="0x0001",
+    )
+    password = parser.add_mutually_exclusive_group(required=True)
+    password.add_argument("--password-env")
+    password.add_argument(
+        "--password-file",
+        type=Path,
+    )
+    password.add_argument(
+        "--password",
+        action=_RejectRawValue,
+        message=(
+            "raw passwords are forbidden, use --password-env or --password-file"
+        ),
+        help=argparse.SUPPRESS,
+    )
+
+
+def _add_yubihsm_connector_arguments(parser: argparse.ArgumentParser) -> None:
+    """
+    Add local yubihsm-connector process management arguments to a command.
+
+    Args:
+        parser: Subcommand parser to configure.
+
+    Returns:
+        None.
+    """
+    parser.add_argument(
+        "--connector",
+        default="http://127.0.0.1:12345",
+    )
+    parser.add_argument(
+        "--pid-file",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--binary",
+        default="yubihsm-connector",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """
     Build the command-line parser without reading configuration or state.
@@ -279,6 +340,66 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
+    attest_key = subparsers.add_parser("attest-key")
+    _add_yubihsm_arguments(attest_key)
+    attest_key.add_argument(
+        "--key-id",
+        required=True,
+    )
+    attest_key.add_argument(
+        "--attestation-id",
+        default="0",
+    )
+    attest_key.add_argument(
+        "--output",
+        default="-",
+    )
+
+    extract_audit_log = subparsers.add_parser("extract-audit-log")
+    _add_yubihsm_arguments(extract_audit_log)
+    extract_audit_log.add_argument(
+        "--log-file",
+        type=Path,
+        required=True,
+    )
+    extract_audit_log.add_argument("--comment")
+
+    export_wrapped_key = subparsers.add_parser("export-wrapped-key")
+    _add_yubihsm_arguments(export_wrapped_key)
+    export_wrapped_key.add_argument(
+        "--wrap-id",
+        default="0x0010",
+    )
+    export_wrapped_key.add_argument(
+        "--key-id",
+        required=True,
+    )
+    export_wrapped_key.add_argument(
+        "--output",
+        default="-",
+    )
+
+    import_wrapped_key = subparsers.add_parser("import-wrapped-key")
+    _add_yubihsm_arguments(import_wrapped_key)
+    import_wrapped_key.add_argument(
+        "--wrap-id",
+        default="0x0010",
+    )
+    import_wrapped_key.add_argument(
+        "--key-id",
+        required=True,
+    )
+    import_wrapped_key.add_argument(
+        "--input",
+        default="-",
+    )
+
+    start_connector = subparsers.add_parser("start-yubihsm-connector")
+    _add_yubihsm_connector_arguments(start_connector)
+
+    stop_connector = subparsers.add_parser("stop-yubihsm-connector")
+    _add_yubihsm_connector_arguments(stop_connector)
+
     for name in _BACKEND_COMMANDS:
         command = subparsers.add_parser(name)
         _add_backend_arguments(command)
@@ -360,6 +481,62 @@ def _keymapper_from_args(
     return Id2bKeymapper(metadata)
 
 
+def _yubihsm_password_from_args(args: argparse.Namespace) -> str:
+    """
+    Resolve the YubiHSM password from its configured external source.
+
+    Args:
+        args: Parsed namespace containing a password source selection.
+
+    Returns:
+        The resolved password.
+
+    Raises:
+        KeyError: If a configured environment variable is absent.
+        OSError: If a configured password file cannot be read.
+        ValueError: If the resolved password is invalid.
+    """
+    from .configuration import EnvironmentPin, FilePin
+
+    if args.password_env is not None:
+        return EnvironmentPin(args.password_env).resolve()
+    return FilePin(args.password_file).resolve()
+
+
+def _yubihsm_config_from_args(
+    args: argparse.Namespace,
+    *,
+    attestation_id: str = "0",
+    wrap_id: str = "0x0010",
+) -> YubiHsmConfig:
+    """
+    Construct a YubiHSM connector configuration from parsed arguments.
+
+    Args:
+        args: Parsed namespace containing connector and credential
+            fields.
+        attestation_id: Attestation key ID, for attest-key.
+        wrap_id: Wrap key ID, for the wrapped-key commands.
+
+    Returns:
+        The configuration supplied to YubiHSM backend operations.
+
+    Raises:
+        KeyError: If a configured environment variable is absent.
+        OSError: If a configured password file cannot be read.
+        ValueError: If the resolved password is invalid.
+    """
+    from .vendor_yubihsm import YubiHsmConfig
+
+    return YubiHsmConfig(
+        connector_url=args.connector,
+        auth_key=args.authkey,
+        password=_yubihsm_password_from_args(args),
+        attestation_id=attestation_id,
+        wrap_id=wrap_id,
+    )
+
+
 def _reference_from_args(args: argparse.Namespace) -> KeyReference:
     """
     Construct a backend-neutral key reference from parsed arguments.
@@ -395,6 +572,24 @@ def _spec_from_args(args: argparse.Namespace) -> KeySpec:
         key_size=args.key_size,
         exportable=args.exportable,
     )
+
+
+def _read_binary(location: str) -> bytes:
+    """
+    Read binary input from a file or standard input.
+
+    Args:
+        location: File path, or ``-`` for standard input.
+
+    Returns:
+        Complete binary input contents.
+
+    Raises:
+        OSError: If a selected input file cannot be read.
+    """
+    if location == "-":
+        return sys.stdin.buffer.read()
+    return Path(location).read_bytes()
 
 
 def write_binary(location: str, contents: bytes) -> None:
@@ -548,6 +743,138 @@ def _cmd_update_keys(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_attest_key(args: argparse.Namespace) -> int:
+    """
+    Write a YubiHSM key's attestation certificate.
+
+    Args:
+        args: Parsed namespace containing connector and key settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import attest_key
+
+    config = _yubihsm_config_from_args(
+        args,
+        attestation_id=args.attestation_id,
+    )
+    certificate = attest_key(config, args.key_id)
+    write_binary(args.output, certificate)
+    return 0
+
+
+def _cmd_export_wrapped_key(args: argparse.Namespace) -> int:
+    """
+    Export a wrapped YubiHSM key.
+
+    Args:
+        args: Parsed namespace containing connector and wrap settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import (
+        export_wrapped_key,
+    )
+
+    config = _yubihsm_config_from_args(args, wrap_id=args.wrap_id)
+    wrapped = export_wrapped_key(config, args.key_id)
+    write_binary(args.output, base64.b64encode(wrapped))
+    return 0
+
+
+def _cmd_import_wrapped_key(args: argparse.Namespace) -> int:
+    """
+    Import a wrapped YubiHSM key.
+
+    Args:
+        args: Parsed namespace containing connector and wrap settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import (
+        decode_wrapped_key_backup,
+        import_wrapped_key,
+    )
+
+    config = _yubihsm_config_from_args(args, wrap_id=args.wrap_id)
+    import_wrapped_key(
+        config,
+        args.key_id,
+        decode_wrapped_key_backup(_read_binary(args.input), args.input),
+    )
+    return 0
+
+
+def _cmd_extract_audit_log(args: argparse.Namespace) -> int:
+    """
+    Extract and save the YubiHSM audit log.
+
+    Args:
+        args: Parsed namespace containing connector and log settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import (
+        extract_and_save_audit_log,
+    )
+
+    config = _yubihsm_config_from_args(args)
+    extract_and_save_audit_log(config, args.log_file, args.comment)
+    return 0
+
+
+def _cmd_start_yubihsm_connector(args: argparse.Namespace) -> int:
+    """
+    Start the local yubihsm-connector process.
+
+    Args:
+        args: Parsed namespace containing connector process settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm_connector import (
+        YubiHsmConnector,
+        YubiHsmConnectorConfig,
+    )
+
+    connector_config = YubiHsmConnectorConfig(
+        connector_url=args.connector,
+        pid_file=args.pid_file,
+        binary=args.binary,
+    )
+    YubiHsmConnector(connector_config).restart()
+    return 0
+
+
+def _cmd_stop_yubihsm_connector(args: argparse.Namespace) -> int:
+    """
+    Stop the local yubihsm-connector process.
+
+    Args:
+        args: Parsed namespace containing connector process settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm_connector import (
+        YubiHsmConnector,
+        YubiHsmConnectorConfig,
+    )
+
+    connector_config = YubiHsmConnectorConfig(
+        connector_url=args.connector,
+        pid_file=args.pid_file,
+        binary=args.binary,
+    )
+    YubiHsmConnector(connector_config).stop()
+    return 0
+
+
 def _cmd_key_exists(args: argparse.Namespace) -> int:
     """
     Print whether the referenced key exists.
@@ -630,6 +957,12 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "provision-rsa-key": _cmd_provision_rsa_key,
     "migrate-runtime-key": _cmd_migrate_runtime_key,
     "update-keys": _cmd_update_keys,
+    "attest-key": _cmd_attest_key,
+    "export-wrapped-key": _cmd_export_wrapped_key,
+    "import-wrapped-key": _cmd_import_wrapped_key,
+    "extract-audit-log": _cmd_extract_audit_log,
+    "start-yubihsm-connector": _cmd_start_yubihsm_connector,
+    "stop-yubihsm-connector": _cmd_stop_yubihsm_connector,
     "key-exists": _cmd_key_exists,
     "certificate-exists": _cmd_certificate_exists,
     "generate-key": _cmd_generate_key,

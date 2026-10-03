@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import traceback
 import warnings
 from collections.abc import Callable, Iterator
@@ -49,6 +50,23 @@ def aosp_top() -> Path:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def process_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def wait_until(predicate: Callable[[], bool], timeout: float = 2.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return predicate()
 
 
 def default_signal_dispositions() -> None:
