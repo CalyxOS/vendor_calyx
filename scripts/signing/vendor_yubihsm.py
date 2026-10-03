@@ -13,6 +13,9 @@ from __future__ import annotations
 import base64
 import binascii
 import os
+import re
+import struct
+import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -26,6 +29,7 @@ from .vendor_yubihsm_connector import (
 
 if TYPE_CHECKING:
     from yubihsm.core import AuthSession, LogEntry
+    from yubihsm.defs import ALGORITHM, OBJECT
 
 
 _RECENT_LOG_BYTES = 1 << 20
@@ -127,6 +131,172 @@ def _run_with_session(
         return attempt()
 
 
+@dataclass(frozen=True, slots=True)
+class StorageInfo:
+    """
+    Free/total record and page counts, as reported by the HSM itself.
+    """
+
+    total_records: int
+    free_records: int
+    total_pages: int
+    free_pages: int
+    page_size: int
+
+
+def get_storage_info(config: YubiHsmConfig) -> StorageInfo:
+    """
+    Return the HSM's current record and page usage.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+
+    Returns:
+        The parsed storage usage.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or command
+            fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from yubihsm.defs import COMMAND
+
+    def operation(session: AuthSession) -> StorageInfo:
+        response = session.send_secure_cmd(COMMAND.GET_STORAGE_INFO)
+        fields = struct.unpack(">5H", response)
+        return StorageInfo(*fields)
+
+    return _run_with_session(lambda: connect_yubihsm_session(config), operation)
+
+
+def should_make_space_on_hsm(info: StorageInfo) -> bool:
+    """
+    Decide whether on-demand objects should be evicted before loading
+    more.
+
+    Args:
+        info: Current storage usage, from get_storage_info().
+
+    Returns:
+        True if free records or free pages are running low.
+    """
+    return info.free_records < 5 or info.free_pages < 25
+
+
+_DOMAIN_SEPARATORS = re.compile(r"[:,;|]")
+
+
+def parse_domains(value: str) -> int:
+    """
+    Parse a domain-list string into the SDK's bitmask form.
+
+    Matches yubihsm-shell's yh_string_to_domains(). "all" in any case
+    means every domain, a "0x"-prefixed value is a literal bitmask, and
+    anything else is a list of domain numbers from 1 to 16, separated by
+    any of ``:``, ``,``, ``;`` and ``|``, each setting bit (number - 1).
+    Empty segments are skipped, as yubihsm-shell's strtok_r() parsing
+    skips them.
+
+    Args:
+        value: A domain string as used throughout this codebase, e.g.
+            "3" or "1,2" or "all".
+
+    Returns:
+        The domain bitmask expected by the SDK's domains= parameters.
+
+    Raises:
+        ValueError: If value contains a domain number outside 1-16, or
+            is not a recognized format.
+    """
+    if value.casefold() == "all":
+        return 0xFFFF
+    if value.startswith(("0x", "0X")):
+        return int(value, 16)
+    domains = 0
+    for token in _DOMAIN_SEPARATORS.split(value):
+        if not token:
+            continue
+        number = int(token)
+        if not 1 <= number <= 16:
+            raise ValueError(f"domains are numbered from 1 to 16, got {number}")
+        domains |= 1 << (number - 1)
+    return domains
+
+
+@dataclass(frozen=True, slots=True)
+class RestorableObject:
+    """
+    An on-device asymmetric key or X.509-certificate opaque, the object
+    types that can be backed up and restored.
+    """
+
+    id: int
+    object_type: OBJECT
+    algorithm: ALGORITHM
+
+
+def list_restorable_objects(
+    config: YubiHsmConfig,
+    domains: str | None,
+) -> tuple[RestorableObject, ...]:
+    """
+    List asymmetric keys and X.509-certificate opaques in domains.
+
+    An opaque counts only if its algorithm is OPAQUE_X509_CERTIFICATE.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        domains: Domain(s) to search, e.g. "3" or "1,2", or None to
+            search every domain.
+
+    Returns:
+        The matching objects, ordered by ID and type.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from yubihsm.defs import ALGORITHM, OBJECT
+
+    domain_bits = parse_domains(domains) if domains is not None else None
+
+    def operation(session: AuthSession) -> tuple[RestorableObject, ...]:
+        results: list[RestorableObject] = []
+        for obj in session.list_objects(domains=domain_bits):
+            info = obj.get_info()
+            if info.object_type == OBJECT.ASYMMETRIC_KEY or (
+                info.object_type == OBJECT.OPAQUE
+                and info.algorithm == ALGORITHM.OPAQUE_X509_CERTIFICATE
+            ):
+                results.append(
+                    RestorableObject(info.id, info.object_type, info.algorithm),
+                )
+        return tuple(
+            sorted(results, key=lambda obj: (obj.id, obj.object_type)),
+        )
+
+    return _run_with_session(lambda: connect_yubihsm_session(config), operation)
+
+
+def _is_nonempty_regular_file(path: Path) -> bool:
+    """
+    Check whether a path is a regular file with at least one byte.
+
+    Args:
+        path: Candidate backup file.
+
+    Returns:
+        True if the path is a regular, nonempty file.
+    """
+    try:
+        return path.is_file() and path.stat().st_size > 0
+    except OSError:
+        return False
+
+
 def decode_wrapped_key_backup(data: bytes, source: str) -> bytes:
     """
     Decode the contents of a *-asymmetric-key.yhw backup into the raw
@@ -152,6 +322,173 @@ def decode_wrapped_key_backup(data: bytes, source: str) -> bytes:
         raise ValueError(
             f"{source} is not a base64 wrapped-key backup",
         ) from error
+
+
+def _parses_as_pem_certificate(path: Path) -> bool:
+    """
+    Check whether a file holds a PEM certificate that parses.
+
+    Args:
+        path: Candidate certificate backup file.
+
+    Returns:
+        True if the file can be read and parses as a PEM certificate.
+    """
+    from cryptography.x509 import load_pem_x509_certificate
+
+    try:
+        load_pem_x509_certificate(path.read_bytes())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def is_object_available_on_disk(
+    key_dir: Path,
+    object_id: int,
+    object_type: OBJECT,
+) -> bool:
+    """
+    Check whether a complete backup of an object exists on disk.
+
+    Files are named after the "0x%04x"-formatted object ID. Only a
+    regular, nonempty file that decodes as a wrapped-key backup, or for
+    a certificate parses as a PEM certificate, counts, so that a file
+    truncated by an interrupted export or otherwise corrupt does not.
+
+    Args:
+        key_dir: Directory backups are read from and written to.
+        object_id: The object's ID.
+        object_type: OBJECT.ASYMMETRIC_KEY or OBJECT.OPAQUE.
+
+    Returns:
+        True if a matching, non-truncated backup file exists.
+    """
+    from yubihsm.defs import OBJECT
+
+    key_id = f"0x{object_id:04x}"
+    if object_type == OBJECT.ASYMMETRIC_KEY:
+        path = key_dir / f"{key_id}-asymmetric-key.yhw"
+        if not _is_nonempty_regular_file(path):
+            return False
+        try:
+            return bool(decode_wrapped_key_backup(path.read_bytes(), str(path)))
+        except (OSError, ValueError):
+            return False
+    path = key_dir / f"{key_id}.x509.pem"
+    return _is_nonempty_regular_file(path) and _parses_as_pem_certificate(path)
+
+
+def delete_object(
+    config: YubiHsmConfig,
+    object_id: int,
+    object_type: OBJECT,
+) -> None:
+    """
+    Delete one object from the HSM.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        object_id: The object's ID.
+        object_type: The object's type.
+
+    Returns:
+        None.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+
+    def operation(session: AuthSession) -> None:
+        session.get_object(object_id, object_type).delete()
+
+    _run_with_session(lambda: connect_yubihsm_session(config), operation)
+
+
+def _object_type_name(object_type: OBJECT) -> str:
+    from yubihsm.defs import OBJECT
+
+    return {OBJECT.ASYMMETRIC_KEY: "asymmetric-key", OBJECT.OPAQUE: "opaque"}[
+        object_type
+    ]
+
+
+def limit_ondemand_objects(
+    config: YubiHsmConfig,
+    key_dir: Path,
+    ondemand_domains: str,
+    after_delete: Callable[[str], None] | None = None,
+    *,
+    dry_run: bool = False,
+) -> None:
+    """
+    Evict on-demand objects until the HSM has enough free storage.
+
+    Only objects backed up to disk (and therefore restorable later) are
+    eligible for eviction. Once eviction starts for a given object ID,
+    its remaining on-demand pieces (the key and its cert both share an
+    ID) are deleted together even if space becomes sufficient partway
+    through, so an ID is never left with only one of the pair evicted.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_dir: Directory on-demand object backups live in.
+        ondemand_domains: Domain(s) on-demand objects live in.
+        after_delete: Called after every delete, successful or not, with
+            a "Command: ... Result: N" line describing it.
+        dry_run: Print each delete as a yubihsm-shell command instead of
+            deleting it, so that nothing is freed.
+
+    Returns:
+        None.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure, or if eviction could not free
+            enough space.
+    """
+    objects = list_restorable_objects(config, ondemand_domains)
+    last_id: int | None = None
+    for obj in objects:
+        if not is_object_available_on_disk(key_dir, obj.id, obj.object_type):
+            continue
+
+        should_make_space = should_make_space_on_hsm(get_storage_info(config))
+        if not should_make_space and last_id != obj.id:
+            return
+
+        command = (
+            f"Command: delete-object --object-id {obj.id:#06x} "
+            f"--object-type {_object_type_name(obj.object_type)}"
+        )
+        if dry_run:
+            print(
+                "yubihsm -a delete-object --object-id "
+                f"{obj.id:#06x} --object-type "
+                f"{_object_type_name(obj.object_type)}\n",
+                file=sys.stderr,
+            )
+            last_id = obj.id
+            continue
+        try:
+            delete_object(config, obj.id, obj.object_type)
+        except Exception:
+            if after_delete is not None:
+                after_delete(f"{command} Result: 1")
+            raise
+        if after_delete is not None:
+            after_delete(f"{command} Result: 0")
+        last_id = obj.id
+
+    if should_make_space_on_hsm(get_storage_info(config)):
+        raise RuntimeError(
+            "Failed to make enough space on the HSM in limit_ondemand_objects.",
+        )
 
 
 def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:
