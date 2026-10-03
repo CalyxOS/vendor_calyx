@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run
+from conftest import SCRIPTS_DIR, run, run_cli
 
 DEVICES = ("bramble", "redfin")
 GOLDEN_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
@@ -28,8 +28,30 @@ def generate_keymap(
     )
 
 
+def python_generate_keymap(
+    devices: tuple[str, ...],
+) -> subprocess.CompletedProcess[str]:
+    return run_cli(
+        [
+            "generate-keymap",
+            "--metadata",
+            SCRIPTS_DIR / "metadata.py",
+            "--devices",
+            *devices,
+        ],
+        check=False,
+    )
+
+
 def test_id2b_keymap_matches_complete_golden_output(tmp_path: Path) -> None:
     result = generate_keymap(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == GOLDEN_KEYMAP.read_text()
+
+
+def test_id2b_keymap_cli_matches_complete_golden_output() -> None:
+    result = python_generate_keymap(DEVICES)
+
     assert result.returncode == 0, result.stderr
     assert result.stdout == GOLDEN_KEYMAP.read_text()
 
