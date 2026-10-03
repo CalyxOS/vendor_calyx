@@ -11,7 +11,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, TEST_METADATA, run_cli_bytes
+from conftest import SCRIPTS_DIR, TEST_METADATA, run, run_cli, run_cli_bytes
+from signing.keymap import StaticKeymapper
+from signing.release_arguments import make_get_key
 from test_release_orchestration import (
     PKCS11_ENVIRONMENT,
     ROLLBACK_DEVICES,
@@ -23,6 +25,11 @@ from test_release_orchestration import (
 @pytest.fixture(autouse=True)
 def _small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+
+
+STATIC_KEYMAP_FIXTURE = (
+    Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
+)
 
 
 def run_build_release_args(
@@ -228,23 +235,137 @@ def test_release_sh_refuses_keymapper_file_with_python_arguments(
     assert "does not support KEYMAPPER_FILE" in result.stderr
 
 
-def test_release_sh_refuses_the_static_keymapper_with_python_arguments(
-    tmp_path: Path,
-) -> None:
-    keymap_file = tmp_path / "keymap.tsv"
-    keymap_file.write_text("ID\tDevice\tKey Type\tKey\n")
-    result = run_release(
-        make_release_tree(tmp_path / "tree"),
-        "bramble",
-        environment={
-            "USE_PYTHON_RELEASE_ARGS": "y",
-            "KEYMAPPER": "static",
-            "KEYMAP_FILE": str(keymap_file),
+def _bash_static_get_key(
+    device: str,
+    key_type: str,
+    key_name: str,
+    suffix: str = "",
+) -> subprocess.CompletedProcess[str]:
+    program = r"""
+source "$1" || exit $?
+get_key "$2" "$3" "$4"
+"""
+    return run(
+        [
+            "bash",
+            "-c",
+            program,
+            "static-keymapper-test",
+            SCRIPTS_DIR / "keymapper.static.include.sh",
+            key_type,
+            key_name,
+            suffix,
+        ],
+        env={
+            "KEYMAP_FILE": str(STATIC_KEYMAP_FIXTURE),
+            "DEVICE": device,
+            "KEY_DIR": "keys",
         },
+        check=False,
     )
 
-    assert result.returncode != 0
-    assert "supports only the legacy and id2b keymappers" in result.stderr
+
+def test_static_get_key_keeps_the_suffix_on_avb_and_apex_payload() -> None:
+    get_key = make_get_key(
+        StaticKeymapper.from_file(STATIC_KEYMAP_FIXTURE),
+        device="bramble",
+        key_dir="keys/",
+    )
+
+    assert get_key("avb", "vbmeta").endswith(".pem")
+    assert get_key("apex_payload", "com.android.adbd") == "keys/0x1300.pem"
+    assert get_key("other", "ota") == "keys/0x2000"
+
+
+def test_static_keymapper_get_key_raises_for_unknown_key() -> None:
+    get_key = make_get_key(
+        StaticKeymapper.from_file(STATIC_KEYMAP_FIXTURE),
+        device="bramble",
+        key_dir="keys/",
+    )
+
+    with pytest.raises(ValueError, match="Could not find key type"):
+        get_key("core", "no/such/key")
+
+
+@pytest.mark.parametrize(
+    ("device", "key_type", "key_name"),
+    [
+        ("bramble", "core", "build/make/target/product/security/testkey"),
+        ("bramble", "core", "build/make/target/product/security/devkey"),
+        ("bramble", "avb", "vbmeta"),
+        ("redfin", "avb", "vbmeta"),
+        ("bramble", "other", "ota"),
+        ("redfin", "other", "ota"),
+        (
+            "bramble",
+            "apex_apk",
+            "device/google/gs-common/uwb-certs/com.qorvo.uwb",
+        ),
+    ],
+)
+def test_static_keymapper_get_key_matches_bash_keymapper(
+    device: str,
+    key_type: str,
+    key_name: str,
+) -> None:
+    suffix = ".pem" if key_type in ("avb", "apex_payload") else ""
+    bash_result = _bash_static_get_key(device, key_type, key_name, suffix)
+    assert bash_result.returncode == 0, bash_result.stderr
+    expected = bash_result.stdout.strip()
+
+    get_key = make_get_key(
+        StaticKeymapper.from_file(STATIC_KEYMAP_FIXTURE),
+        device=device,
+        key_dir="keys/",
+    )
+
+    assert get_key(key_type, key_name) == expected
+
+
+@pytest.mark.parametrize("key_suffix", (None, ""), ids=("pem", "no-suffix"))
+def test_release_sh_renders_the_same_commands_with_the_static_keymapper(
+    tmp_path: Path,
+    key_suffix: str | None,
+) -> None:
+    keymap = run_cli(
+        [
+            "generate-keymap",
+            "--keymapper",
+            "id2b",
+            "--metadata",
+            str(TEST_METADATA),
+            "--devices",
+            "bramble",
+        ],
+        env={"PATH": "/usr/bin:/bin"},
+        replace_env=True,
+        check=True,
+    ).stdout
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(keymap)
+    environment = {"KEYMAPPER": "static", "KEYMAP_FILE": str(keymap_file)}
+    if key_suffix is not None:
+        environment["KEY_SUFFIX"] = key_suffix
+
+    bash_result = run_release(
+        make_release_tree(tmp_path / "bash"),
+        "bramble",
+        environment=environment,
+    )
+    python_result = run_release(
+        make_release_tree(tmp_path / "python"),
+        "bramble",
+        environment={**environment, "USE_PYTHON_RELEASE_ARGS": "y"},
+    )
+
+    assert bash_result.returncode == 0, bash_result.stderr
+    assert python_result.returncode == 0, python_result.stderr
+    python_stderr = python_result.stderr.replace(
+        str(tmp_path / "python"),
+        str(tmp_path / "bash"),
+    )
+    assert python_stderr == bash_result.stderr
 
 
 def test_build_release_args_passes_the_rollback_index_as_given() -> None:
