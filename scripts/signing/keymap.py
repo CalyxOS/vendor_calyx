@@ -9,7 +9,8 @@ Resolve logical keys from signing metadata to physical key identities.
 from __future__ import annotations
 
 import abc
-from collections.abc import Mapping, Sequence
+import sys
+from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -132,6 +133,25 @@ class KeymapRow:
         )
 
 
+def normalize_key_dir(environment: MutableMapping[str, str]) -> str:
+    """
+    Default KEY_DIR to keys/, end it in exactly one slash unless it is
+    empty, and return it.
+
+    Args:
+        environment: Process environment to read KEY_DIR from and mutate
+            in place.
+
+    Returns:
+        The normalized KEY_DIR value.
+    """
+    key_dir = environment.get("KEY_DIR", "keys")
+    if key_dir:
+        key_dir = key_dir.rstrip("/") + "/"
+    environment["KEY_DIR"] = key_dir
+    return key_dir
+
+
 class Keymapper(abc.ABC):
     """
     Resolve logical metadata keys to physical key identities.
@@ -204,6 +224,22 @@ class Keymapper(abc.ABC):
         """
         raise ValueError(f"{type(self).__name__} does not assign key IDs")
 
+    def key_id_is_per_device(self, key_id: str) -> bool:
+        """
+        Return whether a key ID belongs to a per-device key. The YubiHSM
+        vendor loads such keys on demand.
+
+        Args:
+            key_id: Key ID formatted as ``0xhhhh``.
+
+        Returns:
+            True for a per-device key ID.
+
+        Raises:
+            ValueError: If the keymapper does not assign key IDs.
+        """
+        raise ValueError(f"{type(self).__name__} does not assign key IDs")
+
     def device_key_ids(self, device: str) -> frozenset[str]:
         """
         Return the key IDs of a device's per-device keys, the entry
@@ -234,6 +270,22 @@ class Keymapper(abc.ABC):
             The vbmeta key's .avbpubkey file.
         """
         return f"{self.key('avb', 'vbmeta', device)}.avbpubkey"
+
+    def key_dir(self, environment: MutableMapping[str, str]) -> str:
+        """
+        Apply the keymapper's KEY_DIR export and return the value.
+
+        KEY_DIR defaults to keys/ when unset, and otherwise ends in exactly
+        one slash, or stays empty.
+
+        Args:
+            environment: Process environment to read KEY_DIR from and
+                mutate in place.
+
+        Returns:
+            The normalized KEY_DIR value.
+        """
+        return normalize_key_dir(environment)
 
     def to_tsv(self, devices: Sequence[str]) -> str:
         """
@@ -377,6 +429,12 @@ class LegacyKeymapper(_BaseKeymapper):
         del suffix
         return self.key_value(key_type, key_name, device, suffix=key_suffix)
 
+    def key_id_is_per_device(self, key_id: str) -> bool:
+        """
+        Treat every key ID as per-device.
+        """
+        return True
+
     def device_key_ids(self, device: str) -> frozenset[str]:
         """
         Refuse, as legacy keys are paths rather than key IDs.
@@ -386,6 +444,13 @@ class LegacyKeymapper(_BaseKeymapper):
     def avb_custom_key(self, device: str) -> str:
         vbmeta = self.key_value("avb", "vbmeta", device)
         return str(Path(vbmeta).parent / "avb_custom_key.img")
+
+    def key_dir(self, environment: MutableMapping[str, str]) -> str:
+        """
+        Set KEY_DIR to keys/ and return it.
+        """
+        environment["KEY_DIR"] = "keys/"
+        return "keys/"
 
     def key_value(
         self,
@@ -692,6 +757,17 @@ class Id2bKeymapper(_BaseKeymapper):
     def _row_value(self, key_type: str, key_name: str, device: str) -> str:
         return self.key_id(key_type, key_name, device)
 
+    def key_id_is_per_device(self, key_id: str) -> bool:
+        """
+        Return whether the ID falls in the per-device prefix range.
+        """
+        value = int(key_id, 16)
+        return (
+            self.config.device_prefix_start << 8
+            <= value
+            <= (self.config.device_prefix_end << 8 | 0xFF)
+        )
+
     def _validate_devices(self, devices: Sequence[str]) -> None:
         super()._validate_devices(devices)
         unknown = set(devices) - set(self.metadata.all_devices)
@@ -775,6 +851,14 @@ class StaticKeymapper(Keymapper):
             f"device '{device}' in KEYMAP_FILE",
         )
 
+    def key_id_is_per_device(self, key_id: str) -> bool:
+        """
+        Return whether a row with this ID names a device.
+        """
+        return any(
+            row.key_id == key_id and row.device for row in self.static_rows
+        )
+
     def rows(self, devices: Sequence[str]) -> tuple[KeymapRow, ...]:
         """
         Return the keymap's shared rows and the rows of the given devices.
@@ -787,3 +871,45 @@ class StaticKeymapper(Keymapper):
                 if not row.device or row.device in selected
             ),
         )
+
+
+def load_keymapper(
+    environment: Mapping[str, str],
+    metadata: SigningMetadata,
+) -> Keymapper:
+    """
+    Select the keymapper KEYMAPPER names, as load_keymapper() does.
+
+    Args:
+        environment: Process environment to read KEYMAPPER and KEYMAP_FILE
+            from.
+        metadata: Validated signing metadata.
+
+    Returns:
+        The legacy keymapper when KEYMAPPER is unset, or the id2b or
+        static keymapper.
+
+    Raises:
+        ValueError: If KEYMAPPER names no keymapper, or KEYMAPPER=static
+            comes without KEYMAP_FILE or with one that does not exist.
+    """
+    name = environment.get("KEYMAPPER") or "legacy"
+    keymapper: Keymapper
+    if name == "legacy":
+        keymapper = LegacyKeymapper(metadata)
+    elif name == "id2b":
+        keymapper = Id2bKeymapper(metadata)
+    elif name == "static":
+        keymap_file = environment.get("KEYMAP_FILE", "")
+        if not keymap_file:
+            raise ValueError(
+                "Please set KEYMAP_FILE to a tab-separated values file "
+                "generated by generate_keymap.sh",
+            )
+        if not Path(keymap_file).exists():
+            raise ValueError(f"Cannot find KEYMAP_FILE {keymap_file}")
+        keymapper = StaticKeymapper.from_file(Path(keymap_file))
+    else:
+        raise ValueError(f"Could not find keymapper '{name}'.")
+    print(f"Using keymapper: {name}", file=sys.stderr)
+    return keymapper
