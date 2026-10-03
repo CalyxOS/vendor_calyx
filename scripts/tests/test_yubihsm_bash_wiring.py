@@ -6,14 +6,17 @@
 from __future__ import annotations
 
 import base64
+import datetime
 import stat
 import subprocess
 from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, run
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
 from yubihsm.defs import OBJECT
-from yubihsm_emulator import Connector
+from yubihsm_emulator import Connector, EmulatedYubiHsm
 
 
 def run_yubihsm_functions(
@@ -286,6 +289,95 @@ limit_ondemand_objects
     audit_log = (tmp_path / "audit.log").read_text()
     assert "delete-object --object-id 0x2000 " in audit_log
     assert "limit-ondemand-objects" not in audit_log
+
+
+def _key_with_certificate(device: EmulatedYubiHsm, key_id: int) -> None:
+    key = device.put_asymmetric_key(key_id)
+    name = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "key")])
+    now = datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC)
+    device.put_certificate(
+        key_id,
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(1)
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=1))
+        .sign(key, hashes.SHA256()),
+    )
+
+
+def test_populate_loaded_keys_fails_when_the_hsm_is_unreachable(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    _key_with_certificate(yubihsm.device, 0x2000)
+    yubihsm.plug(None)
+    result = run_yubihsm_functions(
+        r"""
+declare -g -A fully_loaded_keys_map=()
+status=0
+populate_loaded_keys || status=$?
+printf 'exit=%s\n' "$status"
+printf 'count=%s\n' "${#fully_loaded_keys_map[@]}"
+""",
+        env=_hsm_environment(tmp_path, yubihsm),
+    )
+
+    assert result.stdout.splitlines()[0] != "exit=0"
+    assert result.stdout.splitlines()[1] == "count=0"
+    assert "503" in result.stderr
+
+
+def test_read_yubihsm_deviceinfo_via_python_when_flagged(
+    yubihsm: Connector,
+) -> None:
+    environment = {
+        "PYTHONPATH": str(SCRIPTS_DIR),
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+    }
+    result = run_yubihsm_functions(
+        r"""
+export YUBIHSM_PYTHON_TOOLS=y
+read_yubihsm_deviceinfo
+printf '%s\n' "$yubihsm_serial" "$yubihsm_partnumber" "$yubihsm_id"
+""",
+        env=environment,
+    )
+
+    lines = result.stdout.strip().splitlines()
+    assert lines == ["123456", "YubiHSM2", "YubiHSM2-123456"], result.stderr
+
+
+def test_populate_loaded_keys_via_python_when_flagged(
+    yubihsm: Connector,
+) -> None:
+    _key_with_certificate(yubihsm.device, 0x2000)
+    environment = {
+        "PYTHONPATH": str(SCRIPTS_DIR),
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+    }
+    result = run_yubihsm_functions(
+        r"""
+export YUBIHSM_PYTHON_TOOLS=y
+declare -g -A fully_loaded_keys_map=()
+populate_loaded_keys
+if [ -n "${fully_loaded_keys_map[0x2000]:-}" ]; then
+  echo OK
+else
+  echo "0x2000 not marked fully loaded" >&2
+  exit 1
+fi
+""",
+        env=environment,
+    )
+
+    assert result.stdout.strip().splitlines()[-1] == "OK", result.stderr
 
 
 def test_limit_ondemand_objects_deletes_nothing_under_dry_run(

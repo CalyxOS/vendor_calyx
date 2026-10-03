@@ -560,6 +560,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
     )
 
+    get_device_identity_parser = subparsers.add_parser("get-device-identity")
+    _add_yubihsm_arguments(get_device_identity_parser)
+
+    get_loaded_key_status_parser = subparsers.add_parser(
+        "get-loaded-key-status",
+    )
+    _add_yubihsm_arguments(get_loaded_key_status_parser)
+
     start_connector = subparsers.add_parser("start-yubihsm-connector")
     _add_yubihsm_connector_arguments(start_connector)
 
@@ -1264,6 +1272,43 @@ def _cmd_limit_ondemand_objects(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_get_device_identity(args: argparse.Namespace) -> int:
+    """
+    Print the YubiHSM's device information as yubihsm-shell's
+    get-device-info prints it.
+
+    Args:
+        args: Parsed namespace containing connector settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import get_device_identity
+
+    config = _yubihsm_config_from_args(args)
+    print(get_device_identity(config).device_info, end="")
+    return 0
+
+
+def _cmd_get_loaded_key_status(args: argparse.Namespace) -> int:
+    """
+    Print the object IDs of fully loaded YubiHSM keys.
+
+    Args:
+        args: Parsed namespace containing connector settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import get_loaded_key_status
+
+    config = _yubihsm_config_from_args(args)
+    status = get_loaded_key_status(config)
+    for object_id in sorted(status.fully_loaded_ids):
+        print(f"{object_id:#06x}")
+    return 0
+
+
 def _cmd_extract_audit_log(args: argparse.Namespace) -> int:
     """
     Extract and save the YubiHSM audit log.
@@ -1455,6 +1500,8 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "export-wrapped-key": _cmd_export_wrapped_key,
     "import-wrapped-key": _cmd_import_wrapped_key,
     "limit-ondemand-objects": _cmd_limit_ondemand_objects,
+    "get-device-identity": _cmd_get_device_identity,
+    "get-loaded-key-status": _cmd_get_loaded_key_status,
     "extract-audit-log": _cmd_extract_audit_log,
     "start-yubihsm-connector": _cmd_start_yubihsm_connector,
     "stop-yubihsm-connector": _cmd_stop_yubihsm_connector,
