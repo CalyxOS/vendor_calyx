@@ -58,12 +58,15 @@ class Pkcs11Config:
 
     module: Path
     pin: str | None = field(default=None, repr=False)
+    discovery_pin: str | None = field(default=None, repr=False)
     token_label: str | None = None
     slot: str | None = None
     tool: str = "pkcs11-tool"
     openssl: str = "openssl"
     openssl_engine: Path | None = None
     certificate_days: int = DEFAULT_CERTIFICATE_DAYS
+    use_so_pin: bool = False
+    list_requires_no_pin: bool = False
     environment: Mapping[str, str] = field(
         default_factory=dict[str, str],
         repr=False,
@@ -208,6 +211,49 @@ class Pkcs11Backend:
             self._object_id(request.key),
             input_data=request.data,
         ).stdout
+
+    def key_id_for_label(self, label: str) -> str:
+        """
+        Resolve a private key's label to one unique object ID.
+
+        Args:
+            label: Private-key label derived from a signing key path.
+
+        Returns:
+            Lowercase hexadecimal object ID without a prefix.
+
+        Raises:
+            KeyError: If no private key has the label.
+            ValueError: If the label is empty or resolves to multiple IDs.
+            OSError: If ``pkcs11-tool`` cannot be executed.
+            subprocess.CalledProcessError: If object discovery fails.
+        """
+        if not label:
+            raise ValueError("PKCS#11 private key label must not be empty")
+        output = self.run(
+            "--list-objects",
+            "--type",
+            "privkey",
+            "--label",
+            label,
+            include_pin=not self.config.list_requires_no_pin,
+            use_discovery_pin=True,
+        ).stdout
+        identifiers = [
+            self._normalize_listing_id(
+                line.split(b":", 1)[1].strip().decode("ascii"),
+            )
+            for line in output.splitlines()
+            if line.lstrip().startswith(b"ID:")
+        ]
+        if not identifiers:
+            raise KeyError(f"PKCS#11 private key label not found: {label}")
+        unique = set(identifiers)
+        if len(unique) != 1:
+            raise ValueError(
+                f"PKCS#11 private key label is ambiguous: {label}",
+            )
+        return identifiers[0]
 
     def generate_key(self, spec: KeySpec) -> None:
         """
@@ -416,6 +462,8 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             object_type,
             "--id",
             object_id,
+            include_pin=not self.config.list_requires_no_pin,
+            use_discovery_pin=True,
         ).stdout
         return self.listing_contains_id(output, object_id)
 
@@ -487,7 +535,11 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
                 return True
         return False
 
-    def _base_arguments(self) -> list[str]:
+    def _base_arguments(
+        self,
+        include_pin: bool = True,
+        use_discovery_pin: bool = False,
+    ) -> list[str]:
         """
         Build common module, token, and login arguments.
 
@@ -499,8 +551,31 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             arguments.extend(("--token-label", self.config.token_label))
         if self.config.slot is not None:
             arguments.extend(("--slot", self.config.slot))
-        if self.config.pin is not None:
-            arguments.extend(("--pin", "env:PKCS11_BACKEND_PIN"))
+        pin = self.config.pin
+        if use_discovery_pin:
+            pin = self.config.discovery_pin
+            if pin is None and not self.config.use_so_pin:
+                pin = self.config.pin
+        if include_pin and pin is not None:
+            if self.config.use_so_pin and not use_discovery_pin:
+                arguments.extend(
+                    (
+                        "--login-type",
+                        "so",
+                        "--so-pin",
+                        "env:PKCS11_BACKEND_PIN",
+                    ),
+                )
+            else:
+                separate_discovery_pin = (
+                    use_discovery_pin and self.config.discovery_pin is not None
+                )
+                variable = (
+                    "PKCS11_BACKEND_DISCOVERY_PIN"
+                    if separate_discovery_pin
+                    else "PKCS11_BACKEND_PIN"
+                )
+                arguments.extend(("--pin", f"env:{variable}"))
         return arguments
 
     def _environment(self) -> dict[str, str]:
@@ -513,12 +588,18 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         environment = environment_with(self.config.environment)
         if self.config.pin is not None:
             environment["PKCS11_BACKEND_PIN"] = self.config.pin
+        if self.config.discovery_pin is not None:
+            environment["PKCS11_BACKEND_DISCOVERY_PIN"] = (
+                self.config.discovery_pin
+            )
         return environment
 
     def run(
         self,
         *arguments: str,
         input_data: bytes | None = None,
+        include_pin: bool = True,
+        use_discovery_pin: bool = False,
     ) -> subprocess.CompletedProcess[bytes]:
         """
         Execute ``pkcs11-tool`` with credentials supplied through the
@@ -527,6 +608,8 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         Args:
             arguments: Operation-specific ``pkcs11-tool`` arguments.
             input_data: Optional bytes supplied to standard input.
+            include_pin: Whether to include configured login arguments.
+            use_discovery_pin: Whether to use normal discovery credentials.
 
         Returns:
             The successful completed process.
@@ -537,7 +620,11 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
                 unsuccessfully.
         """
         return subprocess.run(
-            [self.config.tool, *self._base_arguments(), *arguments],
+            [
+                self.config.tool,
+                *self._base_arguments(include_pin, use_discovery_pin),
+                *arguments,
+            ],
             input=input_data,
             check=True,
             capture_output=True,

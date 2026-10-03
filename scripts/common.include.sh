@@ -185,10 +185,22 @@ prepare_signing_args() {
     $maybe_dry_run generate_sunpkcs11_config \
       | $maybe_dry_run_ignore tee "$tmpdir/sunpkcs11.cfg" >/dev/null
     local tool=${SIGNING_HELPER_TOOL:-openssl}
-    local signing_helper_tool=$scriptpath/pkcs11/signing_helper.$tool.sh
-    local payload_signer_tool=$scriptpath/pkcs11/payload_signer.$tool.sh
+    local avb_tool=${AVB_SIGNING_HELPER_TOOL:-$tool}
+    local signing_helper_tool
+    if [ "$avb_tool" = python ]; then
+      signing_helper_tool=$scriptpath/pkcs11/signing_helper.py
+    else
+      signing_helper_tool=$scriptpath/pkcs11/signing_helper.$avb_tool.sh
+    fi
+    local payload_tool=${PAYLOAD_SIGNER_TOOL:-$tool}
+    local payload_signer_tool
+    if [ "$payload_tool" = python ]; then
+      payload_signer_tool=$scriptpath/pkcs11/payload_signer.py
+    else
+      payload_signer_tool=$scriptpath/pkcs11/payload_signer.$payload_tool.sh
+    fi
     if [ ! -e "$signing_helper_tool" ] || [ ! -e "$payload_signer_tool" ]; then
-      echo "Looking for SIGNING_HELPER_TOOL '$tool', missing '$signing_helper_tool' and/or '$payload_signer_tool'" >&2
+      echo "Looking for signing helper tools '$avb_tool' and '$payload_tool', missing '$signing_helper_tool' and/or '$payload_signer_tool'" >&2
       return 1
     fi
     local quoted_signing_helper_tool
