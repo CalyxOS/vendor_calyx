@@ -15,6 +15,9 @@ from types import ModuleType
 
 import pytest
 from conftest import SCRIPTS_DIR, run, stub
+from signing.signing_server import SigningServer
+from signing.vendor_yubihsm import YubiHsmConfig
+from signing.yubihsm_session_service import YubiHsmSessionService
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector
 
@@ -543,3 +546,46 @@ def test_audit_comment_quotes_as_printf_q(argument: str) -> None:
     bash = run(["bash", "-c", 'printf "%q" "$1"', "printf-q", argument])
 
     assert interceptor.printf_q(argument) == bash.stdout
+
+
+@pytest.mark.parametrize(
+    ("through_server", "failures"),
+    ((True, 2), (False, 1)),
+    ids=("server", "own"),
+)
+def test_retries_an_unacknowledged_extraction_without_writing_it_twice(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    yubihsm: Connector,
+    through_server: bool,
+    failures: int,
+) -> None:
+    interceptor = _load_interceptor()
+    monkeypatch.setattr(interceptor.time, "sleep", stub(None))
+    yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX, times=failures)
+    make_script(tmp_path / "avbtool", "exit 0\n")
+    audit_log = tmp_path / "audit.log"
+    service = YubiHsmSessionService(
+        YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+        audit_log_path=audit_log,
+    )
+    server = SigningServer(
+        tmp_path / "s.sock",
+        {"yubihsm_extract_audit_log": service},
+    )
+    environment = _audit_environment(tmp_path, tmp_path, "avbtool", yubihsm)
+    if through_server:
+        environment["SIGNING_SERVER_SOCKET"] = str(server.socket_path)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+
+    with server:
+        status = interceptor.main(["add_hash_footer", "--signing_helper", "x"])
+
+    assert status == 0
+    (_, _, digest), *_ = yubihsm.device.log
+    lines = audit_log.read_text().splitlines()
+    entries = [line for line in lines if not line.startswith("#")]
+    assert len(entries) == 1
+    assert entries[0].endswith("hash: " + digest.hex())
+    assert lines[-1].endswith("# Result: 0 Try (log): 2")
