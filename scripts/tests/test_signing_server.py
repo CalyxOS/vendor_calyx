@@ -5,12 +5,31 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import os
 import socket
+import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from conftest import SCRIPTS_DIR
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from openssl_shim import generate_rsa_key, helper_env, write_openssl_pkcs11_shim
 from signing import signing_server
 from signing.signing_server import Message, SigningServer, request
+from signing.vendor_yubihsm import YubiHsmConfig
+from signing.yubihsm_session_service import YubiHsmSessionService
+from software_rsa import rsa_key, verifies
+from yubihsm_emulator import Connector, EmulatedYubiHsm
+
+HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.server.py"
+SHA256_DIGEST_INFO_PREFIX = bytes.fromhex(
+    "3031300d060960864801650304020105000420",
+)
 
 
 class _Handler:
@@ -61,6 +80,189 @@ def test_request_without_a_server_is_none(
 ) -> None:
     assert request(tmp_path / "missing.sock", "a") is None
     assert "could not reach the signing server" in capsys.readouterr().err
+
+
+def _service(yubihsm: Connector) -> YubiHsmSessionService:
+    return YubiHsmSessionService(
+        YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+    )
+
+
+def _sign_request(key_id: int, digest: bytes) -> Message:
+    return {
+        "op": "yubihsm_sign_pkcs1",
+        "key_id": key_id,
+        "digest": base64.b64encode(digest).decode(),
+    }
+
+
+def test_sign_uses_one_session_and_verifies(yubihsm: Connector) -> None:
+    yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
+    service = _service(yubihsm)
+    digest = hashlib.sha256(b"payload").digest()
+
+    for _ in range(3):
+        response = service.handle(_sign_request(0x2000, digest))
+        rsa_key("service").public_key().verify(
+            base64.b64decode(response["signature"]),
+            b"payload",
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+
+    assert yubihsm.device.sessions_opened == 1
+    service.close()
+    assert yubihsm.device.sessions == {}
+
+
+def test_sign_reopens_an_expired_session(yubihsm: Connector) -> None:
+    yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
+    service = _service(yubihsm)
+    sign = _sign_request(0x2000, hashlib.sha256(b"x").digest())
+    service.handle(sign)
+    yubihsm.device.drop_sessions()
+
+    response = service.handle(sign)
+
+    assert response["status"] == "ok"
+    assert yubihsm.device.sessions_opened == 2
+
+
+def test_sign_rejects_a_signature_that_does_not_verify(
+    yubihsm: Connector,
+) -> None:
+    yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
+    yubihsm.device.corrupt_signatures = True
+    service = _service(yubihsm)
+
+    with pytest.raises(InvalidSignature):
+        service.handle(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
+
+
+def _avb_input(message: bytes) -> tuple[bytes, bytes]:
+    digest = hashlib.sha256(message).digest()
+    digest_info = SHA256_DIGEST_INFO_PREFIX + digest
+    block = b"\x00\x01" + b"\xff" * (256 - 3 - len(digest_info)) + b"\x00"
+    return block + digest_info, digest
+
+
+@pytest.fixture
+def yubihsm_server(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> Iterator[tuple[SigningServer, EmulatedYubiHsm]]:
+    yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("server-a"))
+    yubihsm.device.put_asymmetric_key(0x2100, key=rsa_key("server-b"))
+    service = _service(yubihsm)
+    server = SigningServer(
+        tmp_path / "s.sock",
+        {
+            "yubihsm_sign_pkcs1": service,
+        },
+    )
+    with server:
+        yield server, yubihsm.device
+
+
+def _without_signing_variables() -> dict[str, str]:
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("YUBIHSM_", "KEY_ID", "SIGNING_SERVER"))
+    }
+
+
+def test_helper_signs_with_the_server_key_its_path_names(
+    tmp_path: Path,
+    yubihsm_server: tuple[SigningServer, EmulatedYubiHsm],
+) -> None:
+    server, _ = yubihsm_server
+    data, digest = _avb_input(b"image")
+    key_file = _public_key_file(tmp_path / "keys", "0x2100", "server-b")
+
+    result = subprocess.run(
+        [HELPER, "SHA256_RSA2048", key_file],
+        env={
+            **_without_signing_variables(),
+            "SIGNING_SERVER_SOCKET": str(server.socket_path),
+            "KEY_DIR": f"{tmp_path / 'keys'}/",
+        },
+        input=data,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(rsa_key("server-b"), result.stdout, digest)
+    assert not verifies(rsa_key("server-a"), result.stdout, digest)
+
+
+def _openssl_fallback_env(tmp_path: Path) -> tuple[dict[str, str], Path]:
+    private_key = generate_rsa_key(tmp_path, 2048)
+    environment = {
+        **_without_signing_variables(),
+        **helper_env(write_openssl_pkcs11_shim(tmp_path), private_key),
+        "SIGNING_SERVER_SOCKET": str(tmp_path / "none.sock"),
+    }
+    return environment, private_key
+
+
+def _load_private_key(path: Path) -> rsa.RSAPrivateKey:
+    key = serialization.load_pem_private_key(path.read_bytes(), None)
+    assert isinstance(key, rsa.RSAPrivateKey)
+    return key
+
+
+def test_helper_signs_through_openssl_without_a_server(tmp_path: Path) -> None:
+    environment, private_key = _openssl_fallback_env(tmp_path)
+    data, digest = _avb_input(b"image")
+
+    result = subprocess.run(
+        [HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        env=environment,
+        input=data,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(_load_private_key(private_key), result.stdout, digest)
+
+
+def _public_key_file(directory: Path, name: str, key_name: str) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{name}.pem"
+    path.write_bytes(
+        rsa_key(key_name)
+        .public_key()
+        .public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ),
+    )
+    return path
+
+
+def test_helper_refuses_a_signature_its_public_key_does_not_verify(
+    tmp_path: Path,
+    yubihsm_server: tuple[SigningServer, EmulatedYubiHsm],
+) -> None:
+    server, _ = yubihsm_server
+    data, _ = _avb_input(b"image")
+    key_file = _public_key_file(tmp_path / "keys", "0x2100", "server-a")
+
+    result = subprocess.run(
+        [HELPER, "SHA256_RSA2048", key_file],
+        env={
+            **_without_signing_variables(),
+            "SIGNING_SERVER_SOCKET": str(server.socket_path),
+            "KEY_DIR": f"{tmp_path / 'keys'}/",
+        },
+        input=data,
+        capture_output=True,
+    )
+
+    assert result.returncode != 0
+    assert result.stdout == b""
+    assert b"does not verify under the supplied public key" in result.stderr
 
 
 def test_a_client_that_never_finishes_its_request_does_not_block(
