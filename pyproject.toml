@@ -1,0 +1,51 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 80
+include = [
+    "scripts/*.py",
+    "scripts/hsm_provisioning/*.py",
+    "scripts/pkcs11/*.py",
+    "scripts/tests/**/*.py",
+]
+extend-exclude = [
+    "scripts/tests/fixtures",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["COM812", "E", "F", "I", "PYI", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = [
+    "scripts",
+    "scripts/tests",
+    "scripts/pkcs11",
+    "scripts/hsm_provisioning",
+]
+explicit_package_bases = true
+untyped_calls_exclude = ["yubihsm"]
+files = ["scripts"]
+
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
+[tool.pyright]
+include = ["scripts"]
+exclude = ["scripts/tests/fixtures", "**/__pycache__"]
+extraPaths = [
+    "scripts",
+    "scripts/tests",
+    "scripts/pkcs11",
+    "scripts/hsm_provisioning",
+]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
