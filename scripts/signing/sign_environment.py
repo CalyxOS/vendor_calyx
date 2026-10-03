@@ -1,0 +1,810 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+"""
+PKCS#11 vendor initialization.
+
+Every function mutates the environment mapping it is given, so that
+release.sh and generate_delta.sh jobs started afterward see
+PKCS11_VENDOR_INITIALIZED and every value the vendor resolved.
+"""
+
+from __future__ import annotations
+
+import abc
+import contextlib
+import datetime
+import fcntl
+import shutil
+import sys
+import tempfile
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from pathlib import Path
+
+from .confirmation import ask_variable, confirm
+from .keymap import Keymapper, normalize_key_dir
+from .vendor_yubihsm import (
+    YubiHsmConfig,
+    ensure_all_keys_available_for_devices,
+    extract_and_save_audit_log,
+    get_device_identity,
+    populate_devices_with_loaded_keys_arrays,
+)
+from .vendor_yubihsm_connector import YubiHsmConnector, YubiHsmConnectorConfig
+
+_YUBIHSM_PKCS11_CONF_TEMPLATE = """\
+# This is a sample configuration file for the YubiHSM PKCS#11 module
+# Uncomment the various options as needed
+
+# URL of the connector to use. This can be a comma-separated list
+connector = {connector_url}
+
+# Enables general debug output in the module
+#
+# debug
+
+# Enables function tracing (ingress/egress) debug output in the module
+#
+# dinout
+
+# Enables libyubihsm debug output in the module
+#
+# libdebug
+
+# Redirects the debug output to a specific file. The file is created
+# if it does not exist. The content is appended
+#
+# debug-file = /tmp/yubihsm_pkcs11_debug
+
+# CA certificate to use for HTTPS validation. Point this variable to
+# a file containing one or more certificates to use when verifying
+# a peer. Currently not supported on Windows
+#
+# cacert = /tmp/cacert.pem
+
+# Proxy server to use for the connector
+# Currently not supported on Windows
+#
+# proxy = http://proxyserver.local.com:8080
+
+# Timeout in seconds to use for the initial connection to the connector
+# timeout = 5
+"""
+
+
+class UnsupportedVendorError(RuntimeError):
+    """
+    Raised for a PKCS11_VENDOR or PKCS11_VENDOR_FILE that the Python
+    orchestrator cannot initialize.
+    """
+
+
+def is_vendor_initialization_needed(
+    environment: MutableMapping[str, str],
+) -> bool:
+    """
+    Tell whether any PKCS#11 vendor selection is present.
+
+    Args:
+        environment: Process environment to read PKCS11_VENDOR/
+            PKCS11_VENDOR_FILE from.
+
+    Returns:
+        Whether a PKCS#11 vendor is configured at all.
+    """
+    return bool(
+        environment.get("PKCS11_VENDOR")
+        or environment.get("PKCS11_VENDOR_FILE"),
+    )
+
+
+def is_audit_log_repository(logs_dir: Path) -> bool:
+    """
+    Tell whether logs_dir is the audit-log git repository.
+
+    Args:
+        logs_dir: Candidate YUBIHSM_LOGS_DIR.
+
+    Returns:
+        True if logs_dir/upload.py is a nonempty file.
+    """
+    upload = logs_dir / "upload.py"
+    return upload.is_file() and upload.stat().st_size > 0
+
+
+def key_id_is_ondemand(keymapper: Keymapper) -> Callable[[int], bool]:
+    """
+    Build the YubiHSM's on-demand test from a keymapper, under which a
+    key is on-demand when it is per-device.
+
+    Args:
+        keymapper: The release's keymapper.
+
+    Returns:
+        A test taking a numeric object ID.
+    """
+    return lambda object_id: keymapper.key_id_is_per_device(
+        f"0x{object_id:04x}",
+    )
+
+
+def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
+    """
+    Pick the vendor PKCS11_VENDOR names, and set the variables the vendor
+    and the keymapper define.
+
+    Args:
+        environment: Process environment to read PKCS11_VENDOR/
+            PKCS11_VENDOR_FILE from, mutated in place.
+
+    Returns:
+        The vendor, or None when no vendor is set.
+
+    Raises:
+        UnsupportedVendorError: If PKCS11_VENDOR_FILE is set (a
+            third-party vendor script), or PKCS11_VENDOR is set to
+            anything other than "yubihsm"/"softhsm".
+        RuntimeError: If PKCS11_MODULE is unset and no module for the
+            vendor exists at any of its search paths.
+    """
+    if environment.get("PKCS11_VENDOR_FILE"):
+        raise UnsupportedVendorError(
+            "PKCS11_VENDOR_FILE is not supported by the Python orchestrator",
+        )
+    name = environment.get("PKCS11_VENDOR", "")
+    vendor: Vendor | None = None
+    if name:
+        try:
+            vendor = VENDORS[name]()
+        except KeyError as error:
+            raise UnsupportedVendorError(
+                f"PKCS11_VENDOR={name!r} is not supported by the Python "
+                "orchestrator",
+            ) from error
+        vendor.apply_source_exports(environment)
+        if not environment.get("PKCS11_MODULE"):
+            module = vendor.find_pkcs11_module()
+            if module is None:
+                raise RuntimeError(
+                    f"Please install the {vendor.display_name} PKCS#11 "
+                    "module, or set PKCS11_MODULE to its path.",
+                )
+            environment["PKCS11_MODULE"] = module
+    resolve_key_dir(environment, environment.get("KEYMAPPER") or "legacy")
+    return vendor
+
+
+def require_python_interceptor(environment: Mapping[str, str]) -> None:
+    """
+    Refuse a yubihsm run without PKCS11_PYTHON_INTERCEPTOR=y.
+
+    Args:
+        environment: Process environment to read PKCS11_VENDOR and
+            PKCS11_PYTHON_INTERCEPTOR from.
+
+    Raises:
+        UnsupportedVendorError: If PKCS11_VENDOR=yubihsm and
+            PKCS11_PYTHON_INTERCEPTOR is not y.
+    """
+    if (
+        environment.get("PKCS11_VENDOR") == "yubihsm"
+        and environment.get("PKCS11_PYTHON_INTERCEPTOR") != "y"
+    ):
+        raise UnsupportedVendorError(
+            "The Python orchestrator requires PKCS11_PYTHON_INTERCEPTOR=y "
+            "for the yubihsm vendor, since the apksigner batch mode of "
+            "the Bash interceptor has no Python equivalent.",
+        )
+
+
+def _module_paths(arches: tuple[str, ...], name: str) -> tuple[str, ...]:
+    return tuple(
+        f"/usr{prefix}/lib{arch}{subdirectory}/{name}"
+        for prefix in ("/local", "")
+        for arch in arches
+        for subdirectory in ("/pkcs11", "")
+    )
+
+
+def _default(
+    environment: MutableMapping[str, str],
+    name: str,
+    value: str,
+) -> None:
+    """Set a variable that is unset or empty."""
+    if not environment.get(name):
+        environment[name] = value
+
+
+def resolve_key_dir(
+    environment: MutableMapping[str, str],
+    keymapper: str,
+) -> str:
+    """
+    Set KEY_DIR for the keymapper and return the value.
+
+    The legacy keymapper sets KEY_DIR=keys/. The id2b and static keymappers
+    default it to keys/ when unset, and otherwise end it in exactly one
+    slash, or leave it empty.
+
+    Args:
+        environment: Process environment to read KEY_DIR from and
+            mutate in place.
+        keymapper: "legacy", "id2b" or "static".
+
+    Returns:
+        The normalized KEY_DIR value.
+    """
+    if keymapper == "legacy":
+        environment["KEY_DIR"] = "keys/"
+        return "keys/"
+    return normalize_key_dir(environment)
+
+
+def stop_connector(pid_file: Path) -> None:
+    """
+    Stop the connector a pid file names.
+
+    Args:
+        pid_file: The connector's pid file.
+
+    Returns:
+        None.
+    """
+    YubiHsmConnector(
+        YubiHsmConnectorConfig(connector_url="", pid_file=pid_file),
+    ).stop()
+
+
+def _yubihsm_connector_config(
+    environment: MutableMapping[str, str],
+    pid_file: Path,
+) -> YubiHsmConnectorConfig:
+    binary = environment.get("YUBIHSM_CONNECTOR_BIN") or shutil.which(
+        "yubihsm-connector",
+    )
+    if not binary:
+        raise RuntimeError(
+            "Please install yubihsm-connector, or set "
+            "YUBIHSM_CONNECTOR_BIN to its path. Alternatively, set "
+            "NEVER_START_YUBIHSM_CONNECTOR=y.",
+        )
+    environment["YUBIHSM_CONNECTOR_BIN"] = binary
+    return YubiHsmConnectorConfig(
+        connector_url=environment.get(
+            "YUBIHSM_CONNECTOR",
+            "http://127.0.0.1:12345",
+        ),
+        pid_file=pid_file,
+        binary=binary,
+    )
+
+
+def maybe_initialize_vendor_interactive(
+    environment: MutableMapping[str, str],
+    *,
+    assume_yes: bool,
+) -> None:
+    """
+    Run the vendor's interactive initialization once, when a vendor is
+    set.
+
+    Args:
+        environment: Process environment, mutated in place with any
+            resolved values.
+        assume_yes: Auto-answer any confirmation prompt yes.
+
+    Returns:
+        None.
+
+    Raises:
+        UnsupportedVendorError: See load_vendor().
+        RuntimeError: If interactive initialization fails or is
+            declined.
+    """
+    if not is_vendor_initialization_needed(environment):
+        return
+    if environment.get("PKCS11_VENDOR_INITIALIZED_INTERACTIVE") == "y":
+        return
+    vendor = load_vendor(environment)
+    if vendor is not None:
+        vendor.initialize_interactive(environment, assume_yes=assume_yes)
+    environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] = "y"
+
+
+def maybe_initialize_vendor(
+    environment: MutableMapping[str, str],
+    *,
+    tmpdir: Path,
+) -> None:
+    """
+    Run the vendor's initialization once, when a vendor is set.
+
+    Args:
+        environment: Process environment, mutated in place with any
+            resolved values.
+        tmpdir: Directory to create vendor-specific scratch space under.
+
+    Returns:
+        None.
+
+    Raises:
+        UnsupportedVendorError: See load_vendor().
+        RuntimeError: If initialization fails (e.g. a required tool or
+            directory is missing).
+    """
+    if not is_vendor_initialization_needed(environment):
+        return
+    if environment.get("PKCS11_VENDOR_INITIALIZED") == "y":
+        return
+    vendor = load_vendor(environment)
+    if vendor is not None:
+        vendor.initialize(environment, tmpdir=tmpdir)
+    environment["PKCS11_VENDOR_INITIALIZED"] = "y"
+
+
+def yubihsm_config_from_environment(
+    environment: MutableMapping[str, str],
+) -> YubiHsmConfig:
+    """
+    Build the YubiHSM connection settings from the environment.
+
+    Args:
+        environment: Variables naming the connector, the authentication
+            key, its password and the wrap key.
+
+    Returns:
+        The settings, with the vendor's defaults for unset variables.
+    """
+    return YubiHsmConfig(
+        connector_url=environment.get(
+            "YUBIHSM_CONNECTOR",
+            "http://127.0.0.1:12345",
+        ),
+        auth_key=environment.get("YUBIHSM_AUTHKEY", "0x0001"),
+        password=environment.get("YUBIHSM_PASSWORD", ""),
+        wrap_id=environment.get("YUBIHSM_WRAP_KEY_ID", "0x0010"),
+    )
+
+
+def formatted_date() -> str:
+    """Format the current UTC time as YYYY-mm-dd_HH-MM-SS-mmm."""
+    now = datetime.datetime.now(datetime.UTC)
+    return now.strftime("%Y-%m-%d_%H-%M-%S-") + f"{now.microsecond // 1000:03d}"
+
+
+class Vendor(abc.ABC):
+    """
+    A PKCS#11 vendor.
+    """
+
+    name = ""
+    display_name = ""
+    pkcs11_module_paths: tuple[str, ...] = ()
+
+    @abc.abstractmethod
+    def apply_source_exports(
+        self,
+        environment: MutableMapping[str, str],
+    ) -> None:
+        """
+        Set the variables the vendor defines.
+
+        Args:
+            environment: Process environment to mutate in place.
+
+        Returns:
+            None.
+        """
+
+    def find_pkcs11_module(self) -> str | None:
+        """
+        Search for the vendor's PKCS#11 module.
+
+        Returns:
+            The first existing path of pkcs11_module_paths, or None.
+        """
+        for path in self.pkcs11_module_paths:
+            if Path(path).exists():
+                return path
+        return None
+
+    def initialize_interactive(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        assume_yes: bool,
+    ) -> None:
+        """
+        Ask for what initialization needs. Does nothing by default.
+
+        Args:
+            environment: Process environment to mutate in place.
+            assume_yes: Auto-answer any confirmation prompt yes.
+
+        Returns:
+            None.
+        """
+
+    @abc.abstractmethod
+    def initialize(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        tmpdir: Path,
+    ) -> None:
+        """
+        Prepare the vendor for signing.
+
+        Args:
+            environment: Process environment to mutate in place.
+            tmpdir: Directory for vendor scratch space.
+
+        Returns:
+            None.
+        """
+
+    @abc.abstractmethod
+    def split_devices_by_loaded_keys(
+        self,
+        environment: MutableMapping[str, str],
+        keymapper: Keymapper,
+        devices: Sequence[str],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """
+        Partition devices by whether their keys are loaded.
+
+        Args:
+            environment: Process environment.
+            keymapper: The keymapper naming each device's keys.
+            devices: Devices to partition.
+
+        Returns:
+            The devices with every key loaded, then the others, each in
+            the order of devices.
+        """
+
+    def ensure_keys_for_devices(
+        self,
+        environment: MutableMapping[str, str],
+        keymapper: Keymapper,
+        devices: Sequence[str],
+    ) -> None:
+        """
+        Load the keys the devices need. Does nothing by default.
+
+        Args:
+            environment: Process environment.
+            keymapper: The keymapper naming each device's keys.
+            devices: Devices whose keys must be loaded.
+
+        Returns:
+            None.
+        """
+
+    def cleanup(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        inherited: Mapping[str, str],
+    ) -> None:
+        """
+        Stop what this process started for the vendor. Does nothing by
+        default.
+
+        Args:
+            environment: Process environment.
+            inherited: The environment the process started with.
+
+        Returns:
+            None.
+        """
+
+
+class SoftHsmVendor(Vendor):
+    """The SoftHSM vendor."""
+
+    name = "softhsm"
+    display_name = "SoftHSM"
+    pkcs11_module_paths = _module_paths(
+        ("/x86_64-linux-gnu", "64", ""),
+        "libsofthsm2.so",
+    )
+
+    def apply_source_exports(
+        self,
+        environment: MutableMapping[str, str],
+    ) -> None:
+        environment["KEYMAPPER"] = "id2b"
+        environment["USE_APKSIGNER"] = "y"
+        environment["FIND_KEYS_BY_ID"] = "y"
+        environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
+        environment["STRIP_HEX_KEY_ID_PREFIX"] = "y"
+        _default(environment, "SOFTHSM_LOGS_DIR", str(Path.cwd() / "logs"))
+        _default(environment, "DATE_FORMAT", "%Y%m%d-%H%M%S")
+
+    def initialize(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        tmpdir: Path,
+    ) -> None:
+        """SoftHSM needs no initialization."""
+
+    def split_devices_by_loaded_keys(
+        self,
+        environment: MutableMapping[str, str],
+        keymapper: Keymapper,
+        devices: Sequence[str],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Every device counts as loaded."""
+        return tuple(devices), ()
+
+
+class YubiHsmVendor(Vendor):
+    """The YubiHSM vendor."""
+
+    name = "yubihsm"
+    display_name = "YubiHSM"
+    pkcs11_module_paths = _module_paths(
+        ("/x86_64-linux-gnu", "/aarch64-linux-gnu", "64", ""),
+        "yubihsm_pkcs11.so",
+    )
+
+    def apply_source_exports(
+        self,
+        environment: MutableMapping[str, str],
+    ) -> None:
+        environment["KEYMAPPER"] = "static"
+        environment["USE_APKSIGNER"] = "y"
+        environment["FIND_KEYS_BY_ID"] = "y"
+        environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
+        environment["STRIP_HEX_KEY_ID_PREFIX"] = "y"
+        _default(environment, "YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
+        _default(environment, "YUBIHSM_WRAP_KEY_ID", "0x0010")
+        _default(
+            environment,
+            "YUBIHSM_KEY_CAPABILITIES",
+            "sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa",
+        )
+        _default(environment, "YUBIHSM_OPAQUE_CAPABILITIES", "")
+        _default(environment, "YUBIHSM_ONDEMAND_DOMAIN", "2")
+        _default(environment, "YUBIHSM_EXPORTABLE_DOMAIN", "3")
+        _default(environment, "YUBIHSM_UNEXPORTABLE_DOMAIN", "4")
+        _default(environment, "DATE_FORMAT", "%Y%m%d-%H%M%S")
+        _default(
+            environment,
+            "KEYMAP_FILE",
+            str(Path(__file__).resolve().parents[1] / "pkcs11/keymap.tsv"),
+        )
+        wrapper = str(
+            Path(__file__).resolve().parents[1]
+            / "pkcs11/pkcs11_tool.yubihsm.sh",
+        )
+        if environment.get("PKCS11_TOOL_BIN") != wrapper:
+            environment["YUBIHSM_UNDERLYING_PKCS11_TOOL_BIN"] = environment.get(
+                "PKCS11_TOOL_BIN",
+                "",
+            )
+            environment["PKCS11_TOOL_BIN"] = wrapper
+
+    def initialize_interactive(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        assume_yes: bool,
+    ) -> None:
+        """
+        Ask for the YubiHSM credentials, and for confirmation when a
+        yubihsm-connector that this process cannot restart is already running.
+        """
+        if environment.get("NEVER_START_YUBIHSM_CONNECTOR") != "y":
+            connector = YubiHsmConnector(
+                _yubihsm_connector_config(environment, Path("/dev/null")),
+            )
+            if connector.is_running():
+                print()
+                print("yubihsm-connector is already running.")
+                print(
+                    "This means we will not be able to restart it if it "
+                    "messes up.",
+                )
+                print(
+                    "Before running this script, please stop the existing "
+                    "connector by stopping its service,",
+                )
+                print("if any, or by running killall yubihsm-connector")
+                if not confirm("Continue anyway?", assume_yes=assume_yes):
+                    raise RuntimeError("yubihsm-connector is already running")
+
+        ask_variable(
+            "YUBIHSM_AUTHKEY",
+            environment,
+            default="0x0001",
+            needs_value=True,
+        )
+        ask_variable(
+            "YUBIHSM_PASSWORD",
+            environment,
+            default="",
+            private=True,
+            needs_value=True,
+        )
+
+    def initialize(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        tmpdir: Path,
+    ) -> None:
+        """
+        Prepare the YubiHSM for signing, failing when no password is given or
+        the audit-log repository is missing.
+        """
+        missing = [
+            name
+            for name in ("YUBIHSM_AUTHKEY", "YUBIHSM_PASSWORD")
+            if name not in environment
+        ]
+        if missing:
+            raise RuntimeError(f"{' and '.join(missing)} not set")
+        auth_key = environment["YUBIHSM_AUTHKEY"]
+        password = environment["YUBIHSM_PASSWORD"]
+        environment["PKCS11_PIN"] = (
+            auth_key.removeprefix("0x").rjust(4, "0") + password
+        )
+
+        pkcs11_scriptpath = Path(__file__).resolve().parents[1] / "pkcs11"
+        require_python_interceptor(environment)
+        environment["SIGNING_COMMAND_INTERCEPTOR"] = str(
+            pkcs11_scriptpath / "vendor.yubihsm.interceptor.py",
+        )
+        environment["PKCS11_VENDOR"] = "yubihsm"
+
+        if environment.get("DRY_RUN") != "y":
+            yubihsm_tmpdir = environment.get("YUBIHSM_TMPDIR")
+            if not yubihsm_tmpdir:
+                yubihsm_tmpdir = tempfile.mkdtemp(
+                    prefix="yubihsm.",
+                    dir=str(tmpdir),
+                )
+                Path(yubihsm_tmpdir).chmod(0o700)
+                environment["YUBIHSM_TMPDIR"] = yubihsm_tmpdir
+
+            pkcs11_conf = environment.get("YUBIHSM_PKCS11_CONF")
+            if not pkcs11_conf:
+                pkcs11_conf = str(Path(yubihsm_tmpdir) / "yubihsm_pkcs11.conf")
+                Path(pkcs11_conf).write_text(
+                    _YUBIHSM_PKCS11_CONF_TEMPLATE.format(
+                        connector_url=environment.get(
+                            "YUBIHSM_CONNECTOR",
+                            "http://127.0.0.1:12345",
+                        ),
+                    ),
+                )
+                environment["YUBIHSM_PKCS11_CONF"] = pkcs11_conf
+
+            if environment.get("NEVER_START_YUBIHSM_CONNECTOR") != "y":
+                pid_file = Path(yubihsm_tmpdir) / "yubihsm_connector.pid"
+                connector = YubiHsmConnector(
+                    _yubihsm_connector_config(environment, pid_file),
+                )
+                connector.start()
+                if pid_file.exists():
+                    environment["YUBIHSM_CONNECTOR_PIDFILE"] = str(pid_file)
+
+            _default(
+                environment,
+                "YUBIHSM_LOCKFILE",
+                str(Path(yubihsm_tmpdir) / "yubihsm.lock"),
+            )
+
+            logs_dir = Path.cwd() / "logs"
+            if not is_audit_log_repository(logs_dir):
+                raise RuntimeError(
+                    f"YUBIHSM_LOGS_DIR ({logs_dir}) is not the expected git "
+                    "repository.\n"
+                    "Are you sure you are calling this script from the right "
+                    "place?\n"
+                    "Did you clone the audit log git repository already?",
+                )
+            environment["YUBIHSM_LOGS_DIR"] = str(logs_dir)
+        else:
+            environment["YUBIHSM_TMPDIR"] = ""
+            environment["YUBIHSM_LOCKFILE"] = ""
+
+    def split_devices_by_loaded_keys(
+        self,
+        environment: MutableMapping[str, str],
+        keymapper: Keymapper,
+        devices: Sequence[str],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        return populate_devices_with_loaded_keys_arrays(
+            yubihsm_config_from_environment(environment),
+            keymapper,
+            devices,
+        )
+
+    def ensure_keys_for_devices(
+        self,
+        environment: MutableMapping[str, str],
+        keymapper: Keymapper,
+        devices: Sequence[str],
+    ) -> None:
+        """
+        Load the keys the devices need under YUBIHSM_LOCKFILE, and extract
+        the audit log after each key, into AUDIT_LOG_PATH or a load-keys
+        log named after the HSM, and once more if loading fails.
+        """
+        config = yubihsm_config_from_environment(environment)
+        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
+        with open(lock_path, "a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            audit_log_path: Path | None = None
+            if environment.get("DRY_RUN") != "y":
+                if environment.get("AUDIT_LOG_PATH"):
+                    audit_log_path = Path(environment["AUDIT_LOG_PATH"])
+                else:
+                    identity = get_device_identity(config)
+                    audit_log_path = (
+                        Path(environment["YUBIHSM_LOGS_DIR"])
+                        / identity.name
+                        / f"{formatted_date()}-load-keys.log"
+                    )
+
+            def extract(comment: str) -> None:
+                if audit_log_path is not None:
+                    extract_and_save_audit_log(
+                        config,
+                        audit_log_path,
+                        comment=comment,
+                    )
+
+            try:
+                ensure_all_keys_available_for_devices(
+                    config,
+                    keymapper,
+                    Path(environment.get("KEY_DIR", "keys/")),
+                    devices,
+                    is_ondemand=key_id_is_ondemand(keymapper),
+                    exportable_domain=environment["YUBIHSM_EXPORTABLE_DOMAIN"],
+                    ondemand_domain=environment["YUBIHSM_ONDEMAND_DOMAIN"],
+                    opaque_capabilities=environment[
+                        "YUBIHSM_OPAQUE_CAPABILITIES"
+                    ],
+                    after_key=lambda key_id: extract(
+                        "Function: ensure_key_is_available "
+                        f"Key: {key_id} Result: 0",
+                    ),
+                )
+            except Exception:
+                with contextlib.suppress(Exception):
+                    extract(
+                        "Function: ensure_all_keys_available_for_devices "
+                        "Result: 1",
+                    )
+                raise
+
+    def cleanup(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        inherited: Mapping[str, str],
+    ) -> None:
+        """Stop the connector this process started, if any."""
+        pid_file = environment.get("YUBIHSM_CONNECTOR_PIDFILE")
+        if not pid_file or pid_file == inherited.get(
+            "YUBIHSM_CONNECTOR_PIDFILE",
+        ):
+            return
+        try:
+            stop_connector(Path(pid_file))
+        except RuntimeError as error:
+            print(error, file=sys.stderr)
+
+
+VENDORS: dict[str, type[Vendor]] = {
+    SoftHsmVendor.name: SoftHsmVendor,
+    YubiHsmVendor.name: YubiHsmVendor,
+}

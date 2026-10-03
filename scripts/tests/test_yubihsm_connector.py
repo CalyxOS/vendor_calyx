@@ -21,6 +21,9 @@ from signing.vendor_yubihsm_connector import (
 def fake_connector_binary(tmp_path: Path) -> Path:
     """
     Create a long-lived process to stand in for yubihsm-connector.
+
+    It keeps its own path as its command line, which is what
+    is_running() looks for.
     """
     binary = tmp_path / "fake-yubihsm-connector"
     binary.write_text('#!/bin/bash\nexec -a "$0" sleep 300\n')
@@ -40,14 +43,14 @@ def config(
     )
 
 
-def test_restart_launches_process_and_writes_pidfile(
+def test_start_launches_process_and_writes_pidfile(
     fake_connector_binary: Path,
     tmp_path: Path,
 ) -> None:
     pid_file = tmp_path / "connector.pid"
     connector = YubiHsmConnector(config(fake_connector_binary, pid_file))
 
-    connector.restart()
+    connector.start()
 
     assert pid_file.exists()
     pid = int(pid_file.read_text().strip())
@@ -58,13 +61,29 @@ def test_restart_launches_process_and_writes_pidfile(
     assert not pid_file.exists()
 
 
+def test_start_is_a_noop_when_already_running(
+    fake_connector_binary: Path,
+    tmp_path: Path,
+) -> None:
+    pid_file = tmp_path / "connector.pid"
+    connector = YubiHsmConnector(config(fake_connector_binary, pid_file))
+    connector.start()
+    first_pid = int(pid_file.read_text().strip())
+
+    connector.start()
+
+    assert int(pid_file.read_text().strip()) == first_pid
+    connector.stop()
+    assert wait_until(lambda: not process_alive(first_pid))
+
+
 def test_restart_replaces_a_running_process(
     fake_connector_binary: Path,
     tmp_path: Path,
 ) -> None:
     pid_file = tmp_path / "connector.pid"
     connector = YubiHsmConnector(config(fake_connector_binary, pid_file))
-    connector.restart()
+    connector.start()
     first_pid = int(pid_file.read_text().strip())
 
     connector.restart()
@@ -102,10 +121,52 @@ def test_usb_connector_is_never_managed(tmp_path: Path) -> None:
         ),
     )
 
-    connector.restart()
+    connector.start()
 
     assert not pid_file.exists()
     connector.stop()
+
+
+def test_is_running_finds_the_connector_it_started(
+    fake_connector_binary: Path,
+    tmp_path: Path,
+) -> None:
+    pid_file = tmp_path / "connector.pid"
+    connector = YubiHsmConnector(config(fake_connector_binary, pid_file))
+    assert not connector.is_running()
+
+    connector.start()
+
+    assert connector.is_running()
+    connector.stop()
+
+
+def test_is_running_ignores_a_command_that_names_the_connector(
+    tmp_path: Path,
+) -> None:
+    process = subprocess.Popen(
+        [
+            "bash",
+            "-c",
+            'exec -a "journalctl -fu yubihsm-connector" sleep 300',
+        ],
+    )
+    try:
+        connector = YubiHsmConnector(
+            config(
+                tmp_path / "yubihsm-connector",
+                tmp_path / "connector.pid",
+            ),
+        )
+        cmdline = Path(f"/proc/{process.pid}/cmdline")
+        assert wait_until(
+            lambda: cmdline.read_bytes().startswith(b"journalctl"),
+        )
+
+        assert not connector.is_running()
+    finally:
+        process.kill()
+        process.wait()
 
 
 def test_stop_removes_stale_pidfile_for_dead_process(
