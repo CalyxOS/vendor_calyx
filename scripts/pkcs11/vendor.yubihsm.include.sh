@@ -501,6 +501,45 @@ ensure_key_is_available_nolog() {
   local restore_mode=${for_restore:-}
   local key_id
 
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    if [ -n "${KEYMAPPER_FILE:-}" ]; then
+      echo "YUBIHSM_PYTHON_TOOLS does not support KEYMAPPER_FILE" >&2
+      return 1
+    fi
+    if [ ! -r "$KEYMAP_FILE" ]; then
+      echo "Cannot read KEYMAP_FILE ($KEYMAP_FILE)." >&2
+      return 1
+    fi
+    local -a ondemand_key_ids=()
+    mapfile -t ondemand_key_ids < <(tail -n+2 "$KEYMAP_FILE" \
+      | awk -F'\t' '$2 != "" {print $1}' | sort -u) \
+      || return $?
+    local -a python_args=(
+      --connector "$YUBIHSM_CONNECTOR"
+      --authkey "$YUBIHSM_AUTHKEY"
+      --password-env YUBIHSM_PASSWORD
+      --wrap-id "$YUBIHSM_WRAP_KEY_ID"
+      --key-dir "$KEY_DIR"
+      --exportable-domain "$YUBIHSM_EXPORTABLE_DOMAIN"
+      --ondemand-domain "$YUBIHSM_ONDEMAND_DOMAIN"
+      --opaque-capabilities "$YUBIHSM_OPAQUE_CAPABILITIES"
+    )
+    [ "$restore_mode" != "y" ] || python_args+=(--restore-mode)
+    [ "${verify_key_ids:-y}" = "y" ] || python_args+=(--no-verify-key-ids)
+    for key_id in "${ondemand_key_ids[@]}"; do
+      python_args+=(--ondemand-key-id "$key_id")
+    done
+    if [ "${extract_logs_after_each_key:-}" = "y" ]; then
+      python_args+=(--audit-log "$AUDIT_LOG_PATH")
+    fi
+    for key_id in "$@"; do
+      python_args+=(--key-id "$key_id")
+    done
+    _yubihsm_python_cli ensure-keys-available "${python_args[@]}" \
+      || return $?
+    return 0
+  fi
+
   if [ "${verify_key_ids:-y}" = "y" ]; then
     for key_id in "$@"; do
       local is_key_id_ondemand
