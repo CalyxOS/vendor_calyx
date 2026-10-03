@@ -534,6 +534,32 @@ def build_parser() -> argparse.ArgumentParser:
         default="-",
     )
 
+    limit_ondemand_objects_parser = subparsers.add_parser(
+        "limit-ondemand-objects",
+    )
+    _add_yubihsm_arguments(limit_ondemand_objects_parser)
+    limit_ondemand_objects_parser.add_argument(
+        "--key-dir",
+        type=Path,
+        required=True,
+    )
+    limit_ondemand_objects_parser.add_argument(
+        "--ondemand-domain",
+        required=True,
+    )
+    limit_ondemand_objects_parser.add_argument(
+        "--audit-log",
+        type=Path,
+    )
+    limit_ondemand_objects_parser.add_argument(
+        "--no-log-fail",
+        action="store_true",
+    )
+    limit_ondemand_objects_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+    )
+
     start_connector = subparsers.add_parser("start-yubihsm-connector")
     _add_yubihsm_connector_arguments(start_connector)
 
@@ -1199,6 +1225,45 @@ def _cmd_import_wrapped_key(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_limit_ondemand_objects(args: argparse.Namespace) -> int:
+    """
+    Limit on-demand YubiHSM objects to those backed by a key directory.
+
+    Args:
+        args: Parsed namespace containing connector and key directory.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import (
+        extract_and_save_audit_log,
+        limit_ondemand_objects,
+    )
+
+    config = _yubihsm_config_from_args(args)
+    after_delete: Callable[[str], None] | None = None
+    if args.audit_log is not None:
+
+        def log_delete(comment: str) -> None:
+            try:
+                extract_and_save_audit_log(config, args.audit_log, comment)
+            except Exception:
+                print("Failed to extract logs", file=sys.stderr)
+                if not args.no_log_fail:
+                    raise
+
+        after_delete = log_delete
+
+    limit_ondemand_objects(
+        config,
+        args.key_dir,
+        args.ondemand_domain,
+        after_delete,
+        dry_run=args.dry_run,
+    )
+    return 0
+
+
 def _cmd_extract_audit_log(args: argparse.Namespace) -> int:
     """
     Extract and save the YubiHSM audit log.
@@ -1389,6 +1454,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "attest-key": _cmd_attest_key,
     "export-wrapped-key": _cmd_export_wrapped_key,
     "import-wrapped-key": _cmd_import_wrapped_key,
+    "limit-ondemand-objects": _cmd_limit_ondemand_objects,
     "extract-audit-log": _cmd_extract_audit_log,
     "start-yubihsm-connector": _cmd_start_yubihsm_connector,
     "stop-yubihsm-connector": _cmd_stop_yubihsm_connector,
