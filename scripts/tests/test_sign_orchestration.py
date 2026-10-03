@@ -495,6 +495,51 @@ printf 'exit=%s\n' "$status"
     assert signed.read_text() == "signed-bramble"
 
 
+def test_use_python_sign_orchestration_reports_its_vendor_limit(
+    tmp_path: Path,
+) -> None:
+    """
+    The Python orchestrator supports only the softhsm and yubihsm
+    vendors and says so, where sign.sh looks for a vendor include.
+    """
+    devices = tmp_path / "devices"
+    devices.write_text("devices=(bramble)\n")
+    work = tmp_path / "work"
+    (work / "logs").mkdir(parents=True)
+    (work / "logs" / "upload.py").write_text("#!/bin/sh\n")
+    (work / "tmp").mkdir()
+    (work / "calyx_bramble-target_files-2026081500.zip").touch()
+
+    results = {
+        flag: run(
+            ["timeout", "60", SCRIPTS_DIR / "sign.sh"],
+            cwd=work,
+            env={
+                "TMPDIR": str(work / "tmp"),
+                "DEVICES_FILE": str(devices),
+                "SIGN_ASSUME_YES": "y",
+                "SKIP_LOG_UPLOAD": "true",
+                "PKCS11_VENDOR": "acme",
+                "BUILD_NUMBER": "2026081500",
+                "USE_PYTHON_SIGN_ORCHESTRATION": flag,
+            },
+            input_text="",
+            check=False,
+        )
+        for flag in ("", "y")
+    }
+
+    assert results[""].returncode != 0
+    assert results["y"].returncode == 1
+    assert "Could not find PKCS#11 vendor include script for 'acme'" in (
+        results[""].stderr
+    )
+    assert (
+        "PKCS11_VENDOR='acme' is not supported by the Python orchestrator. "
+        "Unset USE_PYTHON_SIGN_ORCHESTRATION"
+    ) in results["y"].stderr
+
+
 def test_provisioning_try_fails_fast_under_sign_assume_yes() -> None:
     program = r"""
 eval "$(sed -n '/^try() {/,/^}/p' "$1")"
