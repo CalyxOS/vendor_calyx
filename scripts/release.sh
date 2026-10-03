@@ -12,6 +12,7 @@ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
 read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
 read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
+read -a EXTRA_SIGNING_ARGS <<< "${EXTRA_SIGNING_ARGS:-}"
 
 source "$SCRIPTPATH/common.include.sh"
 source "$SCRIPTPATH/metadata"
