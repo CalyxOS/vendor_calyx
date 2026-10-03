@@ -452,7 +452,7 @@ def save_audit_log(session, hsm_name):
     log_path = os.path.join(KEEP_PATH, "logs", hsm_name)
     os.makedirs(log_path, exist_ok=True)
     # define log file path
-    date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime("%f")[:3]}"
+    date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime('%f')[:3]}"
     log_file = os.path.join(log_path, f"{date_str}-provision.log")
     # use other python script to actually extract logs
     comment = "provisioning: 4f is for audit log options, the rest is key setup"
