@@ -91,26 +91,37 @@ class _RejectRawValue(argparse.Action):
         parser.error(self._message)
 
 
-def _add_pin_group(parser: argparse.ArgumentParser) -> None:
+def _add_pin_group(
+    parser: argparse.ArgumentParser,
+    prefix: str,
+    *,
+    required: bool = False,
+) -> None:
     """
-    Add a mutually exclusive --pin-env/--pin-file/--pin group to a command.
+    Add a mutually exclusive env/file/raw PIN-source group to a command.
 
     Args:
         parser: Subcommand parser to configure.
+        prefix: Flag prefix identifying which PIN this group supplies,
+            e.g. "pin" for --pin-env/--pin-file/--pin, or "so-pin" for
+            --so-pin-env/--so-pin-file/--so-pin.
+        required: Whether the group must supply exactly one source.
 
     Returns:
         None.
     """
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--pin-env")
+    group = parser.add_mutually_exclusive_group(required=required)
+    group.add_argument(f"--{prefix}-env")
     group.add_argument(
-        "--pin-file",
+        f"--{prefix}-file",
         type=Path,
     )
     group.add_argument(
-        "--pin",
+        f"--{prefix}",
         action=_RejectRawValue,
-        message="raw PINs are forbidden, use --pin-env or --pin-file",
+        message=(
+            f"raw PINs are forbidden, use --{prefix}-env or --{prefix}-file"
+        ),
         help=argparse.SUPPRESS,
     )
 
@@ -132,7 +143,17 @@ def _add_backend_arguments(parser: argparse.ArgumentParser) -> None:
     token = parser.add_mutually_exclusive_group()
     token.add_argument("--token-label")
     token.add_argument("--slot")
-    _add_pin_group(parser)
+    _add_pin_group(parser, "pin")
+    _add_pin_group(parser, "discovery-pin")
+    _add_pin_group(parser, "signing-pin")
+    parser.add_argument(
+        "--use-so-pin",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--list-requires-no-pin",
+        action="store_true",
+    )
     parser.add_argument("--pkcs11-tool")
     parser.add_argument(
         "--openssl",
@@ -400,6 +421,23 @@ def build_parser() -> argparse.ArgumentParser:
     stop_connector = subparsers.add_parser("stop-yubihsm-connector")
     _add_yubihsm_connector_arguments(stop_connector)
 
+    init_token = subparsers.add_parser("init-pkcs11-token")
+    init_token.add_argument(
+        "--module",
+        type=Path,
+        required=True,
+    )
+    init_token.add_argument(
+        "--pkcs11-tool",
+        default="pkcs11-tool",
+    )
+    init_token.add_argument(
+        "--label",
+        required=True,
+    )
+    _add_pin_group(init_token, "so-pin", required=True)
+    _add_pin_group(init_token, "pin", required=True)
+
     for name in _BACKEND_COMMANDS:
         command = subparsers.add_parser(name)
         _add_backend_arguments(command)
@@ -444,9 +482,21 @@ def _pkcs11_configuration_from_args(
         pin_source = EnvironmentPin(args.pin_env)
     elif args.pin_file is not None:
         pin_source = FilePin(args.pin_file)
+    discovery_pin_source: PinSource | None = None
+    if args.discovery_pin_env is not None:
+        discovery_pin_source = EnvironmentPin(args.discovery_pin_env)
+    elif args.discovery_pin_file is not None:
+        discovery_pin_source = FilePin(args.discovery_pin_file)
+    signing_pin_source: PinSource | None = None
+    if args.signing_pin_env is not None:
+        signing_pin_source = EnvironmentPin(args.signing_pin_env)
+    elif args.signing_pin_file is not None:
+        signing_pin_source = FilePin(args.signing_pin_file)
     return Pkcs11BackendConfiguration(
         module=args.module,
         pin_source=pin_source,
+        discovery_pin_source=discovery_pin_source,
+        signing_pin_source=signing_pin_source,
         token_label=args.token_label,
         slot=args.slot,
         tool=args.pkcs11_tool or "pkcs11-tool",
@@ -457,6 +507,8 @@ def _pkcs11_configuration_from_args(
             if args.certificate_days is None
             else args.certificate_days
         ),
+        use_so_pin=args.use_so_pin,
+        list_requires_no_pin=args.list_requires_no_pin,
     )
 
 
@@ -875,6 +927,39 @@ def _cmd_stop_yubihsm_connector(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_init_pkcs11_token(args: argparse.Namespace) -> int:
+    """
+    Initialize a PKCS#11 token with the requested label and PINs.
+
+    Args:
+        args: Parsed namespace containing token and PIN source settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .configuration import EnvironmentPin, FilePin
+    from .pkcs11 import initialize_pkcs11_token
+
+    so_pin_source = (
+        EnvironmentPin(args.so_pin_env)
+        if args.so_pin_env is not None
+        else FilePin(args.so_pin_file)
+    )
+    pin_source = (
+        EnvironmentPin(args.pin_env)
+        if args.pin_env is not None
+        else FilePin(args.pin_file)
+    )
+    initialize_pkcs11_token(
+        tool=args.pkcs11_tool,
+        module=args.module,
+        label=args.label,
+        so_pin=so_pin_source.resolve(),
+        user_pin=pin_source.resolve(),
+    )
+    return 0
+
+
 def _cmd_key_exists(args: argparse.Namespace) -> int:
     """
     Print whether the referenced key exists.
@@ -963,6 +1048,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "extract-audit-log": _cmd_extract_audit_log,
     "start-yubihsm-connector": _cmd_start_yubihsm_connector,
     "stop-yubihsm-connector": _cmd_stop_yubihsm_connector,
+    "init-pkcs11-token": _cmd_init_pkcs11_token,
     "key-exists": _cmd_key_exists,
     "certificate-exists": _cmd_certificate_exists,
     "generate-key": _cmd_generate_key,
