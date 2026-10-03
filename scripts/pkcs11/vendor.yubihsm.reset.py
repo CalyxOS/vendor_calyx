@@ -8,16 +8,24 @@ import argparse
 import os
 import sys
 
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from yubihsm import YubiHsm
+from yubihsm.core import YubiHsm
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Resets YubiHSM 2")
-    parser.add_argument("-f", "--key-file", help="File to private auth key", required=True)
+    parser.add_argument(
+        "-f",
+        "--key-file",
+        help="File to private auth key",
+        required=True,
+    )
     args = parser.parse_args()
 
-    reset = input("Are you sure you want to RESET the YubiHSM? Re-type capital letters: ")
+    reset = input(
+        "Are you sure you want to RESET the YubiHSM? Re-type capital letters: ",
+    )
     if reset != "RESET":
         print("Aborting reset", file=sys.stderr)
         sys.exit(1)
@@ -26,11 +34,13 @@ def main():
 
     with open(args.key_file, "rb") as f:
         private_key = load_pem_private_key(f.read(), password=None)
+    if not isinstance(private_key, ec.EllipticCurvePrivateKey):
+        sys.exit(f"{args.key_file} does not hold an EC private key")
 
     # connect to the YubiHSM via the connector
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
-    session = hsm.create_session_asymmetric(0x00ad, private_key)
+    session = hsm.create_session_asymmetric(0x00AD, private_key)
     try:
         session.reset_device()
         print("HSM was reset!")
