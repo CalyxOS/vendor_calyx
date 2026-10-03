@@ -22,7 +22,7 @@ from setup import (
     save_audit_log,
 )
 from yubihsm.core import YubiHsm
-from yubihsm.defs import CAPABILITY
+from yubihsm.defs import CAPABILITY, ERROR
 from yubihsm.objects import Opaque, WrapKey
 
 KEEP_PATH = os.getenv(
@@ -69,7 +69,7 @@ def main() -> None:
     hsm_name = print_and_get_info(hsm, session)
     try:
         # import all signing keys
-        _wrap_key = WrapKey(session, WRAP_KEY_ID)
+        wrap_key = WrapKey(session, WRAP_KEY_ID)
         key_files = sorted(
             glob.glob("0x*-asymmetric-key.yhw", root_dir=key_dir),
         )
@@ -77,9 +77,14 @@ def main() -> None:
             key = os.path.join(key_dir, key_file)
             with open(key) as f:
                 wrapped_key_base64 = f.read()
-            _wrapped_key_bytes = base64.b64decode(wrapped_key_base64)
+            wrapped_key_bytes = base64.b64decode(wrapped_key_base64)
             print(f"Importing {key_file} ...")
-            # wrap_key.import_wrapped(wrapped_key_bytes)
+            try:
+                wrap_key.import_wrapped(wrapped_key_bytes)
+            except yubihsm.exceptions.YubiHsmDeviceError as e:
+                if e.code != ERROR.OBJECT_EXISTS:
+                    raise
+                print("  Key was already imported, skipping...")
         print(f"Successfully imported {len(key_files)} signing keys.")
         save_audit_log(session, hsm_name)
 
