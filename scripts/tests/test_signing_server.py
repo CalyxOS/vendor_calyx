@@ -11,6 +11,7 @@ import os
 import socket
 import stat
 import subprocess
+import threading
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -386,6 +387,38 @@ def test_payload_signer_signs_through_openssl_without_a_server(
         signature.read_bytes(),
         digest,
     )
+
+
+class _NestedHandler:
+    def __init__(self, socket_path: Path) -> None:
+        self.socket_path = socket_path
+
+    def handle(self, message: Message) -> Message:
+        inner = request(self.socket_path, "inner")
+        return {"status": "ok", "inner": inner}
+
+
+def test_a_handler_can_send_requests_to_another_handler(tmp_path: Path) -> None:
+    socket_path = tmp_path / "s.sock"
+    inner = _Handler({"status": "ok", "value": 7})
+    server = SigningServer(
+        socket_path,
+        {"outer": _NestedHandler(socket_path), "inner": inner},
+    )
+
+    responses: list[Message | None] = []
+    with server:
+        caller = threading.Thread(
+            target=lambda: responses.append(request(socket_path, "outer")),
+            daemon=True,
+        )
+        caller.start()
+        caller.join(timeout=10)
+        assert not caller.is_alive(), "the nested request deadlocked"
+
+    assert responses == [
+        {"status": "ok", "inner": {"status": "ok", "value": 7}},
+    ]
 
 
 def _public_key_file(directory: Path, name: str, key_name: str) -> Path:
