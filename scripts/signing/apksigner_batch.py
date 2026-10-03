@@ -25,6 +25,7 @@ import re
 import selectors
 import subprocess
 import sys
+import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -143,8 +144,13 @@ class ApksignerBatch:
         self._process_completed_a_command = False
         self._fresh_failures = 0
         self._disabled = False
+        self._lock = threading.RLock()
 
     def handle(self, request: Message) -> Message:
+        with self._lock:
+            return self._handle(request)
+
+    def _handle(self, request: Message) -> Message:
         args = [str(item) for item in request["args"]]
         if self._disabled:
             return {"status": "unavailable"}
@@ -196,9 +202,14 @@ class ApksignerBatch:
         }
 
     def close(self) -> None:
-        if self.process is not None:
-            self.process.stop()
-            self.process = None
+        locked = self._lock.acquire(timeout=_STOP_TIMEOUT)
+        try:
+            process, self.process = self.process, None
+            if process is not None:
+                process.stop()
+        finally:
+            if locked:
+                self._lock.release()
 
 
 def run_in_batch(
