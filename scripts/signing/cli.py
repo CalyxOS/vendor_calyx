@@ -615,6 +615,54 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
     )
 
+    ensure_keys_available = subparsers.add_parser("ensure-keys-available")
+    _add_yubihsm_arguments(ensure_keys_available)
+    ensure_keys_available.add_argument(
+        "--wrap-id",
+        default="0x0010",
+    )
+    ensure_keys_available.add_argument(
+        "--key-dir",
+        type=Path,
+        required=True,
+    )
+    ensure_keys_available.add_argument(
+        "--key-id",
+        dest="key_ids",
+        action="append",
+        required=True,
+    )
+    ensure_keys_available.add_argument(
+        "--ondemand-key-id",
+        dest="ondemand_key_ids",
+        action="append",
+        default=[],
+    )
+    ensure_keys_available.add_argument(
+        "--restore-mode",
+        action="store_true",
+    )
+    ensure_keys_available.add_argument(
+        "--no-verify-key-ids",
+        action="store_true",
+    )
+    ensure_keys_available.add_argument(
+        "--exportable-domain",
+        required=True,
+    )
+    ensure_keys_available.add_argument(
+        "--ondemand-domain",
+        required=True,
+    )
+    ensure_keys_available.add_argument(
+        "--opaque-capabilities",
+        required=True,
+    )
+    ensure_keys_available.add_argument(
+        "--audit-log",
+        type=Path,
+    )
+
     get_device_identity_parser = subparsers.add_parser("get-device-identity")
     _add_yubihsm_arguments(get_device_identity_parser)
 
@@ -1400,6 +1448,50 @@ def _cmd_limit_ondemand_objects(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ensure_keys_available(args: argparse.Namespace) -> int:
+    """
+    Ensure the requested YubiHSM keys are loaded and available, and with
+    --audit-log extract the audit log into it after each key.
+
+    Args:
+        args: Parsed namespace containing connector and key settings.
+
+    Returns:
+        Zero on success.
+    """
+    from .vendor_yubihsm import (
+        ensure_keys_are_available,
+        extract_and_save_audit_log,
+    )
+
+    config = _yubihsm_config_from_args(args, wrap_id=args.wrap_id)
+    ondemand_ids = frozenset(
+        int(key_id, 16) for key_id in args.ondemand_key_ids
+    )
+
+    def after_key(key_id: str) -> None:
+        if args.audit_log is not None:
+            extract_and_save_audit_log(
+                config,
+                args.audit_log,
+                f"Function: ensure_key_is_available Key: {key_id} Result: 0",
+            )
+
+    ensure_keys_are_available(
+        config,
+        args.key_dir,
+        args.key_ids,
+        restore_mode=args.restore_mode,
+        is_ondemand=lambda object_id: object_id in ondemand_ids,
+        verify_key_ids=not args.no_verify_key_ids,
+        exportable_domain=args.exportable_domain,
+        ondemand_domain=args.ondemand_domain,
+        opaque_capabilities=args.opaque_capabilities,
+        after_key=after_key,
+    )
+    return 0
+
+
 def _cmd_get_device_identity(args: argparse.Namespace) -> int:
     """
     Print the YubiHSM's device information as yubihsm-shell's
@@ -1654,6 +1746,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "get-certificate": _cmd_get_certificate,
     "import-certificate": _cmd_import_certificate,
     "limit-ondemand-objects": _cmd_limit_ondemand_objects,
+    "ensure-keys-available": _cmd_ensure_keys_available,
     "get-device-identity": _cmd_get_device_identity,
     "get-loaded-key-status": _cmd_get_loaded_key_status,
     "yubihsm-object-exists": _cmd_yubihsm_object_exists,
