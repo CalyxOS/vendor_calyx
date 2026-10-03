@@ -418,13 +418,16 @@ is_object_available_on_disk() {
   local algo=${3:-}
   case "$type" in
     asymmetric-key)
-      [ -e "$KEY_DIR$id-asymmetric-key.yhw" ] || return $? ;;
+      [ -f "$KEY_DIR$id-asymmetric-key.yhw" ] && [ -s "$KEY_DIR$id-asymmetric-key.yhw" ] \
+        || return 1 ;;
     opaque)
       if [ -n "$algo" ] && [ "$algo" = "opaque-x509-certificate" ]; then
         echo "Unsupported opaque algorithm '$algo'" >&2
         return 1
       fi
-      [ -e "$KEY_DIR$id.x509.pem" ] || return $? ;;
+      [ -f "$KEY_DIR$id.x509.pem" ] && [ -s "$KEY_DIR$id.x509.pem" ] || return 1
+      [ "$(sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q}' "$KEY_DIR$id.x509.pem")" \
+        = "-----BEGIN CERTIFICATE-----" ] || return 1 ;;
     *)
       echo "Unsupported type '$type'" >&2
       return 1 ;;
