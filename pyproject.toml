@@ -5,6 +5,7 @@ include = [
     "scripts/*.py",
     "scripts/hsm_provisioning/*.py",
     "scripts/pkcs11/*.py",
+    "scripts/signing/**/*.py",
     "scripts/tests/**/*.py",
 ]
 extend-exclude = [
