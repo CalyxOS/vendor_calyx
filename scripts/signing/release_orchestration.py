@@ -567,10 +567,11 @@ class SigningSession:
         Host a SigningServer for the rest of the release when the Python
         YubiHSM interceptor is in use.
 
-        The server holds one YubiHSM session for AVB signatures and, unless
-        NEVER_START_APKSIGNER_BATCH=y, one "apksigner batch" process.
-        avbtool's signing helper defaults to signing_helper.server.py unless
-        AVB_SIGNING_HELPER_TOOL or SIGNING_HELPER_TOOL chooses one.
+        The server holds one YubiHSM session for AVB signatures and
+        audit-log extraction, and, unless NEVER_START_APKSIGNER_BATCH=y, one
+        "apksigner batch" process. avbtool's signing helper defaults to
+        signing_helper.server.py unless AVB_SIGNING_HELPER_TOOL or
+        SIGNING_HELPER_TOOL chooses one.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
         if Path(interceptor).name != "vendor.yubihsm.interceptor.py":
@@ -582,9 +583,15 @@ class SigningSession:
 
         session_service = YubiHsmSessionService(
             sign_environment.yubihsm_config_from_environment(self.environment),
+            audit_log_path=(
+                Path(self.environment["AUDIT_LOG_PATH"])
+                if self.environment.get("AUDIT_LOG_PATH")
+                else None
+            ),
         )
         handlers: dict[str, Handler] = {
             "yubihsm_sign_pkcs1": session_service,
+            "yubihsm_extract_audit_log": session_service,
         }
         if self.environment.get("NEVER_START_APKSIGNER_BATCH") != "y":
             handlers["apksigner"] = ApksignerBatch(
