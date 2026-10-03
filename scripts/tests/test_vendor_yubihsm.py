@@ -9,11 +9,11 @@ from pathlib import Path
 
 import pytest
 from signing.vendor_yubihsm import (
+    AuditLogNotAcknowledged,
     YubiHsmConfig,
     extract_and_save_audit_log,
 )
 from yubihsm.defs import COMMAND
-from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm_emulator import Connector
 
 
@@ -76,7 +76,7 @@ def test_extract_and_save_audit_log_writes_an_unacknowledged_entry_once(
     log_file = tmp_path / "audit.log"
     yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX)
 
-    with pytest.raises(YubiHsmDeviceError):
+    with pytest.raises(AuditLogNotAcknowledged):
         extract_and_save_audit_log(config, log_file, "first")
     extract_and_save_audit_log(config, log_file, "second")
 
