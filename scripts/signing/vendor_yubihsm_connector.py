@@ -82,6 +82,54 @@ class YubiHsmConnector:
         """
         return not self._config.connector_url.startswith("yhusb://")
 
+    def is_running(self) -> bool:
+        """
+        Return whether a matching ``yubihsm-connector`` process is running.
+
+        A process matches when its command line, as
+        ``pgrep -a -f yubihsm-connector`` prints it, is the configured
+        binary or ``yubihsm-connector``, alone or followed by arguments.
+        The calling process never matches.
+
+        Returns:
+            Whether a matching process was found.
+
+        Raises:
+            OSError: If ``pgrep`` cannot be executed.
+        """
+        result = subprocess.run(
+            ["pgrep", "-a", "-f", "yubihsm-connector"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        candidates = (self._config.binary, "yubihsm-connector")
+        own_pid = os.getpid()
+        for line in result.stdout.splitlines():
+            pid_text, _, command = line.partition(" ")
+            if not pid_text.isdigit() or int(pid_text) == own_pid:
+                continue
+            if any(
+                command == candidate or command.startswith(f"{candidate} ")
+                for candidate in candidates
+            ):
+                return True
+        return False
+
+    def start(self) -> None:
+        """
+        Start the connector only if one is not already running.
+
+        Returns:
+            None.
+
+        Raises:
+            OSError: If the connector binary cannot be executed.
+            RuntimeError: If a previously started connector cannot be
+                stopped before starting a new one.
+        """
+        self._start_or_restart(start_only=True)
+
     def restart(self) -> None:
         """
         Stop any connector the PID file names and start a new one.
@@ -93,7 +141,23 @@ class YubiHsmConnector:
             OSError: If the connector binary cannot be executed.
             RuntimeError: If the existing connector cannot be stopped.
         """
+        self._start_or_restart(start_only=False)
+
+    def _start_or_restart(self, *, start_only: bool) -> None:
+        """
+        Start the connector, stopping a running one first unless
+        start_only is set.
+
+        Args:
+            start_only: Whether to skip stopping an already-running
+                connector instead of restarting it.
+
+        Returns:
+            None.
+        """
         if not self._managed():
+            return
+        if start_only and self.is_running():
             return
         self.stop()
         process = subprocess.Popen(
