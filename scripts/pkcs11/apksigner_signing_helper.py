@@ -5,18 +5,19 @@
 #
 
 """
-Sign apksigner's KMS extension-point input through the backend-neutral
-Python PKCS#11 layer.
+Sign apksigner's KMS extension-point input through the signing server, or
+through the backend-neutral Python PKCS#11 layer when no server answers.
 
 The command line is "apksigner_signing_helper.py MECHANISM KEY_ID". The
 raw, unhashed signable content comes on standard input, and the raw
 signature goes to standard output. MECHANISM is a full-message PKCS#11
-mechanism such as "sha256-rsa-pkcs", since apksigner does not hash the
-content itself.
+mechanism such as "sha256-rsa-pkcs". The helper hashes the content with
+its hash for the server, and the PKCS#11 layer hashes it otherwise.
 """
 
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import sys
@@ -27,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from signing.avb_signing import pkcs11_signer_from_environment
 from signing.key_consistency import require_signature_from_certificate
 from signing.models import KeyReference, SignRequest
+from signing.yubihsm_session_service import sign_digest_through_server
 
 _MECHANISMS = frozenset(
     {"sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
@@ -64,9 +66,19 @@ def main(argv: list[str] | None = None) -> int:
             f"no certificate {certificate} to check the signature of "
             f"{key_id} against",
         )
-    signer = pkcs11_signer_from_environment()
-    reference = KeyReference(key_id=key_id, label=key_id)
-    signature = signer.sign(SignRequest(reference, data, mechanism))
+    signature = None
+    socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
+    if socket_path:
+        digest = hashlib.new(hash_name, data).digest()
+        signature = sign_digest_through_server(
+            Path(socket_path),
+            key_id,
+            digest,
+        )
+    if signature is None:
+        signer = pkcs11_signer_from_environment()
+        reference = KeyReference(key_id=key_id, label=key_id)
+        signature = signer.sign(SignRequest(reference, data, mechanism))
     require_signature_from_certificate(certificate, data, signature, hash_name)
     sys.stdout.buffer.write(signature)
     return 0
