@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 from .models import (
@@ -236,3 +237,55 @@ class PlaintextBackend:
             check=True,
             capture_output=True,
         )
+
+
+class InconsistentKeyStateError(RuntimeError):
+    """
+    A key and its certificate are not both present.
+    """
+
+
+def provision_certified_keys(
+    backend: PlaintextBackend,
+    subjects: Mapping[str, str],
+) -> None:
+    """
+    Generate an RSA 2048 key and its self-signed certificate under every
+    label that has neither, in label order.
+
+    Every label is checked before anything is generated, so an
+    inconsistent key leaves the key directory untouched.
+
+    Args:
+        backend: Key directory to provision.
+        subjects: Certificate subject of each key, by label.
+
+    Raises:
+        InconsistentKeyStateError: If a key exists without its
+            certificate, or a certificate without its key.
+        FileExistsError: If a file a new key needs is already there.
+        ValueError: If a label escapes the key directory.
+        subprocess.CalledProcessError: If OpenSSL fails.
+    """
+    missing: list[KeySpec] = []
+    for label in sorted(subjects):
+        reference = KeyReference(key_id=label, label=label)
+        key_exists = backend.key_exists(reference)
+        certificate_exists = backend.certificate_exists(reference)
+        if certificate_exists and not key_exists:
+            raise InconsistentKeyStateError(
+                f"certificate exists without private key: {label}",
+            )
+        if key_exists and not certificate_exists:
+            raise InconsistentKeyStateError(
+                f"key {label} exists without its certificate. Restore the "
+                "certificate from a backup, or delete the key if it was "
+                "never used",
+            )
+        if not key_exists:
+            missing.append(
+                KeySpec(reference, 2048),
+            )
+    for spec in missing:
+        backend.generate_key(spec)
+        backend.generate_certificate(spec, subjects[spec.reference.label])
