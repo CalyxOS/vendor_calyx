@@ -5,12 +5,19 @@
 
 from __future__ import annotations
 
+import base64
+import datetime
+import fcntl
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
 from conftest import stub
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from signing import sign_environment
 from signing.keymap import StaticKeymapper
 from signing.sign_environment import (
@@ -21,11 +28,30 @@ from signing.sign_environment import (
     load_vendor,
     maybe_initialize_vendor,
     maybe_initialize_vendor_interactive,
+    maybe_initialize_vendor_release,
 )
 from signing.vendor_yubihsm_connector import (
     YubiHsmConnector,
     YubiHsmConnectorConfig,
 )
+from yubihsm.defs import COMMAND, OBJECT
+from yubihsm_emulator import Connector, EmulatedYubiHsm
+
+
+def _self_signed_certificate() -> x509.Certificate:
+    key = ec.generate_private_key(ec.SECP256R1())
+    subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "test")])
+    now = datetime.datetime.now(datetime.UTC)
+    return (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=1))
+        .sign(key, hashes.SHA256())
+    )
 
 
 def test_load_vendor_yubihsm_wraps_pkcs11_tool() -> None:
@@ -360,6 +386,257 @@ def test_pkcs11_module_paths_keep_their_search_order(
     assert list(kind.pkcs11_module_paths) == expanded
 
 
+@pytest.fixture
+def release_environment(tmp_path: Path, yubihsm: Connector) -> dict[str, str]:
+    yubihsm.device.put_authentication_key(0x0001, "secret")
+    yubihsm.device.put_wrap_key(0x0010)
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    (tmp_path / "keys").mkdir()
+    return {
+        "PKCS11_VENDOR": "yubihsm",
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "secret",
+        "YUBIHSM_EXPORTABLE_DOMAIN": "1",
+        "YUBIHSM_ONDEMAND_DOMAIN": "3",
+        "YUBIHSM_KEY_CAPABILITIES": "sign-pkcs",
+        "YUBIHSM_OPAQUE_CAPABILITIES": "get-opaque",
+        "YUBIHSM_LOGS_DIR": str(tmp_path / "logs"),
+        "KEYMAP_FILE": str(keymap_file),
+        "KEY_DIR": str(tmp_path / "keys"),
+    }
+
+
+def _back_up_vbmeta_key(
+    device: EmulatedYubiHsm,
+    key_dir: Path,
+    *,
+    loaded: bool,
+) -> x509.Certificate:
+    device.put_asymmetric_key(0x2000)
+    wrapped = device.wrapped(0x2000, OBJECT.ASYMMETRIC_KEY, 0x0010)
+    (key_dir / "0x2000-asymmetric-key.yhw").write_bytes(
+        base64.b64encode(wrapped),
+    )
+    certificate = _self_signed_certificate()
+    (key_dir / "0x2000.x509.pem").write_bytes(
+        certificate.public_bytes(serialization.Encoding.PEM),
+    )
+    if loaded:
+        device.put_certificate(0x2000, certificate)
+    else:
+        del device.objects[(0x2000, OBJECT.ASYMMETRIC_KEY)]
+    return certificate
+
+
+def _object_changes(device: EmulatedYubiHsm) -> list[COMMAND]:
+    changes = (
+        COMMAND.IMPORT_WRAPPED,
+        COMMAND.PUT_OPAQUE,
+        COMMAND.DELETE_OBJECT,
+    )
+    return [
+        COMMAND(command)
+        for _, command, _ in device.history
+        if command in changes
+    ]
+
+
+def test_initialize_yubihsm_release_reports_a_wrong_password(
+    release_environment: dict[str, str],
+) -> None:
+    release_environment["YUBIHSM_PASSWORD"] = "wrong"
+
+    with pytest.raises(RuntimeError, match="YubiHSM failure"):
+        maybe_initialize_vendor_release(
+            release_environment,
+            device="bramble",
+            build_number="2026081500",
+        )
+
+
+def test_initialize_yubihsm_release_reports_a_device_missing_from_the_keymap(
+    release_environment: dict[str, str],
+) -> None:
+    with pytest.raises(RuntimeError, match="Could not find key type 'avb'"):
+        maybe_initialize_vendor_release(
+            release_environment,
+            device="redfin",
+            build_number="2026081500",
+        )
+
+
+def test_initialize_yubihsm_release_loads_missing_vbmeta_key(
+    tmp_path: Path,
+    yubihsm: Connector,
+    release_environment: dict[str, str],
+) -> None:
+    certificate = _back_up_vbmeta_key(
+        yubihsm.device,
+        tmp_path / "keys",
+        loaded=False,
+    )
+
+    maybe_initialize_vendor_release(
+        release_environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+    stored = yubihsm.device.get(0x2000, OBJECT.OPAQUE)
+    assert stored is not None
+    assert stored.data == certificate.public_bytes(serialization.Encoding.DER)
+    assert release_environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] == "y"
+    assert Path(release_environment["AUDIT_LOG_PATH"]).is_file()
+
+
+def test_initialize_yubihsm_release_is_a_noop_when_already_loaded(
+    tmp_path: Path,
+    yubihsm: Connector,
+    release_environment: dict[str, str],
+) -> None:
+    _back_up_vbmeta_key(yubihsm.device, tmp_path / "keys", loaded=True)
+
+    maybe_initialize_vendor_release(
+        release_environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert _object_changes(yubihsm.device) == []
+
+
+def test_initialize_yubihsm_release_skips_ensure_key_when_disabled(
+    tmp_path: Path,
+    yubihsm: Connector,
+    release_environment: dict[str, str],
+) -> None:
+    _back_up_vbmeta_key(yubihsm.device, tmp_path / "keys", loaded=False)
+    release_environment["ENSURE_KEY_IS_AVAILABLE"] = "n"
+
+    maybe_initialize_vendor_release(
+        release_environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert _object_changes(yubihsm.device) == []
+    assert Path(release_environment["AUDIT_LOG_PATH"]).is_file()
+
+
+def test_initialize_yubihsm_release_dry_run_is_a_noop(tmp_path: Path) -> None:
+    environment = {"PKCS11_VENDOR": "yubihsm", "DRY_RUN": "y"}
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] == "y"
+    assert "AUDIT_LOG_PATH" not in environment
+
+
+def test_maybe_initialize_vendor_release_is_idempotent(tmp_path: Path) -> None:
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "PKCS11_VENDOR_INITIALIZED_RELEASE": "y",
+    }
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert "AUDIT_LOG_PATH" not in environment
+
+
+def test_initialize_softhsm_release_sets_log_paths(tmp_path: Path) -> None:
+    logs_dir = tmp_path / "logs"
+    environment = {
+        "PKCS11_VENDOR": "softhsm",
+        "SOFTHSM_LOGS_DIR": str(logs_dir),
+    }
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert logs_dir.is_dir()
+    assert environment["AUDIT_LOG_PATH"].startswith(str(logs_dir))
+    assert environment["AUDIT_LOG_PATH"].endswith("-audit.log")
+    assert environment["EXEC_LOG_PATH"].startswith(str(logs_dir))
+    assert "2026081500-bramble-" in environment["AUDIT_LOG_PATH"]
+
+
+def test_initialize_softhsm_release_dry_run_only_renders_mkdir(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    logs_dir = tmp_path / "logs"
+    environment = {
+        "PKCS11_VENDOR": "softhsm",
+        "SOFTHSM_LOGS_DIR": str(logs_dir),
+        "DRY_RUN": "y",
+    }
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert not logs_dir.exists()
+    assert f"mkdir {logs_dir}" in capsys.readouterr().err
+
+
+def test_initialize_softhsm_release_names_empty_log_paths_itself(
+    tmp_path: Path,
+) -> None:
+    logs_dir = tmp_path / "logs"
+    environment = {
+        "PKCS11_VENDOR": "softhsm",
+        "SOFTHSM_LOGS_DIR": str(logs_dir),
+        "AUDIT_LOG_PATH": "",
+        "EXEC_LOG_PATH": "",
+    }
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert environment["AUDIT_LOG_PATH"].endswith("-release-audit.log")
+    assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
+
+
+def test_initialize_softhsm_release_respects_preset_audit_log_path(
+    tmp_path: Path,
+) -> None:
+    logs_dir = tmp_path / "logs"
+    environment = {
+        "PKCS11_VENDOR": "softhsm",
+        "SOFTHSM_LOGS_DIR": str(logs_dir),
+        "AUDIT_LOG_PATH": "custom.log",
+    }
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert environment["AUDIT_LOG_PATH"] == f"{logs_dir}/custom.log"
+
+
 def test_load_vendor_softhsm_applies_source_exports() -> None:
     """
     Loading the SoftHSM vendor exports these even though its
@@ -495,3 +772,80 @@ def test_yubihsm_vendor_cleanup_stops_only_a_connector_it_started(
     )
 
     assert stopped == [Path(started_pid_file)]
+
+
+def test_yubihsm_finalize_release_extracts_under_the_lock(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    yubihsm.device.put_authentication_key(0x0001, "secret")
+    lock = tmp_path / "yubihsm.lock"
+    audit_log = tmp_path / "audit.log"
+    environment = {
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "secret",
+        "YUBIHSM_LOCKFILE": str(lock),
+        "AUDIT_LOG_PATH": str(audit_log),
+    }
+    finalize = threading.Thread(
+        target=sign_environment.YubiHsmVendor().finalize_release,
+        args=(environment,),
+        kwargs={
+            "device": "bramble",
+            "build_number": "1",
+            "record_finish": True,
+            "command": "release",
+        },
+    )
+
+    with lock.open("a") as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        finalize.start()
+        finalize.join(0.5)
+        assert finalize.is_alive()
+        assert not audit_log.exists()
+        fcntl.flock(held, fcntl.LOCK_UN)
+    finalize.join(30)
+
+    assert "Finished BUILD_NUMBER=1 DEVICE=bramble release.sh" in (
+        audit_log.read_text()
+    )
+
+
+def test_finalize_vendor_release_finalizes_then_cleans_up_the_vendor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    class RecordingVendor:
+        def finalize_release(
+            self,
+            environment: dict[str, str],
+            **options: object,
+        ) -> None:
+            calls.append(f"finalize {options['command']}")
+
+        def cleanup(
+            self,
+            environment: dict[str, str],
+            *,
+            inherited: dict[str, str],
+        ) -> None:
+            calls.append("cleanup")
+
+    def load_vendor(environment: dict[str, str]) -> RecordingVendor:
+        return RecordingVendor()
+
+    monkeypatch.setattr(sign_environment, "load_vendor", load_vendor)
+
+    sign_environment.finalize_vendor_release(
+        {},
+        device="bramble",
+        build_number="1",
+        record_finish=True,
+        inherited={},
+        command="generate_delta",
+    )
+
+    assert calls == ["finalize generate_delta", "cleanup"]

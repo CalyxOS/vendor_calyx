@@ -23,10 +23,11 @@ from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
 from .confirmation import ask_variable, confirm
-from .keymap import Keymapper, normalize_key_dir
+from .keymap import Keymapper, StaticKeymapper, normalize_key_dir
 from .vendor_yubihsm import (
     YubiHsmConfig,
     ensure_all_keys_available_for_devices,
+    ensure_keys_are_available,
     extract_and_save_audit_log,
     get_device_identity,
     populate_devices_with_loaded_keys_arrays,
@@ -393,6 +394,93 @@ def formatted_date() -> str:
     return now.strftime("%Y-%m-%d_%H-%M-%S-") + f"{now.microsecond // 1000:03d}"
 
 
+def maybe_initialize_vendor_release(
+    environment: MutableMapping[str, str],
+    *,
+    device: str,
+    build_number: str,
+    keymapper: Keymapper | None = None,
+    command: str = "release",
+) -> None:
+    """
+    Run the vendor's release initialization once, when a vendor is set.
+
+    Args:
+        environment: Process environment, mutated in place with any
+            resolved values.
+        device: The device being released.
+        build_number: The requested build number, before any
+            AVB_ROLLBACK_INDEX_OVERRIDE bump.
+        keymapper: The release's keymapper, whose key_id() names the
+            vbmeta key to load. Defaults to the static keymapper over
+            KEYMAP_FILE, which the yubihsm vendor selects.
+        command: Base name of the script being run, without .sh, which
+            the vendors put into log names.
+
+    Returns:
+        None.
+
+    Raises:
+        UnsupportedVendorError: See load_vendor().
+        RuntimeError: If initialization fails.
+    """
+    if not is_vendor_initialization_needed(environment):
+        return
+    if environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE") == "y":
+        return
+    vendor = load_vendor(environment)
+    if vendor is not None:
+        vendor.initialize_release(
+            environment,
+            device=device,
+            build_number=build_number,
+            keymapper=keymapper,
+            command=command,
+        )
+    environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] = "y"
+
+
+def finalize_vendor_release(
+    environment: MutableMapping[str, str],
+    *,
+    device: str,
+    build_number: str,
+    record_finish: bool,
+    inherited: Mapping[str, str],
+    command: str = "release",
+) -> None:
+    """
+    Close the vendor's release and stop what it started.
+
+    Args:
+        environment: Process environment.
+        device: The device being released.
+        build_number: The requested build number.
+        record_finish: Whether release initialization completed, so that
+            the vendor records the end of the release.
+        inherited: The environment the caller started with, telling apart
+            what the caller started from what it inherited.
+        command: Base name of the script being run, without .sh.
+
+    Returns:
+        None.
+    """
+    try:
+        vendor = load_vendor(environment)
+    except RuntimeError:
+        return
+    if vendor is None:
+        return
+    vendor.finalize_release(
+        environment,
+        device=device,
+        build_number=build_number,
+        record_finish=record_finish,
+        command=command,
+    )
+    vendor.cleanup(environment, inherited=inherited)
+
+
 class Vendor(abc.ABC):
     """
     A PKCS#11 vendor.
@@ -459,6 +547,53 @@ class Vendor(abc.ABC):
         Args:
             environment: Process environment to mutate in place.
             tmpdir: Directory for vendor scratch space.
+
+        Returns:
+            None.
+        """
+
+    @abc.abstractmethod
+    def initialize_release(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        device: str,
+        build_number: str,
+        keymapper: Keymapper | None,
+        command: str,
+    ) -> None:
+        """
+        Prepare one release.
+
+        Args:
+            environment: Process environment to mutate in place.
+            device: Device being released.
+            build_number: Requested build number.
+            keymapper: The release's keymapper, or None outside a release.
+            command: Base name of the script being run, without .sh.
+
+        Returns:
+            None.
+        """
+
+    def finalize_release(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        device: str,
+        build_number: str,
+        record_finish: bool,
+        command: str,
+    ) -> None:
+        """
+        Close one release. Does nothing by default.
+
+        Args:
+            environment: Process environment.
+            device: Device being released.
+            build_number: Requested build number.
+            record_finish: Whether initialize_release() completed.
+            command: Base name of the script being run, without .sh.
 
         Returns:
             None.
@@ -550,6 +685,52 @@ class SoftHsmVendor(Vendor):
         tmpdir: Path,
     ) -> None:
         """SoftHSM needs no initialization."""
+
+    def initialize_release(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        device: str,
+        build_number: str,
+        keymapper: Keymapper | None,
+        command: str,
+    ) -> None:
+        """
+        Create SOFTHSM_LOGS_DIR if missing, and put the release's audit and
+        exec logs in it.
+
+        Raises:
+            RuntimeError: If SOFTHSM_LOGS_DIR cannot be created.
+        """
+        logs_dir_raw = environment.get("SOFTHSM_LOGS_DIR")
+        if not logs_dir_raw:
+            return
+        logs_dir = Path(logs_dir_raw)
+        if not logs_dir.is_dir():
+            if environment.get("DRY_RUN") == "y":
+                from .release_execution import render_release_tool
+
+                sys.stderr.write(render_release_tool(["mkdir", logs_dir_raw]))
+            else:
+                try:
+                    logs_dir.mkdir()
+                except OSError as error:
+                    raise RuntimeError(
+                        f"SOFTHSM_LOGS_DIR ({logs_dir_raw}) does not exist, "
+                        "and failed to create it",
+                    ) from error
+        date_format = environment.get("DATE_FORMAT") or "%Y%m%d-%H%M%S"
+        timestamp = datetime.datetime.now(datetime.UTC).strftime(date_format)
+        default_prefix = f"{build_number}-{device}-{timestamp}-{command}"
+        _default(environment, "AUDIT_LOG_PATH", f"{default_prefix}-audit.log")
+        _default(environment, "EXEC_LOG_PATH", f"{default_prefix}-exec.log")
+        # An absolute AUDIT_LOG_PATH is still put under logs_dir.
+        environment["AUDIT_LOG_PATH"] = (
+            f"{logs_dir}/{environment['AUDIT_LOG_PATH']}"
+        )
+        environment["EXEC_LOG_PATH"] = (
+            f"{logs_dir}/{environment['EXEC_LOG_PATH']}"
+        )
 
     def split_devices_by_loaded_keys(
         self,
@@ -732,6 +913,124 @@ class YubiHsmVendor(Vendor):
         else:
             environment["YUBIHSM_TMPDIR"] = ""
             environment["YUBIHSM_LOCKFILE"] = ""
+
+    def initialize_release(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        device: str,
+        build_number: str,
+        keymapper: Keymapper | None,
+        command: str,
+    ) -> None:
+        """
+        Name the release's audit and exec logs, save the audit log, and load
+        the device's vbmeta key unless ENSURE_KEY_IS_AVAILABLE is not "y".
+
+        Raises:
+            RuntimeError: If the YubiHSM refuses an operation or cannot be
+                reached.
+        """
+        if environment.get("DRY_RUN") == "y":
+            return
+        from yubihsm.exceptions import YubiHsmError
+
+        config = yubihsm_config_from_environment(environment)
+        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
+        with open(lock_path, "a") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            try:
+                identity = get_device_identity(config)
+                name = identity.name
+                logs_dir = Path(environment["YUBIHSM_LOGS_DIR"])
+                default_prefix = f"{build_number}-{device}-{command}"
+                audit_log_path = (
+                    logs_dir / name / f"{formatted_date()}-{default_prefix}.log"
+                )
+                environment["AUDIT_LOG_PATH"] = str(audit_log_path)
+                exec_dir = logs_dir / name / "exec"
+                exec_dir.mkdir(parents=True, exist_ok=True)
+                environment["EXEC_LOG_PATH"] = str(
+                    exec_dir / f"{formatted_date()}-{default_prefix}.log",
+                )
+
+                if keymapper is None:
+                    keymapper = StaticKeymapper.from_file(
+                        Path(environment["KEYMAP_FILE"]),
+                    )
+                key_id = keymapper.key_id("avb", "vbmeta", device)
+
+                extract_and_save_audit_log(
+                    config,
+                    audit_log_path,
+                    comment=f"BUILD_NUMBER={build_number} DEVICE={device} "
+                    f"{command}.sh",
+                )
+
+                if (environment.get("ENSURE_KEY_IS_AVAILABLE") or "y") == "y":
+                    result = 1
+                    try:
+                        ensure_keys_are_available(
+                            config,
+                            Path(environment.get("KEY_DIR", "keys/")),
+                            (key_id,),
+                            restore_mode=False,
+                            is_ondemand=key_id_is_ondemand(keymapper),
+                            exportable_domain=environment[
+                                "YUBIHSM_EXPORTABLE_DOMAIN"
+                            ],
+                            ondemand_domain=environment[
+                                "YUBIHSM_ONDEMAND_DOMAIN"
+                            ],
+                            opaque_capabilities=environment[
+                                "YUBIHSM_OPAQUE_CAPABILITIES"
+                            ],
+                        )
+                        result = 0
+                    finally:
+                        extract_and_save_audit_log(
+                            config,
+                            audit_log_path,
+                            comment=f"Function: ensure_key_is_available "
+                            f"Result: {result}",
+                        )
+            except YubiHsmError as error:
+                raise RuntimeError(f"YubiHSM failure: {error}") from error
+            except ValueError as error:
+                raise RuntimeError(str(error)) from error
+
+    def finalize_release(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        device: str,
+        build_number: str,
+        record_finish: bool,
+        command: str,
+    ) -> None:
+        """
+        Record the end of the release in the audit log when the release
+        initialization completed. Failures are reported and ignored.
+        """
+        if (
+            not record_finish
+            or not environment.get("AUDIT_LOG_PATH")
+            or environment.get("DRY_RUN") == "y"
+        ):
+            return
+        config = yubihsm_config_from_environment(environment)
+        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
+        try:
+            with open(lock_path, "a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                extract_and_save_audit_log(
+                    config,
+                    Path(environment["AUDIT_LOG_PATH"]),
+                    comment=f"Finished BUILD_NUMBER={build_number} "
+                    f"DEVICE={device} {command}.sh",
+                )
+        except Exception as error:
+            print(f"Failed to extract logs: {error}", file=sys.stderr)
 
     def split_devices_by_loaded_keys(
         self,
