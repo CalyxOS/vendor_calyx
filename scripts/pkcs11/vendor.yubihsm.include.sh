@@ -737,6 +737,27 @@ _populate_loaded_keys_delegate() {
 
 populate_loaded_keys() {
   fully_loaded_keys_map=()
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    # A process substitution would hide the command's exit status.
+    local err=
+    local output
+    output=$(mktemp -p "${YUBIHSM_TMPDIR:-${TMPDIR:-/dev/shm}}" loaded_keys.XXXXXXXX) \
+      || return $?
+    _yubihsm_python_cli get-loaded-key-status \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD > "$output" || err=$?
+    if [ -z "$err" ]; then
+      local -a fully_loaded_ids=()
+      mapfile -t fully_loaded_ids < "$output" || err=$?
+      local id
+      for id in "${fully_loaded_ids[@]}"; do
+        fully_loaded_keys_map[$id]=1
+      done
+    fi
+    rm -f "$output"
+    return "${err:-0}"
+  fi
   local -a loaded_keys_map=()
   local -a loaded_certs_map=()
   local lookup_domain=$YUBIHSM_ONDEMAND_DOMAIN
@@ -1211,7 +1232,15 @@ read_yubihsm_deviceinfo() {
   declare -g yubihsm_deviceinfo
   declare -g yubihsm_serial
   declare -g yubihsm_partnumber
-  yubihsm_deviceinfo=$(yubihsm_nolog -a get-device-info)
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    yubihsm_deviceinfo=$(_yubihsm_python_cli get-device-identity \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD) \
+      || return $?
+  else
+    yubihsm_deviceinfo=$(yubihsm_nolog -a get-device-info)
+  fi
   [ -n "$yubihsm_deviceinfo" ] || return 1
   yubihsm_serial=$(printf "%s\n" "$yubihsm_deviceinfo" | sed -ne 's/^Serial number:\s\+//p')
   [ -n "$yubihsm_serial" ] || return 1
