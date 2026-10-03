@@ -47,6 +47,31 @@ export KEYMAP_FILE=${KEYMAP_FILE:-"$_our_path/keymap.tsv"}
 
 maybe_dry_run=${maybe_dry_run:-}
 
+_yubihsm_python_cli() {
+  YUBIHSM_PASSWORD=${YUBIHSM_PASSWORD:-} \
+    PYTHONPATH="$_our_path/..${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 -P -m signing "$@"
+}
+
+_yubihsm_python_cli_logged() {
+  if [ "${DRY_RUN:-}" = "y" ]; then
+    $maybe_dry_run python3 -m signing "$@" || return $?
+    return 0
+  fi
+  local err=
+  _yubihsm_python_cli "$@" || err=$?
+  local log_err=
+  extract_logs "Command: python3 -m signing $* Result: ${err:-0}" || log_err=$?
+  if [ -n "$log_err" ]; then
+    echo "Failed to extract logs" >&2
+    if [ "${NO_LOG_FAIL:-}" = "y" ]; then
+      return "${err:-0}"
+    fi
+    return "${err:-$log_err}"
+  fi
+  return "${err:-0}"
+}
+
 initialize_vendor_interactive() {
   if [ "${NEVER_START_YUBIHSM_CONNECTOR:-}" != "y" ]; then
     find_yubihsm_connector || return $?
@@ -322,7 +347,17 @@ extract_logs() {
     export YUBIHSM_CONNECTOR=$YUBIHSM_CONNECTOR
     export YUBIHSM_AUTHKEY=$YUBIHSM_AUTHKEY
     export YUBIHSM_PASSWORD=$YUBIHSM_PASSWORD
-    "$_our_path/vendor.yubihsm.audit.logs.py" --log-file "$log_path" --comment "$comment" || return $?
+    if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+      _yubihsm_python_cli extract-audit-log \
+        --connector "$YUBIHSM_CONNECTOR" \
+        --authkey "$YUBIHSM_AUTHKEY" \
+        --password-env YUBIHSM_PASSWORD \
+        --log-file "$log_path" \
+        --comment "$comment" \
+        || return $?
+    else
+      "$_our_path/vendor.yubihsm.audit.logs.py" --log-file "$log_path" --comment "$comment" || return $?
+    fi
   ) || return $?
 }
 
@@ -609,14 +644,25 @@ ensure_key_is_available_nolog() {
         deletion_ineligible_keys_map[$deletion_candidate_key_id]=1
       fi
       # Import wrapped key.
-      yubihsm_nolog -a put-wrapped \
-        --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
-        --object-id "$key_id" \
-        --object-type asymmetric-key \
-        --domain "$domain" \
-        --capabilities "$key_capabilities" \
-        --in "$KEY_DIR$key_id-asymmetric-key.yhw" \
-        || return $?
+      if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+        _yubihsm_python_cli import-wrapped-key \
+          --connector "$YUBIHSM_CONNECTOR" \
+          --authkey "$YUBIHSM_AUTHKEY" \
+          --password-env YUBIHSM_PASSWORD \
+          --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+          --key-id "$key_id" \
+          --input "$KEY_DIR$key_id-asymmetric-key.yhw" \
+          || return $?
+      else
+        yubihsm_nolog -a put-wrapped \
+          --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+          --object-id "$key_id" \
+          --object-type asymmetric-key \
+          --domain "$domain" \
+          --capabilities "$key_capabilities" \
+          --in "$KEY_DIR$key_id-asymmetric-key.yhw" \
+          || return $?
+      fi
     fi
 
     if [ -z "$cert_index" ]; then
@@ -866,9 +912,17 @@ maybe_start_or_restart_yubihsm_connector() {
   maybe_stop_yubihsm_connector y || return $?
   # Stopping the connector unsets the environment variable, so let's just set it again.
   export YUBIHSM_CONNECTOR_PIDFILE=$pidfile
-  local pid
-  nohup "$YUBIHSM_CONNECTOR_BIN" >/dev/null 2>&1 &pid=$!
-  printf "%s\n" "$pid" > "$YUBIHSM_CONNECTOR_PIDFILE" || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli start-yubihsm-connector \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --binary "$YUBIHSM_CONNECTOR_BIN" \
+      --pid-file "$YUBIHSM_CONNECTOR_PIDFILE" \
+      || return $?
+  else
+    local pid
+    nohup "$YUBIHSM_CONNECTOR_BIN" >/dev/null 2>&1 &pid=$!
+    printf "%s\n" "$pid" > "$YUBIHSM_CONNECTOR_PIDFILE" || return $?
+  fi
   if [ ! -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
     echo "yubihsm-connector pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
   fi
@@ -977,25 +1031,33 @@ maybe_stop_yubihsm_connector() {
     # Already stopped.
     return 0
   fi
-  local pid
-  if [ ! -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
-    echo "yubihsm-connector pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
-  fi
-  if [ -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
-    pid=$(cat "$YUBIHSM_CONNECTOR_PIDFILE")
-    if ps -p "$pid" >/dev/null; then
-      kill "$pid" || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli stop-yubihsm-connector \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --binary "$YUBIHSM_CONNECTOR_BIN" \
+      --pid-file "$YUBIHSM_CONNECTOR_PIDFILE" \
+      || return $?
+  else
+    local pid
+    if [ ! -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
+      echo "yubihsm-connector pidfile '$YUBIHSM_CONNECTOR_PIDFILE' does not exist somehow" >&2
     fi
-    local i
-    for i in $(seq 1 200); do
-      ps -p "$pid" >/dev/null || break
-      sleep 0.05
-    done
-    if ps -p "$pid" >/dev/null; then
-      echo "Could not kill existing yubihsm-connector." >&2
-      return 1
+    if [ -e "$YUBIHSM_CONNECTOR_PIDFILE" ]; then
+      pid=$(cat "$YUBIHSM_CONNECTOR_PIDFILE")
+      if ps -p "$pid" >/dev/null; then
+        kill "$pid" || return $?
+      fi
+      local i
+      for i in $(seq 1 200); do
+        ps -p "$pid" >/dev/null || break
+        sleep 0.05
+      done
+      if ps -p "$pid" >/dev/null; then
+        echo "Could not kill existing yubihsm-connector." >&2
+        return 1
+      fi
+      rm -f "$YUBIHSM_CONNECTOR_PIDFILE"
     fi
-    rm -f "$YUBIHSM_CONNECTOR_PIDFILE"
   fi
   YUBIHSM_CONNECTOR_PIDFILE=
 }
