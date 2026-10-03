@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-apksigner_parser = argparse.ArgumentParser()
+apksigner_parser = argparse.ArgumentParser(allow_abbrev=False)
 apksigner_parser.add_argument("--out", nargs=2)
 apksigner_parser.add_argument("--ks-key-alias", dest="key")
 
@@ -43,7 +43,7 @@ def from_cache(args):
     # calculate hash of input file and use it for hash key
     with open(signing_obj.in_file, "rb") as f:
         digest = hashlib.file_digest(f, "sha256")
-    key = f"{digest.hexdigest()}-{signing_obj.key_id}"
+    key = cache_key(signing_obj, digest.hexdigest())
 
     # check if hash key is in cache, if so copy to output file
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
@@ -65,7 +65,7 @@ def to_cache(args):
     # calculate hash of input file and use it for hash key
     with open(signing_obj.in_file, "rb") as f:
         digest = hashlib.file_digest(f, "sha256")
-    key = f"{digest.hexdigest()}-{signing_obj.key_id}"
+    key = cache_key(signing_obj, digest.hexdigest())
 
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
     if (cache_dir / key).is_file():
@@ -78,8 +78,28 @@ def to_cache(args):
 
 
 def apksigner_get_apks(arg_str):
-    args = apksigner_parser.parse_known_args(arg_str)[0]
-    return SigningObj(in_file=args.out[1], out_file=args.out[0], key_id=args.key)
+    args, extra_args = apksigner_parser.parse_known_args(arg_str)
+    return SigningObj(in_file=args.out[1], out_file=args.out[0], key_id=args.key, extra_args=tuple(extra_args))
+
+
+def file_digest_or_path(path):
+    try:
+        with open(path, "rb") as f:
+            return hashlib.file_digest(f, "sha256").hexdigest()
+    except OSError:
+        return path
+
+
+# The --provider-arg configuration is written to a new temporary
+# directory for every release, so it is keyed by its contents.
+def cache_key(signing_obj, input_digest):
+    parameters = [signing_obj.key_id or ""]
+    is_file = False
+    for arg in signing_obj.extra_args:
+        parameters.append(file_digest_or_path(arg) if is_file else arg)
+        is_file = arg == "--provider-arg"
+    parameters_digest = hashlib.sha256("\x1f".join(parameters).encode()).hexdigest()
+    return f"{input_digest}-{parameters_digest}"
 
 
 def link_or_copy(src: Path, dst: Path) -> None:
@@ -102,6 +122,7 @@ class SigningObj:
     in_file: str
     out_file: str
     key_id: str
+    extra_args: tuple[str, ...] = ()
 
 
 if __name__ == "__main__":
