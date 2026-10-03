@@ -28,7 +28,7 @@ from .vendor_yubihsm_connector import (
 )
 
 if TYPE_CHECKING:
-    from yubihsm.core import AuthSession, LogEntry
+    from yubihsm.core import AuthSession, DeviceInfo, LogEntry
     from yubihsm.defs import ALGORITHM, OBJECT
 
 
@@ -184,6 +184,133 @@ def should_make_space_on_hsm(info: StorageInfo) -> bool:
     return info.free_records < 5 or info.free_pages < 25
 
 
+@dataclass(frozen=True, slots=True)
+class DeviceIdentity:
+    """
+    A YubiHSM's name, its part number and serial number joined by a hyphen,
+    identifying one physical device, and its device information as
+    yubihsm-shell's get-device-info prints it.
+    """
+
+    name: str
+    device_info: str
+
+
+_ALGORITHM_NAMES = {
+    1: "rsa-pkcs1-sha1",
+    2: "rsa-pkcs1-sha256",
+    3: "rsa-pkcs1-sha384",
+    4: "rsa-pkcs1-sha512",
+    5: "rsa-pss-sha1",
+    6: "rsa-pss-sha256",
+    7: "rsa-pss-sha384",
+    8: "rsa-pss-sha512",
+    9: "rsa2048",
+    10: "rsa3072",
+    11: "rsa4096",
+    12: "ecp256",
+    13: "ecp384",
+    14: "ecp521",
+    15: "eck256",
+    16: "ecbp256",
+    17: "ecbp384",
+    18: "ecbp512",
+    19: "hmac-sha1",
+    20: "hmac-sha256",
+    21: "hmac-sha384",
+    22: "hmac-sha512",
+    23: "ecdsa-sha1",
+    24: "ecdh",
+    25: "rsa-oaep-sha1",
+    26: "rsa-oaep-sha256",
+    27: "rsa-oaep-sha384",
+    28: "rsa-oaep-sha512",
+    29: "aes128-ccm-wrap",
+    30: "opaque-data",
+    31: "opaque-x509-certificate",
+    32: "mgf1-sha1",
+    33: "mgf1-sha256",
+    34: "mgf1-sha384",
+    35: "mgf1-sha512",
+    36: "template-ssh",
+    37: "aes128-yubico-otp",
+    38: "aes128-yubico-authentication",
+    39: "aes192-yubico-otp",
+    40: "aes256-yubico-otp",
+    41: "aes192-ccm-wrap",
+    42: "aes256-ccm-wrap",
+    43: "ecdsa-sha256",
+    44: "ecdsa-sha384",
+    45: "ecdsa-sha512",
+    46: "ed25519",
+    47: "ecp224",
+    48: "rsa-pkcs1-decrypt",
+    49: "ecp256-yubico-authentication",
+    50: "aes128",
+    51: "aes192",
+    52: "aes256",
+    53: "aes-ecb",
+    54: "aes-cbc",
+    55: "aes-kwp",
+}
+
+
+def _device_info_text(info: DeviceInfo) -> str:
+    """
+    Render device information as yubihsm-shell's get-device-info prints
+    it, three algorithms to a line.
+    """
+    version = ".".join(str(part) for part in info.version)
+    text = (
+        f"Version number:\t\t{version}\n"
+        f"Serial number:\t\t{info.serial}\n"
+        f"Log used:\t\t{info.log_used}/{info.log_size}\n"
+        "Supported algorithms:\t"
+    )
+    for index, algorithm in enumerate(sorted(info.supported_algorithms), 1):
+        name = _ALGORITHM_NAMES.get(int(algorithm), str(int(algorithm)))
+        text += f"{name}, " + ("\n\t\t\t" if index % 3 == 0 else "")
+    return text + f"\nPart number:\t\t{info.part_number}\n"
+
+
+def get_device_identity(config: YubiHsmConfig) -> DeviceIdentity:
+    """
+    Return the HSM's serial number, part number and device information.
+
+    GET_DEVICE_INFO needs no authenticated session, so the configured
+    authentication key and password go unused.
+
+    Args:
+        config: Connector URL.
+
+    Returns:
+        The device's serial number, part number and device information.
+
+    Raises:
+        RuntimeError: If the device did not report a part number (only
+            reported on a second info page, absent on older firmware),
+            or if a managed connector fails to restart after a
+            connector-level failure.
+        yubihsm.exceptions.YubiHsmError: If the SDK connection or
+            command fails.
+    """
+    from yubihsm.core import YubiHsm
+
+    def operation(hsm: YubiHsm) -> DeviceIdentity:
+        info = hsm.get_device_info()
+        if not info.part_number:
+            raise RuntimeError("YubiHSM did not report a part number")
+        return DeviceIdentity(
+            name=f"{info.part_number}-{info.serial}",
+            device_info=_device_info_text(info),
+        )
+
+    return _run_with_session(
+        lambda: YubiHsm.connect(config.connector_url),
+        operation,
+    )
+
+
 _DOMAIN_SEPARATORS = re.compile(r"[:,;|]")
 
 
@@ -279,6 +406,52 @@ def list_restorable_objects(
         )
 
     return _run_with_session(lambda: connect_yubihsm_session(config), operation)
+
+
+@dataclass(frozen=True, slots=True)
+class LoadedKeyStatus:
+    """
+    Which object IDs currently have their asymmetric key, their
+    certificate, or both, loaded on the HSM.
+    """
+
+    loaded_key_ids: frozenset[int]
+    loaded_cert_ids: frozenset[int]
+    fully_loaded_ids: frozenset[int]
+
+
+def get_loaded_key_status(config: YubiHsmConfig) -> LoadedKeyStatus:
+    """
+    Report which object IDs currently have their key, cert, or both.
+
+    Scans every object in the domains of the authentication key.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+
+    Returns:
+        The sets of key/cert/fully-loaded object IDs.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    from yubihsm.defs import OBJECT
+
+    objects = list_restorable_objects(config, None)
+    loaded_keys = {
+        obj.id for obj in objects if obj.object_type == OBJECT.ASYMMETRIC_KEY
+    }
+    loaded_certs = {
+        obj.id for obj in objects if obj.object_type == OBJECT.OPAQUE
+    }
+    return LoadedKeyStatus(
+        loaded_key_ids=frozenset(loaded_keys),
+        loaded_cert_ids=frozenset(loaded_certs),
+        fully_loaded_ids=frozenset(loaded_keys & loaded_certs),
+    )
 
 
 def _is_nonempty_regular_file(path: Path) -> bool:
