@@ -59,6 +59,8 @@ class Pkcs11Config:
     module: Path
     pin: str | None = field(default=None, repr=False)
     discovery_pin: str | None = field(default=None, repr=False)
+    # Certificates are signed with this PIN, since pin may hold the SO PIN.
+    signing_pin: str | None = field(default=None, repr=False)
     token_label: str | None = None
     slot: str | None = None
     tool: str = "pkcs11-tool"
@@ -315,7 +317,12 @@ class Pkcs11Backend:
             raise ValueError(
                 "PKCS#11 OpenSSL engine is required for certificates",
             )
-        if self.config.pin is None:
+        signing_pin = (
+            self.config.signing_pin
+            if self.config.signing_pin is not None
+            else self.config.pin
+        )
+        if signing_pin is None:
             raise ValueError("PKCS#11 PIN is required for certificates")
         if not subject:
             raise ValueError("certificate subject must not be empty")
@@ -336,7 +343,8 @@ class Pkcs11Backend:
             certificate = temporary_directory / "certificate.pem"
             openssl_config.write_text(self._openssl_config())
             openssl_config.chmod(0o600)
-            environment = self._environment()
+            environment = environment_with(self.config.environment)
+            environment["PKCS11_BACKEND_PIN"] = signing_pin
             environment["OPENSSL_CONF"] = str(openssl_config)
             subprocess.run(
                 [
@@ -630,3 +638,112 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             capture_output=True,
             env=self._environment(),
         )
+
+
+_TOKEN_URI_LINE = re.compile(r"^ *uri *:")
+
+
+def is_any_pkcs11_token_initialized(*, tool: str, module: Path) -> bool:
+    """
+    Return whether any slot behind a PKCS#11 module has an initialized
+    token, identified by ``pkcs11-tool --list-token-slots`` printing a
+    URI line for it.
+
+    Args:
+        tool: ``pkcs11-tool`` executable.
+        module: PKCS#11 provider module path.
+
+    Returns:
+        Whether at least one token slot reports a URI.
+
+    Raises:
+        OSError: If ``pkcs11-tool`` cannot be executed.
+        subprocess.CalledProcessError: If listing slots fails.
+    """
+    result = subprocess.run(
+        [tool, "--module", str(module), "--list-token-slots"],
+        check=True,
+        capture_output=True,
+    )
+    return any(
+        _TOKEN_URI_LINE.match(line)
+        for line in result.stdout.decode(errors="replace").splitlines()
+    )
+
+
+def initialize_pkcs11_token(
+    *,
+    tool: str,
+    module: Path,
+    label: str,
+    so_pin: str,
+    user_pin: str,
+) -> None:
+    """
+    Initialize a blank PKCS#11 token and set its user PIN, unless a
+    token is already initialized behind this module.
+
+    ``--init-token`` assigns a label and security-officer PIN to an
+    uninitialized slot, then ``--init-pin`` (authenticated with that
+    SO-PIN) sets the user PIN.
+
+    Args:
+        tool: ``pkcs11-tool`` executable.
+        module: PKCS#11 provider module path.
+        label: Label to assign to the newly initialized token.
+        so_pin: Security-officer PIN to assign during initialization.
+        user_pin: User PIN to set on the newly initialized token.
+
+    Returns:
+        None.
+
+    Raises:
+        OSError: If ``pkcs11-tool`` cannot be executed.
+        subprocess.CalledProcessError: If either step fails.
+        RuntimeError: If the token does not report as initialized
+            immediately after ``--init-token`` succeeds.
+    """
+    if is_any_pkcs11_token_initialized(tool=tool, module=module):
+        return
+
+    environment = os.environ.copy()
+    environment["PKCS11_BACKEND_SO_PIN"] = so_pin
+    environment["PKCS11_BACKEND_PIN"] = user_pin
+    subprocess.run(
+        [
+            tool,
+            "--label",
+            label,
+            "--module",
+            str(module),
+            "--init-token",
+            "--so-pin",
+            "env:PKCS11_BACKEND_SO_PIN",
+        ],
+        check=True,
+        capture_output=True,
+        env=environment,
+    )
+    if not is_any_pkcs11_token_initialized(tool=tool, module=module):
+        raise RuntimeError(
+            "Initialized token, but it does not report as initialized",
+        )
+    subprocess.run(
+        [
+            tool,
+            "--module",
+            str(module),
+            "--token-label",
+            label,
+            "--login-type",
+            "so",
+            "--so-pin",
+            "env:PKCS11_BACKEND_SO_PIN",
+            "--init-pin",
+            "--pin",
+            "env:PKCS11_BACKEND_PIN",
+        ],
+        check=True,
+        capture_output=True,
+        env=environment,
+    )
