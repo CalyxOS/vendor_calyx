@@ -484,6 +484,8 @@ def _release(
             "PKCS11_MODULE": "/dev/null",
             "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
             "PKCS11_PIN": "test-only",
+            "YUBIHSM_AUTHKEY": "0x0001",
+            "YUBIHSM_PASSWORD": "test-only",
             **environment,
         },
         check=False,
@@ -492,43 +494,64 @@ def _release(
     return result, recorded
 
 
+HELPERS = SCRIPTS_DIR / "pkcs11"
+
+
+@pytest.mark.parametrize(
+    ("extra", "batch_runs"),
+    [({}, True), ({"NEVER_START_APKSIGNER_BATCH": "y"}, False)],
+)
 def test_release_hosts_the_signing_server_for_its_tools(
     tmp_path: Path,
     short_tmpdir: Path,
     fake_java: Path,
+    extra: dict[str, str],
+    batch_runs: bool,
 ) -> None:
     result, recorded = _release(
         tmp_path,
         short_tmpdir,
-        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR},
+        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR, **extra},
     )
 
     assert result.returncode == 0, result.stderr
     assert recorded is not None
     assert recorded["socket"] is not None
     assert not Path(recorded["socket"]).exists()
-    assert recorded["batch"].endswith("args=sign from-release.apk")
-    assert len(_starts(fake_java)) == 1
+    if batch_runs:
+        assert recorded["batch"].endswith("args=sign from-release.apk")
+        assert len(_starts(fake_java)) == 1
+    else:
+        assert recorded["batch"] is None
+        assert _starts(fake_java) == []
+    argv = " ".join(recorded["argv"])
+    assert f"--signing_helper {HELPERS}/signing_helper.server.py" in argv
 
 
-def test_release_never_starting_the_batch_has_no_server(
+@pytest.mark.parametrize(
+    ("tool", "avb"),
+    [
+        ({"AVB_SIGNING_HELPER_TOOL": "openssl"}, "openssl.sh"),
+        ({"SIGNING_HELPER_TOOL": "python"}, "py"),
+    ],
+)
+def test_release_keeps_a_chosen_signing_helper(
     tmp_path: Path,
     short_tmpdir: Path,
     fake_java: Path,
+    tool: dict[str, str],
+    avb: str,
 ) -> None:
     result, recorded = _release(
         tmp_path,
         short_tmpdir,
-        {
-            "SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR,
-            "NEVER_START_APKSIGNER_BATCH": "y",
-        },
+        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR, **tool},
     )
 
     assert result.returncode == 0, result.stderr
     assert recorded is not None
-    assert recorded["socket"] is None
-    assert _starts(fake_java) == []
+    argv = " ".join(recorded["argv"])
+    assert f"--signing_helper {HELPERS}/signing_helper.{avb} " in argv + " "
 
 
 @pytest.mark.parametrize(
@@ -565,6 +588,7 @@ def test_release_dry_run_has_no_server(
     assert result.returncode == 0, result.stderr
     assert recorded is None
     assert "sign_target_files_apks" in result.stderr
+    assert "signing_helper.server.py" in result.stderr
 
 
 def test_batch_process_sees_environment_set_after_the_handler(

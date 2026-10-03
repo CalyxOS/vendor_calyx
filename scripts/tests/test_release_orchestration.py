@@ -1575,6 +1575,23 @@ def test_read_words_matches_read_a(value: str) -> None:
     assert read_words(value) == expected
 
 
+def test_a_plaintext_release_loads_no_cryptography_package() -> None:
+    result = run(
+        [
+            sys.executable,
+            "-c",
+            "import sys\n"
+            "import signing.cli\n"
+            "import signing.release_orchestration\n"
+            "print(sorted(name for name in sys.modules "
+            "if name.split('.')[0] in ('cryptography', 'yubihsm')))",
+        ],
+        env={"PYTHONPATH": str(SCRIPTS_DIR)},
+    )
+
+    assert result.stdout == "[]\n"
+
+
 @implementations
 def test_release_signs_plain_keys_without_its_tmpdir(
     release_tree: Path,
