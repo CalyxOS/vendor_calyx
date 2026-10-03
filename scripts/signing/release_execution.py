@@ -8,12 +8,38 @@ Run the AOSP release tools of a release and checksum their outputs.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import shlex
+import signal
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from pathlib import Path
+from types import FrameType
+
+
+@contextlib.contextmanager
+def exit_on_signals() -> Generator[None, None, None]:
+    """
+    Raise SystemExit(128 + signal number) for a SIGTERM or SIGHUP inside
+    the with block, so that the cleanup around it runs. A signal the
+    process ignores stays ignored.
+    """
+
+    def exit_on_signal(signum: int, frame: FrameType | None) -> None:
+        raise SystemExit(128 + signum)
+
+    previous_handlers = {
+        signum: signal.signal(signum, exit_on_signal)
+        for signum in (signal.SIGTERM, signal.SIGHUP)
+        if signal.getsignal(signum) != signal.SIG_IGN
+    }
+    try:
+        yield
+    finally:
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
 
 
 def run_release_tool(argv: Sequence[str]) -> int:
