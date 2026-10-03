@@ -1,0 +1,160 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+"""
+Local yubihsm-connector process lifecycle management.
+"""
+
+from __future__ import annotations
+
+import os
+import signal
+import subprocess
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+
+def _process_is_alive(pid: int) -> bool:
+    """
+    Return whether a process with a given PID currently exists.
+
+    A child of the calling process is reaped first, since ``kill(pid, 0)``
+    reports an unreaped zombie as alive.
+
+    Args:
+        pid: Process ID to probe.
+
+    Returns:
+        Whether the process exists.
+    """
+    try:
+        os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        pass
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+@dataclass(frozen=True, slots=True)
+class YubiHsmConnectorConfig:
+    """
+    Settings needed to manage a local ``yubihsm-connector`` process.
+    """
+
+    connector_url: str
+    pid_file: Path
+    binary: str = "yubihsm-connector"
+
+
+class YubiHsmConnector:
+    """
+    Local ``yubihsm-connector`` process lifecycle.
+
+    A USB-mode connector URL (``yhusb://...``) is never managed.
+    """
+
+    def __init__(self, config: YubiHsmConnectorConfig) -> None:
+        """
+        Store the configuration used for every lifecycle operation.
+
+        Args:
+            config: Connector URL, PID file path, and managed binary.
+
+        Returns:
+            None.
+        """
+        self._config = config
+        self._process: subprocess.Popen[bytes] | None = None
+
+    def _managed(self) -> bool:
+        """
+        Return whether this configuration is one this instance manages.
+
+        Returns:
+            False for USB-mode connectors, and True otherwise.
+        """
+        return not self._config.connector_url.startswith("yhusb://")
+
+    def restart(self) -> None:
+        """
+        Stop any connector the PID file names and start a new one.
+
+        Returns:
+            None.
+
+        Raises:
+            OSError: If the connector binary cannot be executed.
+            RuntimeError: If the existing connector cannot be stopped.
+        """
+        if not self._managed():
+            return
+        self.stop()
+        process = subprocess.Popen(
+            [self._config.binary],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        self._config.pid_file.write_text(f"{process.pid}\n")
+        self._process = process
+
+    def stop(self) -> None:
+        """
+        Stop the connector the PID file names, and remove the PID file.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the process does not exit after being sent
+                SIGTERM.
+        """
+        if not self._managed():
+            return
+        if not self._config.pid_file.exists():
+            return
+        pid = int(self._config.pid_file.read_text().strip())
+        held_process = self._process if self._process_pid() == pid else None
+        if _process_is_alive(pid):
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            if held_process is not None:
+                # Reap our own child so a same-process restart does not
+                # leave it as a zombie that still answers kill(pid, 0).
+                try:
+                    held_process.wait(timeout=10)
+                except subprocess.TimeoutExpired as error:
+                    raise RuntimeError(
+                        "Could not kill existing yubihsm-connector.",
+                    ) from error
+            else:
+                for _ in range(200):
+                    if not _process_is_alive(pid):
+                        break
+                    time.sleep(0.05)
+                else:
+                    raise RuntimeError(
+                        "Could not kill existing yubihsm-connector.",
+                    )
+        self._process = None
+        self._config.pid_file.unlink()
+
+    def _process_pid(self) -> int | None:
+        """
+        Return the PID of a process this instance started, if it holds one.
+
+        Returns:
+            The held process's PID, or None if this instance did not
+            start a still-tracked process.
+        """
+        return None if self._process is None else self._process.pid
