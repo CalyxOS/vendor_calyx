@@ -34,6 +34,10 @@ _we_started_apksigner=
 _we_started_yubihsm_connector=
 _we_created_yubihsm_tmpdir=
 _our_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit;pwd -P)
+if [ "${PKCS11_TOOL_BIN:-}" != "$_our_path/pkcs11_tool.yubihsm.sh" ]; then
+  export YUBIHSM_UNDERLYING_PKCS11_TOOL_BIN=${PKCS11_TOOL_BIN:-}
+  export PKCS11_TOOL_BIN=$_our_path/pkcs11_tool.yubihsm.sh
+fi
 for_restore=
 verify_key_ids=
 declare -g -A fully_loaded_keys_map=()
