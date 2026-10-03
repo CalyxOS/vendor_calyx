@@ -6,21 +6,26 @@
 from __future__ import annotations
 
 import base64
+import datetime
 from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives import serialization
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from signing.vendor_yubihsm import (
     RestorableObject,
     YubiHsmConfig,
+    import_certificate,
     is_object_available_on_disk,
     limit_ondemand_objects,
     list_restorable_objects,
+    parse_capabilities,
     parse_domains,
 )
 from yubihsm.core import AuthSession
-from yubihsm.defs import ALGORITHM, COMMAND, ERROR, OBJECT
+from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, ERROR, OBJECT
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm.objects import YhsmObject
 from yubihsm_emulator import (
@@ -108,6 +113,28 @@ def _deleted(device: EmulatedYubiHsm) -> list[int]:
     ]
 
 
+def _self_signed_certificate_pem() -> bytes:
+    key = ec.generate_private_key(ec.SECP256R1())
+    subject = x509.Name(
+        [x509.NameAttribute(x509.NameOID.COMMON_NAME, "test")],
+    )
+    now = datetime.datetime.now(datetime.UTC)
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=1))
+        .sign(
+            key,
+            hashes.SHA256(),
+        )
+    )
+    return certificate.public_bytes(serialization.Encoding.PEM)
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -128,6 +155,50 @@ def test_parse_domains(value: str, expected: int) -> None:
 def test_parse_domains_rejects_out_of_range() -> None:
     with pytest.raises(ValueError, match="numbered from 1 to 16"):
         parse_domains("17")
+
+
+def test_parse_capabilities_combines_named_flags() -> None:
+    result = parse_capabilities("sign-pkcs,exportable-under-wrap")
+
+    assert result == (CAPABILITY.SIGN_PKCS | CAPABILITY.EXPORTABLE_UNDER_WRAP)
+
+
+def test_parse_capabilities_takes_libyubihsm_names() -> None:
+    result = parse_capabilities(
+        "put-asymmetric-key,put-mac-key,put-public-wrap-key,"
+        "delete-public-wrap-key",
+    )
+
+    assert result == (
+        CAPABILITY.PUT_ASYMMETRIC
+        | CAPABILITY.PUT_HMAC_KEY
+        | CAPABILITY.PUBLIC_WRAP_KEY_WRITE
+        | CAPABILITY.PUBLIC_WRAP_KEY_DELETE
+    )
+
+
+def test_parse_capabilities_names_an_unknown_capability() -> None:
+    with pytest.raises(
+        ValueError,
+        match="unknown capability 'sign-everything'",
+    ):
+        parse_capabilities("sign-pkcs,sign-everything")
+
+
+def test_parse_capabilities_none_is_empty() -> None:
+    assert parse_capabilities("none") == CAPABILITY(0)
+
+
+def test_parse_capabilities_all_is_every_flag() -> None:
+    assert parse_capabilities("all") == ~CAPABILITY(0)
+    assert parse_capabilities("ALL") == ~CAPABILITY(0)
+
+
+def test_parse_capabilities_skips_empty_segment_from_empty_base() -> None:
+    assert (
+        parse_capabilities(",exportable-under-wrap")
+        == CAPABILITY.EXPORTABLE_UNDER_WRAP
+    )
 
 
 def test_list_restorable_objects_returns_keys_and_certs_in_the_domain(
@@ -294,6 +365,52 @@ def test_is_object_available_on_disk_rejects_non_pem_certificate_file(
 ) -> None:
     (tmp_path / "0x2000.x509.pem").write_bytes(b"not a certificate")
     assert not is_object_available_on_disk(tmp_path, 0x2000, OBJECT.OPAQUE)
+
+
+def test_import_certificate_parses_pem_and_imports(
+    yubihsm: Connector,
+) -> None:
+    device = _plug(yubihsm)
+    pem = _self_signed_certificate_pem()
+
+    import_certificate(
+        config(yubihsm),
+        key_id="0x2000",
+        domains="3",
+        capabilities="get-opaque",
+        certificate_pem=pem,
+    )
+
+    stored = device.get(0x2000, OBJECT.OPAQUE)
+    assert stored is not None
+    assert stored.algorithm == ALGORITHM.OPAQUE_X509_CERTIFICATE
+    assert stored.label.rstrip(b"\0") == b""
+    assert stored.domains == 0b100
+    assert stored.capabilities == CAPABILITY.GET_OPAQUE
+    assert (
+        stored_certificate(stored).public_bytes(serialization.Encoding.PEM)
+        == pem
+    )
+
+
+def test_import_certificate_refuses_an_existing_object(
+    yubihsm: Connector,
+) -> None:
+    device = _plug(yubihsm)
+    _put_key_and_certificate(device, 0x2000)
+    existing = device.get(0x2000, OBJECT.OPAQUE)
+
+    with pytest.raises(YubiHsmDeviceError) as raised:
+        import_certificate(
+            config(yubihsm),
+            key_id="0x2000",
+            domains="3",
+            capabilities="get-opaque",
+            certificate_pem=_self_signed_certificate_pem(),
+        )
+
+    assert raised.value.code == ERROR.OBJECT_EXISTS
+    assert device.get(0x2000, OBJECT.OPAQUE) is existing
 
 
 def test_limit_ondemand_objects_stops_once_space_is_sufficient(
