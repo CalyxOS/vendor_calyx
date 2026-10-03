@@ -143,10 +143,6 @@ else
   if [ "${USE_PYTHON_RELEASE_ARGS:-}" = "y" ]; then
     [ -z "${KEYMAPPER_FILE:-}" ] \
       || error "USE_PYTHON_RELEASE_ARGS does not support KEYMAPPER_FILE"
-    case "${KEYMAPPER:-legacy}" in
-      legacy|id2b) ;;
-      *) error "USE_PYTHON_RELEASE_ARGS supports only the legacy and id2b keymappers" ;;
-    esac
     if [ "${KEYMAPPER:-legacy}" = legacy ]; then
       avb_algorithm=SHA256_RSA${AVB_RSA_KEY_SIZE:-4096}
     elif declare -F get_key_algorithm >/dev/null; then
@@ -166,6 +162,10 @@ else
     if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
       rollback_flag=(--avb-rollback-index-override "$AVB_ROLLBACK_INDEX_OVERRIDE")
     fi
+    keymap_file_flag=()
+    if [ "${KEYMAPPER:-legacy}" = static ]; then
+      keymap_file_flag=(--keymap-file "$KEYMAP_FILE")
+    fi
 
     release_args_output=$(mktemp)
     if ! PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" python3 -P -m signing build-release-args \
@@ -176,6 +176,7 @@ else
       --key-suffix "${KEY_SUFFIX-.pem}" \
       --avb-algorithm "$avb_algorithm" \
       "${rollback_flag[@]}" \
+      "${keymap_file_flag[@]}" \
       "${extra_signing_arg_flags[@]}" \
       "${extra_ota_arg_flags[@]}" \
       > "$release_args_output"; then
