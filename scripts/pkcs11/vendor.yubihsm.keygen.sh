@@ -100,13 +100,26 @@ generate_keypair() {
   domain=$(get_domains_for_key_id "$key_id") || return $?
   capabilities=$(get_capabilities_for_key_id "$key_id" "$YUBIHSM_KEY_CAPABILITIES") || return $?
 
-  yubihsm -a generate-asymmetric-key \
-    --object-id "$key_id" \
-    --algorithm "$yubico_key_algorithm" \
-    --domain "$domain" \
-    --capabilities "$capabilities" \
-    --label="$key_label" \
-    || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli_logged generate-asymmetric-key \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --key-id "$key_id" \
+      --label "$key_label" \
+      --domain "$domain" \
+      --capabilities "$capabilities" \
+      --algorithm "$key_algorithm" \
+      || return $?
+  else
+    yubihsm -a generate-asymmetric-key \
+      --object-id "$key_id" \
+      --algorithm "$yubico_key_algorithm" \
+      --domain "$domain" \
+      --capabilities "$capabilities" \
+      --label="$key_label" \
+      || return $?
+  fi
 
   local is_key_id_exportable
   is_key_id_exportable=$(get_key_id_is_exportable_yn "$key_id") || return $?
@@ -183,14 +196,26 @@ generate_cert() {
   copy_exported_file_to_other_dirs "$key_cert" || return $?
 
   # Import the cert.
-  yubihsm -a put-opaque \
-    --object-id "$key_id" \
-    -A opaque-x509-certificate \
-    --informat=PEM \
-    --domain "$domain" \
-    --capabilities "$capabilities" \
-    --in "$key_cert" \
-    || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli_logged import-certificate \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --key-id "$key_id" \
+      --input "$key_cert" \
+      --domain "$domain" \
+      --capabilities "$capabilities" \
+      || return $?
+  else
+    yubihsm -a put-opaque \
+      --object-id "$key_id" \
+      -A opaque-x509-certificate \
+      --informat=PEM \
+      --domain "$domain" \
+      --capabilities "$capabilities" \
+      --in "$key_cert" \
+      || return $?
+  fi
 
   # Extract the public key. (Purely for convenience. Can happen any time with
   # the x509 cert we already saved; no private key access required.)
@@ -242,6 +267,8 @@ does_key_exist_yn() {
   local key_file=$key_out_dir/$key_id-asymmetric-key.yhw
   if [ -e "$key_file" ]; then
     echo y
+  elif [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _does_object_exist_yn "$key_id" key || return $?
   else
     # It's not on disk, so check PKCS#11.
     does_key_exist_yn_pkcs11 "$@" || return $?
@@ -254,17 +281,47 @@ does_cert_exist_yn() {
   local cert_file=$key_out_dir/$cert_id.x509.pem
   if [ -e "$cert_file" ]; then
     echo y
+  elif [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _does_object_exist_yn "$cert_id" certificate || return $?
   else
     # It's not on disk, so check PKCS#11.
     does_cert_exist_yn_pkcs11 "$@" || return $?
   fi
 }
 
+_does_object_exist_yn() {
+  local result
+  result=$(_yubihsm_python_cli yubihsm-object-exists \
+    --connector "$YUBIHSM_CONNECTOR" \
+    --authkey "$YUBIHSM_AUTHKEY" \
+    --password-env YUBIHSM_PASSWORD \
+    --key-id "$1" \
+    --type "$2") || return $?
+  case "$result" in
+    yes) echo y ;;
+    no) echo n ;;
+    *)
+      echo "Unexpected yubihsm-object-exists output: '$result'" >&2
+      return 1 ;;
+  esac
+}
+
 extract_attestation_key() {
   [ "${DRY_RUN:-}" != "y" ] || return 0
   local out=$unique_key_out_dir/YubiHSM_attestation.pem
   mkdir -p "$unique_key_out_dir" || return $?
-  yubihsm_nolog -a get-opaque --object-id 0x0000 --outformat PEM --out "$out" || return $?
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli get-certificate \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --key-id 0x0000 \
+      --output "$out" \
+      || return $?
+  else
+    yubihsm_nolog -a get-opaque --object-id 0x0000 --outformat PEM --out "$out" \
+      || return $?
+  fi
   copy_exported_file_to_other_dirs "$out" || return $?
 }
 
