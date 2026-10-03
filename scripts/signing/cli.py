@@ -518,6 +518,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path(__file__).resolve().parents[1] / "generate_delta.sh",
     )
+
+    subparsers.add_parser("release-orchestrate", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -1297,6 +1299,38 @@ def _cmd_sign_orchestrate(args: argparse.Namespace) -> int:
         release_script=args.release_script,
         generate_delta_script=args.generate_delta_script,
     )
+    return orchestrator.run()
+
+
+def _cmd_release_orchestrate(args: argparse.Namespace) -> int:
+    """
+    Sign one device's target files for release.sh.
+
+    Args:
+        args: Parsed namespace containing release.sh's arguments.
+
+    Returns:
+        The orchestration's exit status, 0 on success.
+    """
+    from .metadata import default_metadata_path, load_metadata
+    from .release_orchestration import ReleaseOrchestrator
+
+    program, *arguments = args.arguments or ["release.sh"]
+    if not 1 <= len(arguments) <= 2:
+        print(
+            "error: incorrect number of arguments, please try again",
+            file=sys.stderr,
+        )
+        print(f"Usage: {program} {ReleaseOrchestrator.usage}")
+        return 1
+    orchestrator = ReleaseOrchestrator(
+        os.environ,
+        cwd=Path.cwd(),
+        metadata=load_metadata(default_metadata_path()),
+        device=arguments[0],
+        target_files_arg=arguments[1] if len(arguments) > 1 else None,
+    )
+    orchestrator.program = program
     return orchestrator.run()
 
 
@@ -2163,6 +2197,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "sign-builds": _cmd_sign_builds,
     "generate-incrementals": _cmd_generate_incrementals,
     "sign-orchestrate": _cmd_sign_orchestrate,
+    "release-orchestrate": _cmd_release_orchestrate,
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
@@ -2224,7 +2259,10 @@ def main(argv: list[str] | None = None) -> int:
         tool_argv = argv[separator + 1 :]
         argv = argv[:separator]
     script_argv: list[str] = []
-    if argv[:1] == ["mkkey"]:
+    if argv[:1] in (
+        ["release-orchestrate"],
+        ["mkkey"],
+    ):
         script_argv = argv[1:]
         argv = argv[:1]
 
