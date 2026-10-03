@@ -1549,6 +1549,13 @@ def format_audit_log_entry(entry: LogEntry) -> str:
     )
 
 
+class AuditLogNotAcknowledged(RuntimeError):
+    """
+    The audit log entries were written to the log file, but the device
+    did not acknowledge them, so it returns them again on the next read.
+    """
+
+
 def _recent_log_lines(log_file: Path) -> set[str]:
     """
     Return the lines at the end of an audit log file, more than enough to
@@ -1580,12 +1587,6 @@ def extract_and_save_audit_log(
     Append a device's new audit log entries and a comment line to a log
     file, reading and acknowledging them over one session.
 
-    Nothing is written when there are no entries and no comment, a comment
-    line is always written otherwise, and only entries appended to the log
-    file are acknowledged to the device. An entry whose line log_file holds
-    already, left on the device by an acknowledgement that failed, is not
-    written again, and the file is synced before the acknowledgement.
-
     Args:
         config: Connector URL, authentication key, and password.
         log_file: Path to append the comment line and entries to.
@@ -1596,32 +1597,78 @@ def extract_and_save_audit_log(
 
     Raises:
         OSError: If log_file's directory cannot be created or written.
+        AuditLogNotAcknowledged: If the entries are written but the device
+            does not take the acknowledgement.
+    """
+    session = connect_yubihsm_session(config)
+    try:
+        return save_audit_log(
+            lambda: session.get_log_entries().entries,
+            session.set_log_index,
+            log_file,
+            comment,
+        )
+    finally:
+        session.close()
+
+
+def save_audit_log(
+    read: Callable[[], Sequence[LogEntry]],
+    acknowledge: Callable[[int], None],
+    log_file: Path,
+    comment: str | None = None,
+) -> tuple[LogEntry, ...]:
+    """
+    Append the entries read returns and a comment line to a log file,
+    then acknowledge them.
+
+    Nothing is written when there are no entries and no comment, a comment
+    line is always written otherwise, and only entries appended to the log
+    file are acknowledged to the device. An entry whose line log_file holds
+    already, left on the device by an acknowledgement that failed, is not
+    written again, and the file is synced before the acknowledgement.
+
+    Args:
+        read: Returns every entry the device retains, oldest first.
+        acknowledge: Marks entries up to and including a number as saved.
+        log_file: Path to append the comment line and entries to.
+        comment: Optional single-line comment recorded with the entries.
+
+    Returns:
+        The audit log entries appended to log_file.
+
+    Raises:
+        OSError: If log_file's directory cannot be created or written.
+        AuditLogNotAcknowledged: If the entries are written but the device
+            does not take the acknowledgement.
     """
     clean_comment = (
         "" if comment is None else comment.replace("\n", "").replace("\r", "")
     )
-    session = connect_yubihsm_session(config)
-    try:
-        read = tuple(session.get_log_entries().entries)
-        if not read and not clean_comment:
-            return ()
+    entries_read = tuple(read())
+    if not entries_read and not clean_comment:
+        return ()
 
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        written = _recent_log_lines(log_file)
-        entries = tuple(
-            entry
-            for entry in read
-            if format_audit_log_entry(entry) not in written
-        )
-        with log_file.open("a") as handle:
-            handle.write(f"# {round(time.time() * 1000)} {clean_comment}\n")
-            for entry in entries:
-                handle.write(format_audit_log_entry(entry) + "\n")
-            handle.flush()
-            os.fsync(handle.fileno())
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    written = _recent_log_lines(log_file)
+    entries = tuple(
+        entry
+        for entry in entries_read
+        if format_audit_log_entry(entry) not in written
+    )
+    with log_file.open("a") as handle:
+        handle.write(f"# {round(time.time() * 1000)} {clean_comment}\n")
+        for entry in entries:
+            handle.write(format_audit_log_entry(entry) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
-        if read:
-            session.set_log_index(read[-1].number)
-    finally:
-        session.close()
+    if entries_read:
+        try:
+            acknowledge(entries_read[-1].number)
+        except Exception as error:
+            raise AuditLogNotAcknowledged(
+                f"wrote {len(entries)} audit log entries to {log_file} "
+                f"but could not acknowledge them: {error}",
+            ) from error
     return entries
