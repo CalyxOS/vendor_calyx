@@ -488,6 +488,32 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path(os.environ.get("ORIGINAL_TMPDIR", "/dev/shm")),
     )
+
+    sign_orchestrate_parser = subparsers.add_parser("sign-orchestrate")
+    sign_orchestrate_parser.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+    )
+    sign_orchestrate_parser.add_argument(
+        "--devices-file",
+        type=Path,
+        default=Path(
+            os.environ.get("DEVICES_FILE")
+            or Path(__file__).resolve().parents[1]
+            / "../../../calyx/scripts/vars/devices",
+        ).resolve(),
+    )
+    sign_orchestrate_parser.add_argument(
+        "--release-script",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "release.sh",
+    )
+    sign_orchestrate_parser.add_argument(
+        "--generate-delta-script",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "generate_delta.sh",
+    )
     subparsers.add_parser("mkkey", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
@@ -1235,6 +1261,31 @@ def _cmd_generate_incrementals(args: argparse.Namespace) -> int:
         jobs=args.jobs,
         original_tmpdir=args.original_tmpdir,
     )
+
+
+def _cmd_sign_orchestrate(args: argparse.Namespace) -> int:
+    """
+    Sign the builds sign.sh is run on.
+
+    Args:
+        args: Parsed namespace containing metadata/devices-file settings.
+
+    Returns:
+        The orchestration's exit status, 0 on success.
+    """
+    from .metadata import default_metadata_path, load_metadata
+    from .sign_orchestration import SignOrchestrator
+
+    metadata = load_metadata(args.metadata or default_metadata_path())
+    orchestrator = SignOrchestrator(
+        os.environ,
+        cwd=Path.cwd(),
+        devices_file=args.devices_file,
+        metadata=metadata,
+        release_script=args.release_script,
+        generate_delta_script=args.generate_delta_script,
+    )
+    return orchestrator.run()
 
 
 def _cmd_mkkey(args: argparse.Namespace) -> int:
@@ -2097,6 +2148,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "compute-sha256sum": _cmd_compute_sha256sum,
     "sign-builds": _cmd_sign_builds,
     "generate-incrementals": _cmd_generate_incrementals,
+    "sign-orchestrate": _cmd_sign_orchestrate,
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
