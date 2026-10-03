@@ -334,7 +334,11 @@ def test_pkcs11_tool_payload_signer_cross_checks_without_dumping_secrets(
 @pytest.mark.aosp
 @pytest.mark.parametrize(
     "helper_name",
-    ("payload_signer.openssl.sh", "payload_signer.pkcs11-tool.sh"),
+    (
+        "payload_signer.openssl.sh",
+        "payload_signer.pkcs11-tool.sh",
+        "payload_signer.py",
+    ),
 )
 def test_payload_signers_use_softhsm_key(
     tmp_path: Path,
@@ -343,6 +347,8 @@ def test_payload_signers_use_softhsm_key(
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "2000")
+    if helper_name == "payload_signer.py":
+        environment["DEBUG_PAYLOAD_SIGNER"] = ""
     digest = tmp_path / "payload.digest"
     digest.write_bytes(bytes(range(32)))
     signature = tmp_path / "payload.signature"
@@ -367,6 +373,37 @@ def test_payload_signers_use_softhsm_key(
 
 
 @pytest.mark.aosp
+def test_payload_signer_rejects_mismatched_public_key(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    environment = signing_environment(base_environment, "1300")
+    digest = tmp_path / "payload.digest"
+    digest.write_bytes(bytes(range(32)))
+    signature = tmp_path / "payload.signature"
+    signature.write_bytes(b"existing-signature")
+
+    signed = run(
+        [
+            SCRIPTS_DIR / "pkcs11" / "payload_signer.py",
+            "-in",
+            digest,
+            "-out",
+            signature,
+            "-inkey",
+            output / "0x2000.pem",
+        ],
+        env=environment,
+        check=False,
+    )
+
+    assert signed.returncode != 0
+    assert "does not match the selected PKCS#11 key" in signed.stderr
+    assert signature.read_bytes() == b"existing-signature"
+
+
+@pytest.mark.aosp
 def test_softhsm_signing_rejects_wrong_pin(
     generated_softhsm_keys: tuple[Path, dict[str, str]],
 ) -> None:
@@ -384,6 +421,63 @@ def test_softhsm_signing_rejects_wrong_pin(
         check=False,
     )
     assert signed.returncode != 0
+
+
+@pytest.mark.aosp
+def test_python_softhsm_signing_rejects_wrong_pin(
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    environment = signing_environment(base_environment, "2000")
+    environment["PKCS11_PIN"] = "wrong-pin"
+    signed = run_bytes(
+        [
+            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            "SHA256_RSA2048",
+            output / "0x2000.pem",
+        ],
+        env=environment,
+        input_data=(
+            b"\x00\x01"
+            + b"\xff" * 202
+            + b"\x00"
+            + bytes.fromhex("3031300d060960864801650304020105000420")
+            + bytes(range(32))
+        ),
+        check=False,
+    )
+
+    assert signed.returncode != 0
+    assert b"PIN" in signed.stderr
+    assert b"Traceback" not in signed.stderr
+
+
+@pytest.mark.aosp
+def test_softhsm_signing_rejects_missing_key(
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    environment = signing_environment(base_environment, "ffff")
+    signed = run_bytes(
+        [
+            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            "SHA256_RSA2048",
+            output / "0x2000.pem",
+        ],
+        env=environment,
+        input_data=(
+            b"\x00\x01"
+            + b"\xff" * 202
+            + b"\x00"
+            + bytes.fromhex("3031300d060960864801650304020105000420")
+            + bytes(range(32))
+        ),
+        check=False,
+    )
+
+    assert signed.returncode != 0
+    assert b"not found" in signed.stderr.lower()
+    assert b"Traceback" not in signed.stderr
 
 
 @pytest.mark.aosp
@@ -424,10 +518,18 @@ def test_keygen_repairs_missing_certificate(
 
 
 @pytest.mark.aosp
+@pytest.mark.parametrize(
+    "signing_helper",
+    (
+        SCRIPTS_DIR / "pkcs11" / "signing_helper.openssl.sh",
+        SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+    ),
+)
 def test_avbtool_signs_with_softhsm_key(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
     aosp_top: Path,
+    signing_helper: Path,
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "2000")
@@ -450,7 +552,7 @@ def test_avbtool_signs_with_softhsm_key(
             "--algorithm",
             "SHA256_RSA2048",
             "--signing_helper",
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.openssl.sh",
+            signing_helper,
         ],
         env=environment,
         check=False,
@@ -468,6 +570,43 @@ def test_avbtool_signs_with_softhsm_key(
         check=False,
     )
     assert verified.returncode == 0, verified.stderr
+
+
+@pytest.mark.aosp
+def test_avb_helper_rejects_mismatched_public_key(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+    aosp_top: Path,
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    environment = signing_environment(base_environment, "1300")
+    image = tmp_path / "mismatched.img"
+    image.write_bytes(bytes(range(256)) * 16)
+    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
+
+    signed = run(
+        [
+            avbtool,
+            "add_hash_footer",
+            "--image",
+            image,
+            "--partition_name",
+            "test",
+            "--partition_size",
+            "131072",
+            "--key",
+            output / "0x2000.pem",
+            "--algorithm",
+            "SHA256_RSA2048",
+            "--signing_helper",
+            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+        ],
+        env=environment,
+        check=False,
+    )
+
+    assert signed.returncode != 0
+    assert "does not match the selected PKCS#11 key" in signed.stderr
 
 
 @pytest.mark.aosp
