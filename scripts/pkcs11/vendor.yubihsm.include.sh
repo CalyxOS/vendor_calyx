@@ -821,6 +821,46 @@ _ensure_device_specific_key_ids_map_is_present() {
 }
 
 populate_devices_with_loaded_keys_arrays() {
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    if [ -n "${KEYMAPPER_FILE:-}" ]; then
+      echo "YUBIHSM_PYTHON_TOOLS does not support KEYMAPPER_FILE" >&2
+      return 1
+    fi
+    if [ ! -r "$KEYMAP_FILE" ]; then
+      echo "Cannot read KEYMAP_FILE ($KEYMAP_FILE)." >&2
+      return 1
+    fi
+    local python_output
+    python_output=$(mktemp -p "${YUBIHSM_TMPDIR:-${TMPDIR:-/dev/shm}}" populate_devices.XXXXXXXX) \
+      || return $?
+    local -a device_flags=()
+    local device
+    for device in "$@"; do
+      device_flags+=(--device "$device")
+    done
+    local err=
+    _yubihsm_python_cli partition-devices-by-key-availability \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --keymap-file "$KEYMAP_FILE" \
+      "${device_flags[@]}" \
+      > "$python_output" || err=$?
+    if [ -n "$err" ]; then
+      rm -f "$python_output"
+      return "$err"
+    fi
+    local bucket value
+    while IFS= read -r -d '' bucket && IFS= read -r -d '' value; do
+      case "$bucket" in
+        with) devices_with_loaded_keys+=("$value") ;;
+        without) devices_without_loaded_keys+=("$value") ;;
+      esac
+    done < "$python_output"
+    rm -f "$python_output"
+    return 0
+  fi
+
   _ensure_device_specific_key_ids_map_is_present || return $?
 
   populate_loaded_keys || return $?
@@ -848,16 +888,18 @@ populate_devices_with_loaded_keys_arrays() {
 }
 
 ensure_all_keys_available_for_devices() {
-  _ensure_device_specific_key_ids_map_is_present || return $?
-
   local -A needed_keys=()
-  local device
-  for device in "$@"; do
-    for key_id in ${device_specific_key_ids_map[$device]}; do
-      [ -n "$key_id" ] || continue
-      needed_keys[$key_id]=1
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" != "y" ]; then
+    _ensure_device_specific_key_ids_map_is_present || return $?
+
+    local device
+    for device in "$@"; do
+      for key_id in ${device_specific_key_ids_map[$device]}; do
+        [ -n "$key_id" ] || continue
+        needed_keys[$key_id]=1
+      done
     done
-  done
+  fi
   {
     if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
       flock -x 3
@@ -870,8 +912,12 @@ ensure_all_keys_available_for_devices() {
         local AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-load-keys.log
       fi
       local err=0
-      extract_logs_after_each_key=y verify_key_ids=n \
-        ensure_key_is_available_nolog "${!needed_keys[@]}" || err=$?
+      if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+        _ensure_all_keys_available_for_devices "$@" || err=$?
+      else
+        extract_logs_after_each_key=y verify_key_ids=n \
+          ensure_key_is_available_nolog "${!needed_keys[@]}" || err=$?
+      fi
       if [ "$err" -ne 0 ]; then
         extract_logs "Function: ensure_all_keys_available_for_devices Result: $err" \
           || true
@@ -881,7 +927,95 @@ ensure_all_keys_available_for_devices() {
   } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
 }
 
+_ensure_all_keys_available_for_devices() {
+  if [ -n "${KEYMAPPER_FILE:-}" ]; then
+    echo "YUBIHSM_PYTHON_TOOLS does not support KEYMAPPER_FILE" >&2
+    return 1
+  fi
+  if [ ! -r "$KEYMAP_FILE" ]; then
+    echo "Cannot read KEYMAP_FILE ($KEYMAP_FILE)." >&2
+    return 1
+  fi
+  local -a ondemand_key_ids=()
+  mapfile -t ondemand_key_ids < <(tail -n+2 "$KEYMAP_FILE" \
+    | awk -F'\t' '$2 != "" {print $1}' | sort -u) \
+    || return $?
+  local -a device_flags=()
+  local device
+  for device in "$@"; do
+    device_flags+=(--device "$device")
+  done
+  local -a audit_flags=()
+  if [ "${DRY_RUN:-}" != "y" ]; then
+    audit_flags=(--audit-log "$AUDIT_LOG_PATH")
+  fi
+  local -a ondemand_flags=()
+  local key_id
+  for key_id in "${ondemand_key_ids[@]}"; do
+    ondemand_flags+=(--ondemand-key-id "$key_id")
+  done
+  local -a ensure_args=(
+    ensure-all-keys-available-for-devices
+    --connector "$YUBIHSM_CONNECTOR"
+    --authkey "$YUBIHSM_AUTHKEY"
+    --password-env YUBIHSM_PASSWORD
+    --wrap-id "$YUBIHSM_WRAP_KEY_ID"
+    --keymap-file "$KEYMAP_FILE"
+    --key-dir "${KEY_DIR:-.}"
+    "${device_flags[@]}"
+    "${ondemand_flags[@]}"
+    --exportable-domain "$YUBIHSM_EXPORTABLE_DOMAIN"
+    --ondemand-domain "$YUBIHSM_ONDEMAND_DOMAIN"
+    --opaque-capabilities "$YUBIHSM_OPAQUE_CAPABILITIES"
+    "${audit_flags[@]}"
+  )
+  if [ "${DRY_RUN:-}" = "y" ]; then
+    $maybe_dry_run python3 -m signing "${ensure_args[@]}" || return $?
+    return 0
+  fi
+  _yubihsm_python_cli "${ensure_args[@]}"
+}
+
 restore_all_keys_and_certs() {
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    if [ -n "${KEYMAPPER_FILE:-}" ]; then
+      echo "YUBIHSM_PYTHON_TOOLS does not support KEYMAPPER_FILE" >&2
+      return 1
+    fi
+    if [ ! -r "$KEYMAP_FILE" ]; then
+      echo "Cannot read KEYMAP_FILE ($KEYMAP_FILE)." >&2
+      return 1
+    fi
+    local -a ondemand_key_ids=()
+    mapfile -t ondemand_key_ids < <(tail -n+2 "$KEYMAP_FILE" \
+      | awk -F'\t' '$2 != "" {print $1}' | sort -u) \
+      || return $?
+    local -a ondemand_flags=()
+    local key_id
+    for key_id in "${ondemand_key_ids[@]}"; do
+      ondemand_flags+=(--ondemand-key-id "$key_id")
+    done
+    local -a restore_args=(
+      restore-all-keys-and-certs
+      --connector "$YUBIHSM_CONNECTOR"
+      --authkey "$YUBIHSM_AUTHKEY"
+      --password-env YUBIHSM_PASSWORD
+      --wrap-id "$YUBIHSM_WRAP_KEY_ID"
+      --key-dir "${KEY_DIR:-.}"
+      "${ondemand_flags[@]}"
+      --exportable-domain "$YUBIHSM_EXPORTABLE_DOMAIN"
+      --ondemand-domain "$YUBIHSM_ONDEMAND_DOMAIN"
+      --opaque-capabilities "$YUBIHSM_OPAQUE_CAPABILITIES"
+    )
+    if [ "${DRY_RUN:-}" = "y" ]; then
+      $maybe_dry_run python3 -m signing "${restore_args[@]}" || return $?
+      return 0
+    fi
+    _yubihsm_python_cli "${restore_args[@]}" --log-file "$AUDIT_LOG_PATH" \
+      || return $?
+    return 0
+  fi
+
   local err=0
 
   local KEY_DIR=${KEY_DIR:-.}
