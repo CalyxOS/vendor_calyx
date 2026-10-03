@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime
+import hashlib
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -14,9 +17,26 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
-from software_rsa import rsa_key
+from signing.signing_server import Message, SigningServer
+from signing.vendor_yubihsm import YubiHsmConfig
+from signing.yubihsm_session_service import YubiHsmSessionService
+from software_rsa import rsa_key, verifies
+from yubihsm_emulator import Connector
 
 HELPER = SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py"
+
+
+@contextlib.contextmanager
+def _signing_server(
+    socket_path: Path,
+    yubihsm: Connector,
+) -> Generator[SigningServer, None, None]:
+    service = YubiHsmSessionService(
+        YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+    )
+    server = SigningServer(socket_path, {"yubihsm_sign_pkcs1": service})
+    with server:
+        yield server
 
 
 KEY_ID = SOFTHSM_KEY_ID
@@ -128,6 +148,121 @@ def test_apksigner_signing_helper_rejects_extra_arguments() -> None:
     )
     assert result.returncode != 0
     assert "Unexpected arguments: unexpected" in result.stderr
+
+
+class _SignHandler:
+    def __init__(self, response: Message) -> None:
+        self.response = response
+        self.requests: list[Message] = []
+
+    def handle(self, message: Message) -> Message:
+        self.requests.append(message)
+        return self.response
+
+
+@pytest.mark.parametrize(
+    ("mechanism", "algorithm"),
+    (
+        ("sha256-rsa-pkcs", hashes.SHA256()),
+        ("sha384-rsa-pkcs", hashes.SHA384()),
+        ("sha512-rsa-pkcs", hashes.SHA512()),
+    ),
+)
+def test_apksigner_signing_helper_signs_with_the_server_key(
+    tmp_path: Path,
+    yubihsm: Connector,
+    mechanism: str,
+    algorithm: hashes.HashAlgorithm,
+) -> None:
+    data = b"apksigner signable content, unhashed" * 100
+    digest = hashlib.new(algorithm.name, data).digest()
+    yubihsm.device.put_asymmetric_key(0x1100, key=rsa_key("a"))
+    yubihsm.device.put_asymmetric_key(0x1200, key=rsa_key("b"))
+    key_dir = _certificate(
+        tmp_path / "keys",
+        "0x1100",
+        rsa_key("a").public_key(),
+    )
+
+    with _signing_server(tmp_path / "s.sock", yubihsm) as server:
+        result = run_bytes(
+            [HELPER, mechanism, "0x1100"],
+            env={
+                "SIGNING_SERVER_SOCKET": str(server.socket_path),
+                "KEY_DIR": f"{key_dir}/",
+            },
+            input_data=data,
+            check=False,
+        )
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(rsa_key("a"), result.stdout, digest, algorithm)
+    assert not verifies(rsa_key("b"), result.stdout, digest, algorithm)
+
+
+def test_apksigner_signing_helper_falls_back_when_the_server_cannot_sign(
+    tmp_path: Path,
+    softhsm_rsa_key: tuple[dict[str, str], Path],
+) -> None:
+    environment, public_key = softhsm_rsa_key
+    data = b"apksigner signable content, unhashed"
+    handler = _SignHandler({"status": "unavailable"})
+    server = SigningServer(tmp_path / "s.sock", {"yubihsm_sign_pkcs1": handler})
+
+    with server:
+        result = run_bytes(
+            [HELPER, "sha256-rsa-pkcs", KEY_ID],
+            env={
+                **environment,
+                "SIGNING_SERVER_SOCKET": str(server.socket_path),
+                "KEY_DIR": _softhsm_key_dir(tmp_path / "keys", public_key),
+            },
+            input_data=data,
+            check=False,
+        )
+
+    assert result.returncode == 0, result.stderr
+    assert len(handler.requests) == 1
+    (tmp_path / "data.bin").write_bytes(data)
+    (tmp_path / "signature.bin").write_bytes(result.stdout)
+    verified = run(
+        [
+            "openssl",
+            "dgst",
+            "-sha256",
+            "-verify",
+            public_key,
+            "-keyform",
+            "DER",
+            "-signature",
+            tmp_path / "signature.bin",
+            tmp_path / "data.bin",
+        ],
+        check=False,
+    )
+    assert verified.returncode == 0, verified.stderr
+
+
+def test_apksigner_signing_helper_reads_an_empty_key_dir_as_the_cwd(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    _certificate(tmp_path, "0x1100", rsa_key("a").public_key())
+    yubihsm.device.put_asymmetric_key(0x1100, key=rsa_key("a"))
+
+    with _signing_server(tmp_path / "s.sock", yubihsm) as server:
+        result = run_bytes(
+            [HELPER, "sha256-rsa-pkcs", "0x1100"],
+            cwd=tmp_path,
+            env={
+                "SIGNING_SERVER_SOCKET": str(server.socket_path),
+                "KEY_DIR": "",
+            },
+            input_data=b"apksigner signable content",
+            check=False,
+        )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_apksigner_signing_helper_refuses_a_certificate_of_another_key(
