@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
+from .keymap import Keymapper
 from .vendor_yubihsm_connector import (
     YubiHsmConnector,
     YubiHsmConnectorConfig,
@@ -1181,6 +1182,224 @@ def ensure_keys_are_available(
 
         if after_key is not None:
             after_key(key_id)
+
+
+def _device_key_ids(
+    keymapper: Keymapper,
+    devices: Sequence[str],
+) -> dict[str, frozenset[str]]:
+    """
+    Map each device to the key IDs of its per-device keys, the entries of
+    the keymapper's device_specific_key_ids_map.
+
+    Args:
+        keymapper: The release's keymapper.
+        devices: Device names to build entries for.
+
+    Returns:
+        Each requested device mapped to its set of per-device key IDs.
+
+    Raises:
+        RuntimeError: If a device has no per-device keys.
+        ValueError: If the keymapper does not assign key IDs.
+    """
+    result = {device: keymapper.device_key_ids(device) for device in devices}
+    for device, ids in result.items():
+        if not ids:
+            raise RuntimeError(f"The keymapper has no keys for {device}")
+    return result
+
+
+def populate_devices_with_loaded_keys_arrays(
+    config: YubiHsmConfig,
+    keymapper: Keymapper,
+    devices: Sequence[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """
+    Partition devices by whether every key they need is already loaded.
+
+    A device counts as loaded only if every per-device key ID the
+    keymapper gives it has both its key and its certificate on the HSM.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        keymapper: Keymapper giving each device's per-device key IDs.
+        devices: Device names to partition.
+
+    Returns:
+        A (devices_with_loaded_keys, devices_without_loaded_keys) pair,
+        each in the same order as devices.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    key_ids_by_device = _device_key_ids(keymapper, devices)
+    fully_loaded = get_loaded_key_status(config).fully_loaded_ids
+
+    with_loaded_keys: list[str] = []
+    without_loaded_keys: list[str] = []
+    for device in devices:
+        key_ids = key_ids_by_device[device]
+        if all(int(key_id, 16) in fully_loaded for key_id in key_ids):
+            with_loaded_keys.append(device)
+        else:
+            without_loaded_keys.append(device)
+    return tuple(with_loaded_keys), tuple(without_loaded_keys)
+
+
+def ensure_all_keys_available_for_devices(
+    config: YubiHsmConfig,
+    keymapper: Keymapper,
+    key_dir: Path,
+    devices: Sequence[str],
+    *,
+    is_ondemand: Callable[[int], bool],
+    exportable_domain: str,
+    ondemand_domain: str,
+    opaque_capabilities: str,
+    after_key: Callable[[str], None] | None = None,
+) -> None:
+    """
+    Ensure every per-device key the given devices need is loaded.
+
+    It extracts no audit log.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        keymapper: Keymapper giving each device's per-device key IDs.
+        key_dir: Directory backups are read from.
+        devices: Device names whose keys must be available.
+        is_ondemand: Whether a numeric object ID is an on-demand object.
+        exportable_domain: Domain(s) for restore-mode-only keys.
+        ondemand_domain: Domain(s) searched for on-demand objects.
+        opaque_capabilities: Capabilities to apply to imported certs.
+        after_key: See ensure_keys_are_available().
+
+    Returns:
+        None.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+    """
+    key_ids_by_device = _device_key_ids(keymapper, devices)
+    needed_keys: set[str] = set()
+    for device in devices:
+        needed_keys.update(key_ids_by_device[device])
+    ensure_keys_are_available(
+        config,
+        key_dir,
+        tuple(sorted(needed_keys)),
+        restore_mode=False,
+        is_ondemand=is_ondemand,
+        verify_key_ids=False,
+        exportable_domain=exportable_domain,
+        ondemand_domain=ondemand_domain,
+        opaque_capabilities=opaque_capabilities,
+        after_key=after_key,
+    )
+
+
+def _restorable_key_ids_on_disk(key_dir: Path) -> tuple[str, ...]:
+    """
+    List the deduplicated key IDs backed up in a key directory.
+
+    Args:
+        key_dir: Directory to scan.
+
+    Returns:
+        Deduplicated key IDs found in key_dir, those of certificates first,
+        then those of wrapped keys whose certificate is missing, each group
+        sorted.
+    """
+    found: dict[str, None] = {}
+    for pattern in ("*.x509.pem", "*-asymmetric-key.yhw"):
+        for path in sorted(key_dir.glob(pattern)):
+            name = path.name
+            if name.endswith("-asymmetric-key.yhw"):
+                key_id = name[: -len("-asymmetric-key.yhw")]
+            else:
+                key_id = name[: -len(".x509.pem")]
+            found.setdefault(key_id)
+    return tuple(found)
+
+
+def restore_all_keys_and_certs(
+    config: YubiHsmConfig,
+    key_dir: Path,
+    log_file: Path,
+    *,
+    is_ondemand: Callable[[int], bool],
+    exportable_domain: str,
+    ondemand_domain: str,
+    opaque_capabilities: str,
+) -> None:
+    """
+    Bulk-restore every key/cert backed up in a key directory.
+
+    A manual disaster-recovery tool. Restores one key at a time in
+    restore_mode and extracts the audit log after every key, so that a
+    long restore cannot fill the HSM's audit log. Stops at the first
+    key that fails.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        key_dir: Directory to restore keys and certificates from.
+        log_file: Audit log file to append entries to after each key.
+        is_ondemand: Whether a numeric object ID is an on-demand object.
+        exportable_domain: Domain(s) for restore-mode-only keys.
+        ondemand_domain: Domain(s) searched for on-demand objects.
+        opaque_capabilities: Capabilities to apply to imported certs.
+
+    Returns:
+        None.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the SDK session or
+            operation fails.
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure, or if no eviction candidate can be
+            found while space is needed.
+    """
+    result = 0
+    try:
+        for key_id in _restorable_key_ids_on_disk(key_dir):
+            key_result = 1
+            try:
+                ensure_keys_are_available(
+                    config,
+                    key_dir,
+                    (key_id,),
+                    restore_mode=True,
+                    is_ondemand=is_ondemand,
+                    verify_key_ids=False,
+                    exportable_domain=exportable_domain,
+                    ondemand_domain=ondemand_domain,
+                    opaque_capabilities=opaque_capabilities,
+                )
+                key_result = 0
+            finally:
+                result = 1
+                extract_and_save_audit_log(
+                    config,
+                    log_file,
+                    comment=(
+                        "Function: ensure_key_is_available "
+                        f"Result: {key_result}"
+                    ),
+                )
+                result = key_result
+    finally:
+        extract_and_save_audit_log(
+            config,
+            log_file,
+            comment=f"Function: restore_all_keys_and_certs Result: {result}",
+        )
 
 
 def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:

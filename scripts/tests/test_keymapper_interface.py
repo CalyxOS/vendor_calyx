@@ -6,18 +6,29 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, run
-from signing.keymap import Id2bKeymapper, Keymapper, LegacyKeymapper
+from signing.keymap import (
+    Id2bKeymapper,
+    Keymapper,
+    LegacyKeymapper,
+    StaticKeymapper,
+)
 from signing.metadata import SigningMetadata, load_metadata
 
+FIXTURE = SCRIPTS_DIR / "tests" / "fixtures" / "id2b-bramble-redfin.tsv"
 KEYMAPPERS: dict[
     str,
     tuple[dict[str, str], Callable[[SigningMetadata], Keymapper]],
 ] = {
     "legacy": ({"KEYMAPPER": "legacy"}, LegacyKeymapper),
     "id2b": ({"KEYMAPPER": "id2b"}, Id2bKeymapper),
+    "static": (
+        {"KEYMAPPER": "static", "KEYMAP_FILE": str(FIXTURE)},
+        lambda metadata: StaticKeymapper.from_file(FIXTURE),
+    ),
 }
 KEYS = (
     ("avb", "vbmeta"),
@@ -97,3 +108,53 @@ def test_keymapper_interface_matches_the_bash_keymapper(
             )
 
     assert expected == answers
+
+
+_BASH_KEY_IDS = r"""
+set -euo pipefail
+devices=(bramble redfin)
+source "$1/metadata"
+source "$1/common.include.sh"
+load_keymapper 2>/dev/null
+printf 'map\t%s\n' "${device_specific_key_ids_map[bramble]}"
+"""
+
+
+@pytest.mark.parametrize("name", ("id2b", "static"))
+def test_keymapper_key_id_queries_match_the_bash_keymapper(name: str) -> None:
+    environment, create = KEYMAPPERS[name]
+    keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    result = run(
+        ["bash", "-c", _BASH_KEY_IDS, "key-ids-test", SCRIPTS_DIR],
+        cwd=SCRIPTS_DIR,
+        env={**environment, "DEVICE": "bramble"},
+    )
+    lines = result.stdout.splitlines()
+
+    assert set(lines[0].split("\t")[1:]) - {""} == set(
+        keymapper.device_key_ids("bramble"),
+    )
+
+
+def test_legacy_keymapper_has_no_device_key_ids() -> None:
+    keymapper = LegacyKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+
+    with pytest.raises(ValueError, match="does not assign key IDs"):
+        keymapper.device_key_ids("bramble")
+
+
+def test_static_keymapper_skips_empty_lines(tmp_path: Path) -> None:
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(FIXTURE.read_text() + "\n\n")
+
+    assert StaticKeymapper.from_file(keymap_file).device_key_ids(
+        "bramble",
+    ) == StaticKeymapper.from_file(FIXTURE).device_key_ids("bramble")
+
+
+def test_static_keymapper_refuses_a_short_line(tmp_path: Path) -> None:
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text("ID\tDevice\tKey Type\tKey\n0x2000\tbramble\n")
+
+    with pytest.raises(ValueError, match="keymap.tsv:2: expected four"):
+        StaticKeymapper.from_file(keymap_file)
