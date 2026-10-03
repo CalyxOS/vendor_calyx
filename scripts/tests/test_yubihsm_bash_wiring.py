@@ -14,9 +14,9 @@ from pathlib import Path
 import pytest
 from conftest import SCRIPTS_DIR, run
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
-from yubihsm.defs import OBJECT
-from yubihsm_emulator import Connector, EmulatedYubiHsm
+from cryptography.hazmat.primitives import hashes, serialization
+from yubihsm.defs import COMMAND, OBJECT
+from yubihsm_emulator import Connector, EmulatedYubiHsm, stored_certificate
 
 
 def run_yubihsm_functions(
@@ -306,6 +306,137 @@ def _key_with_certificate(device: EmulatedYubiHsm, key_id: int) -> None:
         .not_valid_after(now + datetime.timedelta(days=1))
         .sign(key, hashes.SHA256()),
     )
+
+
+@pytest.mark.parametrize("after_each_key", ("", "y"), ids=("once", "each"))
+def test_ensure_key_is_available_nolog_imports_missing_key_and_cert(
+    tmp_path: Path,
+    yubihsm: Connector,
+    after_each_key: str,
+) -> None:
+    device = yubihsm.device
+    device.put_wrap_key(0x0010)
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
+    )
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _key_with_certificate(device, 0x2000)
+    (key_dir / "0x2000-asymmetric-key.yhw").write_bytes(
+        base64.b64encode(device.wrapped(0x2000, OBJECT.ASYMMETRIC_KEY, 0x0010)),
+    )
+    stored = device.get(0x2000, OBJECT.OPAQUE)
+    assert stored is not None
+    (key_dir / "0x2000.x509.pem").write_bytes(
+        stored_certificate(stored).public_bytes(serialization.Encoding.PEM),
+    )
+    del device.objects[(0x2000, OBJECT.ASYMMETRIC_KEY)]
+    del device.objects[(0x2000, OBJECT.OPAQUE)]
+    result = run_yubihsm_functions(
+        f"""
+extract_logs_after_each_key={after_each_key} \\
+  ensure_key_is_available_nolog 0x2000
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEYMAP_FILE=str(keymap_file),
+            KEY_DIR=str(key_dir),
+        ),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+    assert device.get(0x2000, OBJECT.OPAQUE) is not None
+    audit_log = tmp_path / "audit.log"
+    comment = "Function: ensure_key_is_available Key: 0x2000 Result: 0"
+    assert (audit_log.exists() and comment in audit_log.read_text()) is bool(
+        after_each_key,
+    )
+
+
+def test_ensure_key_is_available_nolog_keeps_every_key_it_loads(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    """
+    Loading 0x2000 evicts 0x2002 to make room, and 0x2001 then finds no
+    key it may evict, since 0x2000 is one the same call loads.
+    """
+    device = yubihsm.device
+    device.put_wrap_key(0x0010)
+    keymap_file = tmp_path / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n"
+        "0x2000\tbramble\tavb\tvbmeta\n"
+        "0x2001\tredfin\tavb\tvbmeta\n"
+        "0x2002\tbarbet\tavb\tvbmeta\n",
+    )
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    for key_id in (0x2000, 0x2001, 0x2002):
+        _key_with_certificate(device, key_id)
+        (key_dir / f"{key_id:#06x}-asymmetric-key.yhw").write_bytes(
+            base64.b64encode(
+                device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, 0x0010),
+            ),
+        )
+        stored = device.get(key_id, OBJECT.OPAQUE)
+        assert stored is not None
+        (key_dir / f"{key_id:#06x}.x509.pem").write_bytes(
+            stored_certificate(stored).public_bytes(serialization.Encoding.PEM),
+        )
+    for key_id in (0x2000, 0x2001):
+        del device.objects[(key_id, OBJECT.ASYMMETRIC_KEY)]
+        del device.objects[(key_id, OBJECT.OPAQUE)]
+    device.total_records = len(device.objects) + 4
+
+    result = run_yubihsm_functions(
+        r"""
+status=0
+extract_logs_after_each_key=y \
+  ensure_key_is_available_nolog 0x2000 0x2001 || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEYMAP_FILE=str(keymap_file),
+            KEY_DIR=str(key_dir),
+        ),
+    )
+
+    assert result.stdout.splitlines()[-1] != "exit=0"
+    assert "Could not find any on-demand key" in result.stderr
+    assert device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+
+
+def test_ensure_key_is_available_nolog_fails_without_a_keymap_file(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    result = run_yubihsm_functions(
+        r"""
+status=0
+ensure_key_is_available_nolog 0x2000 || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEYMAP_FILE=str(tmp_path / "missing.tsv"),
+            KEY_DIR=str(key_dir),
+        ),
+    )
+
+    assert result.stdout.splitlines()[-1] != "exit=0"
+    assert "Cannot read KEYMAP_FILE" in result.stderr
+    assert COMMAND.IMPORT_WRAPPED not in [
+        command for _, command, _ in yubihsm.device.history
+    ]
 
 
 def test_populate_loaded_keys_fails_when_the_hsm_is_unreachable(
