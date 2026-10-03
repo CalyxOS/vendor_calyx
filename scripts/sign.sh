@@ -123,7 +123,8 @@ sign_builds() {
   local err=
   echo
   echo "Signing release for: $*"
-  export TMPDIR=$(mktemp -d -p "${ORIGINAL_TMPDIR:-/dev/shm}" sign_tmp.XXXXXXXX)
+  local -x TMPDIR
+  TMPDIR=$(mktemp -d -p "${ORIGINAL_TMPDIR:-/dev/shm}" sign_tmp.XXXXXXXX) || return $?
   # We already make sure keys are available in advance, so no need to try and load per process.
   export ENSURE_KEY_IS_AVAILABLE=n
   parallel -j "$NUM_SIGN_JOBS" --colsep ',' --tag --line-buffer \
@@ -136,16 +137,17 @@ sign_builds() {
     echo >&2
     echo "Signing failed for $err devices." >&2
     echo "You can run this script again to sign the devices that failed." >&2
-    return 1
   fi
 
   rm -rf "$TMPDIR" || return $?
+  [ -z "$err" ] || return 1
 }
 
 generate_incrementals() {
   local err=
   # Deltas
-  export TMPDIR=$(mktemp -d -p "${ORIGINAL_TMPDIR:-/dev/shm}" incremental_tmp.XXXXXXXX)
+  local -x TMPDIR
+  TMPDIR=$(mktemp -d -p "${ORIGINAL_TMPDIR:-/dev/shm}" incremental_tmp.XXXXXXXX) || return $?
   # We already make sure keys are available in advance, so no need to try and load per process.
   export ENSURE_KEY_IS_AVAILABLE=n
   echo
@@ -159,10 +161,10 @@ generate_incrementals() {
     echo >&2
     echo "Generating incrementals failed for $err devices." >&2
     echo "You can run this script again to generate incrementals for the devices that failed." >&2
-    return 1
   fi
 
   rm -rf "$TMPDIR" || return $?
+  [ -z "$err" ] || return 1
 }
 
 initialize() {
