@@ -18,6 +18,8 @@ from collections.abc import Generator, Sequence
 from pathlib import Path
 from types import FrameType
 
+_QUOTE_BRIDGE = r'printf "%q " "$@"'
+
 
 @contextlib.contextmanager
 def exit_on_signals() -> Generator[None, None, None]:
@@ -40,6 +42,30 @@ def exit_on_signals() -> Generator[None, None, None]:
     finally:
         for signum, handler in previous_handlers.items():
             signal.signal(signum, handler)
+
+
+def render_release_tool(argv: Sequence[str]) -> str:
+    """
+    Render one release-tool invocation as a shell command line, each
+    argument quoted.
+
+    Args:
+        argv: Complete executable and argument vector to render.
+
+    Returns:
+        The quoted, space-joined command line followed by a blank line,
+        with no leading "Running:" text.
+
+    Raises:
+        subprocess.CalledProcessError: If bash cannot be executed.
+    """
+    completed = subprocess.run(
+        ["bash", "-c", _QUOTE_BRIDGE, "quote-bridge", *argv],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.removesuffix(" ") + "\n\n"
 
 
 def run_release_tool(argv: Sequence[str]) -> int:
