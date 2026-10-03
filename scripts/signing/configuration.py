@@ -139,12 +139,15 @@ class Pkcs11BackendConfiguration:
 
     module: Path
     pin_source: PinSource | None = None
+    discovery_pin_source: PinSource | None = None
     token_label: str | None = None
     slot: str | None = None
     tool: str = "pkcs11-tool"
     openssl: str = "openssl"
     openssl_engine: Path | None = None
     certificate_days: int = DEFAULT_CERTIFICATE_DAYS
+    use_so_pin: bool = False
+    list_requires_no_pin: bool = False
     environment: Mapping[str, str] = field(
         default_factory=dict[str, str],
         repr=False,
@@ -179,16 +182,22 @@ class Pkcs11BackendConfiguration:
         pin = None
         if self.pin_source is not None:
             pin = self.pin_source.resolve(environment)
+        discovery_pin = None
+        if self.discovery_pin_source is not None:
+            discovery_pin = self.discovery_pin_source.resolve(environment)
         return Pkcs11Backend(
             Pkcs11Config(
                 module=self.module,
                 pin=pin,
+                discovery_pin=discovery_pin,
                 token_label=self.token_label,
                 slot=self.slot,
                 tool=self.tool,
                 openssl=self.openssl,
                 openssl_engine=self.openssl_engine,
                 certificate_days=self.certificate_days,
+                use_so_pin=self.use_so_pin,
+                list_requires_no_pin=self.list_requires_no_pin,
                 environment=self.environment,
             ),
         )

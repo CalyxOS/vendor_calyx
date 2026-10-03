@@ -203,6 +203,49 @@ def test_release_dry_run_builds_pkcs11_command_graph(
     assert "test-only" not in result.stderr
 
 
+@pytest.mark.parametrize(
+    ("environment", "helper", "payload_signer"),
+    (
+        (
+            {"AVB_SIGNING_HELPER_TOOL": "python"},
+            "signing_helper.py",
+            "payload_signer.openssl.sh",
+        ),
+        (
+            {"PAYLOAD_SIGNER_TOOL": "python"},
+            "signing_helper.openssl.sh",
+            "payload_signer.py",
+        ),
+        (
+            {"SIGNING_HELPER_TOOL": "python"},
+            "signing_helper.py",
+            "payload_signer.py",
+        ),
+    ),
+    ids=("avb-helper", "payload-signer", "both"),
+)
+def test_release_can_select_python_signing_helpers(
+    release_tree: Path,
+    environment: dict[str, str],
+    helper: str,
+    payload_signer: str,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={**PKCS11_ENVIRONMENT, **environment},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert helper in _command_line(result.stderr, "sign_target_files_apks")
+    assert payload_signer in _command_line(
+        result.stderr,
+        "ota_from_target_files",
+    )
+    assert "test-only" not in result.stdout
+    assert "test-only" not in result.stderr
+
+
 @pytest.mark.parametrize("device", ROLLBACK_DEVICES)
 def test_release_dry_run_applies_rollback_override(
     release_tree: Path,

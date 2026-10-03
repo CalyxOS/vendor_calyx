@@ -21,6 +21,11 @@ docstring-code-format = true
 [tool.ruff.lint]
 select = ["COM812", "E", "F", "I", "PYI", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+"scripts/pkcs11/*.py" = ["E402"]
+"scripts/signing/signing_helper.py" = ["E402"]
+"scripts/signing/payload_signer.py" = ["E402"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
