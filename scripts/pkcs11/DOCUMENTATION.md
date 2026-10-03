@@ -508,6 +508,37 @@ the authentication keys and wrap key -
 this leaves room for a maximum of `40` RSA 4096-bit keys to be loaded
 at any given time, assuming no other keys are present.
 
+### pkcs11-tool and the YubiHSM PKCS#11 module
+
+With OpenSC 0.27, `pkcs11-tool` crashes in `C_Initialize()` of `yubihsm_pkcs11.so`
+while the module parses its configuration file:
+
+```bash
+$ YUBIHSM_PKCS11_CONF=yubihsm_pkcs11.conf pkcs11-tool \
+    --module /usr/lib/pkcs11/yubihsm_pkcs11.so -L
+Segmentation fault
+```
+
+| System        | OpenSC | yubihsm-pkcs11 | `pkcs11-tool -L` |
+|---------------|--------|----------------|------------------|
+| Debian trixie | 0.26.1 | 2.6.0          | works            |
+| Debian sid    | 0.27.1 | 2.6.0          | segfault         |
+| Debian sid    | 0.27.1 | 2.8.0          | segfault         |
+| Arch Linux    | 0.27.1 | 2.8.0          | segfault         |
+
+The module's gengetopt parser resets `optind` before calling `getopt_long()`.
+`pkcs11-tool` copy-relocates `optind`, so `getopt_long()` reads the executable's copy,
+while a module loaded with `RTLD_DEEPBIND` binds its own `optind` to glibc's.
+The reset never reaches the copy `getopt_long()` reads.
+
+`pkcs11_tool.yubihsm.sh` preloads `PKCS11_MODULE` before running
+`pkcs11-tool`, so that the module is relocated against the executable's `optind`,
+and `vendor.yubihsm.include.sh` makes it the YubiHSM vendor's `PKCS11_TOOL_BIN`.
+YubiHSM key generation preloads the module for its own `pkcs11-tool` calls.
+Java's SunPKCS11, OpenSSL's PKCS#11 engine and the YubiHSM SDK are not affected.
+The fix belongs in yubihsm-shell, whose configuration parser should not share
+`optind` with the program loading the module.
+
 ## Potential future improvements
 
 ### YubiHSM Networked
