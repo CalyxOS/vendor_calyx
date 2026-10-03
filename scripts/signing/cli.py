@@ -199,6 +199,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python3 -m signing")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    keymap = subparsers.add_parser("generate-keymap")
+    keymap.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+    )
+    keymap.add_argument(
+        "--devices",
+        nargs="+",
+        required=True,
+    )
+
     for name in _BACKEND_COMMANDS:
         command = subparsers.add_parser(name)
         _add_backend_arguments(command)
@@ -336,6 +348,24 @@ def _build_backend(args: argparse.Namespace) -> Pkcs11Backend:
     return _pkcs11_configuration_from_args(args).create_backend()
 
 
+def _cmd_generate_keymap(args: argparse.Namespace) -> int:
+    """
+    Print the TSV keymap for the requested devices.
+
+    Args:
+        args: Parsed namespace containing metadata path and devices.
+
+    Returns:
+        Zero on success.
+    """
+    from .keymap import Id2bKeymapper
+    from .metadata import default_metadata_path, load_metadata
+
+    metadata = load_metadata(args.metadata or default_metadata_path())
+    print(Id2bKeymapper(metadata).to_tsv(args.devices), end="")
+    return 0
+
+
 def _cmd_key_exists(args: argparse.Namespace) -> int:
     """
     Print whether the referenced key exists.
@@ -412,6 +442,7 @@ class _UsageError(Exception):
 _CommandHandler = Callable[[argparse.Namespace], int]
 
 _HANDLERS: dict[str, _CommandHandler] = {
+    "generate-keymap": _cmd_generate_keymap,
     "key-exists": _cmd_key_exists,
     "certificate-exists": _cmd_certificate_exists,
     "generate-key": _cmd_generate_key,
