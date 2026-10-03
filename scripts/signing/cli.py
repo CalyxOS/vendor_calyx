@@ -9,6 +9,7 @@ Command-line entry points for backend-neutral signing operations.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
         PinSource,
         Pkcs11BackendConfiguration,
     )
+    from .keymap import Keymapper
+    from .metadata import SigningMetadata
     from .models import KeyReference, KeySpec
     from .pkcs11 import Pkcs11Backend
 
@@ -210,7 +213,71 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         required=True,
     )
+    keymap.add_argument(
+        "--keymapper",
+        choices=("id2b", "legacy"),
+        default="id2b",
+    )
     subparsers.add_parser("mkkey", add_help=False)
+
+    provision_avb = subparsers.add_parser("provision-avb-key")
+    provision_avb.add_argument(
+        "--private-key",
+        type=Path,
+        required=True,
+    )
+    provision_avb.add_argument(
+        "--public-key",
+        type=Path,
+        required=True,
+    )
+    provision_avb.add_argument(
+        "--avbtool",
+        required=True,
+    )
+
+    provision_rsa = subparsers.add_parser("provision-rsa-key")
+    provision_rsa.add_argument(
+        "--private-key",
+        type=Path,
+        required=True,
+    )
+
+    migrate_runtime = subparsers.add_parser("migrate-runtime-key")
+    migrate_runtime.add_argument(
+        "--key-directory",
+        type=Path,
+        required=True,
+    )
+
+    update_keys = subparsers.add_parser("update-keys")
+    update_keys.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+    )
+    update_keys.add_argument(
+        "--keymapper",
+        choices=("id2b", "legacy"),
+        required=True,
+    )
+    update_keys.add_argument(
+        "--key-directory",
+        type=Path,
+        required=True,
+    )
+    update_keys.add_argument(
+        "--device",
+        required=True,
+    )
+    update_keys.add_argument(
+        "--subject",
+        required=True,
+    )
+    update_keys.add_argument(
+        "--avbtool",
+        required=True,
+    )
 
     for name in _BACKEND_COMMANDS:
         command = subparsers.add_parser(name)
@@ -270,6 +337,27 @@ def _pkcs11_configuration_from_args(
             else args.certificate_days
         ),
     )
+
+
+def _keymapper_from_args(
+    args: argparse.Namespace,
+    metadata: SigningMetadata,
+) -> Keymapper:
+    """
+    Construct the explicitly selected metadata keymapper.
+
+    Args:
+        args: Parsed namespace containing a ``keymapper`` selection.
+        metadata: Validated signing metadata to map.
+
+    Returns:
+        Legacy path mapper or the default two-byte ID mapper.
+    """
+    from .keymap import Id2bKeymapper, LegacyKeymapper
+
+    if args.keymapper == "legacy":
+        return LegacyKeymapper(metadata)
+    return Id2bKeymapper(metadata)
 
 
 def _reference_from_args(args: argparse.Namespace) -> KeyReference:
@@ -375,11 +463,88 @@ def _cmd_generate_keymap(args: argparse.Namespace) -> int:
     Returns:
         Zero on success.
     """
-    from .keymap import Id2bKeymapper
     from .metadata import default_metadata_path, load_metadata
 
     metadata = load_metadata(args.metadata or default_metadata_path())
-    print(Id2bKeymapper(metadata).to_tsv(args.devices), end="")
+    mapper = _keymapper_from_args(args, metadata)
+    print(mapper.to_tsv(args.devices), end="")
+    return 0
+
+
+def _cmd_provision_avb_key(args: argparse.Namespace) -> int:
+    """
+    Provision an AVB signing key pair.
+
+    Args:
+        args: Parsed namespace containing the key paths and avbtool.
+
+    Returns:
+        Zero on success.
+    """
+    from .key_scripts import provision_avb_key
+
+    provision_avb_key(args.avbtool, args.private_key, args.public_key)
+    return 0
+
+
+def _cmd_provision_rsa_key(args: argparse.Namespace) -> int:
+    """
+    Provision a plain RSA private key.
+
+    Args:
+        args: Parsed namespace containing the key path.
+
+    Returns:
+        Zero on success.
+    """
+    from .key_scripts import generate_rsa_key
+
+    generate_rsa_key(args.private_key)
+    return 0
+
+
+def _cmd_migrate_runtime_key(args: argparse.Namespace) -> int:
+    """
+    Migrate a runtime key directory to the current layout.
+
+    Args:
+        args: Parsed namespace containing the key directory.
+
+    Returns:
+        Zero on success.
+    """
+    from .key_scripts import migrate_runtime_key
+
+    migrate_runtime_key(args.key_directory)
+    return 0
+
+
+def _cmd_update_keys(args: argparse.Namespace) -> int:
+    """
+    Update a device's on-disk keys and certificate metadata.
+
+    Args:
+        args: Parsed namespace containing metadata path and key settings.
+
+    Returns:
+        Zero on success, one when a key or one of its tools fails.
+    """
+    from .key_scripts import update_keys
+    from .metadata import default_metadata_path, load_metadata
+
+    metadata = load_metadata(args.metadata or default_metadata_path())
+    try:
+        update_keys(
+            keymapper=_keymapper_from_args(args, metadata),
+            key_directory=args.key_directory,
+            device=args.device,
+            subject=args.subject,
+            avbtool=args.avbtool,
+            key_suffix=os.environ.get("KEY_SUFFIX", ".pem"),
+        )
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -461,6 +626,10 @@ _CommandHandler = Callable[[argparse.Namespace], int]
 _HANDLERS: dict[str, _CommandHandler] = {
     "mkkey": _cmd_mkkey,
     "generate-keymap": _cmd_generate_keymap,
+    "provision-avb-key": _cmd_provision_avb_key,
+    "provision-rsa-key": _cmd_provision_rsa_key,
+    "migrate-runtime-key": _cmd_migrate_runtime_key,
+    "update-keys": _cmd_update_keys,
     "key-exists": _cmd_key_exists,
     "certificate-exists": _cmd_certificate_exists,
     "generate-key": _cmd_generate_key,
