@@ -5,12 +5,14 @@
 
 from __future__ import annotations
 
+import base64
 import stat
 import subprocess
 from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, run
+from yubihsm.defs import OBJECT
 from yubihsm_emulator import Connector
 
 
@@ -197,3 +199,121 @@ extract_logs "bash wiring test"
     assert "bash wiring test" in contents
     assert "hash: " + yubihsm.device.log[0][2].hex() in contents
     assert yubihsm.device.unread_log() == []
+
+
+def _hsm_environment(
+    tmp_path: Path,
+    yubihsm: Connector,
+    **extra: str,
+) -> dict[str, str]:
+    return {
+        "PYTHONPATH": str(SCRIPTS_DIR),
+        "YUBIHSM_PYTHON_TOOLS": "y",
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+        "YUBIHSM_EXPORTABLE_DOMAIN": "1",
+        "YUBIHSM_ONDEMAND_DOMAIN": "3",
+        "YUBIHSM_UNEXPORTABLE_DOMAIN": "2",
+        "YUBIHSM_KEY_CAPABILITIES": "sign-pkcs",
+        "YUBIHSM_OPAQUE_CAPABILITIES": "get-opaque",
+        "AUDIT_LOG_PATH": str(tmp_path / "audit.log"),
+        **extra,
+    }
+
+
+@pytest.mark.parametrize(
+    ("free_records", "succeeds", "message"),
+    [
+        (100, True, None),
+        (1, False, "Failed to make enough space"),
+    ],
+)
+def test_limit_ondemand_objects_fails_when_it_cannot_make_space(
+    tmp_path: Path,
+    yubihsm: Connector,
+    free_records: int,
+    succeeds: bool,
+    message: str | None,
+) -> None:
+    device = yubihsm.device
+    device.total_records = len(device.objects) + free_records
+    result = run_yubihsm_functions(
+        r"""
+status=0
+limit_ondemand_objects || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            KEY_DIR=str(tmp_path),
+        ),
+    )
+
+    assert (result.stdout.strip() == "exit=0") is succeeds, result.stderr
+    if message is not None:
+        assert message in result.stderr
+
+
+def test_limit_ondemand_objects_evicts_backed_up_ondemand_object(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    device = yubihsm.device
+    device.put_wrap_key(0x0010)
+    device.put_asymmetric_key(0x2100, domains=0b1)
+    device.put_asymmetric_key(0x2000, domains=0b100)
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    for key_id in (0x2000, 0x2100):
+        (key_dir / f"{key_id:#06x}-asymmetric-key.yhw").write_bytes(
+            base64.b64encode(
+                device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, 0x0010),
+            ),
+        )
+    device.total_records = len(device.objects) + 4
+    result = run_yubihsm_functions(
+        r"""
+limit_ondemand_objects
+""",
+        env=_hsm_environment(tmp_path, yubihsm, KEY_DIR=str(key_dir)),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is None
+    assert device.get(0x2100, OBJECT.ASYMMETRIC_KEY) is not None
+    audit_log = (tmp_path / "audit.log").read_text()
+    assert "delete-object --object-id 0x2000 " in audit_log
+    assert "limit-ondemand-objects" not in audit_log
+
+
+def test_limit_ondemand_objects_deletes_nothing_under_dry_run(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    device = yubihsm.device
+    device.put_wrap_key(0x0010)
+    device.put_asymmetric_key(0x2000, domains=0b100)
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    (key_dir / "0x2000-asymmetric-key.yhw").write_bytes(
+        base64.b64encode(device.wrapped(0x2000, OBJECT.ASYMMETRIC_KEY, 0x0010)),
+    )
+    device.total_records = len(device.objects) + 1
+    result = run_yubihsm_functions(
+        r"""
+status=0
+limit_ondemand_objects || status=$?
+printf 'exit=%s\n' "$status"
+""",
+        env=_hsm_environment(
+            tmp_path,
+            yubihsm,
+            DRY_RUN="y",
+            KEY_DIR=str(key_dir),
+        ),
+    )
+
+    assert device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
+    assert "yubihsm -a delete-object --object-id 0x2000" in result.stderr
