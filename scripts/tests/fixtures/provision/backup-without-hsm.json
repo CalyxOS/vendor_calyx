@@ -1,0 +1,11 @@
+{
+  "audit": [],
+  "files": {},
+  "keys": [
+    "0x0101",
+    "0x0102"
+  ],
+  "returncode": 1,
+  "stderr": "Using keymapper: static\nconnect_hsm failed (code 1). Giving up...\n",
+  "stdout": "Mode: backup\nNow performing: load_configuration\nNow performing: maybe_start_yubihsm_connector_service\n\nThis step uses administrator privileges via sudo to start the YubiHSM connector.\nYou may be required to enter your administrator password.\nWould you like to start the yubihsm connector? (Y/N) Now performing: ask_signing_authkey_password_if_needed\nEnter signing authkey password: \nNow performing: use_signing_authkey\nNow performing: connect_hsm\n\nPlease connect the YubiHSM 2.\nEnter Y when the HSM is connected, or N to quit. (Y/N) connect_hsm failed (code 1). Try again? (Y/N) "
+}
