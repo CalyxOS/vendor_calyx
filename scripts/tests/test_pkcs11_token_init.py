@@ -41,7 +41,7 @@ def uninitialized_softhsm_env(
     return environment
 
 
-def test_is_any_token_initialized_false_before_init(
+def test_initialize_pkcs11_token_creates_a_usable_token(
     uninitialized_softhsm_env: dict[str, str],
 ) -> None:
     assert not is_any_pkcs11_token_initialized(
@@ -49,10 +49,6 @@ def test_is_any_token_initialized_false_before_init(
         module=SOFTHSM_MODULE,
     )
 
-
-def test_initialize_pkcs11_token_creates_a_usable_token(
-    uninitialized_softhsm_env: dict[str, str],
-) -> None:
     initialize_pkcs11_token(
         tool="pkcs11-tool",
         module=SOFTHSM_MODULE,
