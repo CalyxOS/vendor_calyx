@@ -280,9 +280,7 @@ class _SessionArgs:
 def _signs_through_pkcs11(environment: Mapping[str, str]) -> bool:
     """Return whether a PKCS#11 module or vendor is configured."""
     return bool(
-        environment.get("PKCS11_MODULE")
-        or environment.get("PKCS11_VENDOR")
-        or environment.get("PKCS11_VENDOR_FILE"),
+        environment.get("PKCS11_MODULE") or environment.get("PKCS11_VENDOR"),
     )
 
 
