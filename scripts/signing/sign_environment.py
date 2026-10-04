@@ -76,28 +76,9 @@ connector = {connector_url}
 
 class UnsupportedVendorError(RuntimeError):
     """
-    Raised for a PKCS11_VENDOR or PKCS11_VENDOR_FILE that the Python
-    orchestrator cannot initialize.
+    Raised for a PKCS11_VENDOR/PKCS11_VENDOR_FILE this module cannot
+    initialize.
     """
-
-
-def describe_vendor_error(error: Exception, flag: str) -> str:
-    """
-    Describe a vendor initialization failure, naming the flag that
-    selects Python orchestration when the vendor is unsupported.
-
-    Args:
-        error: The UnsupportedVendorError or RuntimeError raised.
-        flag: The environment flag the caller is running under.
-
-    Returns:
-        The message to report.
-    """
-    if isinstance(error, UnsupportedVendorError):
-        return (
-            f"{error}. Unset {flag} to use Bash orchestration for this vendor."
-        )
-    return str(error)
 
 
 def is_vendor_initialization_needed(
@@ -197,32 +178,6 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
         else:
             normalize_key_dir(environment)
     return vendor
-
-
-def require_python_interceptor(environment: Mapping[str, str]) -> None:
-    """
-    Refuse a yubihsm run without PKCS11_PYTHON_INTERCEPTOR=y unless
-    NEVER_START_APKSIGNER_BATCH=y.
-
-    Args:
-        environment: Process environment to read PKCS11_VENDOR,
-            PKCS11_PYTHON_INTERCEPTOR and NEVER_START_APKSIGNER_BATCH from.
-
-    Raises:
-        UnsupportedVendorError: If PKCS11_VENDOR=yubihsm and neither flag
-            is y.
-    """
-    if (
-        environment.get("PKCS11_VENDOR") == "yubihsm"
-        and environment.get("PKCS11_PYTHON_INTERCEPTOR") != "y"
-        and environment.get("NEVER_START_APKSIGNER_BATCH") != "y"
-    ):
-        raise UnsupportedVendorError(
-            "The Python orchestrator requires PKCS11_PYTHON_INTERCEPTOR=y "
-            "for the yubihsm vendor unless NEVER_START_APKSIGNER_BATCH=y, "
-            "since the Python vendor setup starts no apksigner batch "
-            "process for the Bash interceptor.",
-        )
 
 
 def _module_paths(arches: tuple[str, ...], name: str) -> tuple[str, ...]:
@@ -887,17 +842,11 @@ class YubiHsmVendor(Vendor):
             auth_key.removeprefix("0x").rjust(4, "0") + password
         )
 
-        pkcs11_scriptpath = Path(__file__).resolve().parents[1] / "pkcs11"
-        require_python_interceptor(environment)
-        interceptor = (
-            "vendor.yubihsm.interceptor.py"
-            if environment.get("PKCS11_PYTHON_INTERCEPTOR") == "y"
-            else "vendor.yubihsm.interceptor.sh"
-        )
         environment["SIGNING_COMMAND_INTERCEPTOR"] = str(
-            pkcs11_scriptpath / interceptor,
+            Path(__file__).resolve().parents[1]
+            / "pkcs11"
+            / "vendor.yubihsm.interceptor.py",
         )
-        environment["PKCS11_VENDOR"] = "yubihsm"
 
         if environment.get("DRY_RUN") != "y":
             yubihsm_tmpdir = environment.get("YUBIHSM_TMPDIR")
