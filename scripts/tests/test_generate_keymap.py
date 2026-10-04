@@ -174,7 +174,7 @@ def test_generate_keymap_python_flag_invokes_python(
     fake_python3 = fake_bin / "python3"
     fake_python3.write_text(
         "#!/bin/sh\n"
-        'case " $* " in *" generate-keymap "*)\n'
+        'case " $* " in *" print-keymap "*)\n'
         "  echo FAKE_PYTHON3_INVOKED >&2\n"
         "  exit 1\n"
         "esac\n"
@@ -211,14 +211,10 @@ def test_generate_keymap_python_flag_invokes_python(
     assert without_flag.returncode == 0, without_flag.stderr
 
 
-@pytest.mark.parametrize(
-    "environment",
-    ({"KEYMAPPER": "static"}, {"KEYMAPPER_FILE": "keymapper.id2b.include.sh"}),
-    ids=("static", "keymapper-file"),
-)
-def test_generate_keymap_python_flag_rejects_other_keymappers(
+@pytest.mark.parametrize("use_python", (False, True))
+def test_static_keymapper_round_trips_under_both_implementations(
     tmp_path: Path,
-    environment: dict[str, str],
+    use_python: bool,
 ) -> None:
     devices_file = tmp_path / "devices"
     devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
@@ -227,14 +223,43 @@ def test_generate_keymap_python_flag_rejects_other_keymappers(
         [SCRIPTS_DIR / "generate_keymap.sh"],
         env={
             "DEVICES_FILE": str(devices_file),
-            "USE_PYTHON_GENERATE_KEYMAP": "y",
-            **environment,
+            "KEYMAPPER": "static",
+            "KEYMAP_FILE": str(GOLDEN_KEYMAP),
+            "USE_PYTHON_GENERATE_KEYMAP": "y" if use_python else "",
         },
         check=False,
     )
 
-    assert result.returncode == 1
-    assert "supports only the legacy and id2b keymappers" in result.stderr
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == GOLDEN_KEYMAP.read_text()
+
+
+def test_generate_keymap_python_flag_loads_a_python_keymapper_file(
+    tmp_path: Path,
+) -> None:
+    devices_file = tmp_path / "devices"
+    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
+    keymapper = tmp_path / "keymapper.py"
+    keymapper.write_text(
+        "from pathlib import Path\n"
+        "from signing.keymap import StaticKeymapper\n"
+        "\n"
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        f"    return StaticKeymapper.from_file(Path({str(GOLDEN_KEYMAP)!r}))\n",
+    )
+
+    result = run(
+        [SCRIPTS_DIR / "generate_keymap.sh"],
+        env={
+            "DEVICES_FILE": str(devices_file),
+            "KEYMAPPER_FILE": str(keymapper),
+            "USE_PYTHON_GENERATE_KEYMAP": "y",
+        },
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == GOLDEN_KEYMAP.read_text()
 
 
 @pytest.mark.parametrize("keymapper", ("id2b", "legacy"))
