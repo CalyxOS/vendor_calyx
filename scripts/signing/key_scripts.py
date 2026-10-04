@@ -50,7 +50,11 @@ def mkkey_main(program: str, arguments: Sequence[str]) -> int:
         arguments: The key name and the subject the script takes.
 
     Returns:
-        0 on success, 1 for any failure.
+        0 on success, 1 on a usage error or an OpenSSL failure.
+
+    Raises:
+        OSError: If a key file cannot be written.
+        ValueError: If the key name has no file name.
     """
     usage = (
         f"Usage: {program} key_name subject",
@@ -91,9 +95,6 @@ def mkkey_main(program: str, arguments: Sequence[str]) -> int:
         sys.stderr.write(os.fsdecode(error.stderr or b""))
         print(f"error: {error}", file=sys.stderr)
         return 1
-    except (OSError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 1
     return 0
 
 
@@ -120,35 +121,18 @@ def _create_key_directory(arguments: Sequence[str]) -> None:
     if os.path.isdir(arguments[0]):
         print("key directory already exists", file=sys.stderr)
         raise ScriptError()
-    try:
-        os.makedirs(arguments[0], exist_ok=True)
-    except OSError as error:
-        print(f"error: {error}", file=sys.stderr)
-        raise ScriptError() from error
+    os.makedirs(arguments[0], exist_ok=True)
 
 
 def _provision(provision: Callable[[], None]) -> int:
     """Run a key provisioning step, reporting its failure as an error."""
     try:
         provision()
-    except (
-        OSError,
-        RuntimeError,
-        ValueError,
-        subprocess.CalledProcessError,
-    ) as error:
+    except subprocess.CalledProcessError as error:
+        sys.stderr.write(os.fsdecode(error.stderr or b""))
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 0
-
-
-def _load_script_metadata() -> SigningMetadata:
-    """Load the metadata module, reporting one that fails to load."""
-    try:
-        return load_metadata(default_metadata_path())
-    except (OSError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        raise ScriptError() from error
 
 
 def _load_script_keymapper(
@@ -166,6 +150,74 @@ def _load_script_keymapper(
     return keymapper
 
 
+def updatekeys_main(
+    environment: MutableMapping[str, str],
+    arguments: Sequence[str],
+) -> int:
+    """
+    Create or update a device's keys under a key directory, after
+    creating the directory when --create-directory leads the arguments.
+
+    Args:
+        environment: Process environment, mutated in place.
+        arguments: [--create-directory] PROGRAM KEY_DIR SUBJECT.
+
+    Returns:
+        0 on success, 1 on a usage or setup error.
+
+    Raises:
+        OSError: If the key directory cannot be created, or the metadata
+            or a key file cannot be read or written.
+        RuntimeError: If a key and its certificate are not both present.
+        ValueError: If the metadata or the subject is invalid.
+    """
+    create_directory, program, arguments = _key_script_arguments(
+        arguments,
+        "updatekeys.sh",
+    )
+    usage = (
+        f"Usage: {program} key_dir subject",
+        f"Example subject: {EXAMPLE_SUBJECT}",
+    )
+    try:
+        if create_directory:
+            _create_key_directory(arguments)
+        if len(arguments) != 2:
+            raise _error("incorrect number of arguments", usage)
+        key_path, subject = arguments
+        scripts = Path(program).parent.resolve()
+        top = f"{scripts}/../../.."
+        metadata = load_metadata(default_metadata_path())
+        device = Path(key_path).name
+        environment["KEY_DIR"] = f"{Path(key_path).parent}/"
+        generate_verity_key = (
+            environment.get("GENERATE_VERITY_KEY_BIN")
+            or f"{top}/bin/generate_verity_key"
+        )
+        avbtool = environment.get("AVBTOOL_BIN") or f"{top}/bin/avbtool"
+        keymapper = _load_script_keymapper(environment, metadata)
+        if not os.path.exists(generate_verity_key):
+            raise _error(f"{generate_verity_key} not found.", usage)
+        if not os.path.exists(avbtool):
+            raise _error(f"{avbtool} not found.", usage)
+        if shutil.which("openssl") is None:
+            raise _error("openssl not found in PATH.", usage)
+        if not os.path.isdir(key_path):
+            raise _error("key directory does not exist", usage)
+    except ScriptError:
+        return 1
+    return _provision(
+        lambda: update_keys(
+            keymapper,
+            Path(environment["KEY_DIR"]),
+            device,
+            subject,
+            avbtool,
+            key_suffix=environment.get("KEY_SUFFIX", ".pem"),
+        ),
+    )
+
+
 def updatecommonkeys_main(
     environment: MutableMapping[str, str],
     arguments: Sequence[str],
@@ -181,6 +233,12 @@ def updatecommonkeys_main(
 
     Returns:
         0 on success, 1 on a usage or setup error.
+
+    Raises:
+        OSError: If the key directory cannot be created, or the metadata
+            or a key file cannot be read or written.
+        RuntimeError: If a key and its certificate are not both present.
+        ValueError: If the metadata or the subject is invalid.
     """
     create_directory, program, arguments = _key_script_arguments(
         arguments,
@@ -196,7 +254,7 @@ def updatecommonkeys_main(
         if len(arguments) != 2:
             raise _error("incorrect number of arguments", usage)
         key_dir, subject = arguments
-        metadata = _load_script_metadata()
+        metadata = load_metadata(default_metadata_path())
         keymapper = _load_script_keymapper(environment, metadata)
         for tool in ("openssl", "keytool"):
             if shutil.which(tool) is None:
