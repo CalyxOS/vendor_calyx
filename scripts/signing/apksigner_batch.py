@@ -4,17 +4,13 @@
 #
 
 """
-Keep one "apksigner batch" process alive for a whole release, so that its
-PKCS#11 KeyStore is loaded once instead of once per APK.
+Keep one "apksigner batch" process alive for a whole release, so that
+signing an APK does not start a JVM of its own.
 
-Loading a SunPKCS11 KeyStore enumerates every object on the token. Against
-a YubiHSM reached over a network connector, that costs one round trip per
-object attribute read, which dominates the time spent signing each APK.
 "apksigner batch" (a CalyxOS apksig patch) reads NUL-delimited commands
-from stdin, each prefixed by its argument count, reuses the loaded
-KeyStore across commands with matching KeyStore settings, and terminates
-each command's stdout and stderr with "\\0RETURN:<code>\\0". An argument
-count of 0 ends the session.
+from stdin, each prefixed by its argument count, runs them in one
+process, and terminates each command's stdout and stderr with
+"\\0RETURN:<code>\\0". An argument count of 0 ends the session.
 """
 
 from __future__ import annotations
