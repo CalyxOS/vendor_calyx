@@ -504,6 +504,7 @@ def test_release_passes_the_avb_custom_key_to_the_factory_image_script(
     )
 
     assert result.returncode == 0, result.stderr
+    assert "Running: bash -c" in result.stderr
     out_dir = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
     assert (out_dir / "avb-custom-key").read_text() == (
         f"{release_tree}/{expected}"
@@ -1578,23 +1579,13 @@ def test_a_plaintext_release_loads_no_cryptography_package() -> None:
     assert result.stdout == "[]\n"
 
 
-def test_release_dry_run_leaves_only_empty_checksums(
-    release_tree: Path,
-) -> None:
-    before = set(_manifest(release_tree))
+def test_release_dry_run_writes_no_files(release_tree: Path) -> None:
+    before = _manifest(release_tree)
 
     result = run_release(release_tree, "bramble", environment={"OTA_ONLY": ""})
 
     assert result.returncode == 0, result.stderr
-    created = {
-        name: content
-        for name, content in _manifest(release_tree).items()
-        if name not in before
-    }
-    assert created == {
-        f"bramble-factory-{BUILD_NUMBER}.zip.sha256sum": b"",
-        f"bramble-ota_update-{BUILD_NUMBER}.zip.sha256sum": b"",
-    }
+    assert _manifest(release_tree) == before
 
 
 def test_release_names_the_script_it_ran_as(release_tree: Path) -> None:
