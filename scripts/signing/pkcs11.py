@@ -209,49 +209,6 @@ class Pkcs11Backend:
             input_data=request.data,
         ).stdout
 
-    def key_id_for_label(self, label: str) -> str:
-        """
-        Resolve a private key's label to one unique object ID.
-
-        Args:
-            label: Private-key label derived from a signing key path.
-
-        Returns:
-            Lowercase hexadecimal object ID without a prefix.
-
-        Raises:
-            KeyError: If no private key has the label.
-            ValueError: If the label is empty or resolves to multiple IDs.
-            OSError: If ``pkcs11-tool`` cannot be executed.
-            subprocess.CalledProcessError: If object discovery fails.
-        """
-        if not label:
-            raise ValueError("PKCS#11 private key label must not be empty")
-        output = self.run(
-            "--list-objects",
-            "--type",
-            "privkey",
-            "--label",
-            label,
-            include_pin=not self.config.list_requires_no_pin,
-            use_discovery_pin=True,
-        ).stdout
-        identifiers = [
-            self._normalize_listing_id(
-                line.split(b":", 1)[1].strip().decode("ascii"),
-            )
-            for line in output.splitlines()
-            if line.lstrip().startswith(b"ID:")
-        ]
-        if not identifiers:
-            raise KeyError(f"PKCS#11 private key label not found: {label}")
-        unique = set(identifiers)
-        if len(unique) != 1:
-            raise ValueError(
-                f"PKCS#11 private key label is ambiguous: {label}",
-            )
-        return identifiers[0]
-
     def generate_key(self, spec: KeySpec) -> None:
         """
         Generate a persistent RSA key pair on the configured token.

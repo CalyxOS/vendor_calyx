@@ -12,8 +12,6 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from .backend import KeyLabelResolver, Signer
-from .models import KeyReference, SignRequest
 from .pkcs11 import Pkcs11Backend, Pkcs11Config
 
 SHA256_DIGEST_INFO_PREFIX = bytes.fromhex(
@@ -49,45 +47,6 @@ def key_name_from_path(key_path: Path, environment: Mapping[str, str]) -> str:
     if key_directory and rendered.startswith(key_directory):
         rendered = rendered[len(key_directory) :]
     return rendered.removesuffix(".pem")
-
-
-def key_reference_from_path(
-    signer: Signer,
-    key_path: Path,
-    environment: Mapping[str, str],
-) -> KeyReference:
-    """
-    Resolve an external helper key path using legacy ID-or-label behavior.
-
-    Args:
-        signer: Backend that may support private-key label resolution.
-        key_path: Public-key path supplied by the calling signing tool.
-        environment: Variables controlling key mapping and explicit IDs.
-
-    Returns:
-        Backend-neutral key reference containing the resolved object ID.
-
-    Raises:
-        KeyError: If label lookup is requested but no private key has the
-            label.
-        ValueError: If label lookup is ambiguous.
-    """
-    label = key_name_from_path(key_path, environment)
-    key_id = environment.get("KEY_ID")
-    find_by_id = environment.get("FIND_KEYS_BY_ID", "n") == "y"
-    uri_uses_id = (
-        environment.get("OPENSSL_PKCS11_URI_USES_HEX_KEY_ID", "n") == "y"
-    )
-    lookup_label = label if key_id is None else key_id
-    if (
-        not find_by_id
-        and not uri_uses_id
-        and isinstance(signer, KeyLabelResolver)
-    ):
-        key_id = signer.key_id_for_label(lookup_label)
-    elif key_id is None:
-        key_id = label
-    return KeyReference(key_id, label)
 
 
 def avb_input_digest(algorithm: str, data: bytes) -> tuple[bytes, bytes]:
@@ -129,31 +88,6 @@ def avb_input_digest(algorithm: str, data: bytes) -> tuple[bytes, bytes]:
     if len(digest_info) != len(digest_info_prefix) + digest_size:
         raise ValueError("AVB signing input has an invalid digest length")
     return digest_info, digest_info[len(digest_info_prefix) :]
-
-
-def sign_avb_input(
-    signer: Signer,
-    algorithm: str,
-    reference: KeyReference,
-    data: bytes,
-) -> bytes:
-    """
-    Remove AVB's precomputed RSA padding and sign its DigestInfo value.
-
-    Args:
-        signer: Backend used for the raw RSA PKCS#1 v1.5 operation.
-        algorithm: Algorithm name supplied by avbtool.
-        reference: Token key to sign with.
-        data: Padded signing input supplied by avbtool on standard input.
-
-    Returns:
-        Raw RSA signature produced by the selected backend.
-
-    Raises:
-        ValueError: If the AVB algorithm is unsupported or input is too short.
-    """
-    digest_info, _ = avb_input_digest(algorithm, data)
-    return signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
 
 
 def pkcs11_signer_from_environment() -> Pkcs11Backend:

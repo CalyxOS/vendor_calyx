@@ -9,14 +9,28 @@ import hashlib
 import importlib.util
 import io
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 import pytest
 from conftest import SCRIPTS_DIR, install_executable, run, stub
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from software_rsa import avb_input
 
 PYTHON_SIGNING_HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.py"
 PYTHON_PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
+
+
+def load_helper(path: Path) -> ModuleType:
+    """Import a helper script without running its entry point."""
+    spec = importlib.util.spec_from_file_location(
+        f"{path.stem}_under_test",
+        path,
+    )
+    assert spec is not None and spec.loader is not None
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    return helper
 
 
 @pytest.fixture
@@ -33,8 +47,7 @@ def python_helper_env(tool: Path) -> dict[str, str]:
     return {
         "PKCS11_MODULE": "/dev/null",
         "PKCS11_TOOL_BIN": str(tool),
-        "KEY_ID": "0x2000",
-        "OPENSSL_PKCS11_URI_USES_HEX_KEY_ID": "y",
+        "KEY_DIR": "keys/",
         "DEBUG_PAYLOAD_SIGNER": "n",
     }
 
@@ -45,13 +58,7 @@ def test_avb_helper_preserves_provider_stderr(
     result = run(
         [PYTHON_SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
         env=python_helper_env(failing_pkcs11_tool),
-        input=(
-            b"\x00\x01"
-            + b"\xff" * 202
-            + b"\x00"
-            + bytes.fromhex("3031300d060960864801650304020105000420")
-            + bytes(range(32))
-        ),
+        input=avb_input(bytes(range(32))),
         check=False,
         text=False,
     )
@@ -119,13 +126,7 @@ def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    spec = importlib.util.spec_from_file_location(
-        "signing_helper_under_test",
-        PYTHON_SIGNING_HELPER,
-    )
-    assert spec is not None and spec.loader is not None
-    helper = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(helper)
+    helper = load_helper(PYTHON_SIGNING_HELPER)
     public_key = tmp_path / "rsa-2048.pub.pem"
     public_key.write_bytes(
         rsa.generate_private_key(65537, 2048)
@@ -135,16 +136,41 @@ def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
             serialization.PublicFormat.SubjectPublicKeyInfo,
         ),
     )
-    digest_info = (
-        bytes.fromhex("3031300d060960864801650304020105000420")
-        + hashlib.sha256(b"vbmeta").digest()
+    data = avb_input(hashlib.sha256(b"vbmeta").digest())
+    monkeypatch.setattr(
+        helper,
+        "pkcs11_signer_from_environment",
+        stub(SimpleNamespace(sign=stub(bytes(256)))),
     )
-    data = b"\x00\x01" + b"\xff" * 202 + b"\x00" + digest_info
-    monkeypatch.setattr(helper, "pkcs11_signer_from_environment", object)
-    monkeypatch.setattr(helper, "key_reference_from_path", stub(None))
     monkeypatch.setattr(helper, "require_matching_public_key", stub(None))
-    monkeypatch.setattr(helper, "sign_avb_input", stub(bytes(256)))
     monkeypatch.setattr(helper.sys, "stdin", io.TextIOWrapper(io.BytesIO(data)))
 
     with pytest.raises(ValueError, match="does not verify"):
         helper.main(["SHA256_RSA2048", str(public_key)])
+
+
+@pytest.mark.parametrize("size", (0, 31, 33))
+def test_payload_helper_rejects_invalid_digest_size(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    size: int,
+) -> None:
+    helper = load_helper(PYTHON_PAYLOAD_SIGNER)
+    digest = tmp_path / "digest.bin"
+    output = tmp_path / "signature.bin"
+    digest.write_bytes(b"x" * size)
+    monkeypatch.setattr(helper, "pkcs11_signer_from_environment", object)
+    monkeypatch.setattr(helper, "require_matching_public_key", stub(None))
+
+    with pytest.raises(ValueError, match="exactly 32 bytes"):
+        helper.main(
+            [
+                "-in",
+                str(digest),
+                "-out",
+                str(output),
+                "-inkey",
+                "keys/ota.pem",
+            ],
+        )
+    assert not output.exists()

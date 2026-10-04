@@ -171,9 +171,11 @@ def test_generate_delta_removes_its_temporaries(
         dry_run=False,
         environment={
             "TMPDIR": str(tmpdir),
+            "PKCS11_VENDOR": "softhsm",
             "PKCS11_MODULE": "/dev/null",
             "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
             "PKCS11_PIN": "test-only",
+            "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
         },
     )
 
@@ -218,6 +220,8 @@ def _normalized(stderr: str, tree: Path) -> str:
     (
         {},
         {
+            "PKCS11_VENDOR": "softhsm",
+            "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
             "PKCS11_MODULE": "/dev/null",
             "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
             "PKCS11_PIN": "test-only",
