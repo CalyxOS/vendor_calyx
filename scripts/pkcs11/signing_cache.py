@@ -18,7 +18,6 @@ from typing import NoReturn
 
 apksigner_parser = argparse.ArgumentParser()
 apksigner_parser.add_argument("--out", nargs=2)
-apksigner_parser.add_argument("--ks-key-alias", dest="key")
 apksigner_parser.add_argument("--kms-key-alias", dest="key")
 apksigner_parser.add_argument("--cert")
 
@@ -102,8 +101,6 @@ def apksigner_get_apks(arg_str: list[str]) -> SigningObj:
 
 # A certificate can be replaced in place, so it is keyed by its contents.
 def cache_key(signing_obj: SigningObj, input_digest: str) -> str:
-    if signing_obj.cert is None:
-        return f"{input_digest}-{signing_obj.key_id}"
     with open(signing_obj.cert, "rb") as f:
         cert_digest = hashlib.file_digest(f, "sha256").hexdigest()
     return f"{input_digest}-{signing_obj.key_id}-{cert_digest}"
@@ -128,8 +125,8 @@ def log(cache_dir: Path, msg: str) -> None:
 class SigningObj:
     in_file: str
     out_file: str
-    key_id: str | None
-    cert: str | None
+    key_id: str
+    cert: str
 
 
 if __name__ == "__main__":
