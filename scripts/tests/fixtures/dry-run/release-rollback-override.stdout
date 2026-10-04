@@ -1,0 +1,5 @@
+Creating signed targetfiles zip
+Skipping OTA update zip for AVB Rollback Index override build
+Creating factory image
+Calculating sha256sum for factory image
+Removing intermediate file after factory image generation: devon-img-2026081501.zip

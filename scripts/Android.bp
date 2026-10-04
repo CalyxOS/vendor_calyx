@@ -7,7 +7,6 @@ genrule {
     name: "otatools_package_calyx_scripts",
     tools: ["soong_zip"],
     srcs: [
-        "common.include.sh",
         "generate_delta.sh",
         "generate_keymap.sh",
         "generate_metadata.py",
@@ -15,7 +14,6 @@ genrule {
         "sign.sh",
         "sign-app.sh",
         "signing/**/*.py",
-        "**/*keymapper*",
         "**/*metadata*",
         "pkcs11/**/*",
     ],
