@@ -75,29 +75,7 @@ connector = {connector_url}
 
 
 class UnsupportedVendorError(RuntimeError):
-    """
-    Raised for a PKCS11_VENDOR/PKCS11_VENDOR_FILE this module cannot
-    initialize.
-    """
-
-
-def is_vendor_initialization_needed(
-    environment: MutableMapping[str, str],
-) -> bool:
-    """
-    Tell whether any PKCS#11 vendor selection is present.
-
-    Args:
-        environment: Process environment to read PKCS11_VENDOR/
-            PKCS11_VENDOR_FILE from.
-
-    Returns:
-        Whether a PKCS#11 vendor is configured at all.
-    """
-    return bool(
-        environment.get("PKCS11_VENDOR")
-        or environment.get("PKCS11_VENDOR_FILE"),
-    )
+    """Raised for a PKCS11_VENDOR this module cannot initialize."""
 
 
 def is_audit_log_repository(logs_dir: Path) -> bool:
@@ -136,23 +114,23 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
     and the keymapper define.
 
     Args:
-        environment: Process environment to read PKCS11_VENDOR/
-            PKCS11_VENDOR_FILE from, mutated in place.
+        environment: Process environment to read PKCS11_VENDOR from,
+            mutated in place.
 
     Returns:
         The vendor, or None when no vendor is set.
 
     Raises:
-        UnsupportedVendorError: If PKCS11_VENDOR_FILE is set (a
-            third-party vendor script), PKCS11_VENDOR is set to anything
-            other than "yubihsm"/"softhsm", or PKCS11_MODULE is set
-            without PKCS11_VENDOR.
+        UnsupportedVendorError: If PKCS11_VENDOR is set to anything
+            other than "yubihsm"/"softhsm", PKCS11_VENDOR_FILE is set, or
+            PKCS11_MODULE is set without PKCS11_VENDOR.
         RuntimeError: If PKCS11_MODULE is unset and no module for the
             vendor exists at any of its search paths.
     """
     if environment.get("PKCS11_VENDOR_FILE"):
         raise UnsupportedVendorError(
-            "PKCS11_VENDOR_FILE is not supported by the Python orchestrator",
+            "PKCS11_VENDOR_FILE is no longer supported. Set PKCS11_VENDOR "
+            "to yubihsm or softhsm",
         )
     name = environment.get("PKCS11_VENDOR", "")
     if environment.get("PKCS11_MODULE") and not name:
@@ -166,8 +144,8 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
             vendor = VENDORS[name]()
         except KeyError as error:
             raise UnsupportedVendorError(
-                f"PKCS11_VENDOR={name!r} is not supported by the Python "
-                "orchestrator",
+                f"PKCS11_VENDOR={name!r} is not supported. Set PKCS11_VENDOR "
+                "to yubihsm or softhsm",
             ) from error
         vendor.apply_source_exports(environment)
         if not environment.get("PKCS11_MODULE"):
@@ -327,13 +305,13 @@ def maybe_initialize_vendor_interactive(
         RuntimeError: If interactive initialization fails or is
             declined.
     """
-    if not is_vendor_initialization_needed(environment):
+    if not environment.get("PKCS11_VENDOR"):
         return
     if environment.get("PKCS11_VENDOR_INITIALIZED_INTERACTIVE") == "y":
         return
     vendor = load_vendor(environment)
-    if vendor is not None:
-        vendor.initialize_interactive(environment, assume_yes=assume_yes)
+    assert vendor is not None
+    vendor.initialize_interactive(environment, assume_yes=assume_yes)
     environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] = "y"
 
 
@@ -358,13 +336,13 @@ def maybe_initialize_vendor(
         RuntimeError: If initialization fails (e.g. a required tool or
             directory is missing).
     """
-    if not is_vendor_initialization_needed(environment):
+    if not environment.get("PKCS11_VENDOR"):
         return
     if environment.get("PKCS11_VENDOR_INITIALIZED") == "y":
         return
     vendor = load_vendor(environment)
-    if vendor is not None:
-        vendor.initialize(environment, tmpdir=tmpdir)
+    assert vendor is not None
+    vendor.initialize(environment, tmpdir=tmpdir)
     environment["PKCS11_VENDOR_INITIALIZED"] = "y"
 
 
@@ -428,19 +406,19 @@ def maybe_initialize_vendor_release(
         UnsupportedVendorError: See load_vendor().
         RuntimeError: If initialization fails.
     """
-    if not is_vendor_initialization_needed(environment):
+    if not environment.get("PKCS11_VENDOR"):
         return
     if environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE") == "y":
         return
     vendor = load_vendor(environment)
-    if vendor is not None:
-        vendor.initialize_release(
-            environment,
-            device=device,
-            build_number=build_number,
-            keymapper=keymapper,
-            command=command,
-        )
+    assert vendor is not None
+    vendor.initialize_release(
+        environment,
+        device=device,
+        build_number=build_number,
+        keymapper=keymapper,
+        command=command,
+    )
     environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] = "y"
 
 
