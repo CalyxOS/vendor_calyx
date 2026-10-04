@@ -10,13 +10,17 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import os
 import shlex
 import signal
 import subprocess
 import sys
+import threading
+import time
 from collections.abc import Generator, Sequence
 from pathlib import Path
 from types import FrameType
+from typing import BinaryIO
 
 _QUOTE_BRIDGE = r'printf "%q " "$@"'
 
@@ -104,3 +108,96 @@ def format_sha256sum(path: str) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return f"{digest.hexdigest()}  {path}\n"
+
+
+_TRANSCRIPT_STOP_TIMEOUT = 10.0
+
+
+class Transcript:
+    """
+    Copy everything written to file descriptors 1 and 2 into a log file,
+    so that the output of child processes lands in the log too.
+    """
+
+    def __init__(self) -> None:
+        self._log: BinaryIO | None = None
+        self._lock = threading.Lock()
+        self._streams: list[tuple[int, int, threading.Thread]] = []
+
+    def start(self, path: Path) -> None:
+        """
+        Start copying standard output and standard error into path.
+
+        Args:
+            path: Log file, created or truncated.
+
+        Returns:
+            None.
+        """
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self._log = open(path, "wb")
+        for fd in (1, 2):
+            saved = os.dup(fd)
+            read_end, write_end = os.pipe()
+            os.dup2(write_end, fd)
+            os.close(write_end)
+            thread = threading.Thread(
+                target=self._copy,
+                args=(read_end, saved, self._log),
+                daemon=True,
+            )
+            thread.start()
+            self._streams.append((fd, saved, thread))
+
+    def _copy(self, read_end: int, saved: int, log: BinaryIO) -> None:
+        terminal = True
+        logging = True
+        with os.fdopen(read_end, "rb", buffering=0) as stream:
+            while chunk := stream.read(65536):
+                if terminal:
+                    try:
+                        unwritten = memoryview(chunk)
+                        while unwritten:
+                            unwritten = unwritten[os.write(saved, unwritten) :]
+                    except OSError:
+                        terminal = False
+                if logging:
+                    with self._lock:
+                        try:
+                            log.write(chunk)
+                            log.flush()
+                        except OSError:
+                            logging = False
+
+    def stop(self) -> None:
+        """
+        Restore standard output and standard error, and wait up to ten
+        seconds in all for the output already written to reach the log. A
+        child still running with the old descriptors keeps writing to the
+        terminal and the log until the release exits.
+
+        Returns:
+            None.
+        """
+        if self._log is None:
+            return
+        sys.stdout.flush()
+        sys.stderr.flush()
+        for fd, saved, _thread in self._streams:
+            os.dup2(saved, fd)
+        deadline = time.monotonic() + _TRANSCRIPT_STOP_TIMEOUT
+        draining = False
+        for _fd, saved, thread in self._streams:
+            thread.join(timeout=max(0.0, deadline - time.monotonic()))
+            if thread.is_alive():
+                draining = True
+            else:
+                os.close(saved)
+        self._streams.clear()
+        if not draining:
+            try:
+                self._log.close()
+            except OSError:
+                pass
+        self._log = None
