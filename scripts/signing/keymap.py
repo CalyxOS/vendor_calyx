@@ -9,6 +9,7 @@ Resolve logical keys from signing metadata to physical key identities.
 from __future__ import annotations
 
 import abc
+import importlib.util
 import sys
 from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
@@ -907,8 +908,8 @@ def select_keymapper(
     extra_devices: Sequence[str] = (),
 ) -> Keymapper:
     """
-    Build the keymapper KEYMAPPER names, without printing the "Using
-    keymapper" line.
+    Build the keymapper KEYMAPPER_FILE or KEYMAPPER names, without
+    printing the "Using keymapper" line.
 
     Args:
         environment: Variables naming the keymapper and its inputs.
@@ -919,9 +920,18 @@ def select_keymapper(
         The selected keymapper.
 
     Raises:
-        ValueError: If KEYMAPPER names no keymapper, or KEYMAPPER=static
-            comes without KEYMAP_FILE or with one that does not exist.
+        ValueError: If KEYMAPPER_FILE is not a Python keymapper, or
+            KEYMAPPER names no keymapper, or KEYMAPPER=static comes without
+            KEYMAP_FILE or with one that does not exist.
     """
+    keymapper_file = environment.get("KEYMAPPER_FILE", "")
+    if keymapper_file:
+        return _load_keymapper_file(
+            Path(keymapper_file),
+            environment,
+            metadata,
+            extra_devices,
+        )
     name = environment.get("KEYMAPPER") or "legacy"
     if name == "legacy":
         return LegacyKeymapper(metadata)
@@ -945,28 +955,82 @@ def load_keymapper(
     metadata: SigningMetadata,
 ) -> Keymapper:
     """
-    Select the keymapper KEYMAPPER names, as load_keymapper() does.
+    Select the keymapper KEYMAPPER_FILE or KEYMAPPER names.
+
+    KEYMAPPER_FILE names a Python file, relative paths resolving against
+    the scripts directory, whose create_keymapper(environment, metadata,
+    *, extra_devices) returns an instance of a Keymapper subclass.
 
     Args:
-        environment: Process environment to read KEYMAPPER, KEYMAP_FILE and
-            EXTRA_DEVICES from.
+        environment: Process environment to read KEYMAPPER_FILE, KEYMAPPER,
+            KEYMAP_FILE and EXTRA_DEVICES from.
         metadata: Validated signing metadata.
 
     Returns:
-        The legacy keymapper when KEYMAPPER is unset, or the id2b or
-        static keymapper.
+        The KEYMAPPER_FILE keymapper, the legacy keymapper when neither is
+        set, or the id2b or static keymapper.
 
     Raises:
-        ValueError: If KEYMAPPER names no keymapper, or KEYMAPPER=static
-            comes without KEYMAP_FILE or with one that does not exist.
+        ValueError: If KEYMAPPER_FILE is not a Python keymapper, or
+            KEYMAPPER names no keymapper, or KEYMAPPER=static comes without
+            KEYMAP_FILE or with one that does not exist.
     """
     keymapper = select_keymapper(
         environment,
         metadata,
         extra_devices=environment.get("EXTRA_DEVICES", "").split(),
     )
-    name = environment.get("KEYMAPPER") or "legacy"
+    name = (
+        environment.get("KEYMAPPER_FILE")
+        or environment.get("KEYMAPPER")
+        or "legacy"
+    )
     print(f"Using keymapper: {name}", file=sys.stderr)
+    return keymapper
+
+
+def _load_keymapper_file(
+    path: Path,
+    environment: Mapping[str, str],
+    metadata: SigningMetadata,
+    extra_devices: Sequence[str],
+) -> Keymapper:
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parents[1] / path
+    if path.suffix != ".py":
+        raise ValueError(
+            f"KEYMAPPER_FILE {path} is not a Python keymapper (*.py).",
+        )
+    if not path.is_file():
+        raise ValueError(f"Could not find KEYMAPPER_FILE {path}.")
+    spec = importlib.util.spec_from_file_location("_signing_keymapper", path)
+    if spec is None or spec.loader is None:
+        raise ValueError(f"Cannot import KEYMAPPER_FILE {path}.")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception as error:
+        del sys.modules[spec.name]
+        raise ValueError(
+            f"Cannot load KEYMAPPER_FILE {path} ({error}).",
+        ) from error
+    create = getattr(module, "create_keymapper", None)
+    if create is None:
+        raise ValueError(
+            f"KEYMAPPER_FILE {path} does not define create_keymapper().",
+        )
+    try:
+        keymapper = create(environment, metadata, extra_devices=extra_devices)
+    except Exception as error:
+        raise ValueError(
+            f"create_keymapper() in KEYMAPPER_FILE {path} failed ({error}).",
+        ) from error
+    if not isinstance(keymapper, Keymapper):
+        raise ValueError(
+            f"create_keymapper() in KEYMAPPER_FILE {path} returned "
+            f"{type(keymapper).__name__}, not a Keymapper.",
+        )
     return keymapper
 
 

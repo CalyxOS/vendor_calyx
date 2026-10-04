@@ -22,7 +22,12 @@ from pathlib import Path
 
 from . import sign_environment
 from .apksigner_batch import ApksignerBatch
-from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
+from .keymap import (
+    Keymapper,
+    LegacyKeymapper,
+    apply_keymapper_exports,
+    load_keymapper,
+)
 from .metadata import SigningMetadata
 from .release_arguments import (
     GetKey,
@@ -84,7 +89,10 @@ class ReleaseUsageError(Exception):
     """Raised to print an error and the usage message, and exit 1."""
 
 
-def avb_algorithm_for(environment: Mapping[str, str]) -> str:
+def avb_algorithm_for(
+    environment: Mapping[str, str],
+    keymapper: Keymapper,
+) -> str:
     """
     Pick the AVB algorithm for the keymapper in use.
 
@@ -93,13 +101,14 @@ def avb_algorithm_for(environment: Mapping[str, str]) -> str:
     AVB_RSA_KEY_SIZE, then RSA_KEY_SIZE. Each defaults to 4096.
 
     Args:
-        environment: Process environment to read KEYMAPPER,
-            PKCS11_MODULE/PKCS11_VENDOR and the key sizes from.
+        environment: Process environment to read PKCS11_MODULE/
+            PKCS11_VENDOR and the key sizes from.
+        keymapper: The keymapper the release resolves keys with.
 
     Returns:
         The AVB algorithm, such as "SHA256_RSA4096".
     """
-    if (environment.get("KEYMAPPER") or "legacy") == "legacy":
+    if isinstance(keymapper, LegacyKeymapper):
         size = environment.get("AVB_RSA_KEY_SIZE") or "4096"
     elif environment.get("PKCS11_MODULE") or environment.get("PKCS11_VENDOR"):
         size = environment.get("RSA_KEY_SIZE") or "4096"
@@ -713,11 +722,6 @@ class ReleaseOrchestrator(SigningSession):
         self.target_files_arg = target_files_arg
 
     def _run_steps(self) -> None:
-        if self.environment.get("KEYMAPPER_FILE"):
-            raise ReleaseUsageError(
-                "USE_PYTHON_RELEASE_ORCHESTRATION does not support "
-                "KEYMAPPER_FILE",
-            )
         if not self.environment.get("BUILD_NUMBER"):
             raise ReleaseUsageError(
                 "BUILD_NUMBER not set, did you source envsetup.sh ?",
@@ -962,7 +966,7 @@ class ReleaseOrchestrator(SigningSession):
         self,
         rollback: str | None,
     ) -> ReleaseArguments:
-        avb_algorithm = avb_algorithm_for(self.environment)
+        avb_algorithm = avb_algorithm_for(self.environment, self.keymapper)
         get_key = make_release_get_key(
             self.keymapper,
             self.environment,
