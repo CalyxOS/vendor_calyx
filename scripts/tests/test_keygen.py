@@ -11,7 +11,13 @@ from pathlib import Path
 import pytest
 from conftest import TEST_METADATA
 from signing import keygen, sign_environment
-from signing.keygen import KeygenError, Pkcs11KeygenDriver, keygen_main
+from signing.keygen import (
+    KeygenError,
+    Pkcs11KeygenDriver,
+    YubiHsmKeygenDriver,
+    keygen_main,
+)
+from yubihsm.exceptions import YubiHsmConnectionError
 
 
 @pytest.mark.parametrize("testing", ("", "n"))
@@ -182,6 +188,55 @@ def test_keygen_reports_a_failure_without_a_traceback(
     assert f"error: {message}\n" in capsys.readouterr().err
 
 
+def test_yubihsm_keygen_reports_an_sdk_failure_without_a_traceback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fail(self: YubiHsmKeygenDriver) -> None:
+        raise YubiHsmConnectionError("connection refused")
+
+    monkeypatch.setattr(YubiHsmKeygenDriver, "initialize_pre_metadata", fail)
+    environment = {"PKCS11_VENDOR": "yubihsm", "YUBIHSM_PASSWORD": "password"}
+
+    assert keygen_main(environment, [str(tmp_path / "keys")]) == 1
+    assert "error: YubiHSM failure: connection refused\n" in (
+        capsys.readouterr().err
+    )
+
+
+@pytest.mark.parametrize(
+    ("operation_fails", "no_log_fail", "fails"),
+    ((False, "", True), (False, "y", False), (True, "y", True)),
+    ids=("log-fails", "no-log-fail", "operation-fails"),
+)
+def test_yubihsm_keygen_handles_a_failed_log_extraction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    operation_fails: bool,
+    no_log_fail: str,
+    fails: bool,
+) -> None:
+    driver = YubiHsmKeygenDriver({"NO_LOG_FAIL": no_log_fail}, tmp_path)
+
+    def extract_logs(comment: str) -> None:
+        raise RuntimeError("the audit log is unreachable")
+
+    def operation() -> None:
+        if operation_fails:
+            raise ValueError("the device refused")
+
+    monkeypatch.setattr(driver, "_extract_logs", extract_logs)
+
+    if fails:
+        with pytest.raises((RuntimeError, ValueError)):
+            driver.logged(["generate-asymmetric-key"], operation)
+    else:
+        driver.logged(["generate-asymmetric-key"], operation)
+    assert "Failed to extract logs" in capsys.readouterr().err
+
+
 def test_keygen_writes_the_stderr_of_a_failed_tool(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -230,5 +285,25 @@ def test_keygen_prints_usage_for_a_help_argument(
     monkeypatch.chdir(tmp_path)
 
     assert keygen_main({}, arguments) == 0
-    assert "usage: keygen" in capsys.readouterr().out
+    usage = capsys.readouterr().out
+    assert usage.startswith("usage: keygen public_key_output_dir\n")
+    assert "PKCS11_MODULE" not in usage
     assert not (tmp_path / "keys").exists()
+
+
+def test_yubihsm_keygen_cleanup_fails_when_the_upload_fails(
+    tmp_path: Path,
+) -> None:
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    upload = logs / "upload.py"
+    upload.write_text("#!/bin/sh\nexit 3\n")
+    upload.chmod(0o755)
+    audit_log = tmp_path / "audit.log"
+    audit_log.write_text("entry\n")
+    driver = YubiHsmKeygenDriver(
+        {"YUBIHSM_LOGS_DIR": str(logs), "AUDIT_LOG_PATH": str(audit_log)},
+        tmp_path / "keys",
+    )
+
+    assert driver.cleanup() is False
