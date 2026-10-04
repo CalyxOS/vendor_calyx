@@ -378,21 +378,6 @@ def _pushd(path: Path) -> Generator[None, None, None]:
         os.chdir(previous)
 
 
-def _show_step(argv: list[str], *, dry_run: bool) -> None:
-    """
-    Print a step as a quoted command line under DRY_RUN, and as a
-    "Running:" line otherwise.
-
-    Args:
-        argv: The step's command and arguments.
-        dry_run: Whether the release runs under DRY_RUN.
-    """
-    if dry_run:
-        sys.stderr.write(render_release_tool(argv))
-    else:
-        print("Running:", shlex.join(argv), file=sys.stderr)
-
-
 _SOONG_RELEASETOOLS = Path(
     "out/soong/.intermediates/build/make/tools/releasetools",
 )
@@ -637,15 +622,10 @@ class SigningSession:
 
     def _write_checksum(self, out_dir: Path, filename: str) -> None:
         """
-        Print the commands of filename's checksum and write it to
-        filename.sha256sum in out_dir, or under DRY_RUN leave an empty
-        file in the working directory.
+        Write filename's checksum to filename.sha256sum in out_dir,
+        unless DRY_RUN=y.
         """
-        _show_step(["pushd", str(out_dir)], dry_run=self.dry_run)
-        _show_step(["sha256sum", filename], dry_run=self.dry_run)
-        _show_step(["popd"], dry_run=self.dry_run)
         if self.dry_run:
-            (self.cwd / f"{filename}.sha256sum").write_text("")
             return
         with _pushd(out_dir):
             text = format_sha256sum(filename)
@@ -753,24 +733,20 @@ class ReleaseOrchestrator(SigningSession):
                 self.extra_devices,
                 target_files,
             )
+            avb_custom_key = self._avb_custom_key()
             if (
                 (not self.environment.get("OTA_ONLY") or rollback is not None)
                 and not factory_env.get("SKIP_AVB_CUSTOM_KEY")
-                and self.environment.get("SKIP_SIGNING") != "y"
+                and avb_custom_key is not None
+                and not avb_custom_key.is_file()
             ):
-                avb_custom_key = self.cwd / (
-                    f"{self.keymapper.key_dir(self.environment)}"
-                    f"{self.keymapper.avb_custom_key(self.device)}"
+                raise ReleaseUsageError(
+                    f"AVB custom key {avb_custom_key} does not exist",
                 )
-                if not avb_custom_key.is_file():
-                    raise ReleaseUsageError(
-                        f"AVB custom key {avb_custom_key} does not exist",
-                    )
         else:
             version = "version_placeholder"
             factory_env = {}
 
-        _show_step(["mkdir", "-p", str(out_dir)], dry_run=self.dry_run)
         if not self.dry_run:
             out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -791,15 +767,6 @@ class ReleaseOrchestrator(SigningSession):
             print(
                 "Skipping signing and OTA generation, creating factory image "
                 "from unsigned target files",
-            )
-            if signed_target_files.exists():
-                _show_step(
-                    ["rm", str(signed_target_files)],
-                    dry_run=self.dry_run,
-                )
-            _show_step(
-                ["cp", str(target_files), str(signed_target_files)],
-                dry_run=self.dry_run,
             )
             if not self.dry_run:
                 signed_target_files.unlink(missing_ok=True)
@@ -976,6 +943,18 @@ class ReleaseOrchestrator(SigningSession):
                 return value.lower()
         return ""
 
+    def _avb_custom_key(self) -> Path | None:
+        """
+        Return the AVB custom key file the factory image carries, or None
+        for a release that does not sign.
+        """
+        if self.environment.get("SKIP_SIGNING") == "y":
+            return None
+        key_dir = self.keymapper.key_dir(self.environment)
+        return (
+            self.cwd / f"{key_dir}{self.keymapper.avb_custom_key(self.device)}"
+        )
+
     def _assemble_factory_image(
         self,
         *,
@@ -998,76 +977,65 @@ class ReleaseOrchestrator(SigningSession):
                 / "device/common/generate-factory-images-common.sh"
             )
 
-        _show_step(["pushd", str(out_dir)], dry_run=self.dry_run)
-
-        _show_step(["source", str(source_path)], dry_run=self.dry_run)
-        if not self.dry_run:
-            assignments = {
-                **factory_env,
-                "DEVICE": self.device,
-                "VERSION": version,
-                "BUILD": build,
-                "PRODUCT": self.device,
-            }
-            if self.environment.get("SKIP_SIGNING") != "y":
-                key_dir = self.keymapper.key_dir(self.environment)
-                assignments["AVB_CUSTOM_KEY"] = str(
-                    self.cwd
-                    / f"{key_dir}{self.keymapper.avb_custom_key(self.device)}",
-                )
-            assembled = subprocess.run(
-                [
-                    "bash",
-                    "-c",
-                    _FACTORY_IMAGE_SCRIPT,
-                    "factory-image-assembly",
-                    str(out_dir),
-                    str(source_path),
-                    str(self.cwd / _CLEAR_FACTORY_VARIABLES),
-                    *(f"{name}={value}" for name, value in assignments.items()),
-                ],
-                check=False,
-                env={**os.environ, **self.environment},
+        assignments = {
+            **factory_env,
+            "DEVICE": self.device,
+            "VERSION": version,
+            "BUILD": build,
+            "PRODUCT": self.device,
+        }
+        avb_custom_key = self._avb_custom_key()
+        if avb_custom_key is not None:
+            assignments["AVB_CUSTOM_KEY"] = str(avb_custom_key)
+        argv = [
+            "bash",
+            "-c",
+            _FACTORY_IMAGE_SCRIPT,
+            "factory-image-assembly",
+            str(out_dir),
+            str(source_path),
+            str(self.cwd / _CLEAR_FACTORY_VARIABLES),
+            *(f"{name}={value}" for name, value in assignments.items()),
+        ]
+        final_name = f"{self.device}-factory-{build}.zip"
+        img_zip = out_dir / f"{self.device}-img-{build}.zip"
+        if self.dry_run:
+            sys.stderr.write(render_release_tool(argv))
+            print("Calculating sha256sum for factory image")
+            print(
+                "Removing intermediate file after factory image generation: "
+                f"{img_zip.name}",
             )
-            if assembled.returncode != 0:
-                raise ReleaseAbort(assembled.returncode)
+            return
+
+        print("Running:", shlex.join(argv), file=sys.stderr)
+        assembled = subprocess.run(
+            argv,
+            check=False,
+            env={**os.environ, **self.environment},
+        )
+        if assembled.returncode != 0:
+            raise ReleaseAbort(assembled.returncode)
 
         pattern = f"{self.device}-{version}-factory-*.zip"
         matches = sorted(p.name for p in out_dir.glob(pattern))
-        final_name = f"{self.device}-factory-{build}.zip"
-        if self.dry_run:
-            sources = matches if matches else [pattern]
-            sys.stderr.write(render_release_tool(["mv", *sources, final_name]))
-        else:
-            if len(matches) != 1:
-                print(
-                    f"error: expected one file matching {pattern!r} in "
-                    f"{out_dir}, found {matches!r}",
-                    file=sys.stderr,
-                )
-                raise ReleaseAbort(1)
-            _show_step(["mv", matches[0], final_name], dry_run=False)
-            (out_dir / matches[0]).rename(out_dir / final_name)
+        if len(matches) != 1:
+            print(
+                f"error: expected one file matching {pattern!r} in "
+                f"{out_dir}, found {matches!r}",
+                file=sys.stderr,
+            )
+            raise ReleaseAbort(1)
+        (out_dir / matches[0]).rename(out_dir / final_name)
 
         print("Calculating sha256sum for factory image")
-        _show_step(["sha256sum", final_name], dry_run=self.dry_run)
-        if self.dry_run:
-            (self.cwd / f"{final_name}.sha256sum").write_text("")
-        else:
-            with _pushd(out_dir):
-                text = format_sha256sum(final_name)
-            (out_dir / f"{final_name}.sha256sum").write_text(text)
-
-        _show_step(["popd"], dry_run=self.dry_run)
+        self._write_checksum(out_dir, final_name)
 
         print(
             "Removing intermediate file after factory image generation: "
-            f"{self.device}-img-{build}.zip",
+            f"{img_zip.name}",
         )
-        img_zip = out_dir / f"{self.device}-img-{build}.zip"
-        _show_step(["rm", str(img_zip)], dry_run=self.dry_run)
-        if not self.dry_run:
-            img_zip.unlink()
+        img_zip.unlink()
 
 
 def _vendor_release_reads_build_number(
