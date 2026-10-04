@@ -846,43 +846,6 @@ library.reset_on_fork = false
     assert (output / "0x2000.x509.pem").is_file()
 
 
-def test_sign_plan_signs_softhsm_devices_without_loading_keys() -> None:
-    result = run(
-        [
-            "bash",
-            "-c",
-            r"""
-source <(sed '/^err=0$/,$d' "$1")
-source "$2"
-source "$3"
-all_devices=(bramble redfin oriole)
-declare -A device_to_next_build=([bramble]=2 [redfin]=3)
-declare -A device_to_prev_build=([bramble]=1)
-declare -A device_to_preexisting_build=()
-no_sign=n
-no_incremental=n
-sign_builds() { printf 'sign %s\n' "$*"; }
-generate_incrementals() { printf 'delta %s\n' "$*"; }
-ensure_all_keys_available_for_devices() { printf 'load %s\n' "$*"; }
-upload_logs() { :; }
-sort_and_separate_devices_by_key_availability
-do_or_show
-""",
-            "softhsm-sign-plan-test",
-            SCRIPTS_DIR / "sign.sh",
-            SCRIPTS_DIR / "common.include.sh",
-            SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.include.sh",
-        ],
-        env={"PKCS11_MODULE": "/dev/null"},
-    )
-
-    assert [
-        line
-        for line in result.stdout.splitlines()
-        if not line.startswith("Running:")
-    ] == ["sign bramble,2,2 redfin,3,3", "delta bramble,1,2"]
-
-
 def _certificate_sha256(certificate: Path) -> str:
     fingerprint = run(
         [

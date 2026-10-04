@@ -10,7 +10,6 @@ import os
 import re
 import stat
 import subprocess
-import sys
 import zipfile
 from pathlib import Path
 
@@ -233,10 +232,8 @@ def test_generate_delta_removes_its_temporaries(
     assert list(tmpdir.iterdir()) == []
 
 
-@pytest.mark.parametrize("flag", ("", "y"))
-def test_use_python_release_tools_checksums_without_sha256sum(
+def test_generate_delta_checksums_without_sha256sum(
     delta_tree: Path,
-    flag: str,
 ) -> None:
     _install_fake_ota_tool(delta_tree)
     stubs = delta_tree / "stubs"
@@ -249,7 +246,6 @@ def test_use_python_release_tools_checksums_without_sha256sum(
         dry_run=False,
         environment={
             "PATH": f"{stubs}:{os.environ['PATH']}",
-            "USE_PYTHON_RELEASE_TOOLS": flag,
         },
     )
 
@@ -257,10 +253,6 @@ def test_use_python_release_tools_checksums_without_sha256sum(
         f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip"
     )
     checksum = incremental.with_name(incremental.name + ".sha256sum")
-    if not flag:
-        assert result.returncode != 0
-        assert incremental.exists()
-        return
     assert result.returncode == 0, result.stderr
     digest = hashlib.sha256(incremental.read_bytes()).hexdigest()
     assert checksum.read_text() == f"{digest}  {incremental.name}\n"
@@ -282,7 +274,6 @@ def _normalized(stderr: str) -> str:
             "PKCS11_MODULE": "/dev/null",
             "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
             "PKCS11_PIN": "test-only",
-            "SIGNING_HELPER_TOOL": "pkcs11-tool",
         },
         {"KEY_SUFFIX": "", "EXTRA_RELEASETOOLS_ARGS": "--verbose"},
     ),
@@ -318,35 +309,6 @@ def test_generate_delta_refuses_a_wrong_argument_count(
     assert result.returncode == 1
     assert "error: incorrect number of arguments" in result.stderr
     assert "generate_delta.sh device oldversion newversion" in result.stdout
-
-
-def test_generate_delta_flag_routes_through_python(
-    delta_tree: Path,
-) -> None:
-    fake_bin = delta_tree / "fake-path-bin"
-    fake_bin.mkdir()
-    fake_python3 = fake_bin / "python3"
-    fake_python3.write_text(
-        "#!/bin/sh\n"
-        'case " $* " in *" generate-delta "*)\n'
-        "  echo FAKE_PYTHON3_INVOKED >&2\n"
-        "  exit 1\n"
-        "esac\n"
-        f'exec {sys.executable} "$@"\n',
-    )
-    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
-    environment = {"PATH": f"{fake_bin}:{os.environ['PATH']}"}
-
-    with_flag = run_generate_delta(
-        delta_tree,
-        environment=environment,
-        python=True,
-    )
-    without_flag = run_generate_delta(delta_tree, environment=environment)
-
-    assert "FAKE_PYTHON3_INVOKED" in with_flag.stderr
-    assert "FAKE_PYTHON3_INVOKED" not in without_flag.stderr
-    assert without_flag.returncode == 0, without_flag.stderr
 
 
 @implementations
@@ -427,10 +389,8 @@ def test_generate_delta_names_the_softhsm_logs_after_itself(
     assert "Calculating sha256sum for incremental" in exec_log.read_text()
 
 
-def test_python_generate_delta_names_the_script_it_ran_as(
-    delta_tree: Path,
-) -> None:
-    result = run_generate_delta(delta_tree, python=True)
+def test_generate_delta_names_the_script_it_ran_as(delta_tree: Path) -> None:
+    result = run_generate_delta(delta_tree)
 
     assert result.returncode == 0, result.stderr
     assert f"Command: {SCRIPTS_DIR / 'generate_delta.sh'} {DEVICE} " in (
@@ -438,13 +398,12 @@ def test_python_generate_delta_names_the_script_it_ran_as(
     )
 
 
-def test_python_generate_delta_refuses_an_unknown_vendor_first(
+def test_generate_delta_refuses_an_unknown_vendor_first(
     delta_tree: Path,
 ) -> None:
     result = run_generate_delta(
         delta_tree,
         environment={"PKCS11_VENDOR": "nope"},
-        python=True,
     )
 
     assert result.returncode == 1
@@ -452,13 +411,12 @@ def test_python_generate_delta_refuses_an_unknown_vendor_first(
     assert "nope" in result.stderr
 
 
-def test_python_generate_delta_refuses_an_unmapped_device_first(
+def test_generate_delta_refuses_an_unmapped_device_first(
     delta_tree: Path,
 ) -> None:
     result = run_generate_delta(
         delta_tree,
         arguments=("nosuch", BUILD_OLD, BUILD_NEW),
-        python=True,
     )
 
     assert result.returncode == 1

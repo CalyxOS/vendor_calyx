@@ -83,11 +83,7 @@ def _rendered(stderr: str, tool: str) -> list[str]:
     ("device", "environment", "rollback"),
     (
         ("bramble", {}, None),
-        (
-            "bramble",
-            {**PKCS11_ENVIRONMENT, "SIGNING_HELPER_TOOL": "pkcs11-tool"},
-            None,
-        ),
+        ("bramble", PKCS11_ENVIRONMENT, None),
         *(
             (device, {"AVB_ROLLBACK_INDEX_OVERRIDE": "42"}, "42")
             for device in ROLLBACK_DEVICES
@@ -216,9 +212,7 @@ def test_release_sh_renders_the_same_commands_with_python_arguments(
     )
 
 
-def test_release_sh_refuses_keymapper_file_with_python_arguments(
-    tmp_path: Path,
-) -> None:
+def test_release_sh_refuses_a_bash_keymapper_file(tmp_path: Path) -> None:
     keymapper_file = tmp_path / "keymapper.custom.include.sh"
     keymapper_file.write_text(
         (SCRIPTS_DIR / "keymapper.id2b.include.sh").read_text(),
@@ -226,14 +220,11 @@ def test_release_sh_refuses_keymapper_file_with_python_arguments(
     result = run_release(
         make_release_tree(tmp_path / "tree"),
         "bramble",
-        environment={
-            "USE_PYTHON_RELEASE_ARGS": "y",
-            "KEYMAPPER_FILE": str(keymapper_file),
-        },
+        environment={"KEYMAPPER_FILE": str(keymapper_file)},
     )
 
     assert result.returncode != 0
-    assert "does not support KEYMAPPER_FILE" in result.stderr
+    assert "is not a Python keymapper (*.py)" in result.stderr
 
 
 def test_build_release_args_extra_device_already_in_all_devices_is_a_noop() -> (
