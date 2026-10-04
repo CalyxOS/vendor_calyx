@@ -527,6 +527,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("release-orchestrate", add_help=False)
 
     subparsers.add_parser("generate-delta", add_help=False)
+
+    subparsers.add_parser("keygen", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
 
@@ -1383,6 +1385,21 @@ def _cmd_generate_delta(args: argparse.Namespace) -> int:
     )
     orchestrator.program = program
     return orchestrator.run()
+
+
+def _cmd_keygen(args: argparse.Namespace) -> int:
+    """
+    Generate keys for a vendor keygen script.
+
+    Args:
+        args: Parsed namespace containing the keygen script's arguments.
+
+    Returns:
+        The keygen script's exit status.
+    """
+    from .keygen import keygen_main
+
+    return keygen_main(os.environ, args.arguments)
 
 
 def _cmd_mkkey(args: argparse.Namespace) -> int:
@@ -2298,6 +2315,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "release-orchestrate": _cmd_release_orchestrate,
     "generate-delta": _cmd_generate_delta,
     "sign-app": _cmd_sign_app,
+    "keygen": _cmd_keygen,
     "mkkey": _cmd_mkkey,
     "updatecommonkeys": _cmd_updatecommonkeys,
     "generate-keymap": _cmd_generate_keymap,
@@ -2364,6 +2382,7 @@ def main(argv: list[str] | None = None) -> int:
         ["release-orchestrate"],
         ["generate-delta"],
         ["sign-app"],
+        ["keygen"],
         ["mkkey"],
         ["updatecommonkeys"],
     ):

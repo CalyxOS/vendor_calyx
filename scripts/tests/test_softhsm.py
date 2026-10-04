@@ -36,12 +36,10 @@ def require_softhsm() -> None:
         )
 
 
-@pytest.fixture
-def softhsm_env(tmp_path: Path) -> dict[str, str]:
-    require_softhsm()
-    token_dir = tmp_path / "tokens"
-    token_dir.mkdir()
-    config = tmp_path / "softhsm2.conf"
+def initialized_softhsm_token(directory: Path) -> dict[str, str]:
+    token_dir = directory / "tokens"
+    token_dir.mkdir(parents=True)
+    config = directory / "softhsm2.conf"
     config.write_text(
         f"""directories.tokendir = {token_dir}
 objectstore.backend = file
@@ -81,6 +79,36 @@ library.reset_on_fork = false
     return environment
 
 
+def token_inventory(environment: dict[str, str]) -> list[tuple[str, str]]:
+    listing = run(
+        [
+            "pkcs11-tool",
+            "--module",
+            SOFTHSM_MODULE,
+            "--token-label",
+            TOKEN_LABEL,
+            "--pin",
+            "env:PKCS11_PIN",
+            "--list-objects",
+        ],
+        env=environment,
+    )
+    inventory: list[tuple[str, str]] = []
+    kind = ""
+    for line in listing.stdout.splitlines():
+        if not line.startswith(" "):
+            kind = line.split(";")[0].strip()
+        elif line.strip().startswith("ID:"):
+            inventory.append((kind, line.split(":", 1)[1].strip()))
+    return sorted(inventory)
+
+
+@pytest.fixture
+def softhsm_env(tmp_path: Path) -> dict[str, str]:
+    require_softhsm()
+    return initialized_softhsm_token(tmp_path)
+
+
 @pytest.fixture
 def minimal_keygen_metadata(tmp_path: Path) -> tuple[Path, Path]:
     metadata = tmp_path / "metadata.py"
@@ -109,8 +137,9 @@ ALL_DEVICES = ("bramble",)
     return metadata, devices
 
 
-@pytest.fixture
+@pytest.fixture(params=("bash", "python"))
 def generated_softhsm_keys(
+    request: pytest.FixtureRequest,
     tmp_path: Path,
     softhsm_env: dict[str, str],
     minimal_keygen_metadata: tuple[Path, Path],
@@ -120,6 +149,7 @@ def generated_softhsm_keys(
     output = tmp_path / "keys"
     environment = {
         **softhsm_env,
+        "USE_PYTHON_KEYGEN": "y" if request.param == "python" else "",
         "METADATA_FILE": str(metadata),
         "DEVICES_FILE": str(devices),
         "AVBTOOL_BIN": str(
@@ -761,10 +791,12 @@ def test_avb_helper_rejects_mismatched_public_key(
 
 
 @pytest.mark.aosp
+@pytest.mark.parametrize("python", (False, True), ids=("bash", "python"))
 def test_keygen_initializes_empty_softhsm_store(
     tmp_path: Path,
     minimal_keygen_metadata: tuple[Path, Path],
     aosp_top: Path,
+    python: bool,
 ) -> None:
     require_softhsm()
     token_dir = tmp_path / "empty-tokens"
@@ -799,6 +831,7 @@ library.reset_on_fork = false
         "RSA_KEY_SIZE": "2048",
         "CERT_EXPIRY_DAYS": "1",
         "YUBIHSM_PASSWORD": "unused-by-softhsm",
+        "USE_PYTHON_KEYGEN": "y" if python else "",
     }
 
     generated = run(
@@ -1059,3 +1092,45 @@ def test_releasetools_signs_packages_through_the_external_signer(
     )
     assert verified.returncode == 0, verified.stderr
     assert "Whole package signature VERIFIED" in verified.stdout
+
+
+@pytest.mark.aosp
+def test_python_softhsm_keygen_matches_bash(
+    tmp_path: Path,
+    minimal_keygen_metadata: tuple[Path, Path],
+    aosp_top: Path,
+) -> None:
+    require_softhsm()
+    metadata, devices = minimal_keygen_metadata
+    results = {}
+    for label, flag in (("bash", ""), ("python", "y")):
+        environment = {
+            **initialized_softhsm_token(tmp_path / label),
+            "USE_PYTHON_KEYGEN": flag,
+            "METADATA_FILE": str(metadata),
+            "DEVICES_FILE": str(devices),
+            "AVBTOOL_BIN": str(
+                aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
+            ),
+            "RSA_KEY_SIZE": "2048",
+            "CERT_EXPIRY_DAYS": "1",
+            "YUBIHSM_PASSWORD": "unused-by-softhsm",
+        }
+        output = tmp_path / label / "keys"
+        generated = run(
+            [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
+            env=environment,
+            check=False,
+        )
+        assert generated.returncode == 0, generated.stderr
+        results[label] = (
+            token_inventory(environment),
+            sorted(path.name for path in output.iterdir()),
+            [
+                line
+                for line in generated.stdout.splitlines()
+                if line.startswith(("#", "Key generation", "No "))
+            ],
+        )
+
+    assert results["python"] == results["bash"]
