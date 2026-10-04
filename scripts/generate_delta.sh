@@ -8,6 +8,11 @@
 set -euo pipefail
 scriptpath="$(cd "$(dirname "$0")";pwd -P)"
 
+if [ "${USE_PYTHON_GENERATE_DELTA:-}" = "y" ]; then
+  PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing generate-delta "$0" "$@"
+fi
+
 read -a EXTRA_RELEASETOOLS_ARGS <<< "${EXTRA_RELEASETOOLS_ARGS:-}"
 read -a EXTRA_OTA_ARGS <<< "${EXTRA_OTA_ARGS:-}"
 
