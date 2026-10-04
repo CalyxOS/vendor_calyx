@@ -9,10 +9,8 @@ set -euo pipefail
 
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
-if [ "${USE_PYTHON_SIGN_APP:-}" = "y" ]; then
-  PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing sign-app "$0" "$@"
-fi
+PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing sign-app "$0" "$@"
 MAIN_PATH="$(realpath "$SCRIPTPATH/../../../")"
 KEY_DIR=${KEY_DIR:-$MAIN_PATH/keys}
 

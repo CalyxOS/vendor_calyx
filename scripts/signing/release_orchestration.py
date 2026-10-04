@@ -130,6 +130,9 @@ class ReleaseAbort(Exception):
         self.code = code
 
 
+_HELPER_SUFFIXES = {"python": ".py", "server": ".server.py"}
+
+
 def _extract_android_info_field(target_files: Path, field: str) -> str:
     """
     Read the second "="-separated field of each OTA/android-info.txt line
@@ -365,40 +368,29 @@ def prepare_signing_args(
         None.
 
     Raises:
-        RuntimeError: If the configured signing/payload-signer helper
-            tool is missing.
+        RuntimeError: If a helper tool variable names anything other
+            than python or server.
     """
     if _signs_through_pkcs11(environment):
         config_path = tmpdir / "sunpkcs11.cfg"
         _show_step(["generate_sunpkcs11_config"], dry_run=dry_run)
         if not dry_run:
             config_path.write_text(generate_sunpkcs11_config(environment))
-        tool = environment.get("SIGNING_HELPER_TOOL") or "openssl"
+        tool = environment.get("SIGNING_HELPER_TOOL") or "python"
         avb_tool = environment.get("AVB_SIGNING_HELPER_TOOL") or tool
-        if avb_tool == "python":
-            signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.py"
-        elif avb_tool == "server":
-            signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.server.py"
-        else:
-            signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.{avb_tool}.sh"
         payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
-        if payload_tool == "python":
-            payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.py"
-        elif payload_tool == "server":
-            payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.server.py"
-        else:
-            payload_signer_tool = (
-                f"{_PKCS11_DIR}/payload_signer.{payload_tool}.sh"
-            )
-        if (
-            not Path(signing_helper_tool).exists()
-            or not Path(payload_signer_tool).exists()
-        ):
-            raise RuntimeError(
-                f"Looking for signing helper tools '{avb_tool}' and "
-                f"'{payload_tool}', missing '{signing_helper_tool}' and/or "
-                f"'{payload_signer_tool}'",
-            )
+        for chosen in (avb_tool, payload_tool):
+            if chosen not in _HELPER_SUFFIXES:
+                raise RuntimeError(
+                    f"Unknown signing helper tool '{chosen}', use 'python' "
+                    "or 'server'",
+                )
+        signing_helper_tool = (
+            f"{_PKCS11_DIR}/signing_helper{_HELPER_SUFFIXES[avb_tool]}"
+        )
+        payload_signer_tool = (
+            f"{_PKCS11_DIR}/payload_signer{_HELPER_SUFFIXES[payload_tool]}"
+        )
         args.releasetools += [
             "--verbose",
             "--pkcs11_config",
@@ -485,7 +477,6 @@ class SigningSession:
     """
 
     command = ""
-    flag = ""
     usage = ""
     keymapper: Keymapper
 
@@ -621,8 +612,7 @@ class SigningSession:
                 dry_run=self.dry_run,
             )
         except (RuntimeError, OSError) as error:
-            message = sign_environment.describe_vendor_error(error, self.flag)
-            print(f"error: {message}", file=sys.stderr)
+            print(f"error: {error}", file=sys.stderr)
             raise ReleaseAbort(1) from error
 
         exec_log_path = self.environment.get("EXEC_LOG_PATH")
@@ -749,7 +739,6 @@ class ReleaseOrchestrator(SigningSession):
     """
 
     command = "release"
-    flag = "USE_PYTHON_RELEASE_ORCHESTRATION"
     usage = "device [target-files.zip]"
     releasetools_binary_path: Path
 
@@ -1187,7 +1176,6 @@ class DeltaOrchestrator(SigningSession):
     """
 
     command = "generate_delta"
-    flag = "USE_PYTHON_GENERATE_DELTA"
     usage = "device oldversion newversion"
 
     def __init__(
