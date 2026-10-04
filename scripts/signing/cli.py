@@ -525,6 +525,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers.add_parser("release-orchestrate", add_help=False)
+
+    subparsers.add_parser("generate-delta", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
 
@@ -1340,6 +1342,42 @@ def _cmd_release_orchestrate(args: argparse.Namespace) -> int:
         metadata=load_metadata(default_metadata_path()),
         device=arguments[0],
         target_files_arg=arguments[1] if len(arguments) > 1 else None,
+    )
+    orchestrator.program = program
+    return orchestrator.run()
+
+
+def _cmd_generate_delta(args: argparse.Namespace) -> int:
+    """
+    Generate an incremental OTA update for generate_delta.sh.
+
+    Args:
+        args: Parsed namespace containing generate_delta.sh's own
+            arguments.
+
+    Returns:
+        The orchestration's exit status, 0 on success, 1 on a usage
+        error.
+    """
+    from .metadata import default_metadata_path, load_metadata
+    from .release_orchestration import DeltaOrchestrator
+
+    program, *arguments = args.arguments or ["generate_delta.sh"]
+    if len(arguments) != 3:
+        print(
+            "error: incorrect number of arguments, please try again",
+            file=sys.stderr,
+        )
+        print(f"Usage: {program} device oldversion newversion")
+        return 1
+    device, old, new = arguments
+    orchestrator = DeltaOrchestrator(
+        os.environ,
+        cwd=Path.cwd(),
+        metadata=load_metadata(default_metadata_path()),
+        device=device,
+        old=old,
+        new=new,
     )
     orchestrator.program = program
     return orchestrator.run()
@@ -2225,6 +2263,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "generate-incrementals": _cmd_generate_incrementals,
     "sign-orchestrate": _cmd_sign_orchestrate,
     "release-orchestrate": _cmd_release_orchestrate,
+    "generate-delta": _cmd_generate_delta,
     "mkkey": _cmd_mkkey,
     "updatecommonkeys": _cmd_updatecommonkeys,
     "generate-keymap": _cmd_generate_keymap,
@@ -2289,6 +2328,7 @@ def main(argv: list[str] | None = None) -> int:
     script_argv: list[str] = []
     if argv[:1] in (
         ["release-orchestrate"],
+        ["generate-delta"],
         ["mkkey"],
         ["updatecommonkeys"],
     ):
