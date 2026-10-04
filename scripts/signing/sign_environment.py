@@ -201,24 +201,27 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
 
 def require_python_interceptor(environment: Mapping[str, str]) -> None:
     """
-    Refuse a yubihsm run without PKCS11_PYTHON_INTERCEPTOR=y.
+    Refuse a yubihsm run without PKCS11_PYTHON_INTERCEPTOR=y unless
+    NEVER_START_APKSIGNER_BATCH=y.
 
     Args:
-        environment: Process environment to read PKCS11_VENDOR and
-            PKCS11_PYTHON_INTERCEPTOR from.
+        environment: Process environment to read PKCS11_VENDOR,
+            PKCS11_PYTHON_INTERCEPTOR and NEVER_START_APKSIGNER_BATCH from.
 
     Raises:
-        UnsupportedVendorError: If PKCS11_VENDOR=yubihsm and
-            PKCS11_PYTHON_INTERCEPTOR is not y.
+        UnsupportedVendorError: If PKCS11_VENDOR=yubihsm and neither flag
+            is y.
     """
     if (
         environment.get("PKCS11_VENDOR") == "yubihsm"
         and environment.get("PKCS11_PYTHON_INTERCEPTOR") != "y"
+        and environment.get("NEVER_START_APKSIGNER_BATCH") != "y"
     ):
         raise UnsupportedVendorError(
             "The Python orchestrator requires PKCS11_PYTHON_INTERCEPTOR=y "
-            "for the yubihsm vendor, since the Python vendor setup starts "
-            "no apksigner batch process for the Bash interceptor.",
+            "for the yubihsm vendor unless NEVER_START_APKSIGNER_BATCH=y, "
+            "since the Python vendor setup starts no apksigner batch "
+            "process for the Bash interceptor.",
         )
 
 
@@ -239,21 +242,6 @@ def _default(
     """Set a variable that is unset or empty."""
     if not environment.get(name):
         environment[name] = value
-
-
-def stop_connector(pid_file: Path) -> None:
-    """
-    Stop the connector a pid file names.
-
-    Args:
-        pid_file: The connector's pid file.
-
-    Returns:
-        None.
-    """
-    YubiHsmConnector(
-        YubiHsmConnectorConfig(connector_url="", pid_file=pid_file),
-    ).stop()
 
 
 def _yubihsm_connector_config(
@@ -327,6 +315,33 @@ def read_yubihsm_password_file(environment: MutableMapping[str, str]) -> bool:
     environment["YUBIHSM_PASSWORD"] = lines[0].removesuffix("\r")
     print("Using YUBIHSM_PASSWORD from YUBIHSM_PASSWORD_FILE.")
     return True
+
+
+def ask_yubihsm_credentials(environment: MutableMapping[str, str]) -> None:
+    """
+    Ask for YUBIHSM_AUTHKEY, and for YUBIHSM_PASSWORD unless
+    YUBIHSM_PASSWORD_FILE supplies it.
+
+    Args:
+        environment: Process environment, mutated in place.
+
+    Raises:
+        RuntimeError: See read_yubihsm_password_file().
+    """
+    ask_variable(
+        "YUBIHSM_AUTHKEY",
+        environment,
+        default="0x0001",
+        needs_value=True,
+    )
+    if not read_yubihsm_password_file(environment):
+        ask_variable(
+            "YUBIHSM_PASSWORD",
+            environment,
+            default="",
+            private=True,
+            needs_value=True,
+        )
 
 
 def maybe_initialize_vendor_interactive(
@@ -846,20 +861,7 @@ class YubiHsmVendor(Vendor):
                 if not confirm("Continue anyway?", assume_yes=assume_yes):
                     raise RuntimeError("yubihsm-connector is already running")
 
-        ask_variable(
-            "YUBIHSM_AUTHKEY",
-            environment,
-            default="0x0001",
-            needs_value=True,
-        )
-        if not read_yubihsm_password_file(environment):
-            ask_variable(
-                "YUBIHSM_PASSWORD",
-                environment,
-                default="",
-                private=True,
-                needs_value=True,
-            )
+        ask_yubihsm_credentials(environment)
 
     def initialize(
         self,
@@ -887,8 +889,13 @@ class YubiHsmVendor(Vendor):
 
         pkcs11_scriptpath = Path(__file__).resolve().parents[1] / "pkcs11"
         require_python_interceptor(environment)
+        interceptor = (
+            "vendor.yubihsm.interceptor.py"
+            if environment.get("PKCS11_PYTHON_INTERCEPTOR") == "y"
+            else "vendor.yubihsm.interceptor.sh"
+        )
         environment["SIGNING_COMMAND_INTERCEPTOR"] = str(
-            pkcs11_scriptpath / "vendor.yubihsm.interceptor.py",
+            pkcs11_scriptpath / interceptor,
         )
         environment["PKCS11_VENDOR"] = "yubihsm"
 
@@ -1140,16 +1147,24 @@ class YubiHsmVendor(Vendor):
         *,
         inherited: Mapping[str, str],
     ) -> None:
-        """Stop the connector this process started, if any."""
+        """
+        Stop the connector this process started, if any, and remove the
+        YUBIHSM_TMPDIR it created.
+        """
         pid_file = environment.get("YUBIHSM_CONNECTOR_PIDFILE")
-        if not pid_file or pid_file == inherited.get(
-            "YUBIHSM_CONNECTOR_PIDFILE",
-        ):
-            return
-        try:
-            stop_connector(Path(pid_file))
-        except RuntimeError as error:
-            print(error, file=sys.stderr)
+        if pid_file and pid_file != inherited.get("YUBIHSM_CONNECTOR_PIDFILE"):
+            try:
+                YubiHsmConnector(
+                    YubiHsmConnectorConfig(
+                        connector_url="",
+                        pid_file=Path(pid_file),
+                    ),
+                ).stop()
+            except RuntimeError as error:
+                print(error, file=sys.stderr)
+        tmpdir = environment.get("YUBIHSM_TMPDIR")
+        if tmpdir and tmpdir != inherited.get("YUBIHSM_TMPDIR"):
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 VENDORS: dict[str, type[Vendor]] = {
