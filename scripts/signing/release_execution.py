@@ -22,8 +22,6 @@ from pathlib import Path
 from types import FrameType
 from typing import BinaryIO
 
-_QUOTE_BRIDGE = r'printf "%q " "$@"'
-
 
 @contextlib.contextmanager
 def exit_on_signals() -> Generator[None, None, None]:
@@ -78,7 +76,7 @@ def defer_signals() -> Generator[None, None, None]:
 def render_release_tool(argv: Sequence[str]) -> str:
     """
     Render one release-tool invocation as a shell command line, each
-    argument quoted.
+    argument quoted for a POSIX shell.
 
     Args:
         argv: Complete executable and argument vector to render.
@@ -86,17 +84,8 @@ def render_release_tool(argv: Sequence[str]) -> str:
     Returns:
         The quoted, space-joined command line followed by a blank line,
         with no leading "Running:" text.
-
-    Raises:
-        subprocess.CalledProcessError: If bash cannot be executed.
     """
-    completed = subprocess.run(
-        ["bash", "-c", _QUOTE_BRIDGE, "quote-bridge", *argv],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.removesuffix(" ") + "\n\n"
+    return shlex.join(argv) + "\n\n"
 
 
 def run_release_tool(argv: Sequence[str]) -> int:
