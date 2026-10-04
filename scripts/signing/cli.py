@@ -530,6 +530,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("mkkey", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
 
+    subparsers.add_parser("sign-app", add_help=False)
+
     provision_avb = subparsers.add_parser("provision-avb-key")
     provision_avb.add_argument(
         "--private-key",
@@ -1415,6 +1417,37 @@ def _cmd_updatecommonkeys(args: argparse.Namespace) -> int:
     return updatecommonkeys_main(os.environ, args.arguments)
 
 
+def _cmd_sign_app(args: argparse.Namespace) -> int:
+    """
+    Sign an app for sign-app.sh.
+
+    Args:
+        args: Parsed namespace containing sign-app.sh's own arguments.
+
+    Returns:
+        sign-app.sh's exit status.
+    """
+    from . import sign_environment
+    from .metadata import default_metadata_path, load_metadata
+    from .sign_app import sign_app
+
+    program, *arguments = args.arguments or ["sign-app.sh"]
+    try:
+        return sign_app(
+            os.environ,
+            load_metadata(default_metadata_path()),
+            arguments,
+            program=program,
+        )
+    except (RuntimeError, OSError, ValueError) as error:
+        message = sign_environment.describe_vendor_error(
+            error,
+            "USE_PYTHON_SIGN_APP",
+        )
+        print(f"error: {message}", file=sys.stderr)
+        return 1
+
+
 def _cmd_generate_keymap(args: argparse.Namespace) -> int:
     """
     Print the TSV keymap for the requested devices.
@@ -2264,6 +2297,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "sign-orchestrate": _cmd_sign_orchestrate,
     "release-orchestrate": _cmd_release_orchestrate,
     "generate-delta": _cmd_generate_delta,
+    "sign-app": _cmd_sign_app,
     "mkkey": _cmd_mkkey,
     "updatecommonkeys": _cmd_updatecommonkeys,
     "generate-keymap": _cmd_generate_keymap,
@@ -2329,6 +2363,7 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] in (
         ["release-orchestrate"],
         ["generate-delta"],
+        ["sign-app"],
         ["mkkey"],
         ["updatecommonkeys"],
     ):

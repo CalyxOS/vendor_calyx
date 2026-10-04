@@ -1,0 +1,400 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+
+from __future__ import annotations
+
+import json
+import os
+import signal
+import stat
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+from conftest import REPO_ROOT, SCRIPTS_DIR, default_signal_dispositions, run
+from signing import sign_app
+from signing.metadata import default_metadata_path, load_metadata
+from yubihsm_emulator import Connector
+
+APP = "com.google.android.apps.photos"
+KEYMAP = SCRIPTS_DIR / "tests" / "fixtures" / "id2b-bramble-redfin.tsv"
+ANDROID_TOP = REPO_ROOT.resolve().parents[1]
+
+_FAKE_JAVA = f"""#!{sys.executable}
+import json, os, sys
+with open(os.environ["FAKE_JAVA_LOG"], "w") as log:
+    json.dump(sys.argv[1:], log)
+out = sys.argv[sys.argv.index("--out") + 1]
+open(out, "w").write("signed")
+"""
+
+
+def _executable(path: Path, contents: str) -> None:
+    path.write_text(contents)
+    path.chmod(path.stat().st_mode | stat.S_IXUSR)
+
+
+@pytest.fixture
+def sign_app_tree(tmp_path: Path) -> Path:
+    root = tmp_path / "android"
+    (root / "keys").mkdir(parents=True)
+    (root / "logs").mkdir()
+    (root / "logs" / "upload.py").write_text("#!/bin/sh\n")
+    (root / "bin").mkdir()
+    _executable(root / "bin" / "java", _FAKE_JAVA)
+    (root / "tmp").mkdir()
+    (root / "app.apk").write_text("unsigned")
+    return root
+
+
+def _sign_app_environment(root: Path, yubihsm: Connector) -> dict[str, str]:
+    return {
+        "USE_PYTHON_SIGN_APP": "y",
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
+        "TMPDIR": str(root / "tmp"),
+        "KEY_DIR": str(root / "keys"),
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+        "PKCS11_MODULE": "/dev/null",
+        "NEVER_START_YUBIHSM_CONNECTOR": "y",
+        "KEYMAP_FILE": str(KEYMAP),
+    }
+
+
+def _run_sign_app(
+    root: Path,
+    yubihsm: Connector,
+    *arguments: str,
+    **environment: str,
+) -> tuple[subprocess.CompletedProcess[str], list[str] | None]:
+    java_log = root / "java.json"
+    result = run(
+        [SCRIPTS_DIR / "sign-app.sh", *arguments],
+        cwd=root,
+        env={
+            **_sign_app_environment(root, yubihsm),
+            "PKCS11_PYTHON_INTERCEPTOR": "y",
+            "YUBIHSM_SIGNING_CACHE": "",
+            "FAKE_JAVA_LOG": str(java_log),
+            **environment,
+        },
+        check=False,
+    )
+    argv = json.loads(java_log.read_text()) if java_log.exists() else None
+    return result, argv
+
+
+def test_sign_app_signs_through_a_sunpkcs11_keystore(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+
+    result, argv = _run_sign_app(root, yubihsm, APP, "app.apk")
+
+    assert result.returncode == 0, result.stderr
+    assert "Signed app.apk successfully" in result.stdout
+    assert (root / "app-signed.apk").read_text() == "signed"
+    assert argv == [
+        "-Xmx4096m",
+        "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11=ALL-UNNAMED",
+        f"-Djava.library.path={ANDROID_TOP}/lib64",
+        "-jar",
+        f"{ANDROID_TOP}/framework/apksigner.jar",
+        "sign",
+        "--v4-signing-enabled=false",
+        "--min-sdk-version",
+        "30",
+        "--v1-signing-enabled=false",
+        "--v2-signing-enabled=false",
+        "--ks",
+        "NONE",
+        "--ks-type",
+        "PKCS11",
+        "--ks-pass",
+        "env:PKCS11_PIN",
+        "--provider-class",
+        "sun.security.pkcs11.SunPKCS11",
+        "--provider-arg",
+        f"{root}/tmp/sunpkcs11.cfg",
+        "--ks-key-alias",
+        "0x1502",
+        "--out",
+        "app-signed.apk",
+        "app.apk",
+    ]
+    assert "library = /dev/null" in (root / "tmp/sunpkcs11.cfg").read_text()
+    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
+    assert "apksigner.jar sign" in audit_log.read_text()
+
+
+def test_sign_app_signs_through_the_external_kms_provider(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+
+    result, argv = _run_sign_app(
+        root,
+        yubihsm,
+        APP,
+        "app.apk",
+        USE_APKSIGNER_KMS="y",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert argv == [
+        "-jar",
+        f"{ANDROID_TOP}/framework/apksigner.jar",
+        "sign",
+        "--v4-signing-enabled=false",
+        "--min-sdk-version",
+        "30",
+        "--v1-signing-enabled=false",
+        "--v2-signing-enabled=false",
+        "--kms-type",
+        "external",
+        "--kms-key-alias",
+        "0x1502",
+        "--cert",
+        f"{root}/keys/0x1502.x509.pem",
+        "--out",
+        "app-signed.apk",
+        "app.apk",
+    ]
+    assert list((root / "tmp").glob("yubihsm.*")) == []
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message", "usage_on_stderr"),
+    (
+        ((APP,), "incorrect number of arguments", False),
+        (("--help",), "incorrect number of arguments", False),
+        (
+            (APP, "missing.apk"),
+            "missing.apk is not an existing regular file",
+            True,
+        ),
+        (("nope", "app.apk"), "Unsupported app nope", False),
+    ),
+    ids=("count", "help", "apk", "app"),
+)
+def test_sign_app_refuses_bad_arguments(
+    sign_app_tree: Path,
+    arguments: tuple[str, ...],
+    message: str,
+    usage_on_stderr: bool,
+    yubihsm: Connector,
+) -> None:
+    result, argv = _run_sign_app(sign_app_tree, yubihsm, *arguments)
+
+    usage = result.stderr if usage_on_stderr else result.stdout
+    assert result.returncode == 1
+    assert f"error: {message}" in result.stderr
+    assert f"Usage: {SCRIPTS_DIR / 'sign-app.sh'} <app> file.apk" in usage
+    assert "Supported apps: prebuilts/calyx/microg/certs/microg" in usage
+    assert argv is None
+
+
+def test_sign_app_kms_path_needs_the_certificate_file(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    result, argv = _run_sign_app(
+        sign_app_tree,
+        yubihsm,
+        APP,
+        "app.apk",
+        USE_APKSIGNER_KMS="y",
+    )
+
+    assert result.returncode == 1
+    assert "no certificate file found at" in result.stderr
+    assert argv is None
+
+
+def test_sign_app_runs_without_the_python_interceptor_flag(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    result, argv = _run_sign_app(
+        sign_app_tree,
+        yubihsm,
+        APP,
+        "app.apk",
+        PKCS11_PYTHON_INTERCEPTOR="",
+    )
+
+    assert "requires PKCS11_PYTHON_INTERCEPTOR=y" not in result.stderr
+    assert result.returncode == 0, result.stderr
+    assert argv is not None
+
+
+def test_sign_app_reads_the_password_file(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    password_file = sign_app_tree / "signing.txt"
+    password_file.write_text("password\n")
+    password_file.chmod(0o600)
+
+    result, _ = _run_sign_app(
+        sign_app_tree,
+        yubihsm,
+        APP,
+        "app.apk",
+        YUBIHSM_PASSWORD="",
+        YUBIHSM_PASSWORD_FILE=str(password_file),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Using YUBIHSM_PASSWORD from YUBIHSM_PASSWORD_FILE." in result.stdout
+
+
+def test_sign_app_exports_the_key_dir_it_defaults_to(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = sign_app_tree
+    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+    scripts = root / "vendor" / "calyx" / "scripts"
+    scripts.mkdir(parents=True)
+    monkeypatch.setattr(sign_app, "_SCRIPTS_DIR", scripts)
+    monkeypatch.chdir(root)
+    environment = {
+        "YUBIHSM_CONNECTOR": yubihsm.url,
+        "TMPDIR": str(root / "tmp"),
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "password",
+        "PKCS11_MODULE": "/dev/null",
+        "NEVER_START_YUBIHSM_CONNECTOR": "y",
+        "KEYMAP_FILE": str(KEYMAP),
+    }
+    seen: list[str | None] = []
+
+    def run_release_tool(argv: list[str]) -> int:
+        seen.append(environment.get("KEY_DIR"))
+        return 0
+
+    monkeypatch.setattr(sign_app, "run_release_tool", run_release_tool)
+
+    code = sign_app.sign_app(
+        environment,
+        load_metadata(default_metadata_path()),
+        [APP, "app.apk"],
+    )
+
+    assert code == 0
+    assert seen == [f"{root}/keys/"]
+
+
+def test_sign_app_reports_an_app_missing_from_the_keymap(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    keymap = sign_app_tree / "empty-keymap.tsv"
+    keymap.write_text("ID\tDevice\tKey Type\tKey\n")
+
+    result, argv = _run_sign_app(
+        sign_app_tree,
+        yubihsm,
+        APP,
+        "app.apk",
+        KEYMAP_FILE=str(keymap),
+    )
+
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    assert "error: " in result.stderr
+    assert argv is None
+
+
+def test_sign_app_reports_an_unreachable_yubihsm(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    result, argv = _run_sign_app(
+        sign_app_tree,
+        yubihsm,
+        APP,
+        "app.apk",
+        YUBIHSM_CONNECTOR="http://127.0.0.1:9",
+    )
+
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    assert "error: YubiHSM failure: " in result.stderr
+    assert argv is None
+
+
+def test_sign_app_cleans_up_after_sigterm(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+    java = root / "bin" / "java"
+    java.write_text(
+        f"#!{sys.executable}\n"
+        "import os, signal\n"
+        "os.killpg(os.getpgid(0), signal.SIGTERM)\n",
+    )
+    java.chmod(0o755)
+
+    result = subprocess.run(
+        [SCRIPTS_DIR / "sign-app.sh", APP, "app.apk"],
+        cwd=root,
+        env={**os.environ, **_sign_app_environment(root, yubihsm)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert result.returncode == 128 + signal.SIGTERM, result.stderr
+    assert not [path for path in (root / "tmp").iterdir() if path.is_dir()]
+
+
+def test_sign_app_lets_the_signing_finish_after_sigterm(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+    java = root / "bin" / "java"
+    java.write_text(
+        f"#!{sys.executable}\n"
+        "import os, signal, sys, time\n"
+        "pid = os.getppid()\n"
+        "while b'sign-app' not in open(f'/proc/{pid}/cmdline', 'rb').read():\n"
+        "    stat = open(f'/proc/{pid}/stat').read()\n"
+        "    pid = int(stat.rpartition(')')[2].split()[1])\n"
+        "os.kill(pid, signal.SIGTERM)\n"
+        "time.sleep(2)\n"
+        "open(sys.argv[sys.argv.index('--out') + 1], 'w').write('signed')\n",
+    )
+    java.chmod(0o755)
+
+    result = subprocess.run(
+        [SCRIPTS_DIR / "sign-app.sh", APP, "app.apk"],
+        cwd=root,
+        env={**os.environ, **_sign_app_environment(root, yubihsm)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert result.returncode == 128 + signal.SIGTERM, result.stderr
+    assert (root / "app-signed.apk").read_text() == "signed"
+    logs = [path.read_text() for path in root.rglob("*.log")]
+    assert any(" java " in log for log in logs), logs
+    assert not [path for path in (root / "tmp").iterdir() if path.is_dir()]
