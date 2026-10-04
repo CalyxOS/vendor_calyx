@@ -21,11 +21,15 @@ from pathlib import Path
 from typing import TextIO, TypeVar
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
 from yubihsm_emulator import Connector, EmulatedYubiHsm, serve_connector
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 TEST_METADATA = Path(__file__).parent / "fixtures" / "metadata.py"
+ID2B_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 _YUBIHSM_SPEC = importlib.util.find_spec("yubihsm")
@@ -400,6 +404,31 @@ library.reset_on_fork = false
     return environment, public_key
 
 
+def assert_certificate_of(
+    public_key: PublicKeyTypes,
+    certificate: Path,
+    subject: str | None = None,
+) -> None:
+    """
+    Assert that a PEM certificate certifies public_key.
+
+    Args:
+        public_key: Public key the certificate must carry.
+        certificate: PEM certificate file.
+        subject: RFC 4514 subject the certificate must have, if given.
+    """
+    loaded = x509.load_pem_x509_certificate(certificate.read_bytes())
+    assert loaded.public_key().public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    ) == public_key.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    if subject is not None:
+        assert loaded.subject.rfc4514_string() == subject
+
+
 T = TypeVar("T")
 
 
@@ -418,6 +447,21 @@ def stub(value: T) -> Callable[..., T]:
         return value
 
     return stubbed
+
+
+def parameter_id(request: pytest.FixtureRequest) -> str:
+    """
+    Return the id of the parameter set the requesting test runs with.
+
+    Args:
+        request: The requesting test's fixture request.
+
+    Returns:
+        The id pytest gave the parameter set.
+    """
+    # FixtureRequest.node carries no type annotation.
+    node: pytest.Function = getattr(request, "node")
+    return node.callspec.id
 
 
 def _find_module_at(module: Path) -> Callable[[object], str | None]:

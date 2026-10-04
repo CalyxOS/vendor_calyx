@@ -93,12 +93,7 @@ def test_sign_app_signs_through_the_external_kms_provider(
     root = sign_app_tree
     (root / "keys" / "0x1502.x509.pem").write_text("certificate")
 
-    result, argv = _run_sign_app(
-        root,
-        yubihsm,
-        APP,
-        "app.apk",
-    )
+    result, argv = _run_sign_app(root, yubihsm, APP, "app.apk")
 
     assert result.returncode == 0, result.stderr
     assert argv == [
@@ -161,12 +156,7 @@ def test_sign_app_kms_path_needs_the_certificate_file(
     sign_app_tree: Path,
     yubihsm: Connector,
 ) -> None:
-    result, argv = _run_sign_app(
-        sign_app_tree,
-        yubihsm,
-        APP,
-        "app.apk",
-    )
+    result, argv = _run_sign_app(sign_app_tree, yubihsm, APP, "app.apk")
 
     assert result.returncode == 1
     assert "no certificate file found at" in result.stderr

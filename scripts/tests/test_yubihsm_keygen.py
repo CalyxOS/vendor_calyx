@@ -5,16 +5,22 @@
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import re
 from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, YUBIHSM_SDK, run, run_cli
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from yubihsm.defs import COMMAND, OBJECT
-from yubihsm_emulator import Connector, EmulatedYubiHsm
+from yubihsm_emulator import Connector, stored_certificate
 
 KEYGEN_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.keygen.sh"
+KEYGEN_FIXTURE = Path(__file__).parent / "fixtures" / "yubihsm-keygen.json"
 METADATA = """KEYS_AVB = ("vbmeta",)
 KEYS_OTHER = ("ota",)
 KEYS_CORE = ("build/make/target/product/security/testkey",)
@@ -23,6 +29,8 @@ KEYS_APEX_APK = ()
 KEYS_APP = ()
 KEYS_REPO = ()
 KEY_TYPES = ("avb", "apex_payload", "other", "core", "apex_container")
+MAPPED_KEY_TYPES = ("core",)
+ALL_DEVICES = ("bramble",)
 KEY_TYPE_TO_ARRAY = {
     "avb": "keys_avb",
     "apex_payload": "keys_apex",
@@ -30,8 +38,6 @@ KEY_TYPE_TO_ARRAY = {
     "core": "keys_core",
     "apex_container": "keys_apex",
 }
-MAPPED_KEY_TYPES = ("core",)
-ALL_DEVICES = ("bramble",)
 """
 
 
@@ -58,9 +64,6 @@ def _keygen_tree(
     upload = logs / "upload.py"
     upload.write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{root}/uploads"\n')
     upload.chmod(0o755)
-    fake_shell = root / "yubihsm-shell"
-    fake_shell.write_text("#!/bin/sh\nexit 0\n")
-    fake_shell.chmod(0o755)
     (root / "tmp").mkdir()
     yubihsm.device.put_wrap_key(0x0010)
     return {
@@ -72,7 +75,6 @@ def _keygen_tree(
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "password",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
-        "YUBIHSM_SHELL_BIN": str(fake_shell),
         "PKCS11_MODULE": "/dev/null",
         "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
         "METADATA_FILE": str(root / "metadata.py"),
@@ -104,6 +106,56 @@ def _tree(directory: Path) -> dict[str, bytes]:
     }
 
 
+def _assert_files_match_the_device(root: Path, yubihsm: Connector) -> None:
+    device = yubihsm.device
+    keymap = (root / "keymap.tsv").read_text()
+    for path in sorted((root / "keys").rglob("*")):
+        name = path.name
+        if name == "hsm_info.txt":
+            info = path.read_text()
+            assert info.startswith("Version number:\t\t2.4.0\n")
+            assert f"Serial number:\t\t{device.serial}\n" in info
+            assert info.endswith(f"Part number:\t\t{device.part_number}\n")
+        elif name == "keymap.tsv":
+            assert path.read_text() == keymap
+        elif name.endswith("-asymmetric-key.yhw"):
+            key_id = int(name.split("-")[0], 16)
+            assert device.unwrap(
+                base64.b64decode(path.read_bytes()),
+                0x0010,
+            ) == (key_id, OBJECT.ASYMMETRIC_KEY)
+        elif name.endswith(".x509.pem"):
+            key_id = int(name.split(".")[0], 16)
+            stored = device.get(key_id, OBJECT.OPAQUE)
+            assert stored is not None
+            assert x509.load_pem_x509_certificate(
+                path.read_bytes(),
+            ) == stored_certificate(stored)
+        elif (
+            name.startswith("0x")
+            and name.count(".") == 1
+            and (name.endswith(".pem"))
+        ):
+            key = device.get(int(name.split(".")[0], 16), OBJECT.ASYMMETRIC_KEY)
+            assert key is not None
+            private = serialization.load_der_private_key(
+                key.data,
+                None,
+                unsafe_skip_rsa_key_validation=True,
+            )
+            public = serialization.load_pem_public_key(path.read_bytes())
+            expected = private.public_key()
+            assert isinstance(
+                public,
+                (rsa.RSAPublicKey, ec.EllipticCurvePublicKey),
+            )
+            assert isinstance(
+                expected,
+                (rsa.RSAPublicKey, ec.EllipticCurvePublicKey),
+            )
+            assert public.public_numbers() == expected.public_numbers()
+
+
 def _audit_comments(root: Path, yubihsm: Connector) -> list[str]:
     (log,) = (root / "logs").rglob("*-keygen.log")
     return [
@@ -114,58 +166,44 @@ def _audit_comments(root: Path, yubihsm: Connector) -> list[str]:
 
 
 @pytest.mark.aosp
-def test_python_yubihsm_keygen_matches_bash(
-    tmp_path: Path,
-    aosp_top: Path,
-    yubihsm: Connector,
-) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
-    results = {}
-    for label, flags in (
-        ("bash", {"YUBIHSM_PYTHON_TOOLS": "y"}),
-        ("python", {"USE_PYTHON_KEYGEN": "y"}),
-    ):
-        yubihsm.plug(EmulatedYubiHsm())
-        root = tmp_path / label
-        environment = {**_keygen_tree(root, yubihsm, avbtool), **flags}
-        result = run(
-            [KEYGEN_SH, root / "keys"],
-            cwd=root,
-            env=environment,
-            check=False,
-        )
-        assert result.returncode == 0, result.stderr
-        assert "Key generation finished successfully." in result.stdout
-        files = _tree(root / "keys")
-        results[label] = (
-            sorted(files),
-            {
-                name: content
-                for name, content in files.items()
-                if name.endswith(("hsm_info.txt", "keymap.tsv"))
-            },
-            _objects(yubihsm, OBJECT.ASYMMETRIC_KEY),
-            _objects(yubihsm, OBJECT.OPAQUE),
-            _audit_comments(root, yubihsm),
-            _normalize((root / "uploads").read_text(), root, yubihsm),
-        )
-
-    assert results["python"][0] == results["bash"][0]
-    assert results["python"][1:] == results["bash"][1:]
-
-
-@pytest.mark.aosp
-def test_python_yubihsm_keygen_skips_backed_up_keys(
+def test_yubihsm_keygen_generates_every_key(
     tmp_path: Path,
     aosp_top: Path,
     yubihsm: Connector,
 ) -> None:
     avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
     root = tmp_path / "tree"
-    environment = {
-        **_keygen_tree(root, yubihsm, avbtool),
-        "USE_PYTHON_KEYGEN": "y",
+    environment = _keygen_tree(root, yubihsm, avbtool)
+
+    result = run(
+        [KEYGEN_SH, root / "keys"],
+        cwd=root,
+        env=environment,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Key generation finished successfully." in result.stdout
+    outcome = {
+        "keys": sorted(_tree(root / "keys")),
+        "generated": _objects(yubihsm, OBJECT.ASYMMETRIC_KEY),
+        "imported": _objects(yubihsm, OBJECT.OPAQUE),
+        "audit": _audit_comments(root, yubihsm),
+        "uploads": _normalize((root / "uploads").read_text(), root, yubihsm),
     }
+    assert outcome == json.loads(KEYGEN_FIXTURE.read_text())
+    _assert_files_match_the_device(root, yubihsm)
+
+
+@pytest.mark.aosp
+def test_yubihsm_keygen_skips_backed_up_keys(
+    tmp_path: Path,
+    aosp_top: Path,
+    yubihsm: Connector,
+) -> None:
+    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
+    root = tmp_path / "tree"
+    environment = _keygen_tree(root, yubihsm, avbtool)
     first = run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
     backup = next(root.rglob("*-asymmetric-key.yhw"))
     evicted = int(backup.name.split("-")[0], 16)
@@ -194,7 +232,6 @@ def test_python_yubihsm_keygen_refuses_generate_using_pkcs11_first(
     root = tmp_path / "tree"
     environment = {
         **_keygen_tree(root, yubihsm, avbtool),
-        "USE_PYTHON_KEYGEN": "y",
         "GENERATE_USING_PKCS11": "y",
     }
 
@@ -220,7 +257,6 @@ def test_yubihsm_keygen_sizes_only_avb_and_apex_payload_keys(
     root = tmp_path / "tree"
     environment = {
         **_keygen_tree(root, yubihsm, avbtool),
-        "USE_PYTHON_KEYGEN": "y",
         "RSA_KEY_SIZE": "2048",
     }
 
@@ -240,52 +276,40 @@ def test_yubihsm_keygen_sizes_only_avb_and_apex_payload_keys(
     ]
 
 
-def test_python_yubihsm_keygen_previews_like_bash_under_dry_run(
+def test_yubihsm_keygen_previews_its_device_writes_under_dry_run(
     tmp_path: Path,
     yubihsm: Connector,
 ) -> None:
-    written = {
+    root = tmp_path / "tree"
+    environment = {
+        **_keygen_tree(root, yubihsm, Path("/bin/true")),
+        "DRY_RUN": "y",
+    }
+    objects = dict(yubihsm.device.objects)
+
+    result = run(
+        [KEYGEN_SH, root / "keys"],
+        cwd=root,
+        env=environment,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert yubihsm.device.objects == objects
+    assert not {
         COMMAND.GENERATE_ASYMMETRIC_KEY,
         COMMAND.EXPORT_WRAPPED,
         COMMAND.SIGN_ATTESTATION_CERTIFICATE,
         COMMAND.PUT_OPAQUE,
         COMMAND.DELETE_OBJECT,
-    }
-    previews: dict[str, list[str]] = {}
-    for label, flags in (
-        ("bash", {"YUBIHSM_PYTHON_TOOLS": "y"}),
-        ("python", {"USE_PYTHON_KEYGEN": "y"}),
-    ):
-        yubihsm.plug(EmulatedYubiHsm())
-        root = tmp_path / label
-        environment = {
-            **_keygen_tree(root, yubihsm, Path("/bin/true")),
-            **flags,
-            "DRY_RUN": "y",
-        }
-        objects = dict(yubihsm.device.objects)
-
-        result = run(
-            [KEYGEN_SH, root / "keys"],
-            cwd=root,
-            env=environment,
-            check=False,
-        )
-
-        assert result.returncode == 0, result.stderr
-        assert yubihsm.device.objects == objects
-        assert not written & {
-            command for _, command, _ in yubihsm.device.history
-        }
-        assert _tree(root / "keys") == {}
-        previews[label] = [
-            _normalize(line, root, yubihsm)
-            for line in result.stderr.splitlines()
-            if line.startswith("python3 -m signing ")
-        ]
-
-    assert previews["python"] == previews["bash"]
-    assert any("generate-asymmetric-key" in line for line in previews["bash"])
+    } & {command for _, command, _ in yubihsm.device.history}
+    assert _tree(root / "keys") == {}
+    generated = [
+        line.split("--key-id ")[1].split()[0]
+        for line in result.stderr.splitlines()
+        if "generate-asymmetric-key" in line
+    ]
+    assert generated == ["0x2000", "0x1300", "0x1100", "0x1200"]
 
 
 _DERIVING_AVBTOOL = """#!/bin/sh

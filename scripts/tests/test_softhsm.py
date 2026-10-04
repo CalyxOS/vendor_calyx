@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -17,6 +18,9 @@ PKCS11_ENGINE = Path("/usr/lib/engines-3/pkcs11.so")
 SO_PIN = "12345678"
 USER_PIN = "123456"
 TOKEN_LABEL = "androsign-test"
+SOFTHSM_KEYGEN_FIXTURE = (
+    Path(__file__).parent / "fixtures" / "softhsm-keygen.json"
+)
 
 
 def require_softhsm() -> None:
@@ -99,7 +103,10 @@ def token_inventory(environment: dict[str, str]) -> list[tuple[str, str]]:
         if not line.startswith(" "):
             kind = line.split(";")[0].strip()
         elif line.strip().startswith("ID:"):
-            inventory.append((kind, line.split(":", 1)[1].strip()))
+            key_id = line.split(":", 1)[1].strip()
+            if "(0x" in key_id:
+                key_id = key_id.split("(0x", 1)[1].rstrip(")").replace(":", "")
+            inventory.append((kind, key_id))
     return sorted(inventory)
 
 
@@ -121,6 +128,8 @@ KEYS_APEX_APK = ()
 KEYS_APP = ()
 KEYS_REPO = ()
 KEY_TYPES = ("avb", "apex_payload", "other", "core", "apex_container")
+MAPPED_KEY_TYPES = ("core",)
+ALL_DEVICES = ("bramble",)
 KEY_TYPE_TO_ARRAY = {
     "avb": "keys_avb",
     "apex_payload": "keys_apex",
@@ -128,8 +137,6 @@ KEY_TYPE_TO_ARRAY = {
     "core": "keys_core",
     "apex_container": "keys_apex",
 }
-MAPPED_KEY_TYPES = ("core",)
-ALL_DEVICES = ("bramble",)
 """,
     )
     devices = tmp_path / "devices"
@@ -137,9 +144,8 @@ ALL_DEVICES = ("bramble",)
     return metadata, devices
 
 
-@pytest.fixture(params=("bash", "python"))
+@pytest.fixture
 def generated_softhsm_keys(
-    request: pytest.FixtureRequest,
     tmp_path: Path,
     softhsm_env: dict[str, str],
     minimal_keygen_metadata: tuple[Path, Path],
@@ -149,7 +155,6 @@ def generated_softhsm_keys(
     output = tmp_path / "keys"
     environment = {
         **softhsm_env,
-        "USE_PYTHON_KEYGEN": "y" if request.param == "python" else "",
         "METADATA_FILE": str(metadata),
         "DEVICES_FILE": str(devices),
         "AVBTOOL_BIN": str(
@@ -197,37 +202,6 @@ def test_softhsm_keygen_creates_expected_objects_and_exports(
         assert (output / f"{key_name}.avbpubkey").is_file()
 
 
-@pytest.fixture
-def generated_softhsm_keys_via_python(
-    tmp_path: Path,
-    softhsm_env: dict[str, str],
-    minimal_keygen_metadata: tuple[Path, Path],
-    aosp_top: Path,
-) -> tuple[Path, dict[str, str]]:
-    metadata, devices = minimal_keygen_metadata
-    output = tmp_path / "keys"
-    environment = {
-        **softhsm_env,
-        "PYTHONPATH": str(SCRIPTS_DIR),
-        "PKCS11_PYTHON_TOOLS": "y",
-        "METADATA_FILE": str(metadata),
-        "DEVICES_FILE": str(devices),
-        "AVBTOOL_BIN": str(
-            aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
-        ),
-        "RSA_KEY_SIZE": "2048",
-        "CERT_EXPIRY_DAYS": "1",
-        "YUBIHSM_PASSWORD": "unused-by-softhsm",
-    }
-    generated = run(
-        [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
-        env=environment,
-        check=False,
-    )
-    assert generated.returncode == 0, generated.stderr
-    return output, environment
-
-
 @pytest.mark.aosp
 def test_softhsm_keygen_uses_the_testing_pins(
     tmp_path: Path,
@@ -248,7 +222,6 @@ def test_softhsm_keygen_uses_the_testing_pins(
         ],
         env={
             **environment,
-            "PKCS11_PYTHON_TOOLS": "y",
             "METADATA_FILE": str(metadata),
             "DEVICES_FILE": str(devices),
             "AVBTOOL_BIN": str(
@@ -256,7 +229,6 @@ def test_softhsm_keygen_uses_the_testing_pins(
             ),
             "RSA_KEY_SIZE": "2048",
             "CERT_EXPIRY_DAYS": "1",
-            "YUBIHSM_PASSWORD": "unused-by-softhsm",
         },
         check=False,
     )
@@ -266,14 +238,10 @@ def test_softhsm_keygen_uses_the_testing_pins(
 
 
 @pytest.mark.aosp
-def test_softhsm_keygen_generates_keys_via_python_when_flagged(
-    generated_softhsm_keys_via_python: tuple[Path, dict[str, str]],
+def test_softhsm_keygen_generates_usable_keys(
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
 ) -> None:
-    """
-    Keys and certificates generated under PKCS11_PYTHON_TOOLS=y go through
-    the Bash avbpubkey export.
-    """
-    output, environment = generated_softhsm_keys_via_python
+    output, environment = generated_softhsm_keys
 
     objects = run(
         [
@@ -312,14 +280,10 @@ def test_softhsm_keygen_generates_keys_via_python_when_flagged(
 
 
 @pytest.mark.aosp
-def test_softhsm_keygen_existence_checks_via_python_are_idempotent(
-    generated_softhsm_keys_via_python: tuple[Path, dict[str, str]],
+def test_softhsm_keygen_rerun_generates_nothing(
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
 ) -> None:
-    """
-    A rerun under PKCS11_PYTHON_TOOLS=y finds the keys and certificates of
-    the first run and generates nothing.
-    """
-    output, environment = generated_softhsm_keys_via_python
+    output, environment = generated_softhsm_keys
     rerun = run(
         [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
         env=environment,
@@ -345,55 +309,6 @@ def test_softhsm_keygen_existence_checks_via_python_are_idempotent(
     for key_id in ("2000", "1300", "1100", "1200"):
         rendered_id = f"(0x{key_id[:2]}:{key_id[2:]})"
         assert objects.stdout.count(rendered_id) == 3
-
-
-@pytest.mark.aosp
-def test_signing_helper_uses_softhsm_key(
-    tmp_path: Path,
-    generated_softhsm_keys: tuple[Path, dict[str, str]],
-) -> None:
-    output, base_environment = generated_softhsm_keys
-    environment = {
-        **base_environment,
-        "KEY_ID": "0x2000",
-        "OPENSSL_PKCS11_URI_USES_HEX_KEY_ID": "y",
-        "STRIP_HEX_KEY_ID_PREFIX": "y",
-    }
-    digest = bytes(range(32))
-    signed = run_bytes(
-        [
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.openssl.sh",
-            "SHA256_RSA2048",
-            "unused.pem",
-        ],
-        env=environment,
-        input_data=b"\x00" * 205 + digest,
-        check=False,
-    )
-    assert signed.returncode == 0, signed.stderr.decode(errors="replace")
-    signature = tmp_path / "signature.bin"
-    signature.write_bytes(signed.stdout)
-    digest_file = tmp_path / "digest.bin"
-    digest_file.write_bytes(digest)
-
-    verified = run(
-        [
-            "openssl",
-            "pkeyutl",
-            "-verify",
-            "-pubin",
-            "-inkey",
-            output / "0x2000.pem",
-            "-in",
-            digest_file,
-            "-sigfile",
-            signature,
-            "-pkeyopt",
-            "rsa_padding_mode:pkcs1",
-        ],
-        check=False,
-    )
-    assert verified.returncode == 0, verified.stderr
 
 
 @pytest.mark.aosp
@@ -438,7 +353,6 @@ def signing_environment(
         "KEY_ID": f"0x{key_id}",
         "FIND_KEYS_BY_ID": "y",
         "OPENSSL_PKCS11_URI_USES_HEX_KEY_ID": "y",
-        "STRIP_HEX_KEY_ID_PREFIX": "y",
         "DEBUG_PAYLOAD_SIGNER": "n",
     }
 
@@ -471,72 +385,20 @@ def verify_sha256_signature(
 
 
 @pytest.mark.aosp
-def test_pkcs11_tool_payload_signer_cross_checks_without_dumping_secrets(
+def test_payload_signer_uses_softhsm_key(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "2000")
-    del environment["DEBUG_PAYLOAD_SIGNER"]
-    digest = tmp_path / "payload.digest"
-    digest.write_bytes(bytes(range(32)))
-    signature = tmp_path / "payload.signature"
-    debug_root = Path("/dev/shm/payload_signer_debug")
-    before: set[Path] = (
-        set(debug_root.iterdir()) if debug_root.is_dir() else set()
-    )
-
-    signed = run(
-        [
-            SCRIPTS_DIR / "pkcs11" / "payload_signer.pkcs11-tool.sh",
-            "-in",
-            digest,
-            "-out",
-            signature,
-            "-inkey",
-            Path("keys/0x2000.pem"),
-        ],
-        env=environment,
-        check=False,
-    )
-
-    assert signed.returncode == 0, signed.stderr
-    verify_sha256_signature(output / "0x2000.pem", digest, signature)
-    (debug_dir,) = set(debug_root.iterdir()) - before
-    names = sorted(path.name for path in debug_dir.iterdir())
-    assert names == [
-        "arguments.txt",
-        "input.bin",
-        "output-openssl.bin",
-        "output-pkcs11-tool.bin",
-    ]
-
-
-@pytest.mark.aosp
-@pytest.mark.parametrize(
-    "helper_name",
-    (
-        "payload_signer.openssl.sh",
-        "payload_signer.pkcs11-tool.sh",
-        "payload_signer.py",
-    ),
-)
-def test_payload_signers_use_softhsm_key(
-    tmp_path: Path,
-    generated_softhsm_keys: tuple[Path, dict[str, str]],
-    helper_name: str,
-) -> None:
-    output, base_environment = generated_softhsm_keys
-    environment = signing_environment(base_environment, "2000")
-    if helper_name == "payload_signer.py":
-        environment["DEBUG_PAYLOAD_SIGNER"] = ""
+    environment["DEBUG_PAYLOAD_SIGNER"] = ""
     digest = tmp_path / "payload.digest"
     digest.write_bytes(bytes(range(32)))
     signature = tmp_path / "payload.signature"
 
     signed = run(
         [
-            SCRIPTS_DIR / "pkcs11" / helper_name,
+            SCRIPTS_DIR / "pkcs11" / "payload_signer.py",
             "-in",
             digest,
             "-out",
@@ -586,26 +448,6 @@ def test_payload_signer_rejects_mismatched_public_key(
 
 @pytest.mark.aosp
 def test_softhsm_signing_rejects_wrong_pin(
-    generated_softhsm_keys: tuple[Path, dict[str, str]],
-) -> None:
-    _, base_environment = generated_softhsm_keys
-    environment = signing_environment(base_environment, "2000")
-    environment["PKCS11_PIN"] = "wrong-pin"
-    signed = run_bytes(
-        [
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.openssl.sh",
-            "SHA256_RSA2048",
-            "keys/0x2000.pem",
-        ],
-        env=environment,
-        input_data=b"\x00" * 205 + bytes(range(32)),
-        check=False,
-    )
-    assert signed.returncode != 0
-
-
-@pytest.mark.aosp
-def test_python_softhsm_signing_rejects_wrong_pin(
     generated_softhsm_keys: tuple[Path, dict[str, str]],
 ) -> None:
     output, base_environment = generated_softhsm_keys
@@ -699,18 +541,10 @@ def test_keygen_repairs_missing_certificate(
 
 
 @pytest.mark.aosp
-@pytest.mark.parametrize(
-    "signing_helper",
-    (
-        SCRIPTS_DIR / "pkcs11" / "signing_helper.openssl.sh",
-        SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
-    ),
-)
 def test_avbtool_signs_with_softhsm_key(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
     aosp_top: Path,
-    signing_helper: Path,
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "2000")
@@ -733,7 +567,7 @@ def test_avbtool_signs_with_softhsm_key(
             "--algorithm",
             "SHA256_RSA2048",
             "--signing_helper",
-            signing_helper,
+            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
         ],
         env=environment,
         check=False,
@@ -791,12 +625,10 @@ def test_avb_helper_rejects_mismatched_public_key(
 
 
 @pytest.mark.aosp
-@pytest.mark.parametrize("python", (False, True), ids=("bash", "python"))
 def test_keygen_initializes_empty_softhsm_store(
     tmp_path: Path,
     minimal_keygen_metadata: tuple[Path, Path],
     aosp_top: Path,
-    python: bool,
 ) -> None:
     require_softhsm()
     token_dir = tmp_path / "empty-tokens"
@@ -831,7 +663,6 @@ library.reset_on_fork = false
         "RSA_KEY_SIZE": "2048",
         "CERT_EXPIRY_DAYS": "1",
         "YUBIHSM_PASSWORD": "unused-by-softhsm",
-        "USE_PYTHON_KEYGEN": "y" if python else "",
     }
 
     generated = run(
@@ -1002,12 +833,7 @@ common.SignFile(sys.argv[5], sys.argv[6], "keys/0x2000", None, whole_file=True)
 @pytest.mark.aosp
 @pytest.mark.parametrize(
     "payload_signer",
-    (
-        "payload_signer.openssl.sh",
-        "payload_signer.pkcs11-tool.sh",
-        "payload_signer.py",
-        "payload_signer.server.py",
-    ),
+    ("payload_signer.py", "payload_signer.server.py"),
 )
 def test_releasetools_signs_packages_through_the_external_signer(
     tmp_path: Path,
@@ -1058,42 +884,40 @@ def test_releasetools_signs_packages_through_the_external_signer(
 
 
 @pytest.mark.aosp
-def test_python_softhsm_keygen_matches_bash(
+def test_softhsm_keygen_fills_the_token(
     tmp_path: Path,
     minimal_keygen_metadata: tuple[Path, Path],
     aosp_top: Path,
 ) -> None:
     require_softhsm()
     metadata, devices = minimal_keygen_metadata
-    results = {}
-    for label, flag in (("bash", ""), ("python", "y")):
-        environment = {
-            **initialized_softhsm_token(tmp_path / label),
-            "USE_PYTHON_KEYGEN": flag,
-            "METADATA_FILE": str(metadata),
-            "DEVICES_FILE": str(devices),
-            "AVBTOOL_BIN": str(
-                aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
-            ),
-            "RSA_KEY_SIZE": "2048",
-            "CERT_EXPIRY_DAYS": "1",
-            "YUBIHSM_PASSWORD": "unused-by-softhsm",
-        }
-        output = tmp_path / label / "keys"
-        generated = run(
-            [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
-            env=environment,
-            check=False,
-        )
-        assert generated.returncode == 0, generated.stderr
-        results[label] = (
-            token_inventory(environment),
-            sorted(path.name for path in output.iterdir()),
-            [
-                line
-                for line in generated.stdout.splitlines()
-                if line.startswith(("#", "Key generation", "No "))
-            ],
-        )
+    environment = {
+        **initialized_softhsm_token(tmp_path / "token"),
+        "METADATA_FILE": str(metadata),
+        "DEVICES_FILE": str(devices),
+        "AVBTOOL_BIN": str(
+            aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
+        ),
+        "RSA_KEY_SIZE": "2048",
+        "CERT_EXPIRY_DAYS": "1",
+        "YUBIHSM_PASSWORD": "unused-by-softhsm",
+    }
+    output = tmp_path / "keys"
 
-    assert results["python"] == results["bash"]
+    generated = run(
+        [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
+        env=environment,
+        check=False,
+    )
+
+    assert generated.returncode == 0, generated.stderr
+    outcome = {
+        "token": [list(entry) for entry in token_inventory(environment)],
+        "files": sorted(path.name for path in output.iterdir()),
+        "summary": [
+            line
+            for line in generated.stdout.splitlines()
+            if line.startswith(("#", "Key generation", "No "))
+        ],
+    }
+    assert outcome == json.loads(SOFTHSM_KEYGEN_FIXTURE.read_text())

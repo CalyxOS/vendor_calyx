@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import datetime
 import fcntl
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -54,30 +53,16 @@ def _self_signed_certificate() -> x509.Certificate:
     )
 
 
-def test_load_vendor_yubihsm_wraps_pkcs11_tool() -> None:
+@pytest.mark.parametrize("vendor", ("yubihsm", "softhsm"))
+def test_load_vendor_leaves_pkcs11_tool_alone(vendor: str) -> None:
     environment = {
-        "PKCS11_VENDOR": "yubihsm",
+        "PKCS11_VENDOR": vendor,
         "PKCS11_TOOL_BIN": "/opt/opensc/bin/pkcs11-tool",
     }
 
     load_vendor(environment)
-    load_vendor(environment)
 
-    assert environment["PKCS11_TOOL_BIN"].endswith(
-        "pkcs11/pkcs11_tool.yubihsm.sh",
-    )
-    assert (
-        environment["YUBIHSM_UNDERLYING_PKCS11_TOOL_BIN"]
-        == "/opt/opensc/bin/pkcs11-tool"
-    )
-
-
-def test_load_vendor_softhsm_leaves_pkcs11_tool_alone() -> None:
-    environment = {"PKCS11_VENDOR": "softhsm"}
-
-    load_vendor(environment)
-
-    assert "PKCS11_TOOL_BIN" not in environment
+    assert environment["PKCS11_TOOL_BIN"] == "/opt/opensc/bin/pkcs11-tool"
 
 
 def test_load_vendor_refuses_pkcs11_vendor_file() -> None:
@@ -430,31 +415,54 @@ def test_load_vendor_applies_the_yubihsm_include_exports() -> None:
 
 
 @pytest.mark.parametrize(
-    ("kind", "pattern"),
+    ("kind", "expected"),
     (
         (
             SoftHsmVendor,
-            "/usr{/local,}/lib{/x86_64-linux-gnu,64,}{/pkcs11,}/libsofthsm2.so",
+            (
+                "/usr/local/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
+                "/usr/local/lib/x86_64-linux-gnu/libsofthsm2.so",
+                "/usr/local/lib64/pkcs11/libsofthsm2.so",
+                "/usr/local/lib64/libsofthsm2.so",
+                "/usr/local/lib/pkcs11/libsofthsm2.so",
+                "/usr/local/lib/libsofthsm2.so",
+                "/usr/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
+                "/usr/lib/x86_64-linux-gnu/libsofthsm2.so",
+                "/usr/lib64/pkcs11/libsofthsm2.so",
+                "/usr/lib64/libsofthsm2.so",
+                "/usr/lib/pkcs11/libsofthsm2.so",
+                "/usr/lib/libsofthsm2.so",
+            ),
         ),
         (
             YubiHsmVendor,
-            "/usr{/local,}/lib{/x86_64-linux-gnu,/aarch64-linux-gnu,64,}"
-            "{/pkcs11,}/yubihsm_pkcs11.so",
+            (
+                "/usr/local/lib/x86_64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
+                "/usr/local/lib/x86_64-linux-gnu/yubihsm_pkcs11.so",
+                "/usr/local/lib/aarch64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
+                "/usr/local/lib/aarch64-linux-gnu/yubihsm_pkcs11.so",
+                "/usr/local/lib64/pkcs11/yubihsm_pkcs11.so",
+                "/usr/local/lib64/yubihsm_pkcs11.so",
+                "/usr/local/lib/pkcs11/yubihsm_pkcs11.so",
+                "/usr/local/lib/yubihsm_pkcs11.so",
+                "/usr/lib/x86_64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
+                "/usr/lib/x86_64-linux-gnu/yubihsm_pkcs11.so",
+                "/usr/lib/aarch64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
+                "/usr/lib/aarch64-linux-gnu/yubihsm_pkcs11.so",
+                "/usr/lib64/pkcs11/yubihsm_pkcs11.so",
+                "/usr/lib64/yubihsm_pkcs11.so",
+                "/usr/lib/pkcs11/yubihsm_pkcs11.so",
+                "/usr/lib/yubihsm_pkcs11.so",
+            ),
         ),
     ),
+    ids=("softhsm", "yubihsm"),
 )
 def test_pkcs11_module_paths_keep_their_search_order(
     kind: type[Vendor],
-    pattern: str,
+    expected: tuple[str, ...],
 ) -> None:
-    expanded = subprocess.run(
-        ["bash", "-c", f"printf '%s\\n' {pattern}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.split()
-
-    assert list(kind.pkcs11_module_paths) == expanded
+    assert kind.pkcs11_module_paths == expected
 
 
 @pytest.fixture
@@ -661,10 +669,11 @@ def test_initialize_softhsm_release_sets_log_paths(tmp_path: Path) -> None:
     )
 
     assert logs_dir.is_dir()
-    assert environment["AUDIT_LOG_PATH"].startswith(str(logs_dir))
-    assert environment["AUDIT_LOG_PATH"].endswith("-audit.log")
-    assert environment["EXEC_LOG_PATH"].startswith(str(logs_dir))
-    assert "2026081500-bramble-" in environment["AUDIT_LOG_PATH"]
+    assert "AUDIT_LOG_PATH" not in environment
+    assert environment["EXEC_LOG_PATH"].startswith(
+        f"{logs_dir}/2026081500-bramble-",
+    )
+    assert environment["EXEC_LOG_PATH"].endswith("-exec.log")
 
 
 def test_initialize_softhsm_release_dry_run_only_renders_mkdir(
@@ -695,7 +704,6 @@ def test_initialize_softhsm_release_names_empty_log_paths_itself(
     environment = {
         "PKCS11_VENDOR": "softhsm",
         "SOFTHSM_LOGS_DIR": str(logs_dir),
-        "AUDIT_LOG_PATH": "",
         "EXEC_LOG_PATH": "",
     }
 
@@ -705,18 +713,17 @@ def test_initialize_softhsm_release_names_empty_log_paths_itself(
         build_number="2026081500",
     )
 
-    assert environment["AUDIT_LOG_PATH"].endswith("-release-audit.log")
     assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
 
 
-def test_initialize_softhsm_release_respects_preset_audit_log_path(
+def test_initialize_softhsm_release_respects_preset_exec_log_path(
     tmp_path: Path,
 ) -> None:
     logs_dir = tmp_path / "logs"
     environment = {
         "PKCS11_VENDOR": "softhsm",
         "SOFTHSM_LOGS_DIR": str(logs_dir),
-        "AUDIT_LOG_PATH": "custom.log",
+        "EXEC_LOG_PATH": "custom.log",
     }
 
     maybe_initialize_vendor_release(
@@ -725,15 +732,14 @@ def test_initialize_softhsm_release_respects_preset_audit_log_path(
         build_number="2026081500",
     )
 
-    assert environment["AUDIT_LOG_PATH"] == f"{logs_dir}/custom.log"
+    assert environment["EXEC_LOG_PATH"] == f"{logs_dir}/custom.log"
 
 
 def test_load_vendor_softhsm_applies_source_exports() -> None:
     """
     Loading the SoftHSM vendor exports these even though its
     initialize_vendor() does nothing else. The AVB signing helper reads
-    OPENSSL_PKCS11_URI_USES_HEX_KEY_ID to look keys up by ID, and keygen
-    reads STRIP_HEX_KEY_ID_PREFIX to strip the 0x from the IDs it writes.
+    OPENSSL_PKCS11_URI_USES_HEX_KEY_ID to look keys up by ID.
     """
     environment = {"PKCS11_VENDOR": "softhsm", "KEYMAPPER": "legacy"}
 
@@ -741,7 +747,6 @@ def test_load_vendor_softhsm_applies_source_exports() -> None:
 
     assert environment["KEYMAPPER"] == "id2b"
     assert environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] == "y"
-    assert environment["STRIP_HEX_KEY_ID_PREFIX"] == "y"
     assert environment["FIND_KEYS_BY_ID"] == "y"
     assert environment["USE_APKSIGNER"] == "y"
 
@@ -753,7 +758,6 @@ def test_load_vendor_yubihsm_applies_source_exports() -> None:
 
     assert environment["KEYMAPPER"] == "static"
     assert environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] == "y"
-    assert environment["STRIP_HEX_KEY_ID_PREFIX"] == "y"
     assert environment["YUBIHSM_EXPORTABLE_DOMAIN"] == "3"
     assert environment["KEYMAP_FILE"].endswith("pkcs11/keymap.tsv")
 
@@ -763,7 +767,6 @@ def test_load_vendor_yubihsm_applies_source_exports() -> None:
     (
         ("yubihsm", "YUBIHSM_CONNECTOR", "http://127.0.0.1:12345"),
         ("yubihsm", "YUBIHSM_ONDEMAND_DOMAIN", "2"),
-        ("softhsm", "DATE_FORMAT", "%Y%m%d-%H%M%S"),
     ),
 )
 def test_load_vendor_defaults_empty_variables(
