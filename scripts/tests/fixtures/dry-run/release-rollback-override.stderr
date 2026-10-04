@@ -1,21 +1,19 @@
 Using keymapper: id2b
 Command: <script> devon calyx_devon-target_files-2026081500.zip
 
-mkdir -p out/release-devon-2026081501
-
 <tree>/bin/sign_target_files_apks -p <tree> -o --threads 8 --payload_signer_maximum_signature_size 512 --extra_apks com.android.adbd.apex=keys/0x1200 --extra_apex_payload_key com.android.adbd.apex=keys/0x1300.pem --extra_apks com.android.adservices.apex=keys/0x1200 --extra_apex_payload_key com.android.adservices.apex=keys/0x1300.pem --extra_apks com.android.runtime.apex=keys/0x1200 --extra_apex_payload_key com.android.runtime.apex=keys/0x1300.pem -k build/make/target/product/security/devkey=keys/0x1100 -k build/make/target/product/security/testkey=keys/0x1100 -k build/make/target/product/security/media=keys/0x1101 -k build/make/target/product/security/shared=keys/0x1102 -k build/make/target/product/security/platform=keys/0x1103 -k build/make/target/product/security/networkstack=keys/0x1104 -k build/make/target/product/security/bluetooth=keys/0x1105 -k build/make/target/product/security/sdk_sandbox=keys/0x1106 -k build/make/target/product/security/nfc=keys/0x1107 -k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=keys/0x1200 -k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=keys/0x1200 -k prebuilts/calyx/microg/certs/microg=keys/0x1500 -k external/calyx/chromium/certs/chromium=keys/0x1501 -k com.google.android.apps.photos=keys/0x1502 -k prebuilts/calyx/lupin/updater/certs/org.calyxos.lupin.updater=keys/0x1503 --avb_rollback_index_override 42 --bump_date_and_version 1 --package_key keys/0x2a00 --avb_vbmeta_key keys/0x2a00.pem --avb_vbmeta_algorithm SHA256_RSA4096 --avb_boot_key keys/0x2a00.pem --avb_boot_algorithm SHA256_RSA4096 --avb_dtbo_key keys/0x2a00.pem --avb_dtbo_algorithm SHA256_RSA4096 --avb_init_boot_key keys/0x2a00.pem --avb_init_boot_algorithm SHA256_RSA4096 --avb_recovery_key keys/0x2a00.pem --avb_recovery_algorithm SHA256_RSA4096 --avb_system_key keys/0x2a00.pem --avb_system_algorithm SHA256_RSA4096 --avb_system_other_key keys/0x2a00.pem --avb_system_other_algorithm SHA256_RSA4096 --avb_vendor_key keys/0x2a00.pem --avb_vendor_algorithm SHA256_RSA4096 --avb_vbmeta_system_key keys/0x2a00.pem --avb_vbmeta_system_algorithm SHA256_RSA4096 --avb_vbmeta_vendor_key keys/0x2a00.pem --avb_vbmeta_vendor_algorithm SHA256_RSA4096 calyx_devon-target_files-2026081500.zip out/release-devon-2026081501/devon-target_files-2026081501.zip
 
 <tree>/bin/img_from_target_files -p <tree> out/release-devon-2026081501/devon-target_files-2026081501.zip out/release-devon-2026081501/devon-img-2026081501.zip
 
-pushd out/release-devon-2026081501
-
-source <tree>/device/common/generate-factory-images-common.sh
-
-mv 'devon-version_placeholder-factory-*.zip' devon-factory-2026081501.zip
-
-sha256sum devon-factory-2026081501.zip
-
-popd
-
-rm out/release-devon-2026081501/devon-img-2026081501.zip
+bash -c '
+set -uo pipefail
+out_dir=$1 common_script=$2 clear_script=$3
+shift 3
+source "$clear_script"
+for assignment in "$@"; do
+  export "$assignment"
+done
+cd "$out_dir"
+source "$common_script"
+' factory-image-assembly out/release-devon-2026081501 <tree>/device/common/generate-factory-images-common.sh <tree>/device/common/clear-factory-images-variables.sh DEVICE=devon VERSION=version_placeholder BUILD=2026081501 PRODUCT=devon AVB_CUSTOM_KEY=<tree>/keys/0x2a00.avbpubkey
 
