@@ -520,10 +520,6 @@ class SignOrchestrator:
                 )
 
     def _load_keymapper_and_maybe_pkcs11(self) -> None:
-        if self.environment.get("KEYMAPPER_FILE"):
-            raise _reported_step_error(
-                "USE_PYTHON_SIGN_ORCHESTRATION does not support KEYMAPPER_FILE",
-            )
         try:
             sign_environment.load_vendor(self.environment)
             sign_environment.require_python_interceptor(self.environment)
