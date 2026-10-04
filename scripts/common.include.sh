@@ -45,7 +45,7 @@ load_keymapper() {
   source "$keymapper_path" || {
     local err=$?
     echo "Loading keymapper script failed!" >&2
-    return $?
+    return $err
   }
   initialize_keymapper || {
     local err=$?
