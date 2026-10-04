@@ -244,12 +244,24 @@ _backup_asymmetric_key() {
   local is_key_id_exportable
   is_key_id_exportable=$(get_key_id_is_exportable_yn "$id") || return $?
   [ "$is_key_id_exportable" = "y" ] || return 0
-  yubihsm -a get-wrapped \
-    --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
-    --object-id "$id" \
-    --object-type asymmetric-key \
-    --out "$KEY_DIR/$id-asymmetric-key.yhw" \
-    || return $?
+  local out=$KEY_DIR/$id-asymmetric-key.yhw
+  if [ "${YUBIHSM_PYTHON_TOOLS:-}" = "y" ]; then
+    _yubihsm_python_cli_logged export-wrapped-key \
+      --connector "$YUBIHSM_CONNECTOR" \
+      --authkey "$YUBIHSM_AUTHKEY" \
+      --password-env YUBIHSM_PASSWORD \
+      --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+      --key-id "$id" \
+      --output "$out" \
+      || return $?
+  else
+    yubihsm -a get-wrapped \
+      --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+      --object-id "$id" \
+      --object-type asymmetric-key \
+      --out "$out" \
+      || return $?
+  fi
 }
 
 backup_primary() {
