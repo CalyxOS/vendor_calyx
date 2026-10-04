@@ -351,6 +351,30 @@ def test_sign_orchestrate_generates_no_incremental_for_a_rollback_build(
     ]
 
 
+def test_sign_orchestrate_takes_no_previous_build_newer_than_the_one_signed(
+    sign_tree: Path,
+) -> None:
+    newer = str(int(BUILD_NUMBER) + 100)
+    between = str(int(BUILD_NUMBER) + 50)
+    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
+    _write_target_files(sign_tree, "bramble", newer)
+    _archive_previous_build(sign_tree, "bramble", between)
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        environment={
+            "SIGN_ASSUME_YES": "y",
+            "BUILD_NUMBER": BUILD_NUMBER,
+            "PREV_BUILD_NUMBER": between,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert not [
+        name for name in _archive_manifest(sign_tree) if "incremental" in name
+    ]
+
+
 def test_sign_orchestrate_exits_cleanly_with_nothing_to_sign(
     sign_tree: Path,
 ) -> None:

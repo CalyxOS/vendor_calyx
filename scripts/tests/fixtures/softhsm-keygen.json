@@ -1,0 +1,90 @@
+{
+  "files": [
+    "0x1100.x509.pem",
+    "0x1200.pem",
+    "0x1200.x509.pem",
+    "0x1300.avbpubkey",
+    "0x1300.pem",
+    "0x1300.x509.pem",
+    "0x2000.avbpubkey",
+    "0x2000.pem",
+    "0x2000.x509.pem"
+  ],
+  "summary": [
+    "###################################",
+    "### GENERATING KEYS: avb",
+    "###################################",
+    "# KEY: vbmeta",
+    "# VALUE: 0x2000 (DEVICE: bramble) LABEL: bramble",
+    "###################################",
+    "### GENERATING KEYS: apex_payload",
+    "###################################",
+    "# KEY: com.android.test",
+    "# VALUE: 0x1300 LABEL: apex_payload",
+    "###################################",
+    "### GENERATING KEYS: other",
+    "###################################",
+    "# KEY: ota",
+    "###################################",
+    "### GENERATING KEYS: core",
+    "###################################",
+    "# KEY: build/make/target/product/security/testkey",
+    "# VALUE: 0x1100 LABEL: core",
+    "###################################",
+    "### GENERATING KEYS: apex_container",
+    "###################################",
+    "# KEY: com.android.test",
+    "# VALUE: 0x1200 LABEL: apex_container",
+    "Key generation finished successfully."
+  ],
+  "token": [
+    [
+      "Certificate Object",
+      "1100"
+    ],
+    [
+      "Certificate Object",
+      "1200"
+    ],
+    [
+      "Certificate Object",
+      "1300"
+    ],
+    [
+      "Certificate Object",
+      "2000"
+    ],
+    [
+      "Private Key Object",
+      "1100"
+    ],
+    [
+      "Private Key Object",
+      "1200"
+    ],
+    [
+      "Private Key Object",
+      "1300"
+    ],
+    [
+      "Private Key Object",
+      "2000"
+    ],
+    [
+      "Public Key Object",
+      "1100"
+    ],
+    [
+      "Public Key Object",
+      "1200"
+    ],
+    [
+      "Public Key Object",
+      "1300"
+    ],
+    [
+      "Public Key Object",
+      "2000"
+    ]
+  ]
+}

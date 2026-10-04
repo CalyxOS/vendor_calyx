@@ -45,7 +45,8 @@ from .release_execution import (
 )
 from .signing_server import Handler, SigningServer
 
-_PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
+_SIGNING_DIR = Path(__file__).resolve().parent
+_PKCS11_DIR = _SIGNING_DIR.parent / "pkcs11"
 
 _CLEAR_FACTORY_VARIABLES = "device/common/clear-factory-images-variables.sh"
 
@@ -385,11 +386,18 @@ def prepare_signing_args(
                     f"Unknown signing helper tool '{chosen}', use 'python' "
                     "or 'server'",
                 )
+        signing_helper_dir = (
+            _SIGNING_DIR if avb_tool == "python" else _PKCS11_DIR
+        )
+        payload_signer_dir = (
+            _SIGNING_DIR if payload_tool == "python" else _PKCS11_DIR
+        )
         signing_helper_tool = (
-            f"{_PKCS11_DIR}/signing_helper{_HELPER_SUFFIXES[avb_tool]}"
+            f"{signing_helper_dir}/signing_helper{_HELPER_SUFFIXES[avb_tool]}"
         )
         payload_signer_tool = (
-            f"{_PKCS11_DIR}/payload_signer{_HELPER_SUFFIXES[payload_tool]}"
+            f"{payload_signer_dir}/payload_signer"
+            f"{_HELPER_SUFFIXES[payload_tool]}"
         )
         args.releasetools += [
             "--verbose",

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -18,6 +19,7 @@ pytestmark = [pytest.mark.aosp, pytest.mark.usefixtures("aosp_top")]
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys integration test"
 AOSP_TOP = REPO_ROOT.parents[1]
 AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
+MODES_FIXTURE = Path(__file__).parent / "fixtures" / "updatekeys-modes.json"
 LEGACY_METADATA = """KEYS_AVB = ("vbmeta", "vbmeta_system")
 KEYS_OTHER = ()
 KEYS_CORE = ("build/make/target/product/security/testkey",)
@@ -38,11 +40,6 @@ KEY_TYPE_TO_ARRAY = {
 """
 
 
-@pytest.fixture(params=("make_key", "python", "updatekeys"))
-def signing_mode(request: pytest.FixtureRequest) -> str:
-    return str(request.param)
-
-
 @pytest.fixture
 def updatekeys_tree(tmp_path: Path) -> Path:
     (tmp_path / "keys" / "bramble").mkdir(parents=True)
@@ -51,54 +48,33 @@ def updatekeys_tree(tmp_path: Path) -> Path:
 
 def run_updatekeys(
     root: Path,
-    signing_mode: str,
     *,
     keymapper: str = "id2b",
     metadata: Path = TEST_METADATA,
     subject: str = SUBJECT,
 ) -> subprocess.CompletedProcess[str]:
-    environment = {
-        "KEYMAPPER": keymapper,
-        "METADATA_FILE": str(metadata),
-        "AVBTOOL_BIN": str(AVBTOOL),
-        "GENERATE_VERITY_KEY_BIN": "/bin/true",
-    }
-    input_text = None
-    if signing_mode == "updatekeys":
-        environment["USE_PYTHON_UPDATEKEYS"] = "y"
-        environment["MAKE_KEY_BIN"] = str(root / "missing-make_key")
-    elif signing_mode == "python":
-        environment["USE_PYTHON_SIGNING"] = "y"
-        environment["MAKE_KEY_BIN"] = str(root / "missing-make_key")
-    else:
-        environment["MAKE_KEY_BIN"] = str(
-            AOSP_TOP / "development" / "tools" / "make_key",
-        )
-        input_text = "\n" * 32
     return run(
         [SCRIPTS_DIR / "updatekeys.sh", "keys/bramble", subject],
         cwd=root,
-        env=environment,
-        input_text=input_text,
+        env={
+            "KEYMAPPER": keymapper,
+            "METADATA_FILE": str(metadata),
+            "AVBTOOL_BIN": str(AVBTOOL),
+            "GENERATE_VERITY_KEY_BIN": "/bin/true",
+        },
         check=False,
     )
 
 
-def assert_avb_public_key_matches(
-    root: Path,
-    key_name: str,
-    private_suffix: str,
-    public_suffix: str,
-) -> None:
-    key = root / "keys" / f"{key_name}{private_suffix}"
-    stored_public_key = root / "keys" / f"{key_name}{public_suffix}"
+def assert_avb_public_key_matches(root: Path, key_name: str) -> None:
+    stored_public_key = root / "keys" / f"{key_name}.avbpubkey"
     extracted_public_key = root / "keys" / f"{key_name}.expected.avbpubkey"
     run(
         [
             AVBTOOL,
             "extract_public_key",
             "--key",
-            key,
+            root / "keys" / f"{key_name}.pem",
             "--output",
             extracted_public_key,
         ],
@@ -106,67 +82,33 @@ def assert_avb_public_key_matches(
     assert stored_public_key.read_bytes() == extracted_public_key.read_bytes()
 
 
-def test_updatekeys_generates_complete_id2b_key_set(
-    updatekeys_tree: Path,
-    signing_mode: str,
-) -> None:
-    result = run_updatekeys(updatekeys_tree, signing_mode)
-    assert result.returncode == 0, result.stderr
-    keys = updatekeys_tree / "keys"
-
-    for key_id in range(0x1100, 0x1108):
-        assert (keys / f"0x{key_id:04x}.pk8").is_file()
-        assert (keys / f"0x{key_id:04x}.x509.pem").is_file()
-    for key_name in ("0x1200",):
-        assert (keys / f"{key_name}.pk8").is_file()
-        assert (keys / f"{key_name}.x509.pem").is_file()
-    suffixes = (
-        ("0x2000", ".pem", ".avbpubkey"),
-        ("0x1300", ".pem", ".avbpubkey"),
-    )
-    for key_name, private_suffix, public_suffix in suffixes:
-        assert (keys / f"{key_name}{private_suffix}").is_file()
-        assert (keys / f"{key_name}{public_suffix}").is_file()
-        assert_avb_public_key_matches(
-            updatekeys_tree,
-            key_name,
-            private_suffix,
-            public_suffix,
-        )
-
-
-def test_updatekeys_is_idempotent(
-    updatekeys_tree: Path,
-    signing_mode: str,
-) -> None:
-    first = run_updatekeys(updatekeys_tree, signing_mode)
+def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
+    first = run_updatekeys(updatekeys_tree)
     assert first.returncode == 0, first.stderr
     keys = updatekeys_tree / "keys"
     before = {
-        path.relative_to(keys): sha256(path)
-        for path in keys.iterdir()
-        if path.is_file()
+        path.name: sha256(path) for path in keys.iterdir() if path.is_file()
     }
+    assert sorted(before) == sorted(json.loads(MODES_FIXTURE.read_text()))
 
-    second = run_updatekeys(updatekeys_tree, signing_mode)
+    second = run_updatekeys(updatekeys_tree)
     assert second.returncode == 0, second.stderr
     after = {
-        path.relative_to(keys): sha256(path)
-        for path in keys.iterdir()
-        if path.is_file()
+        path.name: sha256(path) for path in keys.iterdir() if path.is_file()
     }
     assert after == before
+    assert_avb_public_key_matches(updatekeys_tree, "0x2000")
+    assert_avb_public_key_matches(updatekeys_tree, "0x1300")
 
 
 def test_updatekeys_avb_key_paths_match_release_signing_expectation(
     updatekeys_tree: Path,
-    signing_mode: str,
 ) -> None:
     """
     build_release_arguments() looks up the AVB keys updatekeys.sh
     generates, so every path it requests must exist after a run.
     """
-    result = run_updatekeys(updatekeys_tree, signing_mode)
+    result = run_updatekeys(updatekeys_tree)
     assert result.returncode == 0, result.stderr
 
     metadata = load_metadata(TEST_METADATA)
@@ -187,17 +129,14 @@ def test_updatekeys_avb_key_paths_match_release_signing_expectation(
         )
 
 
-@pytest.mark.parametrize("signing_mode", ("updatekeys",))
 def test_full_updatekeys_with_legacy_keymapper(
     updatekeys_tree: Path,
-    signing_mode: str,
 ) -> None:
     metadata = updatekeys_tree / "metadata.py"
     metadata.write_text(LEGACY_METADATA)
 
     result = run_updatekeys(
         updatekeys_tree,
-        signing_mode,
         keymapper="legacy",
         metadata=metadata,
     )
@@ -240,11 +179,9 @@ def test_full_updatekeys_with_legacy_keymapper(
 
 def test_updatekeys_writes_the_subject_as_given(
     updatekeys_tree: Path,
-    signing_mode: str,
 ) -> None:
     result = run_updatekeys(
         updatekeys_tree,
-        signing_mode,
         subject="/O=Calyx Institute/CN=_KEY_LABEL_",
     )
 
@@ -260,7 +197,6 @@ def test_updatekeys_writes_the_subject_as_given(
 
 def test_updatekeys_refuses_a_key_whose_pem_exists(
     updatekeys_tree: Path,
-    signing_mode: str,
 ) -> None:
     metadata = updatekeys_tree / "metadata.py"
     metadata.write_text(LEGACY_METADATA)
@@ -269,7 +205,6 @@ def test_updatekeys_refuses_a_key_whose_pem_exists(
 
     result = run_updatekeys(
         updatekeys_tree,
-        signing_mode,
         keymapper="legacy",
         metadata=metadata,
     )
