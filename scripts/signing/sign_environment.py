@@ -702,23 +702,16 @@ class SoftHsmVendor(Vendor):
         Raises:
             RuntimeError: If SOFTHSM_LOGS_DIR cannot be created.
         """
-        logs_dir_raw = environment.get("SOFTHSM_LOGS_DIR")
-        if not logs_dir_raw:
-            return
+        logs_dir_raw = environment["SOFTHSM_LOGS_DIR"]
         logs_dir = Path(logs_dir_raw)
-        if not logs_dir.is_dir():
-            if environment.get("DRY_RUN") == "y":
-                from .release_execution import render_release_tool
-
-                sys.stderr.write(render_release_tool(["mkdir", logs_dir_raw]))
-            else:
-                try:
-                    logs_dir.mkdir()
-                except OSError as error:
-                    raise RuntimeError(
-                        f"SOFTHSM_LOGS_DIR ({logs_dir_raw}) does not exist, "
-                        "and failed to create it",
-                    ) from error
+        if not logs_dir.is_dir() and environment.get("DRY_RUN") != "y":
+            try:
+                logs_dir.mkdir()
+            except OSError as error:
+                raise RuntimeError(
+                    f"SOFTHSM_LOGS_DIR ({logs_dir_raw}) does not exist, and "
+                    "failed to create it",
+                ) from error
         date_format = environment.get("DATE_FORMAT") or "%Y%m%d-%H%M%S"
         timestamp = datetime.datetime.now(datetime.UTC).strftime(date_format)
         default_prefix = f"{build_number}-{device}-{timestamp}-{command}"

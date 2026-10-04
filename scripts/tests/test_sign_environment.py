@@ -662,9 +662,8 @@ def test_initialize_softhsm_release_sets_log_paths(tmp_path: Path) -> None:
     assert environment["EXEC_LOG_PATH"].endswith("-exec.log")
 
 
-def test_initialize_softhsm_release_dry_run_only_renders_mkdir(
+def test_initialize_softhsm_release_dry_run_creates_no_logs_dir(
     tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     logs_dir = tmp_path / "logs"
     environment = {
@@ -680,7 +679,6 @@ def test_initialize_softhsm_release_dry_run_only_renders_mkdir(
     )
 
     assert not logs_dir.exists()
-    assert f"mkdir {logs_dir}" in capsys.readouterr().err
 
 
 def test_initialize_softhsm_release_names_empty_log_paths_itself(
