@@ -272,8 +272,8 @@ def test_keymapper_file_must_create_a_keymapper(
         )
 
 
-def test_a_keymapper_must_define_rows() -> None:
-    assert Keymapper.__abstractmethods__ == {"rows"}
+def test_a_keymapper_must_define_rows_and_is_per_device() -> None:
+    assert Keymapper.__abstractmethods__ == {"is_per_device", "rows"}
 
 
 def test_keymapper_file_can_define_a_dataclass(tmp_path: Path) -> None:
@@ -322,6 +322,45 @@ def test_keymapper_file_prints_its_keymap(tmp_path: Path) -> None:
     )
 
     assert keymapper.to_tsv(("bramble", "redfin")) == FIXTURE.read_text()
+
+
+_BASH_PER_DEVICE = r"""
+set -euo pipefail
+devices=(bramble redfin)
+source "$1/metadata"
+source "$1/common.include.sh"
+load_keymapper 2>/dev/null
+shift
+while [ $# -gt 0 ]; do
+  printf '%s\t%s\t%s\n' "$1" "$2" "$(get_key_is_per_device_yn "$1" "$2")"
+  shift 2
+done
+"""
+
+
+@pytest.mark.parametrize("name", KEYMAPPERS)
+def test_is_per_device_matches_the_bash_keymapper(name: str) -> None:
+    environment, create = KEYMAPPERS[name]
+    keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    arguments = [part for key in KEYS for part in key]
+    result = run(
+        [
+            "bash",
+            "-c",
+            _BASH_PER_DEVICE,
+            "per-device-test",
+            SCRIPTS_DIR,
+            *arguments,
+        ],
+        cwd=SCRIPTS_DIR,
+        env={**environment, "DEVICE": "bramble"},
+    )
+
+    assert result.stdout.splitlines() == [
+        f"{key_type}\t{key_name}\t"
+        f"{'y' if keymapper.is_per_device(key_type, key_name) else 'n'}"
+        for key_type, key_name in KEYS
+    ]
 
 
 def test_keymapper_file_whose_create_keymapper_fails_is_named(
