@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable, MutableMapping, Sequence
 from pathlib import Path
 
@@ -180,9 +181,9 @@ def updatekeys_main(
         f"Example subject: {EXAMPLE_SUBJECT}",
     )
     try:
-        if create_directory:
-            _create_key_directory(arguments)
         if len(arguments) != 2:
+            if create_directory:
+                _create_key_directory(arguments)
             raise _error("incorrect number of arguments", usage)
         key_path, subject = arguments
         scripts = Path(program).parent.resolve()
@@ -196,6 +197,20 @@ def updatekeys_main(
         )
         avbtool = environment.get("AVBTOOL_BIN") or f"{top}/bin/avbtool"
         keymapper = _load_script_keymapper(environment, metadata)
+        expected = Path(environment["KEY_DIR"]) / device
+        if expected.resolve() != Path(key_path).resolve():
+            keymapper_name = (
+                f"the keymapper from {environment['KEYMAPPER_FILE']}"
+                if environment.get("KEYMAPPER_FILE")
+                else f"the {environment['KEYMAPPER']} keymapper"
+            )
+            raise _error(
+                f"{keymapper_name} keeps the keys of {device} in "
+                f"{expected}, not {key_path}",
+                usage,
+            )
+        if create_directory:
+            _create_key_directory(arguments)
         if not os.path.exists(generate_verity_key):
             raise _error(f"{generate_verity_key} not found.", usage)
         if not os.path.exists(avbtool):
@@ -513,55 +528,50 @@ def _convert_chromium_keystore(key_directory: Path) -> None:
     """
     Convert calyxos.keystore into chromium.pk8 and chromium.x509.pem,
     with keytool and openssl prompting for passwords on the terminal.
+
+    The intermediate PKCS#12 file and the unencrypted PEM key stay in a
+    private temporary directory, which is removed whether or not the
+    conversion succeeds.
     """
-    if not (key_directory / "calyxos.keystore").exists():
+    keystore = key_directory / "calyxos.keystore"
+    if not keystore.exists():
         return
-    for argv in (
-        [
-            "keytool",
-            "-importkeystore",
-            "-srckeystore",
-            "calyxos.keystore",
-            "-destkeystore",
-            "calyxos.p12",
-            "-srcstoretype",
-            "jks",
-            "-deststoretype",
-            "pkcs12",
-        ],
-        [
-            "openssl",
-            "pkcs12",
-            "-in",
-            "calyxos.p12",
-            "-out",
-            "calyxos.pem",
-            "-nodes",
-        ],
-    ):
-        subprocess.run(argv, cwd=key_directory, check=True)
-    (key_directory / "calyxos.p12").unlink()
-    for argv in (
-        [
-            "openssl",
-            "x509",
-            "-in",
-            "calyxos.pem",
-            "-out",
-            "chromium.x509.pem",
-        ],
-        [
-            "openssl",
-            "pkcs8",
-            "-in",
-            "calyxos.pem",
-            "-out",
-            "chromium.pk8",
-            "-outform",
-            "DER",
-            "-topk8",
-            "-nocrypt",
-        ],
-    ):
-        subprocess.run(argv, cwd=key_directory, check=True)
-    (key_directory / "calyxos.pem").unlink()
+    with tempfile.TemporaryDirectory(prefix="chromium-key.") as directory:
+        p12 = Path(directory) / "calyxos.p12"
+        pem = Path(directory) / "calyxos.pem"
+        for argv in (
+            [
+                "keytool",
+                "-importkeystore",
+                "-srckeystore",
+                str(keystore),
+                "-destkeystore",
+                str(p12),
+                "-srcstoretype",
+                "jks",
+                "-deststoretype",
+                "pkcs12",
+            ],
+            ["openssl", "pkcs12", "-in", str(p12), "-out", str(pem), "-nodes"],
+            [
+                "openssl",
+                "x509",
+                "-in",
+                str(pem),
+                "-out",
+                str(key_directory / "chromium.x509.pem"),
+            ],
+            [
+                "openssl",
+                "pkcs8",
+                "-in",
+                str(pem),
+                "-out",
+                str(key_directory / "chromium.pk8"),
+                "-outform",
+                "DER",
+                "-topk8",
+                "-nocrypt",
+            ],
+        ):
+            subprocess.run(argv, check=True)

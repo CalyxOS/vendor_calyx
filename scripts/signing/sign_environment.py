@@ -672,9 +672,7 @@ class SoftHsmVendor(Vendor):
         environment["USE_APKSIGNER"] = "y"
         environment["FIND_KEYS_BY_ID"] = "y"
         environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
-        environment["STRIP_HEX_KEY_ID_PREFIX"] = "y"
         _default(environment, "SOFTHSM_LOGS_DIR", str(Path.cwd() / "logs"))
-        _default(environment, "DATE_FORMAT", "%Y%m%d-%H%M%S")
 
     def initialize(
         self,
@@ -694,8 +692,8 @@ class SoftHsmVendor(Vendor):
         command: str,
     ) -> None:
         """
-        Create SOFTHSM_LOGS_DIR if missing, and put the release's audit and
-        exec logs in it.
+        Create SOFTHSM_LOGS_DIR if missing, and put the release's exec log
+        in it.
 
         Raises:
             RuntimeError: If SOFTHSM_LOGS_DIR cannot be created.
@@ -720,12 +718,7 @@ class SoftHsmVendor(Vendor):
         date_format = environment.get("DATE_FORMAT") or "%Y%m%d-%H%M%S"
         timestamp = datetime.datetime.now(datetime.UTC).strftime(date_format)
         default_prefix = f"{build_number}-{device}-{timestamp}-{command}"
-        _default(environment, "AUDIT_LOG_PATH", f"{default_prefix}-audit.log")
         _default(environment, "EXEC_LOG_PATH", f"{default_prefix}-exec.log")
-        # An absolute AUDIT_LOG_PATH is still put under logs_dir.
-        environment["AUDIT_LOG_PATH"] = (
-            f"{logs_dir}/{environment['AUDIT_LOG_PATH']}"
-        )
         environment["EXEC_LOG_PATH"] = (
             f"{logs_dir}/{environment['EXEC_LOG_PATH']}"
         )
@@ -758,7 +751,6 @@ class YubiHsmVendor(Vendor):
         environment["USE_APKSIGNER"] = "y"
         environment["FIND_KEYS_BY_ID"] = "y"
         environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
-        environment["STRIP_HEX_KEY_ID_PREFIX"] = "y"
         _default(environment, "YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
         _default(environment, "YUBIHSM_WRAP_KEY_ID", "0x0010")
         _default(
@@ -769,23 +761,11 @@ class YubiHsmVendor(Vendor):
         _default(environment, "YUBIHSM_OPAQUE_CAPABILITIES", "")
         _default(environment, "YUBIHSM_ONDEMAND_DOMAIN", "2")
         _default(environment, "YUBIHSM_EXPORTABLE_DOMAIN", "3")
-        _default(environment, "YUBIHSM_UNEXPORTABLE_DOMAIN", "4")
-        _default(environment, "DATE_FORMAT", "%Y%m%d-%H%M%S")
         _default(
             environment,
             "KEYMAP_FILE",
             str(Path(__file__).resolve().parents[1] / "pkcs11/keymap.tsv"),
         )
-        wrapper = str(
-            Path(__file__).resolve().parents[1]
-            / "pkcs11/pkcs11_tool.yubihsm.sh",
-        )
-        if environment.get("PKCS11_TOOL_BIN") != wrapper:
-            environment["YUBIHSM_UNDERLYING_PKCS11_TOOL_BIN"] = environment.get(
-                "PKCS11_TOOL_BIN",
-                "",
-            )
-            environment["PKCS11_TOOL_BIN"] = wrapper
 
     def initialize_interactive(
         self,

@@ -1,0 +1,11 @@
+{
+  "audit": [],
+  "files": {},
+  "keys": [
+    "0x0101",
+    "0x0102"
+  ],
+  "returncode": 1,
+  "stderr": "Unrecognized mode: bogus\n",
+  "stdout": ""
+}

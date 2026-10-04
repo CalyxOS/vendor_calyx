@@ -124,9 +124,9 @@ def load_metadata(path: Path) -> SigningMetadata:
 
     Raises:
         FileNotFoundError: If ``path`` is not a regular file.
-        ValueError: If the module lacks an array or the mapping, an array
-            is not a tuple of strings, the mapping names another array, or
-            the metadata is invalid.
+        ValueError: If the module cannot be loaded, lacks an array or the
+            mapping, an array is not a tuple of strings, the mapping names
+            another array, or the metadata is invalid.
     """
     path = path.resolve()
     if not path.is_file():
@@ -142,7 +142,12 @@ def load_metadata(path: Path) -> SigningMetadata:
     if spec is None or spec.loader is None:
         raise ValueError(f"cannot import metadata module: {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as error:
+        raise ValueError(
+            f"cannot load metadata module {path} ({error})",
+        ) from error
 
     arrays: dict[str, tuple[str, ...]] = {}
     for name in BASE_ARRAYS:

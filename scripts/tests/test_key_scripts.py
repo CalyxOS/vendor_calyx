@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from collections.abc import Callable
 from pathlib import Path
 
@@ -13,127 +12,168 @@ import pytest
 from conftest import SCRIPTS_DIR, run
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=key script test"
-FLAGS = {
-    "updatekeys": "USE_PYTHON_UPDATEKEYS",
-    "mkkeys": "USE_PYTHON_UPDATEKEYS",
-    "updatecommonkeys": "USE_PYTHON_UPDATECOMMONKEYS",
-    "mkcommonkeys": "USE_PYTHON_UPDATECOMMONKEYS",
-}
+EXAMPLE_SUBJECT = (
+    "Example subject: '/C=US/ST=California/L=Mountain View/O=Android/"
+    "OU=Android/CN=Android/emailAddress=android@android.com'\n"
+)
 
 
-def _run(
-    script: str,
-    arguments: tuple[str, ...],
-    cwd: Path,
-    flag: str,
-) -> subprocess.CompletedProcess[str]:
-    return run(
-        [SCRIPTS_DIR / f"{script}.sh", *arguments],
-        cwd=cwd,
-        env={FLAGS[script]: flag, "KEYMAPPER": "legacy"},
-        check=False,
+def _usage(script: str) -> str:
+    return (
+        f"Usage: {SCRIPTS_DIR}/{script}.sh key_dir subject\n" + EXAMPLE_SUBJECT
     )
 
 
-def _outcomes(
+def _outcome(
     tmp_path: Path,
     script: str,
     arguments: tuple[str, ...],
     prepare: Callable[[Path], object] | None = None,
-) -> list[tuple[int, str, str, list[str]]]:
-    outcomes: list[tuple[int, str, str, list[str]]] = []
-    for flag in ("", "y"):
-        work = tmp_path / f"work{flag}"
-        work.mkdir()
-        if prepare is not None:
-            prepare(work)
-        result = _run(script, arguments, work, flag)
-        outcomes.append(
-            (
-                result.returncode,
-                result.stdout,
-                result.stderr,
-                sorted(str(path.relative_to(work)) for path in work.rglob("*")),
-            ),
-        )
-    return outcomes
+) -> tuple[int, str, str, list[str]]:
+    work = tmp_path / "work"
+    work.mkdir()
+    if prepare is not None:
+        prepare(work)
+    result = run(
+        [SCRIPTS_DIR / f"{script}.sh", *arguments],
+        cwd=work,
+        env={"KEYMAPPER": "legacy"},
+        check=False,
+    )
+    return (
+        result.returncode,
+        result.stdout,
+        result.stderr,
+        sorted(str(path.relative_to(work)) for path in work.rglob("*")),
+    )
 
 
 @pytest.mark.parametrize("script", ("updatekeys", "updatecommonkeys"))
+def test_key_scripts_check_their_arguments(
+    tmp_path: Path,
+    script: str,
+) -> None:
+    assert _outcome(tmp_path, script, ("keys/bramble",)) == (
+        1,
+        _usage(script),
+        "error: incorrect number of arguments, please try again\n",
+        [],
+    )
+
+
 @pytest.mark.parametrize(
-    "arguments",
-    ((), ("keys/bramble",), ("a", "b", "c")),
-    ids=("0", "1", "3"),
+    ("script", "error"),
+    (
+        (
+            "updatekeys",
+            f"{SCRIPTS_DIR}/../../../bin/generate_verity_key not found.",
+        ),
+        ("updatecommonkeys", "key directory does not exist"),
+    ),
 )
-def test_python_key_scripts_check_arguments_as_bash_does(
+def test_key_scripts_check_their_setup(
     tmp_path: Path,
     script: str,
-    arguments: tuple[str, ...],
+    error: str,
 ) -> None:
-    bash, python = _outcomes(tmp_path, script, arguments)
+    assert _outcome(tmp_path, script, ("keys/bramble", SUBJECT)) == (
+        1,
+        _usage(script),
+        f"Using keymapper: legacy\nerror: {error}, please try again\n",
+        [],
+    )
 
-    assert python == bash
-    assert bash[0] == 1
-    assert "incorrect number of arguments" in bash[2]
 
-
-@pytest.mark.parametrize("script", ("updatekeys", "updatecommonkeys"))
-def test_python_key_scripts_refuse_a_missing_directory_as_bash_does(
+def test_mkkeys_refuses_a_directory_the_keymapper_does_not_use(
     tmp_path: Path,
-    script: str,
 ) -> None:
-    bash, python = _outcomes(tmp_path, script, ("keys/bramble", SUBJECT))
+    code, _, stderr, created = _outcome(
+        tmp_path,
+        "mkkeys",
+        ("elsewhere/bramble", SUBJECT),
+    )
 
-    assert python == bash
-    assert bash[0] == 1
+    assert code == 1
+    assert (
+        "error: the legacy keymapper keeps the keys of bramble in "
+        "keys/bramble, not elsewhere/bramble" in stderr
+    )
+    assert created == []
+
+
+def test_mkkeys_names_the_keymapper_file_that_refuses_a_directory(
+    tmp_path: Path,
+) -> None:
+    keymapper_file = tmp_path / "keymapper.py"
+    keymapper_file.write_text(
+        "from signing.keymap import LegacyKeymapper\n"
+        "\n"
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        "    return LegacyKeymapper(metadata)\n",
+    )
+    work = tmp_path / "work"
+    work.mkdir()
+
+    result = run(
+        [SCRIPTS_DIR / "mkkeys.sh", "elsewhere/bramble", SUBJECT],
+        cwd=work,
+        env={"KEYMAPPER_FILE": str(keymapper_file)},
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert (
+        f"error: the keymapper from {keymapper_file} keeps the keys of "
+        "bramble in keys/bramble" in result.stderr
+    )
 
 
 @pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
-def test_python_mkkeys_refuses_an_existing_directory_as_bash_does(
+def test_mkkeys_refuses_an_existing_directory(
     tmp_path: Path,
     script: str,
 ) -> None:
-    bash, python = _outcomes(
+    assert _outcome(
         tmp_path,
         script,
         ("keys/bramble", SUBJECT),
         prepare=lambda work: (work / "keys" / "bramble").mkdir(parents=True),
+    ) == (
+        1,
+        "",
+        ("Using keymapper: legacy\n" if script == "mkkeys" else "")
+        + "key directory already exists\n",
+        ["keys", "keys/bramble"],
     )
-
-    assert python == bash
-    assert bash[:3] == (1, "", "key directory already exists\n")
 
 
 @pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
-def test_python_mkkeys_reports_a_directory_it_cannot_create(
+def test_mkkeys_reports_a_directory_it_cannot_create(
     tmp_path: Path,
     script: str,
 ) -> None:
-    bash, python = _outcomes(
+    code, _, stderr, _ = _outcome(
         tmp_path,
         script,
         ("keys/bramble", SUBJECT),
         prepare=lambda work: (work / "keys").write_text(""),
     )
 
-    assert bash[0] == python[0] == 1
-    assert "Traceback" not in python[2]
+    assert code == 1
+    assert "Traceback" not in stderr
 
 
 @pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
-def test_python_mkkeys_creates_the_directory_as_bash_does(
-    tmp_path: Path,
-    script: str,
-) -> None:
-    bash, python = _outcomes(tmp_path, script, ("keys/bramble",))
-
-    assert python == bash
-    assert bash[0] == 1
-    assert bash[3] == ["keys", "keys/bramble"]
-    assert "incorrect number of arguments" in bash[2]
+def test_mkkeys_creates_the_directory(tmp_path: Path, script: str) -> None:
+    assert _outcome(tmp_path, script, ("keys/bramble",)) == (
+        1,
+        _usage(script.replace("mk", "update")),
+        "error: incorrect number of arguments, please try again\n",
+        ["keys", "keys/bramble"],
+    )
 
 
-def test_python_updatecommonkeys_reports_an_empty_subject(
+def test_updatecommonkeys_reports_an_empty_subject(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "keys").mkdir()
@@ -141,7 +181,7 @@ def test_python_updatecommonkeys_reports_an_empty_subject(
     result = run(
         [SCRIPTS_DIR / "updatecommonkeys.sh", "keys", ""],
         cwd=tmp_path,
-        env={"USE_PYTHON_UPDATECOMMONKEYS": "y", "KEYMAPPER": "legacy"},
+        env={"KEYMAPPER": "legacy"},
         check=False,
     )
 
