@@ -722,6 +722,37 @@ def test_release_passes_the_avb_custom_key_to_the_factory_image_script(
 
 
 @implementations
+def test_release_records_its_output_in_exec_log_path(
+    release_tree: Path,
+    python: bool,
+) -> None:
+    _install_tool(
+        release_tree / "bin" / "sign_target_files_apks",
+        "#!/bin/sh\necho tool-stdout\necho tool-stderr >&2\n"
+        'eval "out=\\${$#}"\nprintf %s signed > "$out"\n',
+    )
+    _write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+    exec_log = release_tree / "exec.log"
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"EXEC_LOG_PATH": str(exec_log)},
+        dry_run=False,
+        python=python,
+    )
+
+    assert result.returncode == 0, result.stderr
+    log = exec_log.read_text()
+    for line in ("Command: ", "Running: ", "tool-stdout", "tool-stderr"):
+        assert line in log
+    assert "tool-stdout" in result.stdout
+    assert "tool-stderr" in result.stderr
+
+
+@implementations
 def test_release_fails_with_the_factory_image_script_status(
     release_tree: Path,
     python: bool,
@@ -1804,6 +1835,27 @@ def test_a_plaintext_release_loads_no_cryptography_package() -> None:
     )
 
     assert result.stdout == "[]\n"
+
+
+def test_release_goes_on_without_an_unwritable_exec_log(
+    release_tree: Path,
+) -> None:
+    _write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+    exec_log = release_tree / "missing" / "exec.log"
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"EXEC_LOG_PATH": str(exec_log)},
+        dry_run=False,
+        python=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert f"cannot write EXEC_LOG_PATH {exec_log}" in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 @implementations
