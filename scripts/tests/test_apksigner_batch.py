@@ -345,6 +345,7 @@ def test_interceptor_serves_a_cached_result_without_the_batch_server(
     cache = tmp_path / "cache"
     cache.mkdir()
     (tmp_path / "in.apk").write_text("unsigned")
+    (tmp_path / "cert.pem").write_text("certificate")
     server = _server(tmp_path)
     with server:
         signed, cached = (
@@ -355,8 +356,10 @@ def test_interceptor_serves_a_cached_result_without_the_batch_server(
                     "-jar",
                     "apksigner.jar",
                     "sign",
-                    "--ks-key-alias",
+                    "--kms-key-alias",
                     "0x1100",
+                    "--cert",
+                    "cert.pem",
                     "--out",
                     f"{name}.apk",
                     "in.apk",
@@ -581,7 +584,7 @@ def test_release_without_the_yubihsm_interceptor_has_no_server(
     assert result.returncode == 0, result.stderr
     assert recorded is not None
     assert recorded["socket"] is None
-    assert "--apksigner_kms_type" not in recorded["argv"]
+    assert "--apksigner_kms_type external" in " ".join(recorded["argv"])
 
 
 def test_release_dry_run_has_no_server(
