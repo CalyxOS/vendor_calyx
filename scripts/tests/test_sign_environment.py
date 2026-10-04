@@ -631,6 +631,26 @@ def test_initialize_yubihsm_release_dry_run_is_a_noop(tmp_path: Path) -> None:
     assert "AUDIT_LOG_PATH" not in environment
 
 
+def test_initialize_yubihsm_release_names_the_logs_after_the_command(
+    release_environment: dict[str, str],
+) -> None:
+    environment = {**release_environment, "ENSURE_KEY_IS_AVAILABLE": "n"}
+
+    maybe_initialize_vendor_release(
+        environment,
+        device="bramble",
+        build_number="2026081500_2026080100",
+        command="generate_delta",
+    )
+
+    suffix = "-2026081500_2026080100-bramble-generate_delta.log"
+    assert environment["AUDIT_LOG_PATH"].endswith(suffix)
+    assert environment["EXEC_LOG_PATH"].endswith(suffix)
+    assert (
+        "generate_delta.sh" in Path(environment["AUDIT_LOG_PATH"]).read_text()
+    )
+
+
 def test_maybe_initialize_vendor_release_is_idempotent(tmp_path: Path) -> None:
     environment = {
         "PKCS11_VENDOR": "yubihsm",
