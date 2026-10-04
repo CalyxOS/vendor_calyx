@@ -48,6 +48,33 @@ def exit_on_signals() -> Generator[None, None, None]:
             signal.signal(signum, handler)
 
 
+@contextlib.contextmanager
+def defer_signals() -> Generator[None, None, None]:
+    """
+    Hold a SIGTERM or SIGHUP back until the with block ends, and deliver it
+    to the handlers in place before the block then, so that a command the
+    block runs finishes its own work first. A signal the process ignores
+    stays ignored.
+    """
+    received: list[int] = []
+
+    def record(signum: int, frame: FrameType | None) -> None:
+        received.append(signum)
+
+    previous_handlers = {
+        signum: signal.signal(signum, record)
+        for signum in (signal.SIGTERM, signal.SIGHUP)
+        if signal.getsignal(signum) != signal.SIG_IGN
+    }
+    try:
+        yield
+    finally:
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
+        if received:
+            signal.raise_signal(received[0])
+
+
 def render_release_tool(argv: Sequence[str]) -> str:
     """
     Render one release-tool invocation as a shell command line, each

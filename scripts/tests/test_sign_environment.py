@@ -286,6 +286,40 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
     )
 
 
+@pytest.mark.parametrize(
+    ("never_start_batch", "accepted"),
+    (("y", True), ("", False)),
+    ids=("without-batch", "with-batch"),
+)
+def test_maybe_initialize_vendor_takes_the_bash_interceptor_only_without_batch(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    never_start_batch: str,
+    accepted: bool,
+) -> None:
+    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "NEVER_START_APKSIGNER_BATCH": never_start_batch,
+        "YUBIHSM_AUTHKEY": "0x0001",
+        "YUBIHSM_PASSWORD": "secret",
+        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
+    }
+
+    if not accepted:
+        with pytest.raises(UnsupportedVendorError):
+            maybe_initialize_vendor(environment, tmpdir=tmp_path)
+        return
+    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+
+    assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
+        "vendor.yubihsm.interceptor.sh",
+    )
+
+
 def test_maybe_initialize_vendor_reads_the_password_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
