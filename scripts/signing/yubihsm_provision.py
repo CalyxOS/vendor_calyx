@@ -32,7 +32,7 @@ from .vendor_yubihsm import (
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
-_START = ("source_include_scripts", "maybe_start_yubihsm_connector_service")
+_START = ("load_configuration", "maybe_start_yubihsm_connector_service")
 _END = ("finish",)
 _MODES = {
     "restore": (*_START, *_END),
@@ -55,7 +55,7 @@ _MODES = {
         *_END,
     ),
     "load-keys": (
-        "source_include_scripts",
+        "load_configuration",
         "ask_signing_authkey_password_if_needed",
         "use_signing_authkey",
         "maybe_start_yubihsm_connector_service",
@@ -237,7 +237,7 @@ class ProvisionWizard:
             self.environment,
         )
 
-    def _source_include_scripts(self) -> None:
+    def _load_configuration(self) -> None:
         environment = self.environment
         metadata = load_metadata(default_metadata_path())
         sign_environment.YubiHsmVendor().apply_source_exports(environment)
