@@ -7,10 +7,8 @@
 set -euo pipefail
 
 our_path=$(cd "$(dirname "$0")";pwd -P)
-if [ "${USE_PYTHON_PREPARE_PACKAGE:-}" = "y" ]; then
-  PYTHONPATH="$our_path/..${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing prepare-ceremony-package --script-dir "$our_path"
-fi
+PYTHONPATH="$our_path/..${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing prepare-ceremony-package --script-dir "$our_path"
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 manifest_filename=manifest.tsv
 timestamp="201001010000.00"

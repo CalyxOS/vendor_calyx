@@ -39,8 +39,7 @@ def sign_app(
     """
     Sign an app APK through the signing command interceptor, as
     sign-app.sh does, through apksigner's external KMS provider when
-    PKCS11_PYTHON_INTERCEPTOR=y and USE_APKSIGNER_KMS=y, and through a
-    SunPKCS11 KeyStore otherwise.
+    USE_APKSIGNER_KMS=y, and through a SunPKCS11 KeyStore otherwise.
 
     Args:
         environment: Process environment, mutated in place. The signing
@@ -88,7 +87,6 @@ def sign_app(
     sun_config_path = tmpdir / "sunpkcs11.cfg"
     sun_config_path.write_text(generate_sunpkcs11_config(environment))
 
-    environment["NEVER_START_APKSIGNER_BATCH"] = "y"
     inherited = dict(environment)
     with exit_on_signals():
         try:
@@ -114,10 +112,7 @@ def sign_app(
             environment["SIGNING_COMMAND"] = "java"
             interceptor = environment["SIGNING_COMMAND_INTERCEPTOR"]
             output = f"{_strip_extension(apk)}-signed.apk"
-            if (
-                environment.get("PKCS11_PYTHON_INTERCEPTOR") == "y"
-                and environment.get("USE_APKSIGNER_KMS") == "y"
-            ):
+            if environment.get("USE_APKSIGNER_KMS") == "y":
                 certificate = f"{key_dir}{key_id}.x509.pem"
                 if not Path(certificate).is_file():
                     return error(

@@ -178,7 +178,7 @@ def install_tree(
     root: Path,
     mode: str,
     *,
-    keymapper_replacement: tuple[str, str] | None = None,
+    keymapper_config: dict[str, str] | None = None,
 ) -> Tree:
     tools = root / "tools"
     tools.mkdir(parents=True)
@@ -193,12 +193,20 @@ def install_tree(
     _write_executable(mock_directory / "mv", MOVE)
 
     keymapper_file = None
-    if keymapper_replacement:
-        source = (SCRIPTS_DIR / "keymapper.id2b.include.sh").read_text()
-        assert keymapper_replacement[0] in source
-        keymapper_file = str(root / "keymapper.id2b.configured.include.sh")
+    if keymapper_config:
+        keymapper_file = str(root / "keymapper.id2b.configured.py")
         Path(keymapper_file).write_text(
-            source.replace(*keymapper_replacement, 1),
+            "import dataclasses\n"
+            "from signing.keymap import Id2bKeymapper\n"
+            "\n"
+            "def create_keymapper(environment, metadata, *, extra_devices):\n"
+            "    mapper = Id2bKeymapper(\n"
+            "        metadata, extra_devices=extra_devices\n"
+            "    )\n"
+            "    mapper.config = dataclasses.replace(\n"
+            f"        mapper.config, **{keymapper_config!r}\n"
+            "    )\n"
+            "    return mapper\n",
         )
     return Tree(root, mode, keymapper_file)
 
@@ -206,7 +214,7 @@ def install_tree(
 def install_trees(
     tmp_path: Path,
     modes: tuple[str, ...] = MODES,
-    **options: tuple[str, str],
+    **options: dict[str, str],
 ) -> list[Tree]:
     return [install_tree(tmp_path / mode, mode, **options) for mode in modes]
 
@@ -414,10 +422,7 @@ def test_separate_vbmeta_system_key_recovers_and_is_kept(
     trees = install_trees(
         tmp_path,
         ("bash", "guarded"),
-        keymapper_replacement=(
-            "key_avb_consolidation=all",
-            "key_avb_consolidation=none",
-        ),
+        keymapper_config={"avb_consolidation": "none"},
     )
     for tree in trees:
         failed = tree.fail(FAIL_OPENSSL_OUTPUT="keys/0x2008.pem")
@@ -439,10 +444,7 @@ def test_separate_apex_payload_keys(tmp_path: Path) -> None:
     trees = install_trees(
         tmp_path,
         ("bash", "guarded"),
-        keymapper_replacement=(
-            "key_apex_consolidation=dual",
-            "key_apex_consolidation=none",
-        ),
+        keymapper_config={"apex_consolidation": "none"},
     )
     for tree in trees:
         manifest = tree.succeed()

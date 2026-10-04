@@ -11,10 +11,8 @@ export PKCS11_VENDOR=softhsm
 pkcs11_scriptpath=$(cd "$(dirname "$0")";pwd -P)
 scriptpath=$(cd "$(dirname "$0")/..";pwd -P)
 
-if [ "${USE_PYTHON_KEYGEN:-}" = "y" ]; then
-  PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing keygen "$@"
-fi
+PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing keygen "$@"
 source "$pkcs11_scriptpath/keygen.include.sh" || exit $?
 # $scriptpath/vendor.softhsm.include.sh is included later, in initialize_pre_metadata()
 

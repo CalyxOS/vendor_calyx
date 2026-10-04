@@ -7,10 +7,8 @@
 set -euo pipefail
 ourpath=$(cd "$(dirname "$0")";pwd -P)
 scripts_path=${ourpath%/pkcs11}
-if [ "${USE_PYTHON_PROVISION:-}" = "y" ]; then
-  PYTHONPATH="$ourpath/..${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing yubihsm-provision "$@"
-fi
+PYTHONPATH="$ourpath/..${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing yubihsm-provision "$@"
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 declare -g SOURCE_DIRECTORY
 # KEEP_PATH is established in initialize_provisioning_mode and set_mode.
