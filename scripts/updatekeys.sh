@@ -6,6 +6,11 @@
 
 set -euo pipefail
 
+if [ "${USE_PYTHON_UPDATEKEYS:-}" = y ]; then
+  PYTHONPATH="$(cd "$(dirname "$0")";pwd -P)${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing updatekeys "$0" "$@"
+fi
+
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 key_dir subject"
@@ -48,23 +53,6 @@ load_keymapper
 [[ -e $(which openssl) ]] || error "openssl not found in PATH."
 
 [[ -d $1 ]] || error "key directory does not exist"
-
-if [ "${USE_PYTHON_UPDATEKEYS:-}" = y ]; then
-  [ -z "${KEYMAPPER_FILE:-}" ] \
-    || error "USE_PYTHON_UPDATEKEYS does not support KEYMAPPER_FILE"
-  case "${KEYMAPPER:-legacy}" in
-    legacy|id2b) ;;
-    *) error "USE_PYTHON_UPDATEKEYS supports only the legacy and id2b keymappers" ;;
-  esac
-  PYTHONPATH="$SCRIPTPATH${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing update-keys \
-      --metadata "${METADATA_FILE:-$SCRIPTPATH/metadata.py}" \
-      --keymapper "${KEYMAPPER:-legacy}" \
-      --key-directory "$KEY_DIR" \
-      --device "$DEVICE" \
-      --subject "$SUBJECT" \
-      --avbtool "$AVBTOOL"
-fi
 
 for k in "${keys_core[@]}"; do
   [ -n "$k" ] || continue
