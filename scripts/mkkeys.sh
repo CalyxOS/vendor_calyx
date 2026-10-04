@@ -5,6 +5,12 @@
 #
 
 set -euo pipefail
+
+if [ "${USE_PYTHON_UPDATEKEYS:-}" = y ]; then
+  PYTHONPATH="$(cd "$(dirname "$0")";pwd -P)${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing updatekeys --create-directory "$(cd "$(dirname "$0")";pwd -P)/updatekeys.sh" "$@"
+fi
+
 if [ -d "$1" ]; then
   echo "key directory already exists" >&2
   exit 1
