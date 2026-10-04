@@ -149,6 +149,7 @@ class Pkcs11BackendConfiguration:
     certificate_days: int = DEFAULT_CERTIFICATE_DAYS
     use_so_pin: bool = False
     list_requires_no_pin: bool = False
+    preload_module: bool = False
     environment: Mapping[str, str] = field(
         default_factory=dict[str, str],
         repr=False,
@@ -203,6 +204,7 @@ class Pkcs11BackendConfiguration:
                 certificate_days=self.certificate_days,
                 use_so_pin=self.use_so_pin,
                 list_requires_no_pin=self.list_requires_no_pin,
+                preload_module=self.preload_module,
                 environment=self.environment,
             ),
         )
