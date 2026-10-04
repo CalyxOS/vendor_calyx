@@ -4,18 +4,20 @@
 #
 """
 Release key generation for the vendor keygen scripts, which generate the
-keys on a PKCS#11 token and export their certificates and public
+keys on a PKCS#11 token or YubiHSM and export their certificates and public
 keys.
 """
 
 from __future__ import annotations
 
 import abc
+import base64
 import os
 import shutil
 import subprocess
 import sys
-from collections.abc import Mapping, MutableMapping, Sequence
+import tempfile
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
 from . import sign_environment
@@ -23,6 +25,8 @@ from .configuration import (
     EnvironmentPin,
     Pkcs11BackendConfiguration,
 )
+from .confirmation import ask_variable
+from .files import write_file_atomically
 from .keymap import Keymapper, load_keymapper
 from .metadata import SigningMetadata, load_metadata
 from .models import KeyReference, KeySpec
@@ -31,7 +35,20 @@ from .pkcs11 import (
     initialize_pkcs11_token,
     is_any_pkcs11_token_initialized,
 )
+from .release_execution import render_release_tool
 from .sign_orchestration import load_devices_file
+from .vendor_yubihsm import (
+    YubiHsmConfig,
+    attest_key,
+    export_wrapped_key,
+    extract_and_save_audit_log,
+    generate_asymmetric_key,
+    get_certificate,
+    get_device_identity,
+    get_loaded_key_status,
+    import_certificate,
+    limit_ondemand_objects,
+)
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_TOKEN_LABEL = "androsign"
@@ -58,6 +75,7 @@ class KeygenDriver(abc.ABC):
     ) -> None:
         self.environment = environment
         self.key_out_dir = key_out_dir
+        self.keymapper: Keymapper | None = None
 
     def initialize_pre_metadata(self) -> None:
         """Prepare what metadata loading needs. Does nothing by default."""
@@ -87,8 +105,15 @@ class KeygenDriver(abc.ABC):
                 self.environment,
                 certificate,
                 key_type,
+                self.derived_public_key_written,
                 quiet=True,
             )
+
+    def derived_public_key_written(self, path: Path) -> None:
+        """
+        Keep a public key file that complete_existing_certificate() wrote.
+        Does nothing by default.
+        """
 
     @abc.abstractmethod
     def cert_exists(self, mapped_value: str) -> bool:
@@ -524,6 +549,7 @@ def export_public_keys(
     environment: Mapping[str, str],
     certificate: Path,
     key_type: str,
+    written: Callable[[Path], None] = lambda path: None,
     *,
     quiet: bool = False,
 ) -> None:
@@ -536,6 +562,7 @@ def export_public_keys(
         environment: Environment naming OPENSSL_BIN and AVBTOOL_BIN.
         certificate: The .x509.pem certificate.
         key_type: The key's type.
+        written: Called with each file as soon as it is written.
         quiet: Say nothing about a file that is already there.
     """
     if key_type not in {"avb", "apex_payload", "apex_container"}:
@@ -562,6 +589,7 @@ def export_public_keys(
             ],
             check=True,
         )
+        written(public_key)
     if key_type not in {"avb", "apex_payload"}:
         return
     avb_public_key = certificate.with_name(f"{name}.avbpubkey")
@@ -583,6 +611,7 @@ def export_public_keys(
             ],
             check=True,
         )
+        written(avb_public_key)
 
 
 _SOFTHSM_CONFIG = """\
@@ -646,25 +675,448 @@ class SoftHsmKeygenDriver(Pkcs11KeygenDriver):
         self.maybe_initialize_token()
 
 
+class YubiHsmKeygenDriver(KeygenDriver):
+    """
+    Generate keys on the YubiHSM, back each up wrapped,
+    and use its attestation certificate as its certificate, recording
+    every device operation in the audit log.
+    """
+
+    def __init__(
+        self,
+        environment: MutableMapping[str, str],
+        key_out_dir: Path,
+    ) -> None:
+        super().__init__(environment, key_out_dir)
+        self.temp_dir: Path | None = None
+        self.unique_key_out_dir = key_out_dir
+        self.hsm_key_out_dir = key_out_dir
+
+    def _config(self) -> YubiHsmConfig:
+        return sign_environment.yubihsm_config_from_environment(
+            self.environment,
+        )
+
+    def _connection_arguments(self) -> list[str]:
+        return [
+            "--connector",
+            self.environment["YUBIHSM_CONNECTOR"],
+            "--authkey",
+            self.environment["YUBIHSM_AUTHKEY"],
+            "--password-env",
+            "YUBIHSM_PASSWORD",
+        ]
+
+    def derived_public_key_written(self, path: Path) -> None:
+        """
+        Copy a derived public key file into the HSM's directory unless one
+        is there already.
+        """
+        hsm_copy = self.hsm_key_out_dir / path.relative_to(self.key_out_dir)
+        if not hsm_copy.exists():
+            hsm_copy.parent.mkdir(parents=True, exist_ok=True)
+            write_file_atomically(hsm_copy, path.read_bytes())
+
+    def _dry_run(self) -> bool:
+        return self.environment.get("DRY_RUN") == "y"
+
+    def _extract_logs(self, comment: str) -> None:
+        """Append the device audit log with a comment, unless DRY_RUN=y."""
+        if self._dry_run():
+            return
+        config = self._config()
+        extract_and_save_audit_log(
+            config,
+            Path(self.environment["AUDIT_LOG_PATH"]),
+            comment,
+        )
+
+    def logged(
+        self,
+        command: Sequence[str],
+        operation: Callable[[], object],
+    ) -> None:
+        """
+        Run one device operation and record it in the audit log under the
+        `python3 -m signing` command line that performs it, or under
+        DRY_RUN=y print that command line instead.
+        """
+        if self._dry_run():
+            print(
+                render_release_tool(["python3", "-m", "signing", *command]),
+                end="",
+                file=sys.stderr,
+            )
+            return
+        error: BaseException | None = None
+        try:
+            operation()
+        except Exception as caught:
+            error = caught
+        self._record(
+            f"Command: python3 -m signing {' '.join(command)} "
+            f"Result: {0 if error is None else 1}",
+            failed=error is not None,
+        )
+        if error is not None:
+            raise error
+
+    def _record(self, comment: str, *, failed: bool = False) -> None:
+        """
+        Append the audit log with a comment, unless DRY_RUN=y. A failed
+        extraction is reported, and raised unless the operation recorded
+        failed or NO_LOG_FAIL=y.
+        """
+        try:
+            self._extract_logs(comment)
+        except Exception:
+            print("Failed to extract logs", file=sys.stderr)
+            if not failed and self.environment.get("NO_LOG_FAIL") != "y":
+                raise
+
+    def key_algorithm(self, key_type: str) -> str:
+        """
+        Return RSA of RSA_KEY_SIZE bits for AVB and APEX payload keys, and
+        RSA-4096 for every other key.
+        """
+        if key_type in {"avb", "apex_payload"}:
+            return super().key_algorithm(key_type)
+        return "RSA:4096"
+
+    def initialize_pre_metadata(self) -> None:
+        """
+        Read YUBIHSM_PASSWORD_FILE, ask for a missing YUBIHSM_PASSWORD,
+        create the temporary directory and default the other credentials.
+        """
+        environment = self.environment
+        sign_environment.read_yubihsm_password_file(environment)
+        if not environment.get("YUBIHSM_PASSWORD"):
+            ask_variable(
+                "YUBIHSM_PASSWORD",
+                environment,
+                default="",
+                private=True,
+                needs_value=True,
+            )
+        if environment.get("GENERATE_USING_PKCS11") == "y":
+            print("GENERATE_USING_PKCS11=y is not supported.", file=sys.stderr)
+            raise KeygenError("GENERATE_USING_PKCS11=y is not supported")
+        self.temp_dir = Path(tempfile.mkdtemp(prefix="keygen-", dir="/dev/shm"))
+        if not environment.get("YUBIHSM_AUTHKEY"):
+            environment["YUBIHSM_AUTHKEY"] = "1"
+            print("YUBIHSM_AUTHKEY not specified. Using 1.", file=sys.stderr)
+        if environment.get("PKCS11_PIN"):
+            print(
+                "WARNING: Specified PKCS11_PIN is ignored! It is constructed "
+                "from YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.",
+                file=sys.stderr,
+            )
+        for name in ("YUBIHSM_KEY_CAPABILITIES", "YUBIHSM_OPAQUE_CAPABILITIES"):
+            print(
+                f"Using additional {name}: "
+                f"{environment.get(name) or '(none)'}.",
+                file=sys.stderr,
+            )
+            environment[name] = environment.get(name, "")
+
+    def initialize_post_metadata(self) -> None:
+        """
+        Name the output directories and audit log after the device, save
+        its attestation certificate, identity and keymap, and limit the
+        on-demand objects.
+        """
+        environment = self.environment
+        identity = get_device_identity(self._config())
+        name = identity.name
+        self.unique_key_out_dir = Path(
+            environment.get("UNIQUE_KEY_OUT_DIR")
+            or self.key_out_dir / f"{name}-{sign_environment.formatted_date()}",
+        )
+        self.hsm_key_out_dir = Path(
+            environment.get("HSM_KEY_OUT_DIR") or self.key_out_dir / name,
+        )
+        logs_dir = environment.get("YUBIHSM_LOGS_DIR") or f"{Path.cwd()}/logs"
+        environment["AUDIT_LOG_PATH"] = (
+            f"{logs_dir}/{name}/{sign_environment.formatted_date()}-keygen.log"
+        )
+        if self._dry_run():
+            self._limit_ondemand_objects()
+            return
+
+        self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
+        attestation_key = self.unique_key_out_dir / "YubiHSM_attestation.pem"
+        attestation_key.write_bytes(get_certificate(self._config(), "0x0000"))
+        self._copy_to_other_dirs(attestation_key)
+
+        device_info = self.unique_key_out_dir / "hsm_info.txt"
+        device_info.write_text(identity.device_info)
+        self._copy_to_other_dirs(device_info)
+
+        keymap = self.unique_key_out_dir / "keymap.tsv"
+        keymap.write_bytes(Path(environment["KEYMAP_FILE"]).read_bytes())
+        self._copy_to_other_dirs(keymap)
+
+        self._limit_ondemand_objects()
+
+    def _copy_to_other_dirs(self, source: Path) -> None:
+        """
+        Copy a file into the HSM's directory, replacing it, and into the
+        main output directory unless it is already there. Copies nothing
+        under DRY_RUN=y.
+        """
+        if self._dry_run():
+            return
+        relative = source.relative_to(self.unique_key_out_dir)
+        hsm_copy = self.hsm_key_out_dir / relative
+        main_copy = self.key_out_dir / relative
+        hsm_copy.parent.mkdir(parents=True, exist_ok=True)
+        main_copy.parent.mkdir(parents=True, exist_ok=True)
+        data = source.read_bytes()
+        write_file_atomically(hsm_copy, data)
+        if not main_copy.exists():
+            write_file_atomically(main_copy, data)
+
+    def _limit_ondemand_objects(self) -> None:
+        """
+        Evict on-demand objects whose backup is in the output directory
+        until the device has room.
+        """
+        limit_ondemand_objects(
+            self._config(),
+            self.key_out_dir,
+            self.environment["YUBIHSM_ONDEMAND_DOMAIN"],
+            self._record,
+            dry_run=self._dry_run(),
+        )
+
+    def _domains(self, key_id: str) -> str:
+        """
+        Return a key's domains. Every key is exportable, and an on-demand
+        key also goes into the on-demand domain.
+        """
+        environment = self.environment
+        domains = environment["YUBIHSM_EXPORTABLE_DOMAIN"]
+        assert self.keymapper is not None
+        if self.keymapper.key_id_is_per_device(key_id):
+            domains += f",{environment['YUBIHSM_ONDEMAND_DOMAIN']}"
+        return domains
+
+    def key_exists(self, mapped_value: str) -> bool:
+        if (self.key_out_dir / f"{mapped_value}-asymmetric-key.yhw").exists():
+            return True
+        status = get_loaded_key_status(self._config())
+        return int(mapped_value, 16) in status.loaded_key_ids
+
+    def cert_exists(self, mapped_value: str) -> bool:
+        if (self.key_out_dir / f"{mapped_value}.x509.pem").exists():
+            return True
+        status = get_loaded_key_status(self._config())
+        return int(mapped_value, 16) in status.loaded_cert_ids
+
+    def generate_keypair(
+        self,
+        key_id: str,
+        label: str,
+        algorithm: str,
+    ) -> None:
+        """Generate one key pair on the device and back it up wrapped."""
+        environment = self.environment
+        domains = self._domains(key_id)
+        capabilities = (
+            f"{environment['YUBIHSM_KEY_CAPABILITIES']},exportable-under-wrap"
+        )
+        self.logged(
+            [
+                "generate-asymmetric-key",
+                *self._connection_arguments(),
+                "--key-id",
+                key_id,
+                "--label",
+                label,
+                "--domain",
+                domains,
+                "--capabilities",
+                capabilities,
+                "--algorithm",
+                algorithm,
+            ],
+            lambda: generate_asymmetric_key(
+                self._config(),
+                key_id=key_id,
+                label=label,
+                domains=domains,
+                capabilities=capabilities,
+                algorithm=algorithm,
+            ),
+        )
+        output = self.unique_key_out_dir / f"{key_id}-asymmetric-key.yhw"
+        if not self._dry_run():
+            self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
+        wrap_id = environment["YUBIHSM_WRAP_KEY_ID"]
+
+        def export() -> None:
+            wrapped = export_wrapped_key(
+                sign_environment.yubihsm_config_from_environment(environment),
+                key_id,
+            )
+            write_file_atomically(output, base64.b64encode(wrapped))
+
+        self.logged(
+            [
+                "export-wrapped-key",
+                *self._connection_arguments(),
+                "--wrap-id",
+                wrap_id,
+                "--key-id",
+                key_id,
+                "--output",
+                str(output),
+            ],
+            export,
+        )
+        self._copy_to_other_dirs(output)
+
+    def generate_cert(
+        self,
+        key_id: str,
+        key_type: str,
+        algorithm: str,
+    ) -> None:
+        """
+        Use the key's attestation certificate as its certificate and import
+        it.
+        """
+        environment = self.environment
+        domains = self._domains(key_id)
+        capabilities = (
+            f"{environment['YUBIHSM_OPAQUE_CAPABILITIES']},"
+            "exportable-under-wrap"
+        )
+        if not self._dry_run():
+            self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
+        attestation = self.unique_key_out_dir / f"{key_id}.attestation.pem"
+
+        def attest() -> None:
+            attestation.write_bytes(
+                attest_key(self._config(), key_id),
+            )
+
+        self.logged(
+            [
+                "attest-key",
+                *self._connection_arguments(),
+                "--key-id",
+                key_id,
+                "--attestation-id",
+                "0",
+                "--output",
+                str(attestation),
+            ],
+            attest,
+        )
+        self._copy_to_other_dirs(attestation)
+        certificate = self.unique_key_out_dir / f"{key_id}.x509.pem"
+        if not self._dry_run():
+            shutil.copy2(attestation, certificate)
+        self._copy_to_other_dirs(certificate)
+        self.logged(
+            [
+                "import-certificate",
+                *self._connection_arguments(),
+                "--key-id",
+                key_id,
+                "--input",
+                str(certificate),
+                "--domain",
+                domains,
+                "--capabilities",
+                capabilities,
+            ],
+            lambda: import_certificate(
+                self._config(),
+                key_id=key_id,
+                domains=domains,
+                capabilities=capabilities,
+                certificate_pem=certificate.read_bytes(),
+            ),
+        )
+        if not self._dry_run():
+            export_public_keys(
+                environment,
+                certificate,
+                key_type,
+                self._copy_to_other_dirs,
+            )
+        self._limit_ondemand_objects()
+
+    def cleanup(self) -> bool:
+        """
+        Remove the temporary directory and upload a non-empty audit log,
+        and return whether the upload succeeded.
+        """
+        environment = self.environment
+        if self.temp_dir is not None:
+            if environment.get("CLEANUP_ON_EXIT", "y") == "n":
+                print(
+                    f"Temp files retained at {self.temp_dir}.",
+                    file=sys.stderr,
+                )
+            else:
+                if not environment.get("CLEANUP_ON_EXIT"):
+                    print(
+                        "\nNote: You can retain temp files and imported "
+                        "keys/certs for inspection by setting "
+                        "CLEANUP_ON_EXIT=n\n",
+                        file=sys.stderr,
+                    )
+                shutil.rmtree(self.temp_dir, ignore_errors=True)
+        audit_log = environment.get("AUDIT_LOG_PATH")
+        if (
+            audit_log
+            and Path(audit_log).is_file()
+            and Path(audit_log).stat().st_size
+        ):
+            try:
+                uploaded = subprocess.run(
+                    [
+                        f"{environment['YUBIHSM_LOGS_DIR']}/upload.py",
+                        "-f",
+                        audit_log,
+                    ],
+                    check=False,
+                )
+            except OSError as error:
+                print(
+                    f"Could not upload the audit log ({error})",
+                    file=sys.stderr,
+                )
+                return False
+            if uploaded.returncode != 0:
+                print(
+                    "Could not upload the audit log (exit status "
+                    f"{uploaded.returncode})",
+                    file=sys.stderr,
+                )
+                return False
+        return True
+
+
 _DRIVERS: dict[str, type[KeygenDriver]] = {
     "softhsm": SoftHsmKeygenDriver,
+    "yubihsm": YubiHsmKeygenDriver,
 }
 
 
 def keygen_usage() -> None:
-    print("usage: keygen [public_key_output_dir]")
+    print("usage: keygen public_key_output_dir")
     print()
-    print(
-        "Generate keys using SoftHSM2 or a similarly compatible PKCS#11 "
-        "module specified by the",
-    )
-    print("PKCS11_MODULE environment variable.")
+    print("Generate the release keys on the SoftHSM2 token or the YubiHSM 2")
+    print("that PKCS11_VENDOR selects, and write their certificates and public")
+    print("keys to public_key_output_dir.")
     print()
-    print(
-        "Most functionality is controlled by environment variables. Check "
-        "out the initialize",
-    )
-    print("functions in this script or its includes.")
+    print("Most functionality is controlled by environment variables. Check")
+    print("out SoftHsmKeygenDriver and YubiHsmKeygenDriver in")
+    print("signing/keygen.py.")
 
 
 def keygen_main(
@@ -682,6 +1134,9 @@ def keygen_main(
 
     Returns:
         0 on success, 1 on failure.
+
+    Raises:
+        OSError: If the key output directory cannot be created.
     """
     output_argument = None
     for argument in arguments or [""]:
@@ -698,13 +1153,16 @@ def keygen_main(
             return 1
         output_argument = argument
     key_out_dir = Path(output_argument or "")
-    try:
-        key_out_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
-    except OSError as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 1
+    key_out_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
 
+    inherited = dict(environment)
+    vendor = None
     vendor_name = environment.get("PKCS11_VENDOR", "")
+    yubihsm_errors: tuple[type[Exception], ...] = ()
+    if vendor_name == "yubihsm":
+        from yubihsm.exceptions import YubiHsmError
+
+        yubihsm_errors = (YubiHsmError,)
     try:
         driver = _DRIVERS[vendor_name](environment, key_out_dir)
     except KeyError:
@@ -748,9 +1206,10 @@ def keygen_main(
         devices = load_devices_file(Path(devices_file))
         print(f"Loaded devices from {devices_file}")
         print(f"Loaded metadata from {metadata_file}")
-        sign_environment.load_vendor(environment)
+        vendor = sign_environment.load_vendor(environment)
         keymapper = load_keymapper(environment, metadata)
         keymapper.key_dir(environment)
+        driver.keymapper = keymapper
         sign_environment.maybe_initialize_vendor_interactive(
             environment,
             assume_yes=environment.get("SIGN_ASSUME_YES") == "y",
@@ -787,6 +1246,13 @@ def keygen_main(
         elif not isinstance(error, KeygenError):
             print(f"error: {error}", file=sys.stderr)
         return 1
+    except yubihsm_errors as error:
+        print(f"error: YubiHSM failure: {error}", file=sys.stderr)
+        return 1
     finally:
-        cleaned = driver.cleanup()
+        try:
+            cleaned = driver.cleanup()
+        finally:
+            if vendor is not None:
+                vendor.cleanup(environment, inherited=inherited)
     return 0 if cleaned else 1
