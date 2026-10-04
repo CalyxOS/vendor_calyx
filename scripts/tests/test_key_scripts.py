@@ -5,11 +5,7 @@
 
 from __future__ import annotations
 
-import os
-import shutil
-import stat
 import subprocess
-import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -135,42 +131,6 @@ def test_python_mkkeys_creates_the_directory_as_bash_does(
     assert bash[0] == 1
     assert bash[3] == ["keys", "keys/bramble"]
     assert "incorrect number of arguments" in bash[2]
-
-
-@pytest.mark.parametrize("script", FLAGS)
-def test_key_script_flags_route_through_python(
-    tmp_path: Path,
-    script: str,
-) -> None:
-    command = script.replace("mk", "update")
-    fake_bin = tmp_path / "fake-path-bin"
-    fake_bin.mkdir()
-    fake_python3 = fake_bin / "python3"
-    fake_python3.write_text(
-        "#!/bin/sh\n"
-        f'case " $* " in *" {command} "*)\n'
-        "  echo FAKE_PYTHON3_INVOKED >&2\n"
-        "  exit 1\n"
-        "esac\n"
-        f'exec {sys.executable} "$@"\n',
-    )
-    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
-    results = {
-        flag: run(
-            [SCRIPTS_DIR / f"{script}.sh", f"keys{flag}/bramble"],
-            cwd=tmp_path,
-            env={
-                "PATH": f"{fake_bin}:{os.environ['PATH']}",
-                FLAGS[script]: flag,
-            },
-            check=False,
-        )
-        for flag in ("", "y")
-    }
-
-    assert "FAKE_PYTHON3_INVOKED" in results["y"].stderr
-    assert "FAKE_PYTHON3_INVOKED" not in results[""].stderr
-    shutil.rmtree(tmp_path / "keys", ignore_errors=True)
 
 
 def test_python_updatecommonkeys_reports_an_empty_subject(

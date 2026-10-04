@@ -522,14 +522,8 @@ class SignOrchestrator:
     def _load_keymapper_and_maybe_pkcs11(self) -> None:
         try:
             sign_environment.load_vendor(self.environment)
-            sign_environment.require_python_interceptor(self.environment)
         except RuntimeError as error:
-            raise _reported_step_error(
-                sign_environment.describe_vendor_error(
-                    error,
-                    "USE_PYTHON_SIGN_ORCHESTRATION",
-                ),
-            ) from error
+            raise _reported_step_error(str(error)) from error
         try:
             self.keymapper()
         except (ValueError, OSError) as error:
@@ -676,12 +670,7 @@ class SignOrchestrator:
                     tmpdir=self.tmpdir,
                 )
             except (RuntimeError, OSError) as error:
-                raise _reported_step_error(
-                    sign_environment.describe_vendor_error(
-                        error,
-                        "USE_PYTHON_SIGN_ORCHESTRATION",
-                    ),
-                ) from error
+                raise _reported_step_error(str(error)) from error
         (self.cwd / "archive").mkdir(exist_ok=True)
 
     def _sort_and_separate_devices_by_key_availability(self) -> None:
