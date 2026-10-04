@@ -8,9 +8,7 @@ from __future__ import annotations
 import base64
 import os
 import re
-import stat
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -79,14 +77,11 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
     }
 
 
-@pytest.mark.parametrize("python_tools", ["", "y"])
 def test_backup_exports_every_asymmetric_key_under_wrap(
     tmp_path: Path,
-    python_tools: str,
     yubihsm: Connector,
 ) -> None:
     environment = _provisioning_tree(tmp_path, yubihsm)
-    environment["YUBIHSM_PYTHON_TOOLS"] = python_tools
 
     result = run(
         ["bash", PROVISION_SH, "backup"],
@@ -110,13 +105,12 @@ def test_backup_exports_every_asymmetric_key_under_wrap(
     assert len(wrapped) == 2
     assert all("--wrap-id 0x0010" in line for line in wrapped)
     assert "Provisioning completed successfully!" in result.stdout
-    if python_tools:
-        for path in keys.iterdir():
-            key_id = int(path.name.split("-")[0], 16)
-            assert yubihsm.device.unwrap(
-                base64.b64decode(path.read_bytes()),
-                0x0010,
-            ) == (key_id, OBJECT.ASYMMETRIC_KEY)
+    for path in keys.iterdir():
+        key_id = int(path.name.split("-")[0], 16)
+        assert yubihsm.device.unwrap(
+            base64.b64decode(path.read_bytes()),
+            0x0010,
+        ) == (key_id, OBJECT.ASYMMETRIC_KEY)
 
 
 IMPLEMENTATIONS = ["bash", "python"]
@@ -296,31 +290,6 @@ def test_python_wizard_matches_bash(
     )
 
     assert python == bash
-
-
-def test_provision_flag_routes_through_python(tmp_path: Path) -> None:
-    fake_bin = tmp_path / "fake-path-bin"
-    fake_bin.mkdir()
-    fake_python3 = fake_bin / "python3"
-    fake_python3.write_text(
-        "#!/bin/sh\n"
-        'case " $* " in *" yubihsm-provision "*)\n'
-        "  echo FAKE_PYTHON3_INVOKED >&2\n"
-        "  exit 1\n"
-        "esac\n"
-        f'exec {sys.executable} "$@"\n',
-    )
-    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
-    environment = {"PATH": f"{fake_bin}:{os.environ['PATH']}"}
-
-    results = {
-        implementation: _wizard(implementation, "bogus", environment, "")
-        for implementation in IMPLEMENTATIONS
-    }
-
-    assert "FAKE_PYTHON3_INVOKED" in results["python"].stderr
-    assert "FAKE_PYTHON3_INVOKED" not in results["bash"].stderr
-    assert "Unrecognized mode: bogus" in results["bash"].stderr
 
 
 def test_wizard_gives_up_after_one_failure_under_sign_assume_yes(

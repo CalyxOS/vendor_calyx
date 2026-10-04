@@ -52,7 +52,6 @@ def sign_app_tree(tmp_path: Path) -> Path:
 
 def _sign_app_environment(root: Path, yubihsm: Connector) -> dict[str, str]:
     return {
-        "USE_PYTHON_SIGN_APP": "y",
         "YUBIHSM_CONNECTOR": yubihsm.url,
         "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
         "TMPDIR": str(root / "tmp"),
@@ -77,7 +76,6 @@ def _run_sign_app(
         cwd=root,
         env={
             **_sign_app_environment(root, yubihsm),
-            "PKCS11_PYTHON_INTERCEPTOR": "y",
             "YUBIHSM_SIGNING_CACHE": "",
             "FAKE_JAVA_LOG": str(java_log),
             **environment,
@@ -216,23 +214,6 @@ def test_sign_app_kms_path_needs_the_certificate_file(
     assert result.returncode == 1
     assert "no certificate file found at" in result.stderr
     assert argv is None
-
-
-def test_sign_app_runs_without_the_python_interceptor_flag(
-    sign_app_tree: Path,
-    yubihsm: Connector,
-) -> None:
-    result, argv = _run_sign_app(
-        sign_app_tree,
-        yubihsm,
-        APP,
-        "app.apk",
-        PKCS11_PYTHON_INTERCEPTOR="",
-    )
-
-    assert "requires PKCS11_PYTHON_INTERCEPTOR=y" not in result.stderr
-    assert result.returncode == 0, result.stderr
-    assert argv is not None
 
 
 def test_sign_app_reads_the_password_file(

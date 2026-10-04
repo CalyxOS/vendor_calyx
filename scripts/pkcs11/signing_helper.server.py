@@ -22,7 +22,7 @@ from signing.avb_signing import avb_input_digest, key_name_from_path
 from signing.key_consistency import require_signature_from_public_key
 from signing.yubihsm_session_service import sign_digest_through_server
 
-FALLBACK_HELPER = SCRIPT_DIR / "signing_helper.openssl.sh"
+FALLBACK_HELPER = SCRIPT_DIR / "signing_helper.py"
 
 
 def sign_through_server(
