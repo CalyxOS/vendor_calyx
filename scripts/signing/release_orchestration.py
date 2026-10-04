@@ -311,14 +311,9 @@ def prepare_signing_args(
 
     Raises:
         RuntimeError: If a helper tool variable names anything other
-            than python or server, or USE_APKSIGNER=n.
+            than python or server.
     """
     if _signs_through_pkcs11(environment):
-        if environment.get("USE_APKSIGNER") == "n":
-            raise RuntimeError(
-                "USE_APKSIGNER=n is not supported with PKCS#11 signing, "
-                "which signs APKs through apksigner's calyx KMS type",
-            )
         tool = environment.get("SIGNING_HELPER_TOOL") or "python"
         avb_tool = environment.get("AVB_SIGNING_HELPER_TOOL") or tool
         payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
