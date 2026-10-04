@@ -134,6 +134,9 @@ set_mode() {
     initialize_provisioning_mode || return 0
     declare -g wizard_script=(
       "${wizard_script_start[@]}"
+      ask_signing_authkey_password_if_needed
+      use_signing_authkey
+      connect_hsm
       backup_primary
       check_exports
       "${wizard_script_end[@]}"
@@ -236,11 +239,21 @@ keygen() {
   ) || return $?
 }
 
-backup_primary() {
-  # Back up / export objects.
-  # shellcheck disable=SC2031
-  (cd "$KEY_DIR" && YUBIHSM_PASSWORD=$YUBIHSM_SIGNING_AUTHKEY_PASSWORD dump) \
+_backup_asymmetric_key() {
+  local is_key_id_exportable
+  is_key_id_exportable=$(get_key_id_is_exportable_yn "$id") || return $?
+  [ "$is_key_id_exportable" = "y" ] || return 0
+  yubihsm -a get-wrapped \
+    --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
+    --object-id "$id" \
+    --object-type asymmetric-key \
+    --out "$KEY_DIR/$id-asymmetric-key.yhw" \
     || return $?
+}
+
+backup_primary() {
+  mkdir -p -m0700 "$KEY_DIR" || return $?
+  call_for_each_object _backup_asymmetric_key --object-type asymmetric-key || return $?
 }
 
 check_exports() {
