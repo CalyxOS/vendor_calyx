@@ -1,0 +1,13 @@
+Using keymapper: id2b
+generate_sunpkcs11_config
+
+Command: <script> bramble 2026080100 2026081500
+
+./bin/ota_from_target_files -p . --verbose --pkcs11_config <tree>/signing.XXXXXXXX/sunpkcs11.cfg --extra_avbtool_signing_args --signing_helper\ <scripts>/pkcs11/signing_helper.py --payload_signer <scripts>/pkcs11/payload_signer.py --signapk_external_signer <scripts>/pkcs11/payload_signer.py --payload_signer_maximum_signature_size 512 -k keys/0x2000 -i archive/release-bramble-2026080100/bramble-target_files-2026080100.zip archive/release-bramble-2026081500/bramble-target_files-2026081500.zip archive/release-bramble-2026081500/bramble-incremental-2026080100-2026081500.zip
+
+pushd archive/release-bramble-2026081500
+
+sha256sum bramble-incremental-2026080100-2026081500.zip
+
+popd
+

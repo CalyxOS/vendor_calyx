@@ -368,7 +368,7 @@ def sign_builds(
             (sign.sh's `archive/`).
         jobs: Maximum concurrent release.sh invocations (NUM_SIGN_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
-            (ORIGINAL_TMPDIR, defaulting to /dev/shm).
+            (sign.sh's TMPDIR, defaulting to /dev/shm).
         environment: Environment the jobs start from, the process
             environment unless given.
 
@@ -459,7 +459,7 @@ def generate_incrementals(
         jobs: Maximum concurrent generate_delta.sh invocations
             (NUM_INCREMENTAL_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
-            (ORIGINAL_TMPDIR, defaulting to /dev/shm).
+            (sign.sh's TMPDIR, defaulting to /dev/shm).
         environment: Environment the jobs start from, the process
             environment unless given.
 

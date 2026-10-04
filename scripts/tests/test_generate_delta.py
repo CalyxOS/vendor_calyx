@@ -14,10 +14,10 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, TEST_METADATA, run
+from conftest import SCRIPTS_DIR, TEST_METADATA, parameter_id, run
 from test_release_orchestration import (
+    DRY_RUN_FIXTURES,
     normalize_command_line,
-    strip_bash_only_keymapper_noise,
 )
 
 
@@ -70,26 +70,20 @@ def delta_tree(tmp_path: Path) -> Path:
     return tmp_path
 
 
-implementations = pytest.mark.parametrize(
-    "python",
-    (False, True),
-    ids=("bash", "python"),
-)
-
-
 def run_generate_delta(
     root: Path,
     *,
     environment: dict[str, str] | None = None,
     dry_run: bool = True,
-    python: bool = False,
     arguments: tuple[str, ...] = (DEVICE, BUILD_OLD, BUILD_NEW),
 ) -> subprocess.CompletedProcess[str]:
-    variables = {"KEYMAPPER": "id2b", **(environment or {})}
+    variables = {
+        "KEYMAPPER": "id2b",
+        "TMPDIR": str(root),
+        **(environment or {}),
+    }
     if dry_run:
         variables["DRY_RUN"] = "y"
-    if python:
-        variables["USE_PYTHON_GENERATE_DELTA"] = "y"
     return run(
         [SCRIPTS_DIR / "generate_delta.sh", *arguments],
         cwd=root,
@@ -98,48 +92,9 @@ def run_generate_delta(
     )
 
 
-def _files(root: Path) -> set[str]:
-    return {
-        str(path.relative_to(root))
-        for path in root.rglob("*")
-        if path.is_file()
-    }
-
-
-def test_generate_delta_dry_run_leaves_the_files_bash_leaves(
-    tmp_path: Path,
-) -> None:
-    created: dict[str, set[str]] = {}
-    for label, python in (("bash", False), ("python", True)):
-        root = tmp_path / label
-        _write_target_files_zip(_target_files_path(root, BUILD_OLD))
-        _write_target_files_zip(_target_files_path(root, BUILD_NEW))
-        before = _files(root)
-        result = run_generate_delta(root, python=python)
-        assert result.returncode == 0, result.stderr
-        created[label] = _files(root) - before
-
-    assert created["python"] == created["bash"]
-
-
-@implementations
-def test_generate_delta_dry_run_renders_ota_command(
-    delta_tree: Path,
-    python: bool,
-) -> None:
-    result = run_generate_delta(delta_tree, python=python)
-
-    assert result.returncode == 0, result.stderr
-    assert "/bin/ota_from_target_files" in result.stderr
-    assert "-k keys/0x2000" in result.stderr
-    assert f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip" in result.stderr
-
-
 @pytest.mark.parametrize("built", (True, False), ids=("built", "missing"))
-@implementations
 def test_generate_delta_finds_its_ota_tool_in_a_source_tree(
     delta_tree: Path,
-    python: bool,
     built: bool,
 ) -> None:
     (delta_tree / "build/tools/releasetools").mkdir(parents=True)
@@ -149,7 +104,7 @@ def test_generate_delta_finds_its_ota_tool_in_a_source_tree(
         tool.write_text("#!/bin/sh\n")
         tool.chmod(0o755)
 
-    result = run_generate_delta(delta_tree, python=python)
+    result = run_generate_delta(delta_tree)
 
     if built:
         assert result.returncode == 0, result.stderr
@@ -162,14 +117,12 @@ def test_generate_delta_finds_its_ota_tool_in_a_source_tree(
         )
 
 
-@implementations
 def test_generate_delta_creates_incremental_and_checksum(
     delta_tree: Path,
-    python: bool,
 ) -> None:
     _install_fake_ota_tool(delta_tree)
 
-    result = run_generate_delta(delta_tree, dry_run=False, python=python)
+    result = run_generate_delta(delta_tree, dry_run=False)
 
     assert result.returncode == 0, result.stderr
     out = _incremental_out_dir(delta_tree)
@@ -181,30 +134,24 @@ def test_generate_delta_creates_incremental_and_checksum(
     assert checksum.read_text() == f"{digest}  {incremental_name}\n"
 
 
-@implementations
-def test_generate_delta_stops_when_ota_tool_fails(
-    delta_tree: Path,
-    python: bool,
-) -> None:
+def test_generate_delta_stops_when_ota_tool_fails(delta_tree: Path) -> None:
     tool_directory = delta_tree / "bin"
     tool_directory.mkdir()
     tool = tool_directory / "ota_from_target_files"
     tool.write_text("#!/bin/sh\nexit 23\n")
     tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
 
-    result = run_generate_delta(delta_tree, dry_run=False, python=python)
+    result = run_generate_delta(delta_tree, dry_run=False)
 
     assert result.returncode == 23
     out = _incremental_out_dir(delta_tree)
     assert not list(out.glob(f"{DEVICE}-incremental-*"))
 
 
-@implementations
 @pytest.mark.parametrize("fails", (False, True), ids=("success", "failure"))
 def test_generate_delta_removes_its_temporaries(
     delta_tree: Path,
     fails: bool,
-    python: bool,
 ) -> None:
     if fails:
         tool = delta_tree / "bin" / "ota_from_target_files"
@@ -219,7 +166,6 @@ def test_generate_delta_removes_its_temporaries(
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        python=python,
         environment={
             "TMPDIR": str(tmpdir),
             "PKCS11_MODULE": "/dev/null",
@@ -258,11 +204,15 @@ def test_generate_delta_checksums_without_sha256sum(
     assert checksum.read_text() == f"{digest}  {incremental.name}\n"
 
 
-def _normalized(stderr: str) -> str:
-    return re.sub(
-        r"/signing\.\w+/",
-        "/signing.XXXXXXXX/",
-        normalize_command_line(strip_bash_only_keymapper_noise(stderr)),
+def _normalized(stderr: str, tree: Path) -> str:
+    return (
+        re.sub(
+            r"/signing\.\w+/",
+            "/signing.XXXXXXXX/",
+            normalize_command_line(stderr),
+        )
+        .replace(str(SCRIPTS_DIR), "<scripts>")
+        .replace(str(tree), "<tree>")
     )
 
 
@@ -279,49 +229,44 @@ def _normalized(stderr: str) -> str:
     ),
     ids=("plaintext", "pkcs11", "key-suffix"),
 )
-def test_python_generate_delta_dry_run_matches_bash_byte_for_byte(
+def test_generate_delta_dry_run_renders_the_expected_commands(
     delta_tree: Path,
     environment: dict[str, str],
+    request: pytest.FixtureRequest,
 ) -> None:
-    bash = run_generate_delta(delta_tree, environment=environment)
-    python = run_generate_delta(
-        delta_tree,
-        environment=environment,
-        python=True,
+    name = parameter_id(request)
+
+    result = run_generate_delta(delta_tree, environment=environment)
+
+    assert result.returncode == 0, result.stderr
+    assert (
+        result.stdout
+        == (DRY_RUN_FIXTURES / f"generate-delta-{name}.stdout").read_text()
+    )
+    assert (
+        _normalized(result.stderr, delta_tree)
+        == (DRY_RUN_FIXTURES / f"generate-delta-{name}.stderr").read_text()
     )
 
-    assert bash.returncode == 0, bash.stderr
-    assert python.returncode == 0, python.stderr
-    assert _normalized(python.stderr) == _normalized(bash.stderr)
 
-
-@implementations
 def test_generate_delta_refuses_a_wrong_argument_count(
     delta_tree: Path,
-    python: bool,
 ) -> None:
-    result = run_generate_delta(
-        delta_tree,
-        python=python,
-        arguments=(DEVICE, "--help"),
-    )
+    result = run_generate_delta(delta_tree, arguments=(DEVICE, "--help"))
 
     assert result.returncode == 1
     assert "error: incorrect number of arguments" in result.stderr
     assert "generate_delta.sh device oldversion newversion" in result.stdout
 
 
-@implementations
 def test_generate_delta_with_a_vendor_needs_a_build_number(
     delta_tree: Path,
-    python: bool,
 ) -> None:
     _install_fake_ota_tool(delta_tree)
 
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        python=python,
         environment={
             "PKCS11_VENDOR": "softhsm",
             "PKCS11_MODULE": "/dev/null",
@@ -335,17 +280,14 @@ def test_generate_delta_with_a_vendor_needs_a_build_number(
     assert not list((delta_tree / "logs").glob("*-exec.log"))
 
 
-@implementations
 def test_generate_delta_needs_no_build_number_once_initialized(
     delta_tree: Path,
-    python: bool,
 ) -> None:
     _install_fake_ota_tool(delta_tree)
 
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        python=python,
         environment={
             "PKCS11_VENDOR": "softhsm",
             "PKCS11_MODULE": "/dev/null",
@@ -357,10 +299,8 @@ def test_generate_delta_needs_no_build_number_once_initialized(
     assert result.returncode == 0, result.stderr
 
 
-@implementations
 def test_generate_delta_names_the_softhsm_logs_after_itself(
     delta_tree: Path,
-    python: bool,
 ) -> None:
     _install_fake_ota_tool(delta_tree)
     logs = delta_tree / "logs"
@@ -368,7 +308,6 @@ def test_generate_delta_names_the_softhsm_logs_after_itself(
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        python=python,
         environment={
             "PKCS11_VENDOR": "softhsm",
             "PKCS11_MODULE": "/dev/null",
@@ -387,6 +326,24 @@ def test_generate_delta_names_the_softhsm_logs_after_itself(
         exec_log.name,
     )
     assert "Calculating sha256sum for incremental" in exec_log.read_text()
+
+
+def test_generate_delta_dry_run_leaves_only_an_empty_checksum(
+    delta_tree: Path,
+) -> None:
+    before = {path for path in delta_tree.rglob("*") if path.is_file()}
+
+    result = run_generate_delta(delta_tree)
+
+    assert result.returncode == 0, result.stderr
+    created = {
+        path for path in delta_tree.rglob("*") if path.is_file()
+    } - before
+    checksum = delta_tree / (
+        f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip.sha256sum"
+    )
+    assert created == {checksum}
+    assert checksum.read_bytes() == b""
 
 
 def test_generate_delta_names_the_script_it_ran_as(delta_tree: Path) -> None:

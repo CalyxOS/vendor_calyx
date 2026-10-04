@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import re
 import signal
 import stat
 import zipfile
@@ -17,7 +16,6 @@ import pytest
 from conftest import REPO_ROOT, SCRIPTS_DIR, run
 
 PACKAGE_DIR = SCRIPTS_DIR / "hsm_provisioning"
-IMPLEMENTATIONS = ["bash", "python"]
 FAKE_CURL = """#!/bin/sh
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -57,80 +55,41 @@ def _source_directory(root: Path) -> Path:
 
 def _outcome(
     tmp_path: Path,
-    implementation: str,
     manifest: str | None,
 ) -> tuple[int, str, str, bytes | None]:
-    root = tmp_path / implementation
-    root.mkdir()
-    environment = {"SOURCE_DIRECTORY": str(_source_directory(root))}
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    environment = {"SOURCE_DIRECTORY": str(_source_directory(tmp_path))}
     if manifest is not None:
-        (root / "manifest.tsv").write_text(manifest)
-        environment["MANIFEST_FILE"] = str(root / "manifest.tsv")
-    fake_bin = root / "bin"
+        (tmp_path / "manifest.tsv").write_text(manifest)
+        environment["MANIFEST_FILE"] = str(tmp_path / "manifest.tsv")
+    fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     curl = fake_bin / "curl"
     curl.write_text(FAKE_CURL)
     curl.chmod(curl.stat().st_mode | stat.S_IXUSR)
-    out = root / "out"
+    out = tmp_path / "out"
     out.mkdir()
     result = run(
-        ["bash", PACKAGE_DIR / "prepare.package.sh"],
+        [PACKAGE_DIR / "prepare.package.sh"],
         cwd=out,
         env={
             "PATH": f"{fake_bin}:{os.environ['PATH']}",
-            "TMPDIR": str(root),
+            "TMPDIR": str(tmp_path),
             **environment,
-            "USE_PYTHON_PREPARE_PACKAGE": (
-                "y" if implementation == "python" else ""
-            ),
         },
         check=False,
     )
     zip_path = out / "ceremony.zip"
-
-    def normalize(text: str) -> str:
-        return re.sub(
-            r"/tmp\.\w+/",
-            "/tmp.X/",
-            text.replace(str(root), "<root>"),
-        )
-
     return (
         result.returncode,
-        normalize(result.stdout),
-        normalize(result.stderr),
+        result.stdout,
+        result.stderr,
         zip_path.read_bytes() if zip_path.exists() else None,
     )
 
 
-@pytest.mark.parametrize(
-    "manifest",
-    [
-        SMALL_MANIFEST,
-        None,
-        SMALL_MANIFEST + "vendor/calyx/scripts/hsm_provisioning/missing.py\n",
-        SMALL_MANIFEST + "../escape\n",
-    ],
-    ids=["small", "shipped", "missing-file", "traversal"],
-)
-def test_python_package_matches_bash(
-    tmp_path: Path,
-    manifest: str | None,
-) -> None:
-    bash, python = (
-        _outcome(tmp_path, implementation, manifest)
-        for implementation in IMPLEMENTATIONS
-    )
-
-    assert python == bash
-
-
 def test_package_holds_the_manifest_files(tmp_path: Path) -> None:
-    returncode, stdout, stderr, data = _outcome(
-        tmp_path,
-        "python",
-        SMALL_MANIFEST,
-    )
+    returncode, stdout, stderr, data = _outcome(tmp_path, SMALL_MANIFEST)
 
     assert returncode == 0, stderr
     assert data is not None
@@ -141,11 +100,67 @@ def test_package_holds_the_manifest_files(tmp_path: Path) -> None:
         assert package.read("ceremony/sdk/sdk.tar.gz") == (
             b"downloaded sdk.tar.gz\n"
         )
+        modes = {
+            info.filename: (info.external_attr >> 16) & 0o777
+            for info in package.infolist()
+        }
+        assert {info.date_time for info in package.infolist()} == {
+            (2010, 1, 1, 0, 0, 0),
+        }
+    assert names == sorted(
+        names,
+        key=lambda name: name.removesuffix("/").encode(),
+    )
     assert "ceremony/scripts/audit.py" in names
     assert "ceremony/scripts/calyx-shamir-split" in names
     assert not any(name.startswith("ceremony/vendor") for name in names)
     assert "ceremony/manifest.tsv" not in names
+    assert modes["ceremony/start.sh"] == 0o755
+    assert modes["ceremony/scripts/audit.py"] == 0o755
+    assert modes["ceremony/scripts/calyx-shamir-split"] == 0o755
+    assert modes["ceremony/scripts/keys/1.pub"] == 0o644
+    assert modes["ceremony/scripts/"] == 0o755
     assert f"{hashlib.sha256(data).hexdigest()}  " in stdout
+
+
+def test_package_is_reproducible(tmp_path: Path) -> None:
+    first = _outcome(tmp_path / "first", SMALL_MANIFEST)
+    second = _outcome(tmp_path / "second", SMALL_MANIFEST)
+
+    assert first[0] == second[0] == 0, first[2]
+    assert first[3] == second[3]
+
+
+def test_package_refuses_files_that_fail_verification(tmp_path: Path) -> None:
+    returncode, _, stderr, data = _outcome(tmp_path, None)
+
+    assert returncode == 1
+    assert data is None
+    assert "The following files FAILED sha256sum verification:" in stderr
+    assert "  sdk/yubihsm2-sdk-2025-06-debian12-amd64.tar.gz\n" in stderr
+
+
+@pytest.mark.parametrize(
+    ("line", "message"),
+    (
+        (
+            "vendor/calyx/scripts/hsm_provisioning/missing.py\n",
+            "Cannot find vendor/calyx/scripts/hsm_provisioning/missing.py.\n",
+        ),
+        ("../escape\n", "Unacceptable path traversal in ../escape\n"),
+    ),
+    ids=("missing-file", "traversal"),
+)
+def test_package_refuses_a_bad_manifest_line(
+    tmp_path: Path,
+    line: str,
+    message: str,
+) -> None:
+    returncode, _, stderr, data = _outcome(tmp_path, SMALL_MANIFEST + line)
+
+    assert returncode == 1
+    assert data is None
+    assert stderr.startswith(message)
 
 
 def test_package_reports_a_download_killed_by_a_signal(tmp_path: Path) -> None:
@@ -154,7 +169,7 @@ def test_package_reports_a_download_killed_by_a_signal(tmp_path: Path) -> None:
         "\t0\thttps://example.invalid/sdk",
     )
 
-    returncode, _, _, data = _outcome(tmp_path, "python", manifest)
+    returncode, _, _, data = _outcome(tmp_path, manifest)
 
     assert returncode == 128 + signal.SIGXFSZ
     assert data is None
