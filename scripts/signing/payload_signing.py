@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Adapter between the OTA payload-signer protocol and signing backends.
+Verification of OTA payload signatures.
 """
 
 from __future__ import annotations
@@ -12,39 +12,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .avb_signing import SHA256_DIGEST_INFO_PREFIX
-from .backend import Signer
-from .models import KeyReference, SignRequest
-
 _SHA256_DIGEST_SIZE = 32
-
-
-def sign_payload_digest(
-    signer: Signer,
-    reference: KeyReference,
-    digest: bytes,
-) -> bytes:
-    """
-    Sign a precomputed OTA payload SHA-256 digest.
-
-    Args:
-        signer: Backend used for the raw RSA PKCS#1 v1.5 operation.
-        reference: Token key to sign with.
-        digest: Precomputed SHA-256 payload digest.
-
-    Returns:
-        Raw RSA signature produced by the selected backend.
-
-    Raises:
-        ValueError: If the digest is not exactly 32 bytes.
-    """
-    if len(digest) != _SHA256_DIGEST_SIZE:
-        raise ValueError(
-            "payload SHA-256 digest must be exactly "
-            f"{_SHA256_DIGEST_SIZE} bytes",
-        )
-    digest_info = SHA256_DIGEST_INFO_PREFIX + digest
-    return signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
 
 
 def verify_payload_signature(
