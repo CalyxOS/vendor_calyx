@@ -526,6 +526,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("release-orchestrate", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
+    subparsers.add_parser("updatecommonkeys", add_help=False)
 
     provision_avb = subparsers.add_parser("provision-avb-key")
     provision_avb.add_argument(
@@ -1358,6 +1359,22 @@ def _cmd_mkkey(args: argparse.Namespace) -> int:
 
     program, *arguments = args.arguments or ["mkkey.sh"]
     return mkkey_main(program, arguments)
+
+
+def _cmd_updatecommonkeys(args: argparse.Namespace) -> int:
+    """
+    Create or update the common keys for updatecommonkeys.sh, or for
+    mkcommonkeys.sh with --create-directory.
+
+    Args:
+        args: Parsed namespace containing the script path and arguments.
+
+    Returns:
+        The script's exit status.
+    """
+    from .key_scripts import updatecommonkeys_main
+
+    return updatecommonkeys_main(os.environ, args.arguments)
 
 
 def _cmd_generate_keymap(args: argparse.Namespace) -> int:
@@ -2209,6 +2226,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "sign-orchestrate": _cmd_sign_orchestrate,
     "release-orchestrate": _cmd_release_orchestrate,
     "mkkey": _cmd_mkkey,
+    "updatecommonkeys": _cmd_updatecommonkeys,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
     "gather-signable-devices": _cmd_gather_signable_devices,
@@ -2272,6 +2290,7 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] in (
         ["release-orchestrate"],
         ["mkkey"],
+        ["updatecommonkeys"],
     ):
         script_argv = argv[1:]
         argv = argv[:1]
