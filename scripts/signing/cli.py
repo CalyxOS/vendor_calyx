@@ -533,6 +533,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("keygen", add_help=False)
     subparsers.add_parser("yubihsm-provision", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
+    subparsers.add_parser("updatekeys", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
     prepare_ceremony_package = subparsers.add_parser("prepare-ceremony-package")
     prepare_ceremony_package.add_argument(
@@ -1440,6 +1441,22 @@ def _cmd_mkkey(args: argparse.Namespace) -> int:
 
     program, *arguments = args.arguments or ["mkkey.sh"]
     return mkkey_main(program, arguments)
+
+
+def _cmd_updatekeys(args: argparse.Namespace) -> int:
+    """
+    Create or update a device's keys for updatekeys.sh, or for mkkeys.sh
+    with --create-directory.
+
+    Args:
+        args: Parsed namespace containing the script path and arguments.
+
+    Returns:
+        The script's exit status.
+    """
+    from .key_scripts import updatekeys_main
+
+    return updatekeys_main(os.environ, args.arguments)
 
 
 def _cmd_updatecommonkeys(args: argparse.Namespace) -> int:
@@ -2410,6 +2427,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "keygen": _cmd_keygen,
     "yubihsm-provision": _cmd_yubihsm_provision,
     "mkkey": _cmd_mkkey,
+    "updatekeys": _cmd_updatekeys,
     "updatecommonkeys": _cmd_updatecommonkeys,
     "prepare-ceremony-package": _cmd_prepare_ceremony_package,
     "generate-keymap": _cmd_generate_keymap,
@@ -2480,6 +2498,7 @@ def main(argv: list[str] | None = None) -> int:
         ["keygen"],
         ["yubihsm-provision"],
         ["mkkey"],
+        ["updatekeys"],
         ["updatecommonkeys"],
     ):
         script_argv = argv[1:]
