@@ -537,7 +537,7 @@ def test_release_hosts_the_signing_server_for_its_tools(
 @pytest.mark.parametrize(
     ("tool", "avb", "payload"),
     [
-        ({"AVB_SIGNING_HELPER_TOOL": "openssl"}, "openssl.sh", "server.py"),
+        ({"AVB_SIGNING_HELPER_TOOL": "python"}, "py", "server.py"),
         ({"PAYLOAD_SIGNER_TOOL": "python"}, "server.py", "py"),
         ({"SIGNING_HELPER_TOOL": "python"}, "py", "py"),
     ],

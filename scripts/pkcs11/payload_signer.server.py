@@ -24,7 +24,7 @@ from signing.key_consistency import require_signature_from_public_key
 from signing.payload_signer import public_key_file
 from signing.yubihsm_session_service import sign_digest_through_server
 
-FALLBACK_SIGNER = SCRIPT_DIR / "payload_signer.openssl.sh"
+FALLBACK_SIGNER = SCRIPT_DIR / "payload_signer.py"
 
 
 def _option(arguments: list[str], name: str) -> str | None:

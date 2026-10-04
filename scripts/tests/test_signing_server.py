@@ -20,7 +20,7 @@ from conftest import SCRIPTS_DIR
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from openssl_shim import generate_rsa_key, helper_env, write_openssl_pkcs11_shim
+from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from signing import signing_server
 from signing.signing_server import Message, SigningServer, request
 from signing.vendor_yubihsm import YubiHsmConfig
@@ -254,35 +254,52 @@ def test_helper_signs_with_the_server_key_its_path_names(
     assert not verifies(rsa_key("server-a"), result.stdout, digest)
 
 
-def _openssl_fallback_env(tmp_path: Path) -> tuple[dict[str, str], Path]:
-    private_key = generate_rsa_key(tmp_path, 2048)
-    environment = {
+def _softhsm_fallback(
+    tmp_path: Path,
+    softhsm_rsa_key: tuple[dict[str, str], Path],
+) -> tuple[rsa.RSAPublicKey, dict[str, str]]:
+    environment, public_der = softhsm_rsa_key
+    public_key = serialization.load_der_public_key(public_der.read_bytes())
+    assert isinstance(public_key, rsa.RSAPublicKey)
+    keys = tmp_path / "keys"
+    keys.mkdir()
+    (keys / "0x2000.pem").write_bytes(
+        public_key.public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ),
+    )
+    return public_key, {
         **_without_signing_variables(),
-        **helper_env(write_openssl_pkcs11_shim(tmp_path), private_key),
+        **environment,
         "SIGNING_SERVER_SOCKET": str(tmp_path / "none.sock"),
+        "KEY_DIR": "keys/",
+        "FIND_KEYS_BY_ID": "y",
     }
-    return environment, private_key
 
 
-def _load_private_key(path: Path) -> rsa.RSAPrivateKey:
-    key = serialization.load_pem_private_key(path.read_bytes(), None)
-    assert isinstance(key, rsa.RSAPrivateKey)
-    return key
-
-
-def test_helper_signs_through_openssl_without_a_server(tmp_path: Path) -> None:
-    environment, private_key = _openssl_fallback_env(tmp_path)
+def test_helper_falls_back_to_the_python_helper_without_a_server(
+    tmp_path: Path,
+    softhsm_rsa_key: tuple[dict[str, str], Path],
+) -> None:
+    public_key, environment = _softhsm_fallback(tmp_path, softhsm_rsa_key)
     data, digest = _avb_input(b"image")
 
     result = subprocess.run(
         [HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        cwd=tmp_path,
         env=environment,
         input=data,
         capture_output=True,
     )
 
     assert result.returncode == 0, result.stderr
-    assert verifies(_load_private_key(private_key), result.stdout, digest)
+    public_key.verify(
+        result.stdout,
+        digest,
+        padding.PKCS1v15(),
+        Prehashed(hashes.SHA256()),
+    )
 
 
 def test_interceptor_appends_the_audit_log_through_the_server(
@@ -359,33 +376,36 @@ def test_payload_signer_signs_with_the_server_key_its_path_names(
     assert not verifies(rsa_key("server-b"), signature.read_bytes(), digest)
 
 
-def test_payload_signer_signs_through_openssl_without_a_server(
+def test_payload_signer_falls_back_to_the_python_signer_without_a_server(
     tmp_path: Path,
+    softhsm_rsa_key: tuple[dict[str, str], Path],
 ) -> None:
-    environment, private_key = _openssl_fallback_env(tmp_path)
+    public_key, environment = _softhsm_fallback(tmp_path, softhsm_rsa_key)
     digest = hashlib.sha256(b"payload").digest()
     (tmp_path / "hash.bin").write_bytes(digest)
-    signature = tmp_path / "sig.bin"
 
     result = subprocess.run(
         [
             PAYLOAD_SIGNER,
             "-in",
-            tmp_path / "hash.bin",
+            "hash.bin",
             "-out",
-            signature,
+            "sig.bin",
             "-inkey",
-            "keys/ota.pem",
+            "keys/0x2000",
         ],
+        cwd=tmp_path,
         env={**environment, "PYTHONSAFEPATH": "1"},
+        stdin=subprocess.DEVNULL,
         capture_output=True,
     )
 
     assert result.returncode == 0, result.stderr
-    assert verifies(
-        _load_private_key(private_key),
-        signature.read_bytes(),
+    public_key.verify(
+        (tmp_path / "sig.bin").read_bytes(),
         digest,
+        padding.PKCS1v15(),
+        Prehashed(hashes.SHA256()),
     )
 
 

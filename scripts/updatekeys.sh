@@ -6,10 +6,8 @@
 
 set -euo pipefail
 
-if [ "${USE_PYTHON_UPDATEKEYS:-}" = y ]; then
-  PYTHONPATH="$(cd "$(dirname "$0")";pwd -P)${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing updatekeys "$0" "$@"
-fi
+PYTHONPATH="$(cd "$(dirname "$0")";pwd -P)${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing updatekeys "$0" "$@"
 
 error() {
   echo "error: $1, please try again" >&2

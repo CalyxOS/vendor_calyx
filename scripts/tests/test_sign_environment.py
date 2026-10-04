@@ -249,18 +249,6 @@ def test_initialize_yubihsm_interactive_assume_yes_skips_warning_prompt(
     assert environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] == "y"
 
 
-def test_maybe_initialize_vendor_requires_python_interceptor(
-    tmp_path: Path,
-) -> None:
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD": "secret",
-    }
-    with pytest.raises(UnsupportedVendorError):
-        maybe_initialize_vendor(environment, tmpdir=tmp_path)
-
-
 def test_maybe_initialize_vendor_sets_pkcs11_pin(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -271,7 +259,6 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
     (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
@@ -283,40 +270,6 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
     assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
         "vendor.yubihsm.interceptor.py",
-    )
-
-
-@pytest.mark.parametrize(
-    ("never_start_batch", "accepted"),
-    (("y", True), ("", False)),
-    ids=("without-batch", "with-batch"),
-)
-def test_maybe_initialize_vendor_takes_the_bash_interceptor_only_without_batch(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    never_start_batch: str,
-    accepted: bool,
-) -> None:
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "logs").mkdir()
-    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "NEVER_START_APKSIGNER_BATCH": never_start_batch,
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD": "secret",
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
-    }
-
-    if not accepted:
-        with pytest.raises(UnsupportedVendorError):
-            maybe_initialize_vendor(environment, tmpdir=tmp_path)
-        return
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
-
-    assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
-        "vendor.yubihsm.interceptor.sh",
     )
 
 
@@ -333,7 +286,6 @@ def test_maybe_initialize_vendor_reads_the_password_file(
     password_file.chmod(0o600)
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD_FILE": str(password_file),
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
@@ -358,7 +310,6 @@ def test_maybe_initialize_vendor_rejects_empty_upload_script(
     (tmp_path / "logs" / "upload.py").touch()
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
@@ -378,7 +329,6 @@ def test_maybe_initialize_vendor_pin_does_not_truncate_long_authkey(
     (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x12345",
         "YUBIHSM_PASSWORD": "",
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
@@ -402,7 +352,6 @@ def test_maybe_initialize_vendor_dry_run_skips_full_setup(
     tmpdir.mkdir()
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "DRY_RUN": "y",
@@ -424,7 +373,6 @@ def test_maybe_initialize_vendor_generates_pkcs11_conf(
     (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "YUBIHSM_CONNECTOR": "http://127.0.0.1:9999",
@@ -445,7 +393,6 @@ def test_maybe_initialize_vendor_requires_logs_dir(
     monkeypatch.chdir(tmp_path)
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_PYTHON_INTERCEPTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",

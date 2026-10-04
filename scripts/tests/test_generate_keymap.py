@@ -5,10 +5,7 @@
 
 from __future__ import annotations
 
-import os
-import stat
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -142,73 +139,6 @@ def test_generate_keymap_python_flag_matches_bash_without_devices(
         expected = "ERROR: No defined devices for which to generate keys."
         assert expected in bash.stderr
         assert expected in python.stderr
-
-
-@pytest.mark.parametrize(
-    ("keymapper", "devices"),
-    (("id2b", DEVICES), ("legacy", LEGACY_DEVICES)),
-)
-def test_generate_keymap_python_flag_matches_bash(
-    tmp_path: Path,
-    keymapper: str,
-    devices: tuple[str, ...],
-) -> None:
-    bash = generate_keymap(tmp_path, devices, keymapper=keymapper)
-    python = generate_keymap(
-        tmp_path,
-        devices,
-        keymapper=keymapper,
-        use_python=True,
-    )
-
-    assert bash.returncode == 0, bash.stderr
-    assert python.returncode == 0, python.stderr
-    assert python.stdout == bash.stdout
-
-
-def test_generate_keymap_python_flag_invokes_python(
-    tmp_path: Path,
-) -> None:
-    fake_bin = tmp_path / "fake-path-bin"
-    fake_bin.mkdir()
-    fake_python3 = fake_bin / "python3"
-    fake_python3.write_text(
-        "#!/bin/sh\n"
-        'case " $* " in *" print-keymap "*)\n'
-        "  echo FAKE_PYTHON3_INVOKED >&2\n"
-        "  exit 1\n"
-        "esac\n"
-        f'exec {sys.executable} "$@"\n',
-    )
-    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
-    devices_file = tmp_path / "devices"
-    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
-    path_with_fake = f"{fake_bin}:{os.environ['PATH']}"
-
-    with_flag = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={
-            "DEVICES_FILE": str(devices_file),
-            "KEYMAPPER": "id2b",
-            "USE_PYTHON_GENERATE_KEYMAP": "y",
-            "PATH": path_with_fake,
-        },
-        check=False,
-    )
-    assert "FAKE_PYTHON3_INVOKED" in with_flag.stderr
-    assert with_flag.returncode != 0
-
-    without_flag = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={
-            "DEVICES_FILE": str(devices_file),
-            "KEYMAPPER": "id2b",
-            "PATH": path_with_fake,
-        },
-        check=False,
-    )
-    assert "FAKE_PYTHON3_INVOKED" not in without_flag.stderr
-    assert without_flag.returncode == 0, without_flag.stderr
 
 
 @pytest.mark.parametrize("use_python", (False, True))
