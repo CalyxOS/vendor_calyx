@@ -9,11 +9,9 @@
 
 set -euo pipefail
 
-if [ "${USE_PYTHON_RELEASE_ORCHESTRATION:-}" = "y" ]; then
-  _release_orchestrate_scriptpath="$(cd "$(dirname "$0")";pwd -P)"
-  PYTHONPATH="$_release_orchestrate_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing release-orchestrate "$0" "$@"
-fi
+_release_orchestrate_scriptpath="$(cd "$(dirname "$0")";pwd -P)"
+PYTHONPATH="$_release_orchestrate_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing release-orchestrate "$0" "$@"
 
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 
