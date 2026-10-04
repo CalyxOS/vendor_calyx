@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Protocol
 
 import pytest
 from conftest import SCRIPTS_DIR, run, run_bytes, run_cli
@@ -71,411 +70,6 @@ def test_backend_rejects_missing_private_key_label(
 
     with pytest.raises(KeyError, match="label not found"):
         backend.key_id_for_label("missing")
-
-
-class SigningRejected(Exception):
-    """
-    Normalized signing failure raised by a PKCS#11 implementation adapter.
-    """
-
-
-class GenerationRejected(Exception):
-    """
-    Normalized generation failure raised by a PKCS#11 implementation adapter.
-    """
-
-
-class CertificateRejected(Exception):
-    """
-    Normalized certificate failure raised by a PKCS#11 implementation adapter.
-    """
-
-
-class Pkcs11SigningImplementation(Protocol):
-    """
-    Minimal raw RSA signing behavior shared by Bash and Python implementations.
-    """
-
-    def sign_digest(self, digest: bytes, key_id: str = KEY_ID) -> bytes:
-        """
-        Apply RSA PKCS#1 v1.5 signing to a prepared digest.
-
-        Args:
-            digest: Prepared digest bytes to sign without additional hashing.
-            key_id: Hexadecimal PKCS#11 private-key object ID.
-
-        Returns:
-            Raw RSA signature bytes.
-
-        Raises:
-            SigningRejected: If the key cannot produce a signature.
-        """
-        ...
-
-
-class Pkcs11GenerationImplementation(Protocol):
-    """
-    Minimal key-generation behavior shared by Bash and Python implementations.
-    """
-
-    def generate_key(self, spec: KeySpec) -> None:
-        """
-        Generate a persistent key pair from a backend-neutral specification.
-
-        Args:
-            spec: Object identity, algorithm, and export policy.
-
-        Returns:
-            None.
-
-        Raises:
-            GenerationRejected: If the key cannot be generated.
-        """
-        ...
-
-
-class Pkcs11CertificateImplementation(Protocol):
-    """
-    Minimal certificate behavior shared by Bash and Python implementations.
-    """
-
-    def generate_certificate(self, spec: KeySpec, subject: str) -> bytes:
-        """
-        Create and import a self-signed certificate for a token-held key.
-
-        Args:
-            spec: Identity and algorithm of an existing private key.
-            subject: Distinguished name for the certificate.
-
-        Returns:
-            PEM-encoded certificate bytes.
-
-        Raises:
-            CertificateRejected: If the certificate cannot be generated.
-        """
-        ...
-
-
-class BashPkcs11SigningImplementation:
-    """
-    Exercise signing through the existing ``pkcs11-tool`` Bash helper.
-    """
-
-    def __init__(self, environment: dict[str, str]) -> None:
-        """
-        Configure the Bash helper environment.
-
-        Args:
-            environment: SoftHSM and generic PKCS#11 environment variables.
-
-        Returns:
-            None.
-        """
-        self.environment = {
-            **environment,
-            "FIND_KEYS_BY_ID": "y",
-            "KEY_DIR": "keys/",
-            "STRIP_HEX_KEY_ID_PREFIX": "y",
-        }
-
-    def sign_digest(self, digest: bytes, key_id: str = KEY_ID) -> bytes:
-        """
-        Sign a digest through ``signing_helper.pkcs11-tool.sh``.
-
-        Args:
-            digest: Prepared SHA-256 digest bytes.
-            key_id: Hexadecimal PKCS#11 private-key object ID.
-
-        Returns:
-            Raw RSA signature bytes.
-
-        Raises:
-            SigningRejected: If the helper exits unsuccessfully.
-        """
-        result = run_bytes(
-            [
-                SCRIPTS_DIR / "pkcs11/signing_helper.pkcs11-tool.sh",
-                "SHA256_RSA2048",
-                f"keys/{key_id}.pem",
-            ],
-            env=self.environment,
-            input_data=b"\x00" * 205 + digest,
-            check=False,
-        )
-        if result.returncode:
-            raise SigningRejected(result.stderr.decode(errors="replace"))
-        return result.stdout
-
-
-class PythonPkcs11SigningImplementation:
-    """
-    Exercise signing through ``Pkcs11Backend``.
-    """
-
-    def __init__(self, backend: Pkcs11Backend) -> None:
-        """
-        Retain a configured Python PKCS#11 backend.
-
-        Args:
-            backend: Backend connected to the contract-test token.
-
-        Returns:
-            None.
-        """
-        self.backend = backend
-
-    def sign_digest(self, digest: bytes, key_id: str = KEY_ID) -> bytes:
-        """
-        Sign a digest through ``Pkcs11Backend``.
-
-        Args:
-            digest: Prepared digest bytes to sign without additional hashing.
-            key_id: Hexadecimal PKCS#11 private-key object ID.
-
-        Returns:
-            Raw RSA signature bytes.
-
-        Raises:
-            SigningRejected: If the backend cannot produce a signature.
-        """
-        reference = KeyReference(key_id, "contract-key")
-        try:
-            return self.backend.sign(SignRequest(reference, digest, "rsa-pkcs"))
-        except (
-            KeyError,
-            ValueError,
-            OSError,
-            subprocess.SubprocessError,
-        ) as error:
-            raise SigningRejected(str(error)) from error
-
-
-class BashPkcs11GenerationImplementation:
-    """
-    Exercise generation through the existing generic Bash PKCS#11 functions.
-    """
-
-    def __init__(self, environment: dict[str, str]) -> None:
-        """
-        Configure the Bash key-generation environment.
-
-        Args:
-            environment: SoftHSM and generic PKCS#11 environment variables.
-
-        Returns:
-            None.
-        """
-        self.environment = {
-            **environment,
-            "STRIP_HEX_KEY_ID_PREFIX": "y",
-        }
-
-    def generate_key(self, spec: KeySpec) -> None:
-        """
-        Generate a key through ``generate_keypair_pkcs11()``.
-
-        Args:
-            spec: Object identity, algorithm, and export policy.
-
-        Returns:
-            None.
-
-        Raises:
-            GenerationRejected: If generation fails.
-        """
-        algorithm = f"RSA:{spec.key_size}"
-        extraction_arguments = "--sensitive"
-        if spec.exportable:
-            extraction_arguments += " --extractable"
-        script = r"""
-set -euo pipefail
-source "$1"
-refresh_pkcs11_tool_args
-EXTRACTION_ARGS="$5"
-generate_keypair_pkcs11 "$2" "$3" "$6"
-"""
-        result = run(
-            [
-                "bash",
-                "-c",
-                script,
-                "pkcs11-generation-contract",
-                SCRIPTS_DIR / "pkcs11/keygen.include.sh",
-                spec.reference.key_id,
-                spec.reference.label,
-                "core",
-                extraction_arguments,
-                algorithm,
-            ],
-            env=self.environment,
-            check=False,
-        )
-        if result.returncode:
-            raise GenerationRejected(result.stderr)
-
-
-class PythonPkcs11GenerationImplementation:
-    """
-    Exercise generation through ``Pkcs11Backend``.
-    """
-
-    def __init__(self, backend: Pkcs11Backend) -> None:
-        """
-        Retain a configured Python PKCS#11 backend.
-
-        Args:
-            backend: Backend connected to the contract-test token.
-
-        Returns:
-            None.
-        """
-        self.backend = backend
-
-    def generate_key(self, spec: KeySpec) -> None:
-        """
-        Generate a key through ``Pkcs11Backend``.
-
-        Args:
-            spec: Object identity, algorithm, and export policy.
-
-        Returns:
-            None.
-
-        Raises:
-            GenerationRejected: If the backend rejects generation.
-        """
-        try:
-            self.backend.generate_key(spec)
-        except (ValueError, OSError, subprocess.SubprocessError) as error:
-            raise GenerationRejected(str(error)) from error
-
-
-class BashPkcs11CertificateImplementation:
-    """
-    Exercise certificates through the existing generic Bash PKCS#11 functions.
-    """
-
-    def __init__(self, environment: dict[str, str]) -> None:
-        """
-        Configure the Bash certificate environment.
-
-        Args:
-            environment: SoftHSM, OpenSSL engine, and PKCS#11 settings.
-
-        Returns:
-            None.
-        """
-        self.environment = {
-            **environment,
-            "OPENSSL_PKCS11_URI_USES_HEX_KEY_ID": "y",
-            "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": str(PKCS11_ENGINE),
-            "STRIP_HEX_KEY_ID_PREFIX": "y",
-        }
-
-    def generate_certificate(self, spec: KeySpec, subject: str) -> bytes:
-        """
-        Generate and import a certificate through ``generate_cert_pkcs11()``.
-
-        Args:
-            spec: Identity and algorithm of an existing private key.
-            subject: Distinguished name for the certificate.
-
-        Returns:
-            PEM-encoded certificate bytes.
-
-        Raises:
-            CertificateRejected: If generation fails.
-        """
-        algorithm = f"RSA:{spec.key_size}"
-        script = r"""
-set -euo pipefail
-source "$1"
-refresh_pkcs11_tool_args
-CERT_EXPIRY_DAYS=1
-SIGNING_SUBJECT_TEMPLATE="$5"
-generate_cert_pkcs11 "$2" "$2" "$3" "$4"
-"""
-        generated = run(
-            [
-                "bash",
-                "-c",
-                script,
-                "pkcs11-certificate-contract",
-                SCRIPTS_DIR / "pkcs11/keygen.include.sh",
-                spec.reference.key_id,
-                "core",
-                algorithm,
-                subject,
-            ],
-            env=self.environment,
-            check=False,
-        )
-        if generated.returncode:
-            raise CertificateRejected(generated.stderr)
-        certificate = run_bytes(
-            [
-                "pkcs11-tool",
-                "--module",
-                SOFTHSM_MODULE,
-                "--token-label",
-                TOKEN_LABEL,
-                "--pin",
-                "env:PKCS11_PIN",
-                "--read-object",
-                "--type",
-                "cert",
-                "--id",
-                spec.reference.key_id.removeprefix("0x"),
-            ],
-            env=self.environment,
-        )
-        encoded = run_bytes(
-            ["openssl", "x509", "-inform", "DER", "-outform", "PEM"],
-            input_data=certificate.stdout,
-        )
-        return encoded.stdout
-
-
-class PythonPkcs11CertificateImplementation:
-    """
-    Exercise certificates through ``Pkcs11Backend``.
-    """
-
-    def __init__(self, backend: Pkcs11Backend) -> None:
-        """
-        Retain a configured Python PKCS#11 backend.
-
-        Args:
-            backend: Backend connected to the contract-test token.
-
-        Returns:
-            None.
-        """
-        self.backend = backend
-
-    def generate_certificate(self, spec: KeySpec, subject: str) -> bytes:
-        """
-        Generate and import a certificate through ``Pkcs11Backend``.
-
-        Args:
-            spec: Identity and algorithm of an existing private key.
-            subject: Distinguished name for the certificate.
-
-        Returns:
-            PEM-encoded certificate bytes.
-
-        Raises:
-            CertificateRejected: If the backend rejects generation.
-        """
-        try:
-            return self.backend.generate_certificate(spec, subject)
-        except (
-            KeyError,
-            ValueError,
-            OSError,
-            subprocess.SubprocessError,
-        ) as error:
-            raise CertificateRejected(str(error)) from error
 
 
 @pytest.fixture
@@ -566,48 +160,18 @@ library.reset_on_fork = false
     return backend, environment, public_key
 
 
-@pytest.fixture(params=("bash", "python"))
-def pkcs11_signer(
-    request: pytest.FixtureRequest,
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> tuple[Pkcs11SigningImplementation, Path]:
-    backend, environment, public_key = pkcs11_token
-    if request.param == "bash":
-        return BashPkcs11SigningImplementation(environment), public_key
-    return PythonPkcs11SigningImplementation(backend), public_key
-
-
-@pytest.fixture(params=("bash", "python"))
-def pkcs11_generator(
-    request: pytest.FixtureRequest,
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> tuple[Pkcs11GenerationImplementation, Pkcs11Backend]:
-    backend, environment, _ = pkcs11_token
-    if request.param == "bash":
-        return BashPkcs11GenerationImplementation(environment), backend
-    return PythonPkcs11GenerationImplementation(backend), backend
-
-
-@pytest.fixture(params=("bash", "python"))
-def pkcs11_certificate_manager(
-    request: pytest.FixtureRequest,
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> tuple[Pkcs11CertificateImplementation, Pkcs11Backend]:
-    backend, environment, _ = pkcs11_token
-    if request.param == "bash":
-        return BashPkcs11CertificateImplementation(environment), backend
-    return PythonPkcs11CertificateImplementation(backend), backend
-
-
 def test_pkcs11_raw_rsa_signing_contract(
-    pkcs11_signer: tuple[Pkcs11SigningImplementation, Path],
+    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
     tmp_path: Path,
 ) -> None:
-    implementation, public_key = pkcs11_signer
+    backend, _, public_key = pkcs11_token
     digest = bytes(range(32))
     signature = tmp_path / "signature.bin"
     digest_file = tmp_path / "digest.bin"
-    signature.write_bytes(implementation.sign_digest(digest))
+    reference = KeyReference(KEY_ID, "contract-key")
+    signature.write_bytes(
+        backend.sign(SignRequest(reference, digest, "rsa-pkcs")),
+    )
     digest_file.write_bytes(digest)
 
     verified = run(
@@ -633,12 +197,13 @@ def test_pkcs11_raw_rsa_signing_contract(
 
 
 def test_pkcs11_raw_rsa_signing_contract_rejects_missing_key(
-    pkcs11_signer: tuple[Pkcs11SigningImplementation, Path],
+    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
 ) -> None:
-    implementation, _ = pkcs11_signer
+    backend, _, _ = pkcs11_token
+    reference = KeyReference("0xffff", "contract-key")
 
-    with pytest.raises(SigningRejected):
-        implementation.sign_digest(bytes(range(32)), "0xffff")
+    with pytest.raises(subprocess.CalledProcessError):
+        backend.sign(SignRequest(reference, bytes(range(32)), "rsa-pkcs"))
 
 
 def test_pkcs11_backend_discovers_objects(
@@ -669,13 +234,13 @@ def test_pkcs11_backend_rejects_invalid_id_and_mechanism(
 
 @pytest.mark.parametrize("key_size", (2048, 3072))
 def test_pkcs11_key_generation_contract(
-    pkcs11_generator: tuple[Pkcs11GenerationImplementation, Pkcs11Backend],
+    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
     tmp_path: Path,
     key_size: int,
 ) -> None:
-    implementation, backend = pkcs11_generator
+    backend, _, _ = pkcs11_token
     reference = KeyReference("0x3000", "generated-key")
-    implementation.generate_key(KeySpec(reference, key_size, exportable=True))
+    backend.generate_key(KeySpec(reference, key_size, exportable=True))
 
     assert backend.key_exists(reference)
     public_key = tmp_path / "generated-public.der"
@@ -745,22 +310,19 @@ def test_pkcs11_backend_rejects_duplicate_key_ids(
     ),
 )
 def test_pkcs11_certificate_contract(
-    pkcs11_certificate_manager: tuple[
-        Pkcs11CertificateImplementation,
-        Pkcs11Backend,
-    ],
+    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
     tmp_path: Path,
     key_id: str,
     key_size: int,
 ) -> None:
-    implementation, backend = pkcs11_certificate_manager
+    backend, _, _ = pkcs11_token
     reference = KeyReference(key_id, "contract-key")
     spec = KeySpec(reference, key_size)
     if key_id != KEY_ID:
         backend.generate_key(spec)
     subject = "/C=US/O=Calyx Institute/CN=Shared PKCS11 certificate"
     certificate = tmp_path / "certificate.pem"
-    certificate.write_bytes(implementation.generate_certificate(spec, subject))
+    certificate.write_bytes(backend.generate_certificate(spec, subject))
 
     assert backend.certificate_exists(reference)
     rendered_subject = run(
