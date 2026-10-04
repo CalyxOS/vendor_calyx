@@ -7,6 +7,10 @@
 set -euo pipefail
 
 our_path=$(cd "$(dirname "$0")";pwd -P)
+if [ "${USE_PYTHON_PREPARE_PACKAGE:-}" = "y" ]; then
+  PYTHONPATH="$our_path/..${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing prepare-ceremony-package --script-dir "$our_path"
+fi
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 manifest_filename=manifest.tsv
 timestamp="201001010000.00"
@@ -71,7 +75,7 @@ prepare_manifest_and_files() {
   output_directory=$(realpath --no-symlinks "$1")
   local -a manifest_lines
   local -a new_manifest_lines=($'filename\tsha256sum\tfilesize\tlink')
-  mapfile -t manifest_lines < "$our_path/$manifest_filename" \
+  mapfile -t manifest_lines < "${MANIFEST_FILE:-$our_path/$manifest_filename}" \
     || return $?
   local line
   local header_done=
