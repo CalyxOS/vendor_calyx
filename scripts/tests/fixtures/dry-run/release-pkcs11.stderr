@@ -1,4 +1,6 @@
 Using keymapper: id2b
+mkdir <tree>/logs
+
 Command: <script> bramble calyx_bramble-target_files-2026081500.zip
 
 mkdir -p out/release-bramble-2026081500

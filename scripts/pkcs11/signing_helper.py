@@ -19,14 +19,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from signing.avb_signing import (
     avb_input_digest,
-    key_reference_from_path,
+    key_name_from_path,
     pkcs11_signer_from_environment,
-    sign_avb_input,
 )
 from signing.key_consistency import (
     require_matching_public_key,
     require_signature_from_public_key,
 )
+from signing.models import KeyReference, SignRequest
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -52,7 +52,8 @@ def main(argv: list[str] | None = None) -> int:
     algorithm, key_file = arguments
     signer = pkcs11_signer_from_environment()
     key_path = Path(key_file)
-    reference = key_reference_from_path(signer, key_path, os.environ)
+    key_name = key_name_from_path(key_path, os.environ)
+    reference = KeyReference(key_name, key_name)
     require_matching_public_key(
         signer,
         reference,
@@ -60,10 +61,11 @@ def main(argv: list[str] | None = None) -> int:
         os.environ.get("OPENSSL_BIN", "openssl"),
     )
     data = sys.stdin.buffer.read()
-    signature = sign_avb_input(signer, algorithm, reference, data)
+    digest_info, _ = avb_input_digest(algorithm, data)
+    signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
     require_signature_from_public_key(
         key_path,
-        avb_input_digest(algorithm, data)[0],
+        digest_info,
         signature,
         os.environ.get("OPENSSL_BIN", "openssl"),
     )

@@ -224,7 +224,7 @@ def _without_signing_variables() -> dict[str, str]:
     return {
         key: value
         for key, value in os.environ.items()
-        if not key.startswith(("YUBIHSM_", "KEY_ID", "SIGNING_SERVER"))
+        if not key.startswith(("YUBIHSM_", "SIGNING_SERVER"))
     }
 
 
@@ -272,7 +272,6 @@ def _softhsm_fallback(
         **environment,
         "SIGNING_SERVER_SOCKET": str(tmp_path / "none.sock"),
         "KEY_DIR": "keys/",
-        "FIND_KEYS_BY_ID": "y",
     }
 
 

@@ -43,10 +43,7 @@ def sign_through_server(
             key in key_file.
     """
     digest_info, digest = avb_input_digest(algorithm, data)
-    key_name = os.environ.get("KEY_ID") or key_name_from_path(
-        Path(key_file),
-        os.environ,
-    )
+    key_name = key_name_from_path(Path(key_file), os.environ)
     signature = sign_digest_through_server(socket_path, key_name, digest)
     if signature is not None:
         require_signature_from_public_key(
