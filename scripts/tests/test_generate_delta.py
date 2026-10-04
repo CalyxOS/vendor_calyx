@@ -329,22 +329,13 @@ def test_generate_delta_names_the_softhsm_logs_after_itself(
     assert "Calculating sha256sum for incremental" in exec_log.read_text()
 
 
-def test_generate_delta_dry_run_leaves_only_an_empty_checksum(
-    delta_tree: Path,
-) -> None:
+def test_generate_delta_dry_run_writes_no_files(delta_tree: Path) -> None:
     before = {path for path in delta_tree.rglob("*") if path.is_file()}
 
     result = run_generate_delta(delta_tree)
 
     assert result.returncode == 0, result.stderr
-    created = {
-        path for path in delta_tree.rglob("*") if path.is_file()
-    } - before
-    checksum = delta_tree / (
-        f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip.sha256sum"
-    )
-    assert created == {checksum}
-    assert checksum.read_bytes() == b""
+    assert {path for path in delta_tree.rglob("*") if path.is_file()} == before
 
 
 def test_generate_delta_names_the_script_it_ran_as(delta_tree: Path) -> None:
