@@ -9,7 +9,6 @@ Top-level orchestration of sign.sh.
 from __future__ import annotations
 
 import fnmatch
-import shlex
 import shutil
 import subprocess
 import sys
@@ -22,7 +21,7 @@ from . import sign_environment
 from .confirmation import ask_variable, confirm
 from .keymap import Keymapper, load_keymapper
 from .metadata import SigningMetadata
-from .release_execution import exit_on_signals
+from .release_execution import exit_on_signals, render_release_tool
 from .sign_execution import generate_incrementals as _run_generate_incrementals
 from .sign_execution import sign_builds as _run_sign_builds
 from .sign_planning import (
@@ -854,7 +853,7 @@ class SignOrchestrator:
 
     def _show(self, *argv: str) -> None:
         """Print one step as a quoted command line and a blank line."""
-        sys.stderr.write(" ".join(shlex.quote(a) for a in argv) + "\n\n")
+        sys.stderr.write(render_release_tool(argv))
 
     def _sign_builds(self, pairs: Sequence[SignPair]) -> None:
         if self.dry_run:
