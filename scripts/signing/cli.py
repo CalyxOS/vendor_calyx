@@ -532,6 +532,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("yubihsm-provision", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
+    prepare_ceremony_package = subparsers.add_parser("prepare-ceremony-package")
+    prepare_ceremony_package.add_argument(
+        "--script-dir",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "hsm_provisioning",
+    )
 
     subparsers.add_parser("sign-app", add_help=False)
 
@@ -1450,6 +1456,21 @@ def _cmd_updatecommonkeys(args: argparse.Namespace) -> int:
     return updatecommonkeys_main(os.environ, args.arguments)
 
 
+def _cmd_prepare_ceremony_package(args: argparse.Namespace) -> int:
+    """
+    Build ceremony.zip in the current directory.
+
+    Args:
+        args: Parsed namespace containing the directory of manifest.tsv.
+
+    Returns:
+        The exit status of prepare_package().
+    """
+    from .ceremony_package import prepare_package
+
+    return prepare_package(os.environ, args.script_dir, Path.cwd())
+
+
 def _cmd_sign_app(args: argparse.Namespace) -> int:
     """
     Sign an app for sign-app.sh.
@@ -2335,6 +2356,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "yubihsm-provision": _cmd_yubihsm_provision,
     "mkkey": _cmd_mkkey,
     "updatecommonkeys": _cmd_updatecommonkeys,
+    "prepare-ceremony-package": _cmd_prepare_ceremony_package,
     "generate-keymap": _cmd_generate_keymap,
     "build-release-args": _cmd_build_release_args,
     "gather-signable-devices": _cmd_gather_signable_devices,
