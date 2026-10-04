@@ -330,9 +330,7 @@ class SignOrchestrator:
         self.state.prev_builds_sorted = result.prev_builds_sorted
 
     def _setup_log_dir(self) -> None:
-        if not sign_environment.is_vendor_initialization_needed(
-            self.environment,
-        ):
+        if not self.environment.get("PKCS11_VENDOR"):
             return
         logs_dir = self.cwd / "logs"
         if not sign_environment.is_audit_log_repository(logs_dir):
@@ -653,9 +651,7 @@ class SignOrchestrator:
             )
         self.environment["TMPDIR"] = str(self.tmpdir)
         print()
-        if not sign_environment.is_vendor_initialization_needed(
-            self.environment,
-        ):
+        if not self.environment.get("PKCS11_VENDOR"):
             print("Initializing...")
         else:
             print("Initializing PKCS#11 and related components...")
@@ -788,9 +784,7 @@ class SignOrchestrator:
             return
         if self.environment.get("SKIP_LOG_UPLOAD") == "true":
             return
-        if not sign_environment.is_vendor_initialization_needed(
-            self.environment,
-        ):
+        if not self.environment.get("PKCS11_VENDOR"):
             return
         logs_dir = self.environment.get("YUBIHSM_LOGS_DIR")
         if not logs_dir:
