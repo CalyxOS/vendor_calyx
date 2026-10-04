@@ -8,6 +8,7 @@ Sign one app with its key on the YubiHSM, for sign-app.sh.
 
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import MutableMapping, Sequence
 from pathlib import Path
@@ -20,12 +21,6 @@ from .release_execution import defer_signals, exit_on_signals, run_release_tool
 from .vendor_yubihsm import get_device_identity
 
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
-
-
-def _strip_extension(path: str) -> str:
-    """Drop the shortest suffix starting with a dot."""
-    dot = path.rfind(".")
-    return path[:dot] if dot >= 0 else path
 
 
 def sign_app(
@@ -105,7 +100,7 @@ def sign_app(
             )
             environment["SIGNING_COMMAND"] = "java"
             interceptor = environment["SIGNING_COMMAND_INTERCEPTOR"]
-            output = f"{_strip_extension(apk)}-signed.apk"
+            output = f"{os.path.splitext(apk)[0]}-signed.apk"
             certificate = f"{key_dir}{key_id}.x509.pem"
             if not Path(certificate).is_file():
                 return error(
