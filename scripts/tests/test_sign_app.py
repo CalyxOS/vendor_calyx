@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    ID2B_KEYMAP,
     REPO_ROOT,
     SCRIPTS_DIR,
     default_signal_dispositions,
@@ -25,7 +26,6 @@ from signing.metadata import default_metadata_path, load_metadata
 from yubihsm_emulator import Connector
 
 APP = "com.google.android.apps.photos"
-KEYMAP = SCRIPTS_DIR / "tests" / "fixtures" / "id2b-bramble-redfin.tsv"
 ANDROID_TOP = REPO_ROOT.resolve().parents[1]
 
 _FAKE_JAVA = f"""#!{sys.executable}
@@ -60,7 +60,7 @@ def _sign_app_environment(root: Path, yubihsm: Connector) -> dict[str, str]:
         "YUBIHSM_PASSWORD": "password",
         "PKCS11_MODULE": "/dev/null",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
-        "KEYMAP_FILE": str(KEYMAP),
+        "KEYMAP_FILE": str(ID2B_KEYMAP),
     }
 
 
@@ -203,7 +203,7 @@ def test_sign_app_exports_the_key_dir_it_defaults_to(
         "YUBIHSM_PASSWORD": "password",
         "PKCS11_MODULE": "/dev/null",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
-        "KEYMAP_FILE": str(KEYMAP),
+        "KEYMAP_FILE": str(ID2B_KEYMAP),
     }
     seen: list[str | None] = []
 
@@ -260,6 +260,22 @@ def test_sign_app_reports_an_unreachable_yubihsm(
     assert "Traceback" not in result.stderr
     assert "error: YubiHSM failure: " in result.stderr
     assert argv is None
+
+
+def test_sign_app_names_the_signed_app_after_its_file_name(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+    (root / "build.d").mkdir()
+    (root / "build.d" / "app").write_text("unsigned")
+
+    result, argv = _run_sign_app(root, yubihsm, APP, "build.d/app")
+
+    assert result.returncode == 0, result.stderr
+    assert argv is not None
+    assert argv[-3:] == ["--out", "build.d/app-signed.apk", "build.d/app"]
 
 
 def test_sign_app_cleans_up_after_sigterm(
