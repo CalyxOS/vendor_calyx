@@ -316,6 +316,8 @@ def build_parser() -> argparse.ArgumentParser:
         default="id2b",
     )
 
+    subparsers.add_parser("print-keymap")
+
     release_args = subparsers.add_parser("build-release-args")
     release_args.add_argument(
         "--metadata",
@@ -1520,6 +1522,59 @@ def _cmd_generate_keymap(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_print_keymap(args: argparse.Namespace) -> int:
+    """
+    Print the keymap of the keymapper and devices the environment
+    selects for generate_keymap.sh through KEYMAPPER (legacy by default),
+    KEYMAPPER_FILE, KEYMAP_FILE, EXTRA_DEVICES and the devices array of
+    DEVICES_FILE.
+
+    Args:
+        args: Unused, since the command takes no arguments.
+
+    Returns:
+        Zero on success, one when no keymapper or no device is found.
+    """
+    from .keymap import load_keymapper
+    from .metadata import default_metadata_path, load_metadata
+    from .sign_orchestration import load_devices_file
+
+    del args
+    scripts = Path(__file__).resolve().parents[1]
+    default_devices = scripts / "../../../calyx/scripts/vars/devices"
+    devices_file = os.environ.get("DEVICES_FILE") or str(default_devices)
+    try:
+        devices = load_devices_file(Path(devices_file))
+    except subprocess.CalledProcessError as error:
+        sys.stderr.buffer.write(error.stderr)
+        return 1
+    environment = {**os.environ}
+    environment["KEYMAPPER"] = environment.get("KEYMAPPER") or "legacy"
+    metadata = load_metadata(default_metadata_path())
+    try:
+        keymapper = load_keymapper(environment, metadata)
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    if not devices:
+        print(
+            "ERROR: No defined devices for which to generate keys.",
+            file=sys.stderr,
+        )
+        print(
+            "       Ensure the devices array is populated in $DEVICES_FILE "
+            f"({devices_file}).",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        print(keymapper.to_tsv(devices), end="")
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
 def _cmd_build_release_args(args: argparse.Namespace) -> int:
     """
     Print a release's null-delimited avb/signing/ota argument streams.
@@ -2358,6 +2413,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "updatecommonkeys": _cmd_updatecommonkeys,
     "prepare-ceremony-package": _cmd_prepare_ceremony_package,
     "generate-keymap": _cmd_generate_keymap,
+    "print-keymap": _cmd_print_keymap,
     "build-release-args": _cmd_build_release_args,
     "gather-signable-devices": _cmd_gather_signable_devices,
     "gather-device-builds": _cmd_gather_device_builds,
