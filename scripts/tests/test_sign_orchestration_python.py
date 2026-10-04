@@ -469,23 +469,6 @@ def test_sign_orchestrate_reports_unsupported_vendor(
     assert _archive_manifest(sign_tree) == {}
 
 
-def test_sign_orchestrate_refuses_keymapper_file(sign_tree: Path) -> None:
-    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-
-    result = run_sign_orchestrate(
-        sign_tree,
-        environment={
-            "SIGN_ASSUME_YES": "y",
-            "KEYMAPPER_FILE": str(sign_tree / "keymapper.sh"),
-        },
-    )
-
-    assert result.returncode == 1
-    assert "does not support KEYMAPPER_FILE" in result.stderr
-    assert "Traceback" not in result.stderr
-    assert _archive_manifest(sign_tree) == {}
-
-
 def test_sign_orchestrate_signs_nothing_for_a_build_word_that_is_no_number(
     sign_tree: Path,
 ) -> None:
@@ -865,6 +848,34 @@ def test_sign_orchestrate_cleans_up_when_terminated(
 
     assert process.wait(timeout=30) == 128 + signum
     assert not list((sign_tree / "tmp").glob("signing_tmp.*"))
+
+
+def test_sign_orchestrator_applies_a_keymapper_files_key_dir(
+    tmp_path: Path,
+) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text(
+        "from signing.keymap import Id2bKeymapper\n"
+        "class PluginKeymapper(Id2bKeymapper):\n"
+        "    def key_dir(self, environment):\n"
+        "        environment['KEY_DIR'] = 'plugin-keys/'\n"
+        "        return 'plugin-keys/'\n"
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        "    return PluginKeymapper(metadata, extra_devices=extra_devices)\n",
+    )
+    environment = {"KEYMAPPER_FILE": str(plugin)}
+    orchestrator = SignOrchestrator(
+        environment,
+        cwd=tmp_path,
+        devices_file=tmp_path / "devices",
+        metadata=load_metadata(SCRIPTS_DIR / "metadata.py"),
+        release_script=tmp_path / "release.sh",
+        generate_delta_script=tmp_path / "generate_delta.sh",
+    )
+
+    orchestrator.keymapper()
+
+    assert environment["KEY_DIR"] == "plugin-keys/"
 
 
 def test_sign_orchestrate_reports_an_unreadable_free_space(
