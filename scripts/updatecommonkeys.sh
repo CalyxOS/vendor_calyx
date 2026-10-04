@@ -6,6 +6,11 @@
 
 set -euo pipefail
 
+if [ "${USE_PYTHON_UPDATECOMMONKEYS:-}" = y ]; then
+  PYTHONPATH="$(cd "$(dirname "$0")";pwd -P)${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing updatecommonkeys "$0" "$@"
+fi
+
 error() {
   echo "error: $1, please try again" >&2
   echo "Usage: $0 key_dir subject"
