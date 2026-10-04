@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Run the release command.
+Run the release and generate_delta commands.
 """
 
 from __future__ import annotations
@@ -456,6 +456,29 @@ def _show_step(argv: list[str], *, dry_run: bool) -> None:
         print("Running:", shlex.join(argv), file=sys.stderr)
 
 
+_SOONG_RELEASETOOLS = Path(
+    "out/soong/.intermediates/build/make/tools/releasetools",
+)
+
+
+def _releasetools_binary(directory: Path, tool: str) -> str:
+    """
+    Return the tool directly under directory, or else the first match of
+    <tool>/*/<tool> under it (Soong's per-host-tag layout), or else an
+    empty command after printing an error.
+    """
+    direct = directory / tool
+    candidates = [direct, *sorted(direct.glob(f"*/{tool}"))]
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    print(
+        f"error: couldn't find releasetools binary '{tool}' under {directory}",
+        file=sys.stderr,
+    )
+    return ""
+
+
 class SigningSession:
     """
     One run of a signing script.
@@ -527,6 +550,18 @@ class SigningSession:
             command=self.command,
         )
 
+    def _resolve_keys(self, keymapper: Keymapper) -> None:
+        """
+        Resolve the keys the session signs with, before the vendor is set
+        up.
+
+        Args:
+            keymapper: The keymapper the session loaded.
+
+        Raises:
+            ValueError: If the keymapper maps no such key for the device.
+        """
+
     def prepare_for_signing_full(
         self,
         *,
@@ -543,6 +578,11 @@ class SigningSession:
                 raise ReleaseAbort(1) from error
             self.keymapper = keymapper
             apply_keymapper_exports(self.environment, keymapper)
+            try:
+                self._resolve_keys(keymapper)
+            except ValueError as error:
+                print(error, file=sys.stderr)
+                raise ReleaseAbort(1) from error
             parent = self.environment.get("TMPDIR") or "/dev/shm"
             tmpdir = Path(parent)
             if _signs_through_pkcs11(self.environment):
@@ -767,9 +807,7 @@ class ReleaseOrchestrator(SigningSession):
             build = str(int(build) + 1)
 
         if not self.target_files_arg:
-            self.releasetools_binary_path = Path(
-                "out/soong/.intermediates/build/make/tools/releasetools",
-            )
+            self.releasetools_binary_path = _SOONG_RELEASETOOLS
             target_files = Path(
                 "out/target/product",
                 self.device,
@@ -869,7 +907,10 @@ class ReleaseOrchestrator(SigningSession):
                 print("Creating signed targetfiles zip")
                 code = self._invoke(
                     [
-                        self._releasetools_binary("sign_target_files_apks"),
+                        _releasetools_binary(
+                            self.releasetools_binary_path,
+                            "sign_target_files_apks",
+                        ),
                         *self.args.releasetools,
                         "-o",
                         *release_args.signing_args,
@@ -892,7 +933,10 @@ class ReleaseOrchestrator(SigningSession):
                     print("Creating OTA update zip")
                     code = self._invoke(
                         [
-                            self._releasetools_binary("ota_from_target_files"),
+                            _releasetools_binary(
+                                self.releasetools_binary_path,
+                                "ota_from_target_files",
+                            ),
                             *self.args.releasetools,
                             *release_args.ota_args,
                             str(signed_target_files),
@@ -912,7 +956,10 @@ class ReleaseOrchestrator(SigningSession):
             print("Creating factory image")
             code = self._invoke(
                 [
-                    self._releasetools_binary("img_from_target_files"),
+                    _releasetools_binary(
+                        self.releasetools_binary_path,
+                        "img_from_target_files",
+                    ),
                     *self.args.releasetools,
                     str(signed_target_files),
                     str(img_zip),
@@ -937,7 +984,10 @@ class ReleaseOrchestrator(SigningSession):
             print("Creating OTA test update zip")
             code = self._invoke(
                 [
-                    self._releasetools_binary("sign_target_files_apks"),
+                    _releasetools_binary(
+                        self.releasetools_binary_path,
+                        "sign_target_files_apks",
+                    ),
                     *self.args.releasetools,
                     "--otatest",
                     "-o",
@@ -955,7 +1005,10 @@ class ReleaseOrchestrator(SigningSession):
             )
             code = self._invoke(
                 [
-                    self._releasetools_binary("ota_from_target_files"),
+                    _releasetools_binary(
+                        self.releasetools_binary_path,
+                        "ota_from_target_files",
+                    ),
                     *self.args.releasetools,
                     *release_args.ota_args,
                     str(otatest_target_files),
@@ -999,24 +1052,6 @@ class ReleaseOrchestrator(SigningSession):
         except UnsupportedRollbackDeviceError as error:
             print(str(error))
             raise ReleaseAbort(1) from error
-
-    def _releasetools_binary(self, tool: str) -> str:
-        """
-        Return the tool directly under RELEASETOOLS_BINARY_PATH, or else
-        the first match of <tool>/*/<tool> under it (Soong's per-host-tag
-        layout), or else an empty command after printing an error.
-        """
-        direct = self.releasetools_binary_path / tool
-        candidates = [direct, *sorted(direct.glob(f"*/{tool}"))]
-        for candidate in candidates:
-            if candidate.is_file() and os.access(candidate, os.X_OK):
-                return str(candidate)
-        print(
-            f"error: couldn't find releasetools binary '{tool}' under "
-            f"{self.releasetools_binary_path}",
-            file=sys.stderr,
-        )
-        return ""
 
     def _extract_build_id(self, target_files: Path) -> str:
         try:
@@ -1127,3 +1162,113 @@ class ReleaseOrchestrator(SigningSession):
         _show_step(["rm", str(img_zip)], dry_run=self.dry_run)
         if not self.dry_run:
             img_zip.unlink()
+
+
+def _vendor_release_reads_build_number(
+    environment: MutableMapping[str, str],
+) -> bool:
+    """
+    Return whether initializing the vendor for a release names its logs
+    after BUILD_NUMBER, which the SoftHSM vendor always does and the
+    YubiHSM vendor does outside DRY_RUN, unless the release is initialized
+    already.
+    """
+    if environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE") == "y":
+        return False
+    if environment.get("PKCS11_VENDOR") == "yubihsm":
+        return environment.get("DRY_RUN") != "y"
+    return environment.get("PKCS11_VENDOR") == "softhsm"
+
+
+class DeltaOrchestrator(SigningSession):
+    """
+    Owns one generate_delta.sh run, which builds the incremental OTA
+    between two signed releases in archive/.
+    """
+
+    command = "generate_delta"
+    flag = "USE_PYTHON_GENERATE_DELTA"
+    usage = "device oldversion newversion"
+
+    def __init__(
+        self,
+        environment: MutableMapping[str, str],
+        *,
+        cwd: Path,
+        metadata: SigningMetadata,
+        device: str,
+        old: str,
+        new: str,
+    ) -> None:
+        super().__init__(
+            environment,
+            cwd=cwd,
+            metadata=metadata,
+            device=device,
+            signing_args=[],
+        )
+        self.old = old
+        self.new = new
+        self.ota_key = ""
+
+    def _resolve_keys(self, keymapper: Keymapper) -> None:
+        self.ota_key = make_release_get_key(
+            keymapper,
+            self.environment,
+            device=self.device,
+        )("other", "ota")
+
+    def _run_steps(self) -> None:
+        if (self.cwd / "build/tools/releasetools").is_dir():
+            ota_from_target_files = _releasetools_binary(
+                _SOONG_RELEASETOOLS,
+                "ota_from_target_files",
+            )
+            if not ota_from_target_files:
+                raise ReleaseAbort(1)
+        else:
+            ota_from_target_files = "./bin/ota_from_target_files"
+            self.args.releasetools += ["-p", "."]
+        if "BUILD_NUMBER" not in self.environment and (
+            _vendor_release_reads_build_number(self.environment)
+        ):
+            print(
+                "BUILD_NUMBER not set, did you source envsetup.sh ?",
+                file=sys.stderr,
+            )
+            raise ReleaseAbort(1)
+        try:
+            self.prepare_for_signing_full(
+                device=self.device,
+                build_number=self.environment.get("BUILD_NUMBER", ""),
+                command_argv=[
+                    self.program,
+                    self.device,
+                    self.old,
+                    self.new,
+                ],
+            )
+        except ReleaseAbort as abort:
+            raise ReleaseUsageError("failed to prepare for signing") from abort
+
+        old_dir = f"archive/release-{self.device}-{self.old}"
+        new_dir = f"archive/release-{self.device}-{self.new}"
+        incremental = f"{self.device}-incremental-{self.old}-{self.new}.zip"
+        code = self._invoke(
+            [
+                ota_from_target_files,
+                *self.args.releasetools,
+                *self.args.ota,
+                "-k",
+                self.ota_key,
+                "-i",
+                f"{old_dir}/{self.device}-target_files-{self.old}.zip",
+                f"{new_dir}/{self.device}-target_files-{self.new}.zip",
+                f"{new_dir}/{incremental}",
+            ],
+        )
+        if code != 0:
+            raise ReleaseAbort(code)
+
+        print("Calculating sha256sum for incremental")
+        self._write_checksum(Path(new_dir), incremental)
