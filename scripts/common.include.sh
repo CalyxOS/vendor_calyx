@@ -79,6 +79,10 @@ load_keymapper() {
   local keymapper=${KEYMAPPER:-legacy}
   if [ -n "${KEYMAPPER_FILE:-}" ]; then
     keymapper_path=$(cd "$scriptpath"; realpath -e "$KEYMAPPER_FILE") || return $?
+    if [[ $keymapper_path == *.py ]]; then
+      echo "KEYMAPPER_FILE $KEYMAPPER_FILE is a Python keymapper, which $(basename "$0") cannot load in Bash." >&2
+      return 1
+    fi
   else
     keymapper_path=$(cd "$scriptpath"; realpath -e "keymapper.$keymapper.include.sh" || true)
     if [ -z "$keymapper_path" ]; then

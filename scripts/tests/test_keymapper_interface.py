@@ -207,3 +207,134 @@ def test_load_keymapper_defaults_to_legacy(
     )
 
     assert isinstance(keymapper, LegacyKeymapper)
+
+
+_PLUGIN = """
+from signing.keymap import Id2bKeymapper
+
+
+class PluginKeymapper(Id2bKeymapper):
+    def key(self, key_type, key_name, device="", *, suffix="", key_suffix=""):
+        return "plugin/" + super().key(
+            key_type, key_name, device, suffix=suffix, key_suffix=key_suffix
+        )
+
+
+def create_keymapper(environment, metadata, *, extra_devices):
+    return PluginKeymapper(metadata, extra_devices=extra_devices)
+"""
+
+
+def test_keymapper_file_supplies_the_keymapper(tmp_path: Path) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text(_PLUGIN)
+
+    keymapper = load_keymapper(
+        {"KEYMAPPER_FILE": str(plugin), "KEYMAPPER": "legacy"},
+        load_metadata(SCRIPTS_DIR / "metadata.py"),
+    )
+
+    assert keymapper.key("other", "ota", "bramble") == "plugin/0x2000"
+
+
+def test_keymapper_file_resolves_relative_to_the_scripts_directory() -> None:
+    with pytest.raises(ValueError, match=f"{SCRIPTS_DIR}/missing.py"):
+        load_keymapper(
+            {"KEYMAPPER_FILE": "missing.py"},
+            load_metadata(SCRIPTS_DIR / "metadata.py"),
+        )
+
+
+@pytest.mark.parametrize(
+    ("source", "message"),
+    (
+        ("", r"does not define create_keymapper\(\)"),
+        (
+            "def create_keymapper(environment, metadata, *, extra_devices):\n"
+            "    return object()\n",
+            "returned object, not a Keymapper",
+        ),
+    ),
+    ids=("no-factory", "not-a-keymapper"),
+)
+def test_keymapper_file_must_create_a_keymapper(
+    tmp_path: Path,
+    source: str,
+    message: str,
+) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text(source)
+
+    with pytest.raises(ValueError, match=message):
+        load_keymapper(
+            {"KEYMAPPER_FILE": str(plugin)},
+            load_metadata(SCRIPTS_DIR / "metadata.py"),
+        )
+
+
+def test_a_keymapper_must_define_rows() -> None:
+    assert Keymapper.__abstractmethods__ == {"rows"}
+
+
+def test_keymapper_file_can_define_a_dataclass(tmp_path: Path) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text(
+        "from __future__ import annotations\n"
+        "from dataclasses import dataclass\n"
+        "from signing.keymap import Id2bKeymapper\n"
+        "@dataclass\n"
+        "class Settings:\n"
+        "    prefix: str = ''\n"
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        "    Settings()\n"
+        "    return Id2bKeymapper(metadata, extra_devices=extra_devices)\n",
+    )
+
+    keymapper = load_keymapper(
+        {"KEYMAPPER_FILE": str(plugin)},
+        load_metadata(SCRIPTS_DIR / "metadata.py"),
+    )
+
+    assert keymapper.key("other", "ota", "bramble") == "0x2000"
+
+
+def test_keymapper_file_that_fails_to_load_is_named(tmp_path: Path) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text("import does_not_exist\n")
+
+    with pytest.raises(
+        ValueError,
+        match=f"Cannot load KEYMAPPER_FILE {plugin}",
+    ):
+        load_keymapper(
+            {"KEYMAPPER_FILE": str(plugin)},
+            load_metadata(SCRIPTS_DIR / "metadata.py"),
+        )
+
+
+def test_keymapper_file_prints_its_keymap(tmp_path: Path) -> None:
+    plugin = tmp_path / "keymapper.plugin.py"
+    plugin.write_text(_PLUGIN)
+
+    keymapper = load_keymapper(
+        {"KEYMAPPER_FILE": str(plugin)},
+        load_metadata(SCRIPTS_DIR / "metadata.py"),
+    )
+
+    assert keymapper.to_tsv(("bramble", "redfin")) == FIXTURE.read_text()
+
+
+def test_keymapper_file_whose_create_keymapper_fails_is_named(
+    tmp_path: Path,
+) -> None:
+    plugin = tmp_path / "failing.py"
+    plugin.write_text(
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        "    raise RuntimeError('no keymapper today')\n",
+    )
+
+    with pytest.raises(ValueError, match=r"failing.py failed \(no keymapper"):
+        load_keymapper(
+            {"KEYMAPPER_FILE": str(plugin)},
+            load_metadata(SCRIPTS_DIR / "metadata.py"),
+        )

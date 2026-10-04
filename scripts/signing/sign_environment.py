@@ -191,7 +191,11 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
                     "module, or set PKCS11_MODULE to its path.",
                 )
             environment["PKCS11_MODULE"] = module
-    resolve_key_dir(environment, environment.get("KEYMAPPER") or "legacy")
+    if not environment.get("KEYMAPPER_FILE"):
+        if (environment.get("KEYMAPPER") or "legacy") == "legacy":
+            environment["KEY_DIR"] = "keys/"
+        else:
+            normalize_key_dir(environment)
     return vendor
 
 
@@ -235,31 +239,6 @@ def _default(
     """Set a variable that is unset or empty."""
     if not environment.get(name):
         environment[name] = value
-
-
-def resolve_key_dir(
-    environment: MutableMapping[str, str],
-    keymapper: str,
-) -> str:
-    """
-    Set KEY_DIR for the keymapper and return the value.
-
-    The legacy keymapper sets KEY_DIR=keys/. The id2b and static keymappers
-    default it to keys/ when unset, and otherwise end it in exactly one
-    slash, or leave it empty.
-
-    Args:
-        environment: Process environment to read KEY_DIR from and
-            mutate in place.
-        keymapper: "legacy", "id2b" or "static".
-
-    Returns:
-        The normalized KEY_DIR value.
-    """
-    if keymapper == "legacy":
-        environment["KEY_DIR"] = "keys/"
-        return "keys/"
-    return normalize_key_dir(environment)
 
 
 def stop_connector(pid_file: Path) -> None:
