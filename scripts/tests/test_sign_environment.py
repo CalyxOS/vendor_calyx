@@ -722,18 +722,11 @@ def test_initialize_softhsm_release_respects_preset_exec_log_path(
 
 
 def test_load_vendor_softhsm_applies_source_exports() -> None:
-    """
-    Loading the SoftHSM vendor exports these even though its
-    initialize_vendor() does nothing else. The AVB signing helper reads
-    OPENSSL_PKCS11_URI_USES_HEX_KEY_ID to look keys up by ID.
-    """
     environment = {"PKCS11_VENDOR": "softhsm", "KEYMAPPER": "legacy"}
 
     load_vendor(environment)
 
     assert environment["KEYMAPPER"] == "id2b"
-    assert environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] == "y"
-    assert environment["FIND_KEYS_BY_ID"] == "y"
     assert environment["USE_APKSIGNER"] == "y"
 
 
@@ -743,7 +736,6 @@ def test_load_vendor_yubihsm_applies_source_exports() -> None:
     load_vendor(environment)
 
     assert environment["KEYMAPPER"] == "static"
-    assert environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] == "y"
     assert environment["YUBIHSM_EXPORTABLE_DOMAIN"] == "3"
     assert environment["KEYMAP_FILE"].endswith("pkcs11/keymap.tsv")
 

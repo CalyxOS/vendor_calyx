@@ -29,6 +29,11 @@ from signing.apksigner_batch import (
     run_in_batch,
 )
 from signing.signing_server import SigningServer
+from test_release_orchestration import (
+    BUILD_NUMBER,
+    PKCS11_ENVIRONMENT,
+    make_release_tree,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -273,29 +278,23 @@ def test_batch_process_runs_the_apksigner_of_its_directory(
     )
 
 
-def test_different_working_directory_is_unavailable(
+@pytest.mark.parametrize(
+    ("arguments", "directory"),
+    ((["sign", "a"], "bin"), ([], "")),
+)
+def test_a_command_the_batch_cannot_run_is_unavailable(
     tmp_path: Path,
     fake_java: Path,
+    arguments: list[str],
+    directory: str,
 ) -> None:
     server = _server(tmp_path)
     with server:
         result = run_in_batch(
             server.socket_path,
-            ["sign", "a"],
-            cwd=tmp_path / "bin",
+            arguments,
+            cwd=tmp_path / directory,
         )
-
-    assert result is None
-    assert _starts(fake_java) == []
-
-
-def test_an_empty_argument_list_is_unavailable(
-    tmp_path: Path,
-    fake_java: Path,
-) -> None:
-    server = _server(tmp_path)
-    with server:
-        result = run_in_batch(server.socket_path, [], cwd=tmp_path)
 
     assert result is None
     assert _starts(fake_java) == []
@@ -305,6 +304,7 @@ def _run_interceptor(
     tmp_path: Path,
     socket_path: Path,
     *tool_args: str,
+    environment: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     return run(
         [
@@ -320,6 +320,7 @@ def _run_interceptor(
             "SIGNING_COMMAND": "java",
             "DRY_RUN": "y",
             "SIGNING_SERVER_SOCKET": str(socket_path),
+            **(environment or {}),
         },
         check=False,
     )
@@ -349,29 +350,17 @@ def test_interceptor_serves_a_cached_result_without_the_batch_server(
     server = _server(tmp_path)
     with server:
         signed, cached = (
-            run(
-                [
-                    INTERCEPTOR,
-                    "-Xmx1g",
-                    "-jar",
-                    "apksigner.jar",
-                    "sign",
-                    "--kms-key-alias",
-                    "0x1100",
-                    "--cert",
-                    "cert.pem",
-                    "--out",
-                    f"{name}.apk",
-                    "in.apk",
-                ],
-                cwd=tmp_path,
-                env={
-                    "SIGNING_COMMAND": "java",
-                    "DRY_RUN": "y",
-                    "SIGNING_SERVER_SOCKET": str(server.socket_path),
-                    "YUBIHSM_SIGNING_CACHE": str(cache),
-                },
-                check=False,
+            _run_interceptor(
+                tmp_path,
+                server.socket_path,
+                "--kms-key-alias",
+                "0x1100",
+                "--cert",
+                "cert.pem",
+                "--out",
+                f"{name}.apk",
+                "in.apk",
+                environment={"YUBIHSM_SIGNING_CACHE": str(cache)},
             )
             for name in ("signed", "cached")
         )
@@ -404,7 +393,6 @@ def test_interceptor_runs_directly_when_batch_is_unavailable(
     assert "direct sign a.apk" in fake_java.read_text().splitlines()
 
 
-BUILD_NUMBER = "2026081500"
 YUBIHSM_INTERCEPTOR = "/s/pkcs11/vendor.yubihsm.interceptor.py"
 RECORDING_SIGN_TARGET_FILES = f"""#!{sys.executable}
 import json
@@ -432,17 +420,10 @@ Path(sys.argv[-1]).write_text("signed-target-files")
 
 
 def _release_tree(root: Path) -> Path:
-    (root / "device/common").mkdir(parents=True)
-    (root / "device/common/clear-factory-images-variables.sh").touch()
-    tools = root / "bin"
-    tools.mkdir()
+    make_release_tree(root)
     install_executable(
-        tools / "sign_target_files_apks",
+        root / "bin" / "sign_target_files_apks",
         RECORDING_SIGN_TARGET_FILES,
-    )
-    install_executable(
-        tools / "ota_from_target_files",
-        '#!/bin/sh\neval "out=\\${$#}"\nprintf ota > "$out"\n',
     )
     with zipfile.ZipFile(
         root / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
@@ -488,9 +469,7 @@ def _release(
             "PYTHONPATH": str(SCRIPTS_DIR),
             "RELEASE_RECORD": str(record),
             "TMPDIR": str(tmpdir),
-            "PKCS11_MODULE": "/dev/null",
-            "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-            "PKCS11_PIN": "test-only",
+            **PKCS11_ENVIRONMENT,
             "YUBIHSM_AUTHKEY": "0x0001",
             "YUBIHSM_PASSWORD": "test-only",
             **environment,
@@ -680,54 +659,6 @@ def _sign_arguments(
 
 
 @pytest.mark.aosp
-def test_tree_apksigner_signs_through_the_batch_server(
-    tmp_path: Path,
-    aosp_top: Path,
-) -> None:
-    apksigner = aosp_jar_command(aosp_top, "apksigner.jar")
-    app = aosp_top / "build/make/tools/releasetools/testdata/TestApp.apk"
-    pk8, certificate = _local_signing_key(tmp_path)
-    run(
-        [*apksigner, *_sign_arguments(pk8, certificate, app, "direct.apk")],
-        cwd=tmp_path,
-    )
-    host = aosp_top / "out" / "host" / "linux-x86"
-    handler = ApksignerBatch(
-        cwd=host,
-        env={
-            **os.environ,
-            "PATH": f"{Path(apksigner[0]).parent}:{os.environ['PATH']}",
-        },
-    )
-
-    with SigningServer(tmp_path / "batch.sock", {"apksigner": handler}):
-        results: list[tuple[int, bytes, bytes] | None] = []
-        processes: list[object] = []
-        for name in ("first.apk", "second.apk"):
-            results.append(
-                run_in_batch(
-                    tmp_path / "batch.sock",
-                    _sign_arguments(
-                        pk8,
-                        certificate,
-                        app,
-                        str(tmp_path / name),
-                    ),
-                    cwd=host,
-                ),
-            )
-            processes.append(handler.process)
-
-        assert processes[0] is not None
-        assert processes[1] is processes[0]
-
-    assert [result and result[0] for result in results] == [0, 0]
-    direct = (tmp_path / "direct.apk").read_bytes()
-    assert (tmp_path / "first.apk").read_bytes() == direct
-    assert (tmp_path / "second.apk").read_bytes() == direct
-
-
-@pytest.mark.aosp
 def test_interceptor_signs_with_the_tree_apksigner_through_the_server(
     tmp_path: Path,
     aosp_top: Path,
@@ -751,33 +682,38 @@ def test_interceptor_signs_with_the_tree_apksigner_through_the_server(
     )
     server = SigningServer(tmp_path / "batch.sock", {"apksigner": handler})
 
+    signed: list[subprocess.CompletedProcess[str]] = []
+    processes: list[object] = []
     with server:
-        signed = [
-            run(
-                [
-                    INTERCEPTOR,
-                    *java_options,
-                    *_sign_arguments(
-                        pk8,
-                        certificate,
-                        app,
-                        str(tmp_path / name),
-                    ),
-                ],
-                cwd=host,
-                env={
-                    "PATH": f"{Path(java).parent}:{os.environ['PATH']}",
-                    "SIGNING_COMMAND": "java",
-                    "DRY_RUN": "y",
-                    "SIGNING_SERVER_SOCKET": str(server.socket_path),
-                },
-                check=False,
+        for name in ("first.apk", "second.apk"):
+            signed.append(
+                run(
+                    [
+                        INTERCEPTOR,
+                        *java_options,
+                        *_sign_arguments(
+                            pk8,
+                            certificate,
+                            app,
+                            str(tmp_path / name),
+                        ),
+                    ],
+                    cwd=host,
+                    env={
+                        "PATH": f"{Path(java).parent}:{os.environ['PATH']}",
+                        "SIGNING_COMMAND": "java",
+                        "DRY_RUN": "y",
+                        "SIGNING_SERVER_SOCKET": str(server.socket_path),
+                    },
+                    check=False,
+                ),
             )
-            for name in ("first.apk", "second.apk")
-        ]
-        assert handler.process is not None
+            processes.append(handler.process)
 
     assert [result.returncode for result in signed] == [0, 0], signed[0].stderr
+    assert not any("non-batch" in result.stderr for result in signed)
+    assert processes[0] is not None
+    assert processes[1] is processes[0]
     direct = (tmp_path / "direct.apk").read_bytes()
     assert (tmp_path / "first.apk").read_bytes() == direct
     assert (tmp_path / "second.apk").read_bytes() == direct
