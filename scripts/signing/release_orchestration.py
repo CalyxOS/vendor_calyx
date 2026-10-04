@@ -37,6 +37,7 @@ from .release_arguments import (
     make_get_key,
 )
 from .release_execution import (
+    Transcript,
     exit_on_signals,
     format_sha256sum,
     render_release_tool,
@@ -491,6 +492,7 @@ class SigningSession:
         self.tmpdir: Path | None = None
         self.vendor_release_initialized = False
         self.inherited_environment = dict(environment)
+        self.transcript = Transcript()
 
     def _run_steps(self) -> None:
         raise NotImplementedError
@@ -511,6 +513,8 @@ class SigningSession:
                 return abort.code
             except KeyboardInterrupt:
                 return 130
+            finally:
+                self.transcript.stop()
         return 0
 
     def _finalize_vendor_release(self) -> None:
@@ -581,6 +585,16 @@ class SigningSession:
             print(f"error: {message}", file=sys.stderr)
             raise ReleaseAbort(1) from error
 
+        exec_log_path = self.environment.get("EXEC_LOG_PATH")
+        if exec_log_path and not self.dry_run:
+            try:
+                self.transcript.start(Path(exec_log_path))
+            except OSError as error:
+                print(
+                    f"error: cannot write EXEC_LOG_PATH {exec_log_path} "
+                    f"({error}), going on without it",
+                    file=sys.stderr,
+                )
         sys.stderr.write("Command: " + render_release_tool(command_argv))
 
     def _maybe_start_signing_server(self) -> None:
