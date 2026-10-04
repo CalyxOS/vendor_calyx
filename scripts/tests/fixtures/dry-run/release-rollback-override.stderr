@@ -11,7 +11,7 @@ pushd out/release-devon-2026081501
 
 source <tree>/device/common/generate-factory-images-common.sh
 
-mv devon-version_placeholder-factory-\*.zip devon-factory-2026081501.zip
+mv 'devon-version_placeholder-factory-*.zip' devon-factory-2026081501.zip
 
 sha256sum devon-factory-2026081501.zip
 
