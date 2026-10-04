@@ -6,10 +6,8 @@
 
 set -euo pipefail
 scriptpath=$(cd "$(dirname "$0")";pwd -P)
-if [ "${USE_PYTHON_GENERATE_KEYMAP:-}" = "y" ]; then
-  PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
-    exec python3 -P -m signing print-keymap
-fi
+PYTHONPATH="$scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+  exec python3 -P -m signing print-keymap
 
 get_key_id_is_exportable_yn() {
   # Default value in case not specified by any includes.
