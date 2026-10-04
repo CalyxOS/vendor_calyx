@@ -1,0 +1,11 @@
+{
+  "audit": [],
+  "files": {},
+  "keys": [
+    "0x0101",
+    "0x0102"
+  ],
+  "returncode": 0,
+  "stderr": "Using keymapper: static\n",
+  "stdout": "Mode: restore\nNow performing: load_configuration\nNow performing: maybe_start_yubihsm_connector_service\n\nThis step uses administrator privileges via sudo to start the YubiHSM connector.\nYou may be required to enter your administrator password.\nWould you like to start the yubihsm connector? (Y/N) Now performing: finish\nProvisioning completed successfully!\nDo not forget to save the contents of:\n<root>/keep\n"
+}

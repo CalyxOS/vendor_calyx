@@ -1,0 +1,13 @@
+{
+  "audit": [
+    "# ensure_key_is_available Result: 0",
+    "# restore_all_keys_and_certs Result: 0"
+  ],
+  "files": {},
+  "keys": [
+    "0x0101"
+  ],
+  "returncode": 0,
+  "stderr": "Using keymapper: static\nWanted to load cert 0x0101 but could not find it on disk\nIMPORTANT: You must save the contents of '<root>/keep'! Copy it somewhere safe!\n",
+  "stdout": "Mode: load-keys\nNow performing: load_configuration\nNow performing: ask_signing_authkey_password_if_needed\nEnter signing authkey password: \nNow performing: use_signing_authkey\nNow performing: maybe_start_yubihsm_connector_service\n\nThis step uses administrator privileges via sudo to start the YubiHSM connector.\nYou may be required to enter your administrator password.\nWould you like to start the yubihsm connector? (Y/N) Now performing: connect_hsm\n\nPlease connect the YubiHSM 2.\nEnter Y when the HSM is connected, or N to quit. (Y/N) Now performing: load_keys\n\nRestoring all keys and certs...\nNow performing: finish\nDone!\n"
+}
