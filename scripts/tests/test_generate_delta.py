@@ -207,11 +207,7 @@ def test_generate_delta_checksums_without_sha256sum(
 
 def _normalized(stderr: str, tree: Path) -> str:
     return (
-        re.sub(
-            r"/signing\.\w+/",
-            "/signing.XXXXXXXX/",
-            normalize_command_line(stderr),
-        )
+        normalize_command_line(stderr)
         .replace(str(SCRIPTS_DIR), "<scripts>")
         .replace(str(tree), "<tree>")
     )

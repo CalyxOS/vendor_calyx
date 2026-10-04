@@ -44,17 +44,11 @@ def _small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 BUILD_NUMBER = "2026081500"
 ROLLBACK_DEVICES = ("devon", "hawao", "rhode", "fogos", "bangkk", "fogo")
 
-_PKCS11_CONFIG_PATH = re.compile(r"--pkcs11_config \S+")
-
 PKCS11_ENVIRONMENT = {
     "PKCS11_MODULE": "/dev/null",
     "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
     "PKCS11_PIN": "test-only",
 }
-
-
-def _normalize_rendered_commands(text: str) -> str:
-    return _PKCS11_CONFIG_PATH.sub("--pkcs11_config <normalized>", text)
 
 
 def make_release_tree(root: Path) -> Path:
@@ -174,7 +168,7 @@ DRY_RUN_FIXTURES = Path(__file__).parent / "fixtures" / "dry-run"
 
 def _normalize_dry_run(stderr: str, tree: Path) -> str:
     return (
-        normalize_command_line(_normalize_rendered_commands(stderr))
+        normalize_command_line(stderr)
         .replace(str(SCRIPTS_DIR), "<scripts>")
         .replace(str(tree), "<tree>")
     )
@@ -1353,6 +1347,21 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
         )
 
     assert parents == ["/dev/shm"]
+
+
+def test_release_refuses_use_apksigner_n_with_pkcs11(
+    release_tree: Path,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={**PKCS11_ENVIRONMENT, "USE_APKSIGNER": "n"},
+    )
+
+    assert result.returncode == 1
+    assert "USE_APKSIGNER=n is not supported with PKCS#11 signing" in (
+        result.stderr
+    )
 
 
 @pytest.mark.parametrize(
