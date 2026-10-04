@@ -12,12 +12,15 @@ import os
 import shutil
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, MutableMapping, Sequence
 from pathlib import Path
 
-from .keymap import Keymapper
+from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
+from .metadata import SigningMetadata, default_metadata_path, load_metadata
 from .models import KeyReference, KeySpec
 from .plaintext import PlaintextBackend, provision_certified_keys
+
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
 EXAMPLE_SUBJECT = (
     "'/C=US/ST=California/L=Mountain View/O=Android/OU=Android/CN=Android/"
@@ -92,6 +95,124 @@ def mkkey_main(program: str, arguments: Sequence[str]) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 0
+
+
+def _key_script_arguments(
+    arguments: Sequence[str],
+    script: str,
+) -> tuple[bool, str, list[str]]:
+    """
+    Split [--create-directory] PROGRAM ARGS... as the key script
+    commands receive them.
+    """
+    arguments = list(arguments)
+    create_directory = arguments[:1] == ["--create-directory"]
+    if create_directory:
+        arguments.pop(0)
+    program = arguments.pop(0) if arguments else str(SCRIPTS_DIR / script)
+    return create_directory, program, arguments
+
+
+def _create_key_directory(arguments: Sequence[str]) -> None:
+    """Create the key directory, refusing one that already exists."""
+    if not arguments:
+        return
+    if os.path.isdir(arguments[0]):
+        print("key directory already exists", file=sys.stderr)
+        raise ScriptError()
+    try:
+        os.makedirs(arguments[0], exist_ok=True)
+    except OSError as error:
+        print(f"error: {error}", file=sys.stderr)
+        raise ScriptError() from error
+
+
+def _provision(provision: Callable[[], None]) -> int:
+    """Run a key provisioning step, reporting its failure as an error."""
+    try:
+        provision()
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        subprocess.CalledProcessError,
+    ) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _load_script_metadata() -> SigningMetadata:
+    """Load the metadata module, reporting one that fails to load."""
+    try:
+        return load_metadata(default_metadata_path())
+    except (OSError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        raise ScriptError() from error
+
+
+def _load_script_keymapper(
+    environment: MutableMapping[str, str],
+    metadata: SigningMetadata,
+) -> Keymapper:
+    """Load and apply the keymapper, KEYMAPPER defaulting to legacy."""
+    environment["KEYMAPPER"] = environment.get("KEYMAPPER") or "legacy"
+    try:
+        keymapper = load_keymapper(environment, metadata)
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        raise ScriptError() from error
+    apply_keymapper_exports(environment, keymapper)
+    return keymapper
+
+
+def updatecommonkeys_main(
+    environment: MutableMapping[str, str],
+    arguments: Sequence[str],
+) -> int:
+    """
+    Convert the Chromium keystore and create the missing app keys under a
+    key directory, after creating the directory when --create-directory
+    leads the arguments.
+
+    Args:
+        environment: Process environment, mutated in place.
+        arguments: [--create-directory] PROGRAM KEY_DIR SUBJECT.
+
+    Returns:
+        0 on success, 1 on a usage or setup error.
+    """
+    create_directory, program, arguments = _key_script_arguments(
+        arguments,
+        "updatecommonkeys.sh",
+    )
+    usage = (
+        f"Usage: {program} key_dir subject",
+        f"Example subject: {EXAMPLE_SUBJECT}",
+    )
+    try:
+        if create_directory:
+            _create_key_directory(arguments)
+        if len(arguments) != 2:
+            raise _error("incorrect number of arguments", usage)
+        key_dir, subject = arguments
+        metadata = _load_script_metadata()
+        keymapper = _load_script_keymapper(environment, metadata)
+        for tool in ("openssl", "keytool"):
+            if shutil.which(tool) is None:
+                raise _error(f"{tool} not found in PATH.", usage)
+        if not os.path.isdir(key_dir):
+            raise _error("key directory does not exist", usage)
+    except ScriptError:
+        return 1
+    return _provision(
+        lambda: update_common_keys(
+            metadata,
+            keymapper,
+            Path(key_dir),
+            subject,
+        ),
+    )
 
 
 def update_keys(
@@ -295,3 +416,94 @@ def migrate_runtime_key(key_directory: Path) -> None:
                 ("mv", f"{legacy}{suffix}", f"{current}{suffix}"),
                 check=True,
             )
+
+
+def update_common_keys(
+    metadata: SigningMetadata,
+    keymapper: Keymapper,
+    key_directory: Path,
+    subject: str,
+) -> None:
+    """
+    Convert the Chromium keystore if present, then generate every app key
+    that lacks its private key and certificate.
+
+    Args:
+        metadata: Validated signing-key metadata.
+        keymapper: Keymapper naming the app keys.
+        key_directory: Directory holding the common keys.
+        subject: Distinguished name for self-signed certificates.
+
+    Raises:
+        ValueError: If the subject is empty.
+        InconsistentKeyStateError: If an app's private key exists without
+            its certificate, or a certificate without its key.
+        subprocess.CalledProcessError: If keytool or openssl fails.
+    """
+    if not subject:
+        raise ValueError("certificate subject must not be empty")
+    _convert_chromium_keystore(key_directory)
+    subjects: dict[str, str] = {}
+    for key_name in metadata.keys_for_type("app"):
+        label = Path(keymapper.key("app", key_name)).name
+        if label:
+            subjects[label] = subject.replace("_KEY_LABEL_", label)
+    provision_certified_keys(PlaintextBackend(key_directory), subjects)
+
+
+def _convert_chromium_keystore(key_directory: Path) -> None:
+    """
+    Convert calyxos.keystore into chromium.pk8 and chromium.x509.pem,
+    with keytool and openssl prompting for passwords on the terminal.
+    """
+    if not (key_directory / "calyxos.keystore").exists():
+        return
+    for argv in (
+        [
+            "keytool",
+            "-importkeystore",
+            "-srckeystore",
+            "calyxos.keystore",
+            "-destkeystore",
+            "calyxos.p12",
+            "-srcstoretype",
+            "jks",
+            "-deststoretype",
+            "pkcs12",
+        ],
+        [
+            "openssl",
+            "pkcs12",
+            "-in",
+            "calyxos.p12",
+            "-out",
+            "calyxos.pem",
+            "-nodes",
+        ],
+    ):
+        subprocess.run(argv, cwd=key_directory, check=True)
+    (key_directory / "calyxos.p12").unlink()
+    for argv in (
+        [
+            "openssl",
+            "x509",
+            "-in",
+            "calyxos.pem",
+            "-out",
+            "chromium.x509.pem",
+        ],
+        [
+            "openssl",
+            "pkcs8",
+            "-in",
+            "calyxos.pem",
+            "-out",
+            "chromium.pk8",
+            "-outform",
+            "DER",
+            "-topk8",
+            "-nocrypt",
+        ],
+    ):
+        subprocess.run(argv, cwd=key_directory, check=True)
+    (key_directory / "calyxos.pem").unlink()
