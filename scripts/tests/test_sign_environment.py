@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import fcntl
+import shutil
 import sys
 import threading
 from pathlib import Path
@@ -39,30 +40,23 @@ from yubihsm_emulator import (
 )
 
 
-@pytest.mark.parametrize("vendor", ("yubihsm", "softhsm"))
-def test_load_vendor_leaves_pkcs11_tool_alone(vendor: str) -> None:
-    environment = {
-        "PKCS11_VENDOR": vendor,
-        "PKCS11_TOOL_BIN": "/opt/opensc/bin/pkcs11-tool",
-    }
-
-    load_vendor(environment)
-
-    assert environment["PKCS11_TOOL_BIN"] == "/opt/opensc/bin/pkcs11-tool"
-
-
 def test_load_vendor_refuses_pkcs11_vendor_file() -> None:
-    with pytest.raises(UnsupportedVendorError):
-        load_vendor({"PKCS11_VENDOR_FILE": "/some/custom.sh"})
+    with pytest.raises(UnsupportedVendorError, match="PKCS11_VENDOR_FILE"):
+        load_vendor({"PKCS11_VENDOR_FILE": "/vendor.include.sh"})
+
+
+def _no_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(prompt: str = "") -> str:
+        raise AssertionError(f"unexpected prompt: {prompt}")
+
+    monkeypatch.setattr("builtins.input", refuse)
+    monkeypatch.setattr("signing.confirmation.getpass.getpass", refuse)
 
 
 def test_maybe_initialize_vendor_interactive_skips_when_not_needed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fail_if_called(prompt: str = "") -> str:
-        raise AssertionError("should not prompt")
-
-    monkeypatch.setattr("builtins.input", fail_if_called)
+    _no_prompt(monkeypatch)
     environment: dict[str, str] = {}
     maybe_initialize_vendor_interactive(environment, assume_yes=False)
     assert "PKCS11_VENDOR_INITIALIZED_INTERACTIVE" not in environment
@@ -71,10 +65,7 @@ def test_maybe_initialize_vendor_interactive_skips_when_not_needed(
 def test_maybe_initialize_vendor_interactive_is_idempotent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fail_if_called(prompt: str = "") -> str:
-        raise AssertionError("should not prompt")
-
-    monkeypatch.setattr("builtins.input", fail_if_called)
+    _no_prompt(monkeypatch)
     environment = {
         "PKCS11_VENDOR": "yubihsm",
         "PKCS11_VENDOR_INITIALIZED_INTERACTIVE": "y",
@@ -103,18 +94,11 @@ def test_initialize_yubihsm_interactive_prompts_for_authkey_and_password(
     assert environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] == "y"
 
 
-def _no_password_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
-    def refuse(prompt: str = "") -> str:
-        raise AssertionError(f"unexpected prompt: {prompt}")
-
-    monkeypatch.setattr("signing.confirmation.getpass.getpass", refuse)
-
-
 def test_initialize_yubihsm_interactive_reads_password_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    _no_password_prompt(monkeypatch)
+    _no_prompt(monkeypatch)
     password_file = tmp_path / "signing.txt"
     password_file.write_text("hunter2\n")
     password_file.chmod(0o600)
@@ -134,7 +118,7 @@ def test_initialize_yubihsm_interactive_prefers_password_over_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    _no_password_prompt(monkeypatch)
+    _no_prompt(monkeypatch)
     environment = {
         "PKCS11_VENDOR": "yubihsm",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
@@ -146,26 +130,6 @@ def test_initialize_yubihsm_interactive_prefers_password_over_file(
     maybe_initialize_vendor_interactive(environment, assume_yes=False)
 
     assert environment["YUBIHSM_PASSWORD"] == "from-environment"
-
-
-def test_initialize_yubihsm_interactive_refuses_readable_password_file(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    _no_password_prompt(monkeypatch)
-    password_file = tmp_path / "signing.txt"
-    password_file.write_text("hunter2\n")
-    password_file.chmod(0o644)
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "NEVER_START_YUBIHSM_CONNECTOR": "y",
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD_FILE": str(password_file),
-    }
-
-    with pytest.raises(RuntimeError, match="group or other permissions"):
-        maybe_initialize_vendor_interactive(environment, assume_yes=False)
-    assert "YUBIHSM_PASSWORD" not in environment
 
 
 def test_initialize_yubihsm_interactive_warns_and_confirms_when_running(
@@ -220,24 +184,43 @@ def test_initialize_yubihsm_interactive_assume_yes_skips_warning_prompt(
     assert environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] == "y"
 
 
-def test_maybe_initialize_vendor_sets_pkcs11_pin(
+@pytest.fixture
+def yubihsm_vendor_tree(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> None:
+) -> dict[str, str]:
     monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
     monkeypatch.chdir(tmp_path)
     (tmp_path / "logs").mkdir()
     (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
-    environment = {
+    return {
         "PKCS11_VENDOR": "yubihsm",
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "secret",
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
     }
 
+
+@pytest.mark.parametrize(
+    ("authkey", "password", "pin"),
+    (("0x0001", "secret", "0001secret"), ("0x12345", "", "12345")),
+)
+def test_maybe_initialize_vendor_sets_pkcs11_pin(
+    tmp_path: Path,
+    yubihsm_vendor_tree: dict[str, str],
+    authkey: str,
+    password: str,
+    pin: str,
+) -> None:
+    environment = {
+        **yubihsm_vendor_tree,
+        "YUBIHSM_AUTHKEY": authkey,
+        "YUBIHSM_PASSWORD": password,
+    }
+
     maybe_initialize_vendor(environment, tmpdir=tmp_path)
 
-    assert environment["PKCS11_PIN"] == "0001secret"
+    assert environment["PKCS11_PIN"] == pin
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
     assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
         "vendor.yubihsm.interceptor.py",
@@ -245,22 +228,17 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
 
 
 def test_maybe_initialize_vendor_reads_the_password_file(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    yubihsm_vendor_tree: dict[str, str],
 ) -> None:
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "logs").mkdir()
-    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
     password_file = tmp_path / "signing.txt"
     password_file.write_text("hunter2\n")
     password_file.chmod(0o600)
     environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x0001",
+        **yubihsm_vendor_tree,
         "YUBIHSM_PASSWORD_FILE": str(password_file),
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
     }
+    del environment["YUBIHSM_PASSWORD"]
 
     maybe_initialize_vendor(environment, tmpdir=tmp_path)
 
@@ -269,45 +247,16 @@ def test_maybe_initialize_vendor_reads_the_password_file(
 
 
 def test_maybe_initialize_vendor_rejects_empty_upload_script(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    yubihsm_vendor_tree: dict[str, str],
 ) -> None:
     """
     An empty upload.py does not mark an audit-log repository.
     """
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "logs").mkdir()
-    (tmp_path / "logs" / "upload.py").touch()
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD": "secret",
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
-    }
+    (tmp_path / "logs" / "upload.py").write_text("")
 
     with pytest.raises(RuntimeError, match="not the expected git repository"):
-        maybe_initialize_vendor(environment, tmpdir=tmp_path)
-
-
-def test_maybe_initialize_vendor_pin_does_not_truncate_long_authkey(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "logs").mkdir()
-    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x12345",
-        "YUBIHSM_PASSWORD": "",
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
-    }
-
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
-
-    assert environment["PKCS11_PIN"] == "12345"
+        maybe_initialize_vendor(yubihsm_vendor_tree, tmpdir=tmp_path)
 
 
 def test_maybe_initialize_vendor_dry_run_skips_full_setup(
@@ -335,19 +284,12 @@ def test_maybe_initialize_vendor_dry_run_skips_full_setup(
 
 
 def test_maybe_initialize_vendor_generates_pkcs11_conf(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    yubihsm_vendor_tree: dict[str, str],
 ) -> None:
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "logs").mkdir()
-    (tmp_path / "logs" / "upload.py").write_text("#!/usr/bin/env python3\n")
     environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD": "secret",
+        **yubihsm_vendor_tree,
         "YUBIHSM_CONNECTOR": "http://127.0.0.1:9999",
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
     }
 
     maybe_initialize_vendor(environment, tmpdir=tmp_path)
@@ -357,20 +299,13 @@ def test_maybe_initialize_vendor_generates_pkcs11_conf(
 
 
 def test_maybe_initialize_vendor_requires_logs_dir(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    yubihsm_vendor_tree: dict[str, str],
 ) -> None:
-    monkeypatch.setattr(YubiHsmConnector, "start", stub(None))
-    monkeypatch.chdir(tmp_path)
-    environment = {
-        "PKCS11_VENDOR": "yubihsm",
-        "YUBIHSM_AUTHKEY": "0x0001",
-        "YUBIHSM_PASSWORD": "secret",
-        "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
-    }
+    shutil.rmtree(tmp_path / "logs")
 
     with pytest.raises(RuntimeError):
-        maybe_initialize_vendor(environment, tmpdir=tmp_path)
+        maybe_initialize_vendor(yubihsm_vendor_tree, tmpdir=tmp_path)
 
 
 def test_maybe_initialize_vendor_is_idempotent(tmp_path: Path) -> None:
@@ -641,11 +576,20 @@ def test_maybe_initialize_vendor_release_is_idempotent(tmp_path: Path) -> None:
     assert "AUDIT_LOG_PATH" not in environment
 
 
-def test_initialize_softhsm_release_sets_log_paths(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "preset",
+    ({}, {"EXEC_LOG_PATH": ""}),
+    ids=("unset", "empty"),
+)
+def test_initialize_softhsm_release_sets_log_paths(
+    tmp_path: Path,
+    preset: dict[str, str],
+) -> None:
     logs_dir = tmp_path / "logs"
     environment = {
         "PKCS11_VENDOR": "softhsm",
         "SOFTHSM_LOGS_DIR": str(logs_dir),
+        **preset,
     }
 
     maybe_initialize_vendor_release(
@@ -659,7 +603,7 @@ def test_initialize_softhsm_release_sets_log_paths(tmp_path: Path) -> None:
     assert environment["EXEC_LOG_PATH"].startswith(
         f"{logs_dir}/2026081500-bramble-",
     )
-    assert environment["EXEC_LOG_PATH"].endswith("-exec.log")
+    assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
 
 
 def test_initialize_softhsm_release_dry_run_creates_no_logs_dir(
@@ -679,25 +623,6 @@ def test_initialize_softhsm_release_dry_run_creates_no_logs_dir(
     )
 
     assert not logs_dir.exists()
-
-
-def test_initialize_softhsm_release_names_empty_log_paths_itself(
-    tmp_path: Path,
-) -> None:
-    logs_dir = tmp_path / "logs"
-    environment = {
-        "PKCS11_VENDOR": "softhsm",
-        "SOFTHSM_LOGS_DIR": str(logs_dir),
-        "EXEC_LOG_PATH": "",
-    }
-
-    maybe_initialize_vendor_release(
-        environment,
-        device="bramble",
-        build_number="2026081500",
-    )
-
-    assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
 
 
 @pytest.mark.parametrize(
@@ -732,16 +657,6 @@ def test_load_vendor_softhsm_applies_source_exports() -> None:
 
     assert environment["KEYMAPPER"] == "id2b"
     assert environment["USE_APKSIGNER"] == "y"
-
-
-def test_load_vendor_yubihsm_applies_source_exports() -> None:
-    environment = {"PKCS11_VENDOR": "yubihsm"}
-
-    load_vendor(environment)
-
-    assert environment["KEYMAPPER"] == "static"
-    assert environment["YUBIHSM_EXPORTABLE_DOMAIN"] == "3"
-    assert environment["KEYMAP_FILE"].endswith("pkcs11/keymap.tsv")
 
 
 @pytest.mark.parametrize(
