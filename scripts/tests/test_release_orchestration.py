@@ -891,7 +891,7 @@ def test_release_refuses_an_unknown_keymapper(
     assert "Traceback" not in result.stderr
 
 
-def test_release_orchestration_refuses_keymapper_file(
+def test_release_orchestration_refuses_a_bash_keymapper_file(
     release_tree: Path,
 ) -> None:
     result = run_release(
@@ -902,7 +902,106 @@ def test_release_orchestration_refuses_keymapper_file(
     )
 
     assert result.returncode == 1
-    assert "does not support KEYMAPPER_FILE" in result.stderr
+    assert "is not a Python keymapper (*.py)" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_bash_release_refuses_a_python_keymapper_file(
+    release_tree: Path,
+) -> None:
+    plugin = release_tree / "keymapper.plugin.py"
+    plugin.write_text(_PLUGIN_KEYMAPPER)
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"KEYMAPPER_FILE": str(plugin)},
+        python=False,
+    )
+
+    assert result.returncode == 1
+    assert "is a Python keymapper, which release.sh cannot load in Bash" in (
+        result.stderr
+    )
+
+
+_PLUGIN_KEYMAPPER = """
+from signing.keymap import Keymapper
+
+
+class PluginKeymapper(Keymapper):
+    def key(self, key_type, key_name, device="", *, suffix="", key_suffix=""):
+        if key_type not in ("avb", "apex_payload"):
+            suffix = ""
+        return f"plugin/{key_type}-{key_name.replace('/', '_')}{suffix}"
+
+    def rows(self, devices):
+        return ()
+
+
+def create_keymapper(environment, metadata, *, extra_devices):
+    return PluginKeymapper()
+"""
+
+
+def test_release_orchestration_resolves_keys_through_a_keymapper_file(
+    release_tree: Path,
+) -> None:
+    keymapper_file = release_tree / "keymapper.plugin.py"
+    keymapper_file.write_text(_PLUGIN_KEYMAPPER)
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"KEYMAPPER_FILE": str(keymapper_file)},
+        python=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    signing_command = _command_line(result.stderr, "sign_target_files_apks")
+    assert "--avb_vbmeta_key keys/plugin/avb-vbmeta.pem" in signing_command
+    assert "--package_key keys/plugin/other-ota" in _command_line(
+        result.stderr,
+        "ota_from_target_files",
+    )
+
+
+@pytest.mark.parametrize(
+    ("base", "algorithm"),
+    (
+        ("Id2bKeymapper", "SHA256_RSA2048"),
+        ("LegacyKeymapper", "SHA256_RSA4096"),
+    ),
+)
+def test_release_takes_the_avb_rule_of_the_keymapper_file_keymapper(
+    release_tree: Path,
+    base: str,
+    algorithm: str,
+) -> None:
+    keymapper_file = release_tree / "keymapper.plugin.py"
+    keymapper_file.write_text(
+        f"from signing.keymap import {base}\n"
+        "\n"
+        "\n"
+        "def create_keymapper(environment, metadata, *, extra_devices):\n"
+        f"    return {base}(metadata)\n",
+    )
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={
+            "KEYMAPPER_FILE": str(keymapper_file),
+            "RSA_KEY_SIZE": "2048",
+        },
+        python=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert f"--avb_vbmeta_algorithm {algorithm}" in _command_line(
+        result.stderr,
+        "sign_target_files_apks",
+    )
 
 
 @implementations
