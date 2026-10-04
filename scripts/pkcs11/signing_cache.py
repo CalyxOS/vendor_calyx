@@ -18,7 +18,6 @@ from typing import NoReturn
 
 apksigner_parser = argparse.ArgumentParser(allow_abbrev=False)
 apksigner_parser.add_argument("--out", nargs=2)
-apksigner_parser.add_argument("--ks-key-alias", dest="key")
 
 use_log = False
 
@@ -93,7 +92,6 @@ def apksigner_get_apks(arg_str: list[str]) -> SigningObj:
     return SigningObj(
         in_file=args.out[1],
         out_file=args.out[0],
-        key_id=args.key,
         extra_args=tuple(extra_args),
     )
 
@@ -106,15 +104,14 @@ def file_digest_or_path(path: str) -> str:
         return path
 
 
-# The --provider-arg configuration is written to a new temporary
-# directory for every release, and a --cert certificate can be replaced
-# in place, so both are keyed by their contents.
+# A --cert certificate can be replaced in place, so it is keyed by its
+# contents.
 def cache_key(signing_obj: SigningObj, input_digest: str) -> str:
-    parameters = [signing_obj.key_id or ""]
+    parameters: list[str] = []
     is_file = False
     for arg in signing_obj.extra_args:
         parameters.append(file_digest_or_path(arg) if is_file else arg)
-        is_file = arg in ("--provider-arg", "--cert")
+        is_file = arg == "--cert"
     parameters_digest = hashlib.sha256(
         "\x1f".join(parameters).encode(),
     ).hexdigest()
@@ -140,7 +137,6 @@ def log(cache_dir: Path, msg: str) -> None:
 class SigningObj:
     in_file: str
     out_file: str
-    key_id: str | None
     extra_args: tuple[str, ...] = ()
 
 

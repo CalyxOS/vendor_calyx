@@ -355,7 +355,7 @@ def test_interceptor_serves_a_cached_result_without_the_batch_server(
                     "-jar",
                     "apksigner.jar",
                     "sign",
-                    "--ks-key-alias",
+                    "--kms-key-alias",
                     "0x1100",
                     "--out",
                     f"{name}.apk",
@@ -581,7 +581,7 @@ def test_release_without_the_yubihsm_interceptor_has_no_server(
     assert result.returncode == 0, result.stderr
     assert recorded is not None
     assert recorded["socket"] is None
-    assert "--apksigner_kms_type" not in recorded["argv"]
+    assert "--apksigner_kms_type calyx" in " ".join(recorded["argv"])
 
 
 def test_release_dry_run_has_no_server(

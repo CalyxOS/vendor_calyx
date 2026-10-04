@@ -20,56 +20,51 @@ def test_metadata_arrays_are_populated() -> None:
         assert any(metadata.arrays[name]), f"{name} must not be empty"
 
 
-def test_metadata_refuses_a_module_without_an_array(
-    tmp_path: Path,
-) -> None:
-    source = (SCRIPTS_DIR / "metadata.py").read_text()
-    module = tmp_path / "metadata.py"
-    module.write_text(source.replace("ALL_DEVICES = (", "OTHER_DEVICES = ("))
-
-    with pytest.raises(ValueError, match="defines no ALL_DEVICES"):
-        load_metadata(module)
-
-
-def test_metadata_refuses_an_array_that_is_not_a_tuple(
-    tmp_path: Path,
-) -> None:
-    source = (SCRIPTS_DIR / "metadata.py").read_text()
-    module = tmp_path / "metadata.py"
-    module.write_text(
-        source.replace('KEYS_REPO = ("updater",)', 'KEYS_REPO = ("updater")'),
-    )
-
-    with pytest.raises(ValueError, match="KEYS_REPO .* not a tuple of strings"):
-        load_metadata(module)
-
-
 @pytest.mark.parametrize(
-    "entry",
-    ('"avb": ("keys_avb",),', '1: "keys_avb",'),
-    ids=("tuple-value", "int-key"),
+    ("old", "new", "message"),
+    (
+        ("ALL_DEVICES = (", "OTHER_DEVICES = (", "defines no ALL_DEVICES"),
+        (
+            'KEYS_REPO = ("updater",)',
+            'KEYS_REPO = ("updater")',
+            "KEYS_REPO .* not a tuple of strings",
+        ),
+        (
+            '"avb": "keys_avb",',
+            '"avb": ("keys_avb",),',
+            "does not map strings to strings",
+        ),
+        (
+            '"avb": "keys_avb",',
+            '1: "keys_avb",',
+            "does not map strings to strings",
+        ),
+        (
+            '"repo": "keys_repo",\n}',
+            '"repo": "keys_extra",\n}\nKEYS_EXTRA = ("updater",)',
+            "maps repo to keys_extra",
+        ),
+    ),
+    ids=(
+        "missing-array",
+        "not-a-tuple",
+        "tuple-value",
+        "int-key",
+        "another-array",
+    ),
 )
-def test_metadata_refuses_a_key_type_map_of_other_values(
+def test_metadata_refuses_a_malformed_module(
     tmp_path: Path,
-    entry: str,
+    old: str,
+    new: str,
+    message: str,
 ) -> None:
     source = (SCRIPTS_DIR / "metadata.py").read_text()
+    assert old in source
     module = tmp_path / "metadata.py"
-    module.write_text(source.replace('"avb": "keys_avb",', entry))
+    module.write_text(source.replace(old, new))
 
-    with pytest.raises(ValueError, match="does not map strings to strings"):
-        load_metadata(module)
-
-
-def test_metadata_refuses_a_mapping_to_another_array(tmp_path: Path) -> None:
-    source = (SCRIPTS_DIR / "metadata.py").read_text()
-    module = tmp_path / "metadata.py"
-    module.write_text(
-        source.replace('"repo": "keys_repo",', '"repo": "keys_extra",')
-        + '\nKEYS_EXTRA = ("updater",)\n',
-    )
-
-    with pytest.raises(ValueError, match="maps repo to keys_extra"):
+    with pytest.raises(ValueError, match=message):
         load_metadata(module)
 
 

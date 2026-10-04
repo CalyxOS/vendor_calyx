@@ -228,33 +228,6 @@ def resolve_device_family_environment(
     raise ReleaseUsageError(f"Unsupported device {device}")
 
 
-_SUNPKCS11_CONFIG_TEMPLATE = """\
-name = PKCS11
-description = SunPKCS11
-library = {module}
-slotListIndex = 0
-"""
-
-
-def generate_sunpkcs11_config(environment: MutableMapping[str, str]) -> str:
-    """
-    Render the SunPKCS11 provider config.
-
-    Args:
-        environment: Read PKCS11_MODULE/PKCS11_SUN_CONFIG_EXTRA from.
-
-    Returns:
-        The SunPKCS11 provider config file's text.
-    """
-    text = _SUNPKCS11_CONFIG_TEMPLATE.format(
-        module=environment.get("PKCS11_MODULE", ""),
-    )
-    extra = environment.get("PKCS11_SUN_CONFIG_EXTRA")
-    if extra:
-        text += extra + "\n"
-    return text
-
-
 def read_words(value: str) -> list[str]:
     """
     Split a variable into words on blanks.
@@ -316,38 +289,36 @@ def _signs_through_pkcs11(environment: Mapping[str, str]) -> bool:
 def prepare_signing_args(
     environment: MutableMapping[str, str],
     args: _SessionArgs,
-    *,
-    tmpdir: Path,
-    dry_run: bool = False,
 ) -> None:
     """
-    When a PKCS#11 module/vendor is configured, write a SunPKCS11
-    provider config and extend the three argument lists with the
-    signing/payload-signer helper tools, and (if set) add the
-    signing-command interceptor and payload-signer
-    maximum-signature-size overrides.
+    When a PKCS#11 module/vendor is configured, extend the three argument
+    lists with the signing/payload-signer helper tools and apksigner's
+    calyx KMS type, and (if set) add the signing-command interceptor and
+    payload-signer maximum-signature-size overrides.
+
+    releasetools takes --pkcs11_config as the switch to PKCS#11 signing
+    and reads the file only for a SunPKCS11 KeyStore, which the KMS type
+    and the external signer replace, so it is given /dev/null.
 
     Args:
         environment: Process environment to read PKCS11_MODULE/
-            PKCS11_VENDOR/SIGNING_HELPER_TOOL/etc. from.
+            PKCS11_VENDOR/SIGNING_HELPER_TOOL/etc. from, and to point
+            CALYX_APKSIGNER_SIGNING_HELPER at the apksigner helper in.
         args: Argument lists to extend in place.
-        tmpdir: Directory the SunPKCS11 config file is written under.
-        dry_run: Under DRY_RUN, render "generate_sunpkcs11_config"
-            instead of writing the file. Later commands reference the
-            config path either way.
 
     Returns:
         None.
 
     Raises:
         RuntimeError: If a helper tool variable names anything other
-            than python or server.
+            than python or server, or USE_APKSIGNER=n.
     """
     if _signs_through_pkcs11(environment):
-        config_path = tmpdir / "sunpkcs11.cfg"
-        _show_step(["generate_sunpkcs11_config"], dry_run=dry_run)
-        if not dry_run:
-            config_path.write_text(generate_sunpkcs11_config(environment))
+        if environment.get("USE_APKSIGNER") == "n":
+            raise RuntimeError(
+                "USE_APKSIGNER=n is not supported with PKCS#11 signing, "
+                "which signs APKs through apksigner's calyx KMS type",
+            )
         tool = environment.get("SIGNING_HELPER_TOOL") or "python"
         avb_tool = environment.get("AVB_SIGNING_HELPER_TOOL") or tool
         payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
@@ -366,13 +337,21 @@ def prepare_signing_args(
         args.releasetools += [
             "--verbose",
             "--pkcs11_config",
-            str(config_path),
+            "/dev/null",
             "--extra_avbtool_signing_args",
             f"--signing_helper {shlex.quote(signing_helper_tool)}",
         ]
-        args.signing += ["--payload_signer", payload_signer_tool]
+        args.signing += [
+            "--payload_signer",
+            payload_signer_tool,
+            "--apksigner_kms_type",
+            "calyx",
+        ]
         args.ota += ["--payload_signer", payload_signer_tool]
         args.ota += ["--signapk_external_signer", payload_signer_tool]
+        environment["CALYX_APKSIGNER_SIGNING_HELPER"] = str(
+            _PKCS11_DIR / "apksigner_signing_helper.py",
+        )
 
     interceptor = environment.get("SIGNING_COMMAND_INTERCEPTOR")
     if interceptor:
@@ -576,12 +555,7 @@ class SigningSession:
                 == "y"
             )
             self._maybe_start_signing_server()
-            prepare_signing_args(
-                self.environment,
-                self.args,
-                tmpdir=tmpdir,
-                dry_run=self.dry_run,
-            )
+            prepare_signing_args(self.environment, self.args)
         except (RuntimeError, OSError) as error:
             print(f"error: {error}", file=sys.stderr)
             raise ReleaseAbort(1) from error
@@ -603,14 +577,12 @@ class SigningSession:
         Host a SigningServer for the rest of the release when the Python
         YubiHSM interceptor is in use.
 
-        The server holds one YubiHSM session for AVB signatures and
-        audit-log extraction, and, unless NEVER_START_APKSIGNER_BATCH=y, one
-        "apksigner batch" process. avbtool's signing helper and the OTA
-        payload signer default to signing_helper.server.py and
-        payload_signer.server.py unless AVB_SIGNING_HELPER_TOOL,
-        PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL chooses them. apksigner
-        signs through apksig's "calyx" KMS provider, whose helper signs
-        through the server.
+        The server holds one YubiHSM session for signatures and audit-log
+        extraction and, unless NEVER_START_APKSIGNER_BATCH=y, one
+        "apksigner batch" process. The AVB signing helper and the OTA
+        payload signer default to their server helpers unless
+        AVB_SIGNING_HELPER_TOOL, PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL
+        chooses them.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
         if self.dry_run:
@@ -661,10 +633,6 @@ class SigningSession:
             for variable in ("AVB_SIGNING_HELPER_TOOL", "PAYLOAD_SIGNER_TOOL"):
                 if not self.environment.get(variable):
                     self.environment[variable] = "server"
-        self.environment["CALYX_APKSIGNER_SIGNING_HELPER"] = str(
-            _PKCS11_DIR / "apksigner_signing_helper.py",
-        )
-        self.args.signing += ["--apksigner_kms_type", "calyx"]
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:
