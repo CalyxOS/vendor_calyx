@@ -864,6 +864,17 @@ def test_yubihsm_vendor_cleanup_stops_only_a_connector_it_started(
     assert stopped == [Path(started_pid_file)]
 
 
+def test_load_vendor_leaves_key_dir_to_a_keymapper_file() -> None:
+    environment = {
+        "KEYMAPPER_FILE": "keymapper.plugin.py",
+        "KEY_DIR": "custom/",
+    }
+
+    load_vendor(environment)
+
+    assert environment["KEY_DIR"] == "custom/"
+
+
 def test_yubihsm_finalize_release_extracts_under_the_lock(
     tmp_path: Path,
     yubihsm: Connector,
