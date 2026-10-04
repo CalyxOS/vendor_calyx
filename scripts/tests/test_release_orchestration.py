@@ -966,6 +966,9 @@ class PluginKeymapper(Keymapper):
             suffix = ""
         return f"plugin/{key_type}-{key_name.replace('/', '_')}{suffix}"
 
+    def is_per_device(self, key_type, key_name):
+        return False
+
     def rows(self, devices):
         return ()
 
