@@ -11,6 +11,11 @@ export NEVER_START_APKSIGNER_BATCH=y
 
 readonly keygen_pkcs11_scriptpath=$(cd "$(dirname "$0")";pwd -P)
 readonly keygen_scriptpath=$(cd "$(dirname "$0")/..";pwd -P)
+
+if [ "${USE_PYTHON_KEYGEN:-}" = "y" ]; then
+  PYTHONPATH="$keygen_scriptpath${PYTHONPATH:+:$PYTHONPATH}" \
+    exec python3 -P -m signing keygen "$@"
+fi
 source "$keygen_pkcs11_scriptpath/keygen.include.sh" || exit $?
 
 trap keygen_cleanup EXIT
