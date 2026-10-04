@@ -144,8 +144,9 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
 
     Raises:
         UnsupportedVendorError: If PKCS11_VENDOR_FILE is set (a
-            third-party vendor script), or PKCS11_VENDOR is set to
-            anything other than "yubihsm"/"softhsm".
+            third-party vendor script), PKCS11_VENDOR is set to anything
+            other than "yubihsm"/"softhsm", or PKCS11_MODULE is set
+            without PKCS11_VENDOR.
         RuntimeError: If PKCS11_MODULE is unset and no module for the
             vendor exists at any of its search paths.
     """
@@ -154,6 +155,11 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
             "PKCS11_VENDOR_FILE is not supported by the Python orchestrator",
         )
     name = environment.get("PKCS11_VENDOR", "")
+    if environment.get("PKCS11_MODULE") and not name:
+        raise UnsupportedVendorError(
+            "PKCS11_MODULE needs PKCS11_VENDOR, since keys are looked up by "
+            "their hex object ID. Set PKCS11_VENDOR to yubihsm or softhsm",
+        )
     vendor: Vendor | None = None
     if name:
         try:
@@ -670,8 +676,6 @@ class SoftHsmVendor(Vendor):
     ) -> None:
         environment["KEYMAPPER"] = "id2b"
         environment["USE_APKSIGNER"] = "y"
-        environment["FIND_KEYS_BY_ID"] = "y"
-        environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
         _default(environment, "SOFTHSM_LOGS_DIR", str(Path.cwd() / "logs"))
 
     def initialize(
@@ -749,8 +753,6 @@ class YubiHsmVendor(Vendor):
     ) -> None:
         environment["KEYMAPPER"] = "static"
         environment["USE_APKSIGNER"] = "y"
-        environment["FIND_KEYS_BY_ID"] = "y"
-        environment["OPENSSL_PKCS11_URI_USES_HEX_KEY_ID"] = "y"
         _default(environment, "YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
         _default(environment, "YUBIHSM_WRAP_KEY_ID", "0x0010")
         _default(
