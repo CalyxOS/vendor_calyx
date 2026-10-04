@@ -18,6 +18,8 @@ from conftest import SCRIPTS_DIR, run
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=key script test"
 FLAGS = {
+    "updatekeys": "USE_PYTHON_UPDATEKEYS",
+    "mkkeys": "USE_PYTHON_UPDATEKEYS",
     "updatecommonkeys": "USE_PYTHON_UPDATECOMMONKEYS",
     "mkcommonkeys": "USE_PYTHON_UPDATECOMMONKEYS",
 }
@@ -61,7 +63,7 @@ def _outcomes(
     return outcomes
 
 
-@pytest.mark.parametrize("script", ("updatecommonkeys",))
+@pytest.mark.parametrize("script", ("updatekeys", "updatecommonkeys"))
 @pytest.mark.parametrize(
     "arguments",
     ((), ("keys/bramble",), ("a", "b", "c")),
@@ -79,7 +81,7 @@ def test_python_key_scripts_check_arguments_as_bash_does(
     assert "incorrect number of arguments" in bash[2]
 
 
-@pytest.mark.parametrize("script", ("updatecommonkeys",))
+@pytest.mark.parametrize("script", ("updatekeys", "updatecommonkeys"))
 def test_python_key_scripts_refuse_a_missing_directory_as_bash_does(
     tmp_path: Path,
     script: str,
@@ -90,7 +92,7 @@ def test_python_key_scripts_refuse_a_missing_directory_as_bash_does(
     assert bash[0] == 1
 
 
-@pytest.mark.parametrize("script", ("mkcommonkeys",))
+@pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
 def test_python_mkkeys_refuses_an_existing_directory_as_bash_does(
     tmp_path: Path,
     script: str,
@@ -106,7 +108,7 @@ def test_python_mkkeys_refuses_an_existing_directory_as_bash_does(
     assert bash[:3] == (1, "", "key directory already exists\n")
 
 
-@pytest.mark.parametrize("script", ("mkcommonkeys",))
+@pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
 def test_python_mkkeys_reports_a_directory_it_cannot_create(
     tmp_path: Path,
     script: str,
@@ -122,7 +124,7 @@ def test_python_mkkeys_reports_a_directory_it_cannot_create(
     assert "Traceback" not in python[2]
 
 
-@pytest.mark.parametrize("script", ("mkcommonkeys",))
+@pytest.mark.parametrize("script", ("mkkeys", "mkcommonkeys"))
 def test_python_mkkeys_creates_the_directory_as_bash_does(
     tmp_path: Path,
     script: str,
