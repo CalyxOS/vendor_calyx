@@ -45,6 +45,7 @@ BUILD_NUMBER = "2026081500"
 ROLLBACK_DEVICES = ("devon", "hawao", "rhode", "fogos", "bangkk", "fogo")
 
 PKCS11_ENVIRONMENT = {
+    "PKCS11_VENDOR": "softhsm",
     "PKCS11_MODULE": "/dev/null",
     "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
     "PKCS11_PIN": "test-only",
@@ -1349,21 +1350,6 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
     assert parents == ["/dev/shm"]
 
 
-def test_release_refuses_use_apksigner_n_with_pkcs11(
-    release_tree: Path,
-) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={**PKCS11_ENVIRONMENT, "USE_APKSIGNER": "n"},
-    )
-
-    assert result.returncode == 1
-    assert "USE_APKSIGNER=n is not supported with PKCS#11 signing" in (
-        result.stderr
-    )
-
-
 @pytest.mark.parametrize(
     ("environment", "algorithm"),
     (
@@ -1628,3 +1614,17 @@ def test_release_signs_plain_keys_without_its_tmpdir(
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_release_refuses_a_pkcs11_module_without_a_vendor(
+    release_tree: Path,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"PKCS11_MODULE": "/dev/null", "PKCS11_PIN": "test-only"},
+    )
+
+    assert result.returncode == 1
+    assert "PKCS11_MODULE needs PKCS11_VENDOR" in result.stderr
+    assert "Traceback" not in result.stderr

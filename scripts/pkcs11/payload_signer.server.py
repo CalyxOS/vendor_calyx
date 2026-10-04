@@ -42,10 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     key_file = _option(arguments, "-inkey")
     if socket_path and input_file and output_file and key_file:
         digest = Path(input_file).read_bytes()
-        key_name = os.environ.get("KEY_ID") or key_name_from_path(
-            Path(key_file),
-            os.environ,
-        )
+        key_name = key_name_from_path(Path(key_file), os.environ)
         signature = (
             sign_digest_through_server(Path(socket_path), key_name, digest)
             if len(digest) == 32

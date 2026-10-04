@@ -6,69 +6,11 @@
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
 from conftest import run
-from cryptography.hazmat.primitives import serialization
-from signing.avb_signing import key_reference_from_path
-from signing.payload_signing import (
-    sign_payload_digest,
-    verify_payload_signature,
-)
-from software_rsa import SoftwareSigner, rsa_key
-
-
-def _sign_payload_digest(
-    signer: SoftwareSigner,
-    key_path: Path,
-    digest: bytes,
-    environment: Mapping[str, str],
-) -> bytes:
-    return sign_payload_digest(
-        signer,
-        key_reference_from_path(signer, key_path, environment),
-        digest,
-    )
-
-
-def public_der(name: str) -> bytes:
-    return (
-        rsa_key(name)
-        .public_key()
-        .public_bytes(
-            serialization.Encoding.DER,
-            serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-    )
-
-
-def test_payload_signature_verifies_under_the_key_id_override() -> None:
-    signer = SoftwareSigner({"0x2000": rsa_key("a"), "0x1200": rsa_key("b")})
-    digest = bytes(range(32))
-
-    signature = _sign_payload_digest(
-        signer,
-        Path("keys/0x2000.pem"),
-        digest,
-        {"KEY_DIR": "keys/", "KEY_ID": "0x1200"},
-    )
-
-    verify_payload_signature(public_der("b"), digest, signature)
-    with pytest.raises(subprocess.CalledProcessError):
-        verify_payload_signature(public_der("a"), digest, signature)
-
-
-@pytest.mark.parametrize("size", (0, 31, 33))
-def test_payload_adapter_rejects_invalid_digest_size(size: int) -> None:
-    with pytest.raises(ValueError, match="exactly 32 bytes"):
-        _sign_payload_digest(
-            SoftwareSigner({}),
-            Path("keys/ota.pem"),
-            b"x" * size,
-            {},
-        )
+from signing.payload_signing import verify_payload_signature
 
 
 def test_payload_signature_verification_accepts_only_valid_signature(

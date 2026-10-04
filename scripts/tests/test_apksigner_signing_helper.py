@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 from signing.signing_server import Message, SigningServer
 from signing.yubihsm_session_service import YubiHsmSessionService
-from software_rsa import rsa_key, verifies
+from software_rsa import der_public_key, rsa_key, verifies
 from yubihsm_emulator import Connector
 
 HELPER = SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py"
@@ -66,14 +66,8 @@ def _certificate(
     return directory
 
 
-def _der_public_key(path: Path) -> rsa.RSAPublicKey:
-    key = serialization.load_der_public_key(path.read_bytes())
-    assert isinstance(key, rsa.RSAPublicKey)
-    return key
-
-
 def _softhsm_key_dir(directory: Path, public_key: Path) -> str:
-    return f"{_certificate(directory, KEY_ID, _der_public_key(public_key))}/"
+    return f"{_certificate(directory, KEY_ID, der_public_key(public_key))}/"
 
 
 @pytest.mark.parametrize(
@@ -105,7 +99,7 @@ def test_apksigner_signing_helper_signs_raw_data(
     )
     assert result.returncode == 0, result.stderr
     assert verifies(
-        _der_public_key(public_key),
+        der_public_key(public_key),
         result.stdout,
         hashlib.new(algorithm.name, data).digest(),
         algorithm,
@@ -215,7 +209,7 @@ def test_apksigner_signing_helper_falls_back_when_the_server_cannot_sign(
     assert result.returncode == 0, result.stderr
     assert len(handler.requests) == 1
     assert verifies(
-        _der_public_key(public_key),
+        der_public_key(public_key),
         result.stdout,
         hashlib.sha256(data).digest(),
     )
