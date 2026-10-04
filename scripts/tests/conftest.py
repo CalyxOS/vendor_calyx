@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import os
 import shutil
 import signal
@@ -26,6 +27,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 TEST_METADATA = Path(__file__).parent / "fixtures" / "metadata.py"
 sys.path.insert(0, str(SCRIPTS_DIR))
+
+_YUBIHSM_SPEC = importlib.util.find_spec("yubihsm")
+assert _YUBIHSM_SPEC is not None and _YUBIHSM_SPEC.origin is not None
+YUBIHSM_SDK = str(Path(_YUBIHSM_SPEC.origin).resolve().parents[1])
 
 
 @pytest.fixture
