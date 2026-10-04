@@ -196,6 +196,19 @@ class Keymapper(abc.ABC):
         return f"{self.key_id(key_type, key_name, device)}{suffix}"
 
     @abc.abstractmethod
+    def is_per_device(self, key_type: str, key_name: str) -> bool:
+        """
+        Return whether a logical key has one key per device.
+
+        Args:
+            key_type: Metadata key category.
+            key_name: Logical key name from that category.
+
+        Returns:
+            True for a per-device key, False for a shared one.
+        """
+
+    @abc.abstractmethod
     def rows(self, devices: Sequence[str]) -> tuple[KeymapRow, ...]:
         """
         Build physical mappings for selected devices.
@@ -363,6 +376,9 @@ class _BaseKeymapper(Keymapper):
         """
         if not devices:
             raise ValueError("at least one device is required")
+
+    def is_per_device(self, key_type: str, key_name: str) -> bool:
+        return self._is_per_device_row(key_type, key_name)
 
     @abc.abstractmethod
     def _is_per_device_row(self, key_type: str, key_name: str) -> bool:
@@ -886,6 +902,27 @@ class StaticKeymapper(Keymapper):
         return any(
             row.key_id == key_id and row.device for row in self.static_rows
         )
+
+    def is_per_device(self, key_type: str, key_name: str) -> bool:
+        """
+        Return whether any of the key's rows names a device.
+
+        Raises:
+            ValueError: If the keymap has no row for the key.
+        """
+        if key_name == _DEVKEY_NAME:
+            key_name = _TESTKEY_NAME
+        matches = [
+            row
+            for row in self.static_rows
+            if row.key_type == key_type and row.key_name == key_name
+        ]
+        if not matches:
+            raise ValueError(
+                f"Could not find key type '{key_type}' name '{key_name}' "
+                "in KEYMAP_FILE",
+            )
+        return any(row.device for row in matches)
 
     def rows(self, devices: Sequence[str]) -> tuple[KeymapRow, ...]:
         """

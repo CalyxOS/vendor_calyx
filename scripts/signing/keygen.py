@@ -1,0 +1,792 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+"""
+Release key generation for the vendor keygen scripts, which generate the
+keys on a PKCS#11 token and export their certificates and public
+keys.
+"""
+
+from __future__ import annotations
+
+import abc
+import os
+import shutil
+import subprocess
+import sys
+from collections.abc import Mapping, MutableMapping, Sequence
+from pathlib import Path
+
+from . import sign_environment
+from .configuration import (
+    EnvironmentPin,
+    Pkcs11BackendConfiguration,
+)
+from .keymap import Keymapper, load_keymapper
+from .metadata import SigningMetadata, load_metadata
+from .models import KeyReference, KeySpec
+from .pkcs11 import (
+    Pkcs11Backend,
+    initialize_pkcs11_token,
+    is_any_pkcs11_token_initialized,
+)
+from .sign_orchestration import load_devices_file
+
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_TOKEN_LABEL = "androsign"
+DEFAULT_SUBJECT_TEMPLATE = (
+    "/C=US/ST=New York/L=Rochester/O=Android/OU=Android/CN=_KEY_LABEL_"
+    "/emailAddress=android@example.com/"
+)
+
+
+class KeygenError(RuntimeError):
+    """A keygen step failed after printing its own explanation."""
+
+
+class KeygenDriver(abc.ABC):
+    """The per-vendor steps of key generation."""
+
+    uses_pkcs11_to_generate_key = False
+    uses_pkcs11_to_generate_cert = False
+
+    def __init__(
+        self,
+        environment: MutableMapping[str, str],
+        key_out_dir: Path,
+    ) -> None:
+        self.environment = environment
+        self.key_out_dir = key_out_dir
+
+    def initialize_pre_metadata(self) -> None:
+        """Prepare what metadata loading needs. Does nothing by default."""
+
+    def initialize_post_metadata(self) -> None:
+        """Prepare key generation. Does nothing by default."""
+
+    @abc.abstractmethod
+    def key_exists(self, mapped_value: str) -> bool:
+        """Return whether the key a keymapper value names exists."""
+
+    def complete_existing_certificate(
+        self,
+        mapped_value: str,
+        key_type: str,
+    ) -> None:
+        """
+        Derive the missing public key files of an AVB or APEX key from its
+        certificate in the output directory, as left by a run that failed
+        after writing the certificate. Writes nothing under DRY_RUN=y.
+        """
+        if self.environment.get("DRY_RUN") == "y":
+            return
+        certificate = self.key_out_dir / f"{mapped_value}.x509.pem"
+        if certificate.exists():
+            export_public_keys(
+                self.environment,
+                certificate,
+                key_type,
+                quiet=True,
+            )
+
+    @abc.abstractmethod
+    def cert_exists(self, mapped_value: str) -> bool:
+        """Return whether the certificate a keymapper value names exists."""
+
+    @abc.abstractmethod
+    def generate_keypair(
+        self,
+        key_id: str,
+        label: str,
+        algorithm: str,
+    ) -> None:
+        """Generate one key pair."""
+
+    @abc.abstractmethod
+    def generate_cert(
+        self,
+        key_id: str,
+        key_type: str,
+        algorithm: str,
+    ) -> None:
+        """Generate and export one key's certificate."""
+
+    def key_algorithm(self, key_type: str) -> str:
+        """Return RSA of RSA_KEY_SIZE bits, 4096 by default."""
+        return f"RSA:{self.environment.get('RSA_KEY_SIZE') or 4096}"
+
+    def cleanup(self) -> bool:
+        """
+        Release what the driver set up, and return whether that succeeded.
+        Succeeds without doing anything by default.
+        """
+        return True
+
+    def tool(self, name: str, variable: str) -> str | None:
+        """Return the tool a variable names, or the one on PATH."""
+        return self.environment.get(variable) or shutil.which(name)
+
+
+def initialize_post_metadata_common(
+    environment: MutableMapping[str, str],
+    driver: KeygenDriver,
+) -> None:
+    """
+    Find openssl and avbtool and apply the defaults of PKCS#11 generation.
+
+    Raises:
+        KeygenError: If openssl or avbtool cannot be found.
+    """
+    missing = False
+    openssl = driver.tool("openssl", "OPENSSL_BIN")
+    if openssl is None:
+        print(
+            "Please install openssl, or set OPENSSL_BIN to its path.",
+            file=sys.stderr,
+        )
+        missing = True
+    else:
+        environment["OPENSSL_BIN"] = openssl
+    avbtool = driver.tool("avbtool", "AVBTOOL_BIN")
+    if avbtool is None:
+        candidate = Path.cwd() / "bin" / "avbtool"
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            avbtool = str(candidate)
+        else:
+            print(
+                "Could not find avbtool. Please set AVBTOOL_BIN to its "
+                "location, or run this from otatools-keys-package's "
+                "extracted folder.",
+                file=sys.stderr,
+            )
+            missing = True
+    if avbtool is not None:
+        environment["AVBTOOL_BIN"] = avbtool
+    if missing:
+        raise KeygenError("missing tools")
+    if driver.uses_pkcs11_to_generate_key:
+        if not environment.get("RSA_KEY_SIZE"):
+            environment["RSA_KEY_SIZE"] = "4096"
+            print("RSA_KEY_SIZE not specified. Using 4096.", file=sys.stderr)
+        if not environment.get("EXTRACTION_ARGS"):
+            environment["EXTRACTION_ARGS"] = "--sensitive --extractable"
+            print(
+                "EXTRACTION_ARGS not specified. Using --sensitive "
+                "--extractable.",
+                file=sys.stderr,
+            )
+    if driver.uses_pkcs11_to_generate_cert:
+        if not environment.get("CERT_EXPIRY_DAYS"):
+            environment["CERT_EXPIRY_DAYS"] = "7200"
+            print(
+                "CERT_EXPIRY_DAYS not specified. Using 7200.",
+                file=sys.stderr,
+            )
+        if not environment.get("SIGNING_SUBJECT_TEMPLATE"):
+            environment["SIGNING_SUBJECT_TEMPLATE"] = DEFAULT_SUBJECT_TEMPLATE
+            print(
+                "SIGNING_SUBJECT_TEMPLATE not specified. Using "
+                f"{DEFAULT_SUBJECT_TEMPLATE}.",
+                file=sys.stderr,
+            )
+
+
+def generate_keys(
+    environment: MutableMapping[str, str],
+    driver: KeygenDriver,
+    metadata: SigningMetadata,
+    keymapper: Keymapper,
+    devices: Sequence[str],
+) -> tuple[bool, bool]:
+    """
+    Generate every missing key and certificate the metadata names for the
+    devices, once per keymapper value.
+
+    Returns:
+        Whether any key and whether any certificate was generated.
+
+    Raises:
+        KeygenError: If no devices are given.
+    """
+    if not devices:
+        print(
+            "ERROR: No defined devices for which to generate keys.\n"
+            "       Ensure the devices array is populated in $DEVICES_FILE "
+            f"({environment.get('DEVICES_FILE', '')}).",
+            file=sys.stderr,
+        )
+        raise KeygenError("no devices")
+    already_generated: dict[str, str] = {}
+    any_key = False
+    any_cert = False
+    for key_type in metadata.key_types:
+        print("###################################")
+        print(f"### GENERATING KEYS: {key_type}")
+        print("###################################")
+        for key_name in metadata.keys_for_type(key_type):
+            print(f"# KEY: {key_name}")
+            per_device = keymapper.is_per_device(key_type, key_name)
+            for device in devices if per_device else ("",):
+                mapped = keymapper.key(key_type, key_name, device)
+                if not mapped:
+                    continue
+                label = device or key_type
+                message = (
+                    f"# VALUE: {mapped}"
+                    + (f" (DEVICE: {device})" if device else "")
+                    + f" LABEL: {label}"
+                )
+                if mapped in already_generated:
+                    print(
+                        f"{message}: skipping, generated "
+                        f"{already_generated[mapped]}",
+                        file=sys.stderr,
+                    )
+                    continue
+                key_exists = driver.key_exists(mapped)
+                cert_exists = driver.cert_exists(mapped)
+                if cert_exists and not key_exists:
+                    print(
+                        f"{message}: certificate exists without its key",
+                        file=sys.stderr,
+                    )
+                    print(
+                        "Restore the key from a backup, or delete its "
+                        "certificate.",
+                        file=sys.stderr,
+                    )
+                    raise KeygenError(mapped)
+                algorithm = driver.key_algorithm(key_type)
+                if not key_exists:
+                    print(message, flush=True)
+                    driver.generate_keypair(
+                        mapped,
+                        label,
+                        algorithm,
+                    )
+                    any_key = True
+                else:
+                    print(f"{message}: key already exists", flush=True)
+                    already_generated[mapped] = "before this run"
+                if not cert_exists:
+                    if key_exists:
+                        print(f"{message}: generating missing cert", flush=True)
+                    driver.generate_cert(mapped, key_type, algorithm)
+                    any_cert = True
+                else:
+                    driver.complete_existing_certificate(mapped, key_type)
+                if not key_exists or not cert_exists:
+                    already_generated[mapped] = "just now"
+    return any_key, any_cert
+
+
+OPENSSL_ENGINE_PATHS = tuple(
+    f"/usr{prefix}/lib{arch}/engines-3/libpkcs11.so"
+    for prefix in ("/local", "")
+    for arch in ("/x86_64-linux-gnu", "/aarch64-linux-gnu", "64", "")
+)
+
+
+class Pkcs11KeygenDriver(KeygenDriver):
+    """
+    Generate keys and self-signed certificates on a PKCS#11 token through
+    the PKCS#11 backend.
+    """
+
+    uses_pkcs11_to_generate_key = True
+    uses_pkcs11_to_generate_cert = True
+
+    def initialize_pre_metadata(self) -> None:
+        """Find pkcs11-tool and require the OpenSSL PKCS#11 engine."""
+        missing = False
+        tool = self.tool("pkcs11-tool", "PKCS11_TOOL_BIN")
+        if tool is None:
+            print(
+                "Please install pkcs11-tool, or set PKCS11_TOOL_BIN to its "
+                "path.",
+                file=sys.stderr,
+            )
+            missing = True
+        else:
+            self.environment["PKCS11_TOOL_BIN"] = tool
+        if not self.environment.get("PKCS11_OPENSSL_ENGINE_LIBRARY_PATH"):
+            engine = next(
+                (path for path in OPENSSL_ENGINE_PATHS if Path(path).exists()),
+                None,
+            )
+            if engine is not None:
+                self.environment["PKCS11_OPENSSL_ENGINE_LIBRARY_PATH"] = engine
+        if not self.environment.get("PKCS11_OPENSSL_ENGINE_LIBRARY_PATH"):
+            print(
+                "Please install the OpenSSL engine for PKCS#11 modules "
+                "(libengine-pkcs11-openssl),\n"
+                "or set PKCS11_OPENSSL_ENGINE_LIBRARY_PATH to its path.",
+                file=sys.stderr,
+            )
+            missing = True
+        if missing:
+            raise KeygenError("missing PKCS#11 tools")
+
+    def initialize_post_metadata(self) -> None:
+        """Resolve the token PINs and require PKCS11_MODULE."""
+        environment = self.environment
+        testing = (environment.get("PKCS11_TESTING") or "n") != "n"
+        if not environment.get("PKCS11_SO_PIN") and (
+            environment.get("MODIFICATION_USES_SO_PIN") == "y"
+            or environment.get("PKCS11_TESTING") == "y"
+        ):
+            if not testing:
+                print(
+                    "PKCS11_SO_PIN environment variable must be supplied for "
+                    "production!\nIf you are just testing, please supply "
+                    "PKCS11_TESTING=y.",
+                    file=sys.stderr,
+                )
+                raise KeygenError("no PKCS11_SO_PIN")
+            environment["PKCS11_SO_PIN"] = "12345678"
+            print(
+                "PKCS11_SO_PIN not specified. Using 12345678.",
+                file=sys.stderr,
+            )
+        if not environment.get("PKCS11_PIN"):
+            if not testing:
+                print(
+                    "PKCS11_PIN environment variable must be supplied for "
+                    "production!\nIf you are just testing, please supply "
+                    "PKCS11_TESTING=y.",
+                    file=sys.stderr,
+                )
+                raise KeygenError("no PKCS11_PIN")
+            environment["PKCS11_PIN"] = "123456"
+            print("PKCS11_PIN not specified. Using 123456.", file=sys.stderr)
+        if not environment.get("PKCS11_MODULE"):
+            print(
+                "Could not find PKCS#11 module. Please set PKCS11_MODULE to "
+                "its location.",
+                file=sys.stderr,
+            )
+            raise KeygenError("no PKCS#11 module")
+
+    def maybe_initialize_token(self) -> None:
+        """Initialize the token unless one is initialized already."""
+        environment = self.environment
+        tool = environment["PKCS11_TOOL_BIN"]
+        module = Path(environment["PKCS11_MODULE"])
+        if is_any_pkcs11_token_initialized(tool=tool, module=module):
+            return
+        if not environment.get("PKCS11_SO_PIN"):
+            print(
+                "Cannot initialize PKCS#11 token: you must set PKCS11_SO_PIN.",
+                file=sys.stderr,
+            )
+            raise KeygenError("no PKCS11_SO_PIN")
+        testing = (environment.get("PKCS11_TESTING") or "n") != "n"
+        if not testing and not environment.get("PKCS11_TOKEN_LABEL"):
+            print(
+                "Neither PKCS11_TOKEN_LABEL nor PKCS11_TESTING=y specified!\n"
+                "If you are just testing, please supply PKCS11_TESTING=y to "
+                "use the default label.\nOtherwise, please set a label via "
+                f"PKCS11_TOKEN_LABEL, e.g. {DEFAULT_TOKEN_LABEL}.",
+                file=sys.stderr,
+            )
+            raise KeygenError("no PKCS11_TOKEN_LABEL")
+        if not environment.get("PKCS11_TOKEN_LABEL"):
+            environment["PKCS11_TOKEN_LABEL"] = DEFAULT_TOKEN_LABEL
+        initialize_pkcs11_token(
+            tool=tool,
+            module=module,
+            label=environment["PKCS11_TOKEN_LABEL"],
+            so_pin=environment["PKCS11_SO_PIN"],
+            user_pin=environment["PKCS11_PIN"],
+        )
+
+    def _configuration(self, *, discovery: bool) -> Pkcs11BackendConfiguration:
+        """
+        Build the PKCS#11 backend configuration from the environment, for
+        key discovery or for modification.
+        """
+        environment = self.environment
+        pin_source = None
+        signing_pin_source = None
+        discovery_pin_source = None
+        use_so_pin = False
+        list_requires_no_pin = False
+        if discovery:
+            if environment.get("LIST_REQUIRES_NO_PIN", "n") == "y":
+                list_requires_no_pin = True
+            elif environment.get("PKCS11_PIN"):
+                pin_source = EnvironmentPin("PKCS11_PIN")
+        elif environment.get("MODIFICATION_USES_SO_PIN") == "y":
+            if environment.get("PKCS11_SO_PIN"):
+                use_so_pin = True
+                pin_source = EnvironmentPin("PKCS11_SO_PIN")
+            if environment.get("PKCS11_PIN"):
+                signing_pin_source = EnvironmentPin("PKCS11_PIN")
+                discovery_pin_source = EnvironmentPin("PKCS11_PIN")
+        elif environment.get("PKCS11_PIN"):
+            pin_source = EnvironmentPin("PKCS11_PIN")
+        engine = environment.get("PKCS11_OPENSSL_ENGINE_LIBRARY_PATH")
+        return Pkcs11BackendConfiguration(
+            module=Path(environment["PKCS11_MODULE"]),
+            pin_source=pin_source,
+            discovery_pin_source=discovery_pin_source,
+            signing_pin_source=signing_pin_source,
+            token_label=environment.get("PKCS11_TOKEN_LABEL") or None,
+            slot=environment.get("PKCS11_SLOT") or None,
+            tool=environment["PKCS11_TOOL_BIN"],
+            openssl=environment.get("OPENSSL_BIN", "openssl"),
+            openssl_engine=Path(engine) if engine else None,
+            certificate_days=int(environment["CERT_EXPIRY_DAYS"]),
+            use_so_pin=use_so_pin,
+            list_requires_no_pin=list_requires_no_pin,
+            environment=dict(environment),
+        )
+
+    def _backend(self, *, discovery: bool = False) -> Pkcs11Backend:
+        return self._configuration(discovery=discovery).create_backend()
+
+    def _reference(self, key_id: str, label: str = "") -> KeyReference:
+        return KeyReference(key_id=key_id, label=label)
+
+    def key_exists(self, mapped_value: str) -> bool:
+        return self._backend(discovery=True).key_exists(
+            self._reference(mapped_value),
+        )
+
+    def cert_exists(self, mapped_value: str) -> bool:
+        return self._backend(discovery=True).certificate_exists(
+            self._reference(mapped_value),
+        )
+
+    def spec(
+        self,
+        key_id: str,
+        label: str,
+        algorithm: str,
+    ) -> KeySpec:
+        size = algorithm.partition(":")[2]
+        extraction = self.environment.get("EXTRACTION_ARGS", "")
+        if extraction == "--sensitive --extractable":
+            exportable = True
+        elif extraction == "--sensitive":
+            exportable = False
+        else:
+            message = (
+                f"Unsupported EXTRACTION_ARGS='{extraction}'. Use "
+                "'--sensitive --extractable' or '--sensitive'."
+            )
+            print(message, file=sys.stderr)
+            raise KeygenError(message)
+        return KeySpec(
+            reference=self._reference(key_id, label),
+            key_size=int(size),
+            exportable=exportable,
+        )
+
+    def generate_keypair(
+        self,
+        key_id: str,
+        label: str,
+        algorithm: str,
+    ) -> None:
+        """Generate one key pair on the token."""
+        self._backend().generate_key(self.spec(key_id, label, algorithm))
+
+    def generate_cert(
+        self,
+        key_id: str,
+        key_type: str,
+        algorithm: str,
+    ) -> None:
+        """
+        Certify the key on the token, and export its certificate, and
+        for AVB and APEX keys its public key, into the key output
+        directory.
+        """
+        escaped_label = key_id.replace("/", "\\/")
+        subject = self.environment["SIGNING_SUBJECT_TEMPLATE"].replace(
+            "_KEY_LABEL_",
+            escaped_label,
+        )
+        certificate = self._backend().generate_certificate(
+            self.spec(key_id, key_id, algorithm),
+            subject,
+        )
+        destination = self.key_out_dir / Path(key_id).parent
+        destination.mkdir(parents=True, exist_ok=True)
+        certificate_path = destination / f"{Path(key_id).name}.x509.pem"
+        certificate_path.write_bytes(certificate)
+        export_public_keys(self.environment, certificate_path, key_type)
+
+
+def export_public_keys(
+    environment: Mapping[str, str],
+    certificate: Path,
+    key_type: str,
+    *,
+    quiet: bool = False,
+) -> None:
+    """
+    For AVB and APEX keys, write the public key of a .x509.pem
+    certificate next to it as .pem and, for AVB and APEX payload keys,
+    .avbpubkey, keeping a file that is already there.
+
+    Args:
+        environment: Environment naming OPENSSL_BIN and AVBTOOL_BIN.
+        certificate: The .x509.pem certificate.
+        key_type: The key's type.
+        quiet: Say nothing about a file that is already there.
+    """
+    if key_type not in {"avb", "apex_payload", "apex_container"}:
+        return
+    name = certificate.name.removesuffix(".x509.pem")
+    public_key = certificate.with_name(f"{name}.pem")
+    if public_key.exists():
+        if not quiet:
+            print(
+                f"Public key file already exists: {public_key}",
+                file=sys.stderr,
+            )
+    else:
+        subprocess.run(
+            [
+                environment["OPENSSL_BIN"],
+                "x509",
+                "-pubkey",
+                "-noout",
+                "-in",
+                str(certificate),
+                "-out",
+                str(public_key),
+            ],
+            check=True,
+        )
+    if key_type not in {"avb", "apex_payload"}:
+        return
+    avb_public_key = certificate.with_name(f"{name}.avbpubkey")
+    if avb_public_key.exists():
+        if not quiet:
+            print(
+                f"avbpubkey file already exists: {avb_public_key}",
+                file=sys.stderr,
+            )
+    else:
+        subprocess.run(
+            [
+                environment["AVBTOOL_BIN"],
+                "extract_public_key",
+                "--key",
+                str(public_key),
+                "--output",
+                str(avb_public_key),
+            ],
+            check=True,
+        )
+
+
+_SOFTHSM_CONFIG = """\
+# SoftHSM v2 configuration file
+
+directories.tokendir = {token_dir}
+objectstore.backend = file
+
+# ERROR, WARNING, INFO, DEBUG
+#log.level = DEBUG
+log.level = INFO
+
+# If CKF_REMOVABLE_DEVICE flag should be set
+slots.removable = true
+
+# Enable and disable PKCS#11 mechanisms using slots.mechanisms.
+slots.mechanisms = ALL
+
+# If the library should reset the state on fork
+library.reset_on_fork = false
+"""
+
+
+class SoftHsmKeygenDriver(Pkcs11KeygenDriver):
+    """Generate keys on a SoftHSM token."""
+
+    def initialize_post_metadata(self) -> None:
+        """
+        Create the SoftHSM configuration and token directory if missing,
+        then initialize the token.
+        """
+        environment = self.environment
+        home = Path.home()
+        config = Path(
+            environment.get("SOFTHSM2_CONF")
+            or home / ".config/softhsm/softhsm2.conf",
+        )
+        environment["SOFTHSM2_CONF"] = str(config)
+        token_dir = environment.get("SOFTHSM_TOKEN_DIR") or (
+            f"{home}/.local/share/softhsm/tokens/"
+        )
+        if not config.exists():
+            config.parent.mkdir(parents=True, exist_ok=True)
+            config.write_text(_SOFTHSM_CONFIG.format(token_dir=token_dir))
+        if (
+            f"directories.tokendir = {token_dir}"
+            in config.read_text().splitlines()
+        ):
+            try:
+                Path(token_dir).mkdir(parents=True, exist_ok=True)
+            except OSError as error:
+                print(
+                    f"ERROR: Failed to create '{token_dir}' directory for "
+                    f"SoftHSM.\n       Please edit '{config}' to point "
+                    "directories.tokendir\n       wherever you'd like, or set "
+                    "SOFTHSM2_CONF to your own config file.",
+                    file=sys.stderr,
+                )
+                raise KeygenError("no SoftHSM token directory") from error
+        super().initialize_post_metadata()
+        self.maybe_initialize_token()
+
+
+_DRIVERS: dict[str, type[KeygenDriver]] = {
+    "softhsm": SoftHsmKeygenDriver,
+}
+
+
+def keygen_usage() -> None:
+    print("usage: keygen [public_key_output_dir]")
+    print()
+    print(
+        "Generate keys using SoftHSM2 or a similarly compatible PKCS#11 "
+        "module specified by the",
+    )
+    print("PKCS11_MODULE environment variable.")
+    print()
+    print(
+        "Most functionality is controlled by environment variables. Check "
+        "out the initialize",
+    )
+    print("functions in this script or its includes.")
+
+
+def keygen_main(
+    environment: MutableMapping[str, str],
+    arguments: Sequence[str],
+) -> int:
+    """
+    Generate every key for the vendor PKCS11_VENDOR names into the
+    token, exporting their certificates and public keys into the output
+    directory.
+
+    Args:
+        environment: Process environment, mutated in place.
+        arguments: The keygen script's arguments.
+
+    Returns:
+        0 on success, 1 on failure.
+    """
+    output_argument = None
+    for argument in arguments or [""]:
+        if argument in ("", "--help") or (
+            len(argument) == 2 and argument.startswith("-")
+        ):
+            keygen_usage()
+            return 0
+        if output_argument is not None:
+            print(
+                "Expected just one argument, the key output directory.",
+                file=sys.stderr,
+            )
+            return 1
+        output_argument = argument
+    key_out_dir = Path(output_argument or "")
+    try:
+        key_out_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    vendor_name = environment.get("PKCS11_VENDOR", "")
+    try:
+        driver = _DRIVERS[vendor_name](environment, key_out_dir)
+    except KeyError:
+        print(
+            f"keygen does not support PKCS11_VENDOR={vendor_name!r}.",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        driver.initialize_pre_metadata()
+        if not environment.get("METADATA_FILE"):
+            environment["METADATA_FILE"] = str(SCRIPTS_DIR / "metadata.py")
+        metadata_file = Path(environment["METADATA_FILE"])
+        devices_file = environment.get("DEVICES_FILE") or str(
+            (SCRIPTS_DIR / "../../../calyx/scripts/vars/devices").resolve(),
+        )
+        environment["DEVICES_FILE"] = devices_file
+        missing = False
+        if not metadata_file.exists():
+            print(
+                "ERROR: Please set METADATA_FILE to the path of a metadata.py "
+                "module.\n"
+                "       Note that this module will be run as a script, so it "
+                "should be trusted!",
+                file=sys.stderr,
+            )
+            missing = True
+        if not Path(devices_file).exists():
+            print(
+                "ERROR: Please set DEVICES_FILE to the path of a file that "
+                "includes a list of\n"
+                "       devices in the 'devices' array. Note that this file "
+                "will be sourced as\n"
+                "       a script, so it should be trusted!",
+                file=sys.stderr,
+            )
+            missing = True
+        if missing:
+            return 1
+        metadata = load_metadata(metadata_file)
+        devices = load_devices_file(Path(devices_file))
+        print(f"Loaded devices from {devices_file}")
+        print(f"Loaded metadata from {metadata_file}")
+        sign_environment.load_vendor(environment)
+        keymapper = load_keymapper(environment, metadata)
+        keymapper.key_dir(environment)
+        sign_environment.maybe_initialize_vendor_interactive(
+            environment,
+            assume_yes=environment.get("SIGN_ASSUME_YES") == "y",
+        )
+        sign_environment.maybe_initialize_vendor(
+            environment,
+            tmpdir=Path(environment.get("TMPDIR") or "/dev/shm"),
+        )
+        initialize_post_metadata_common(environment, driver)
+        driver.initialize_post_metadata()
+        any_key, any_cert = generate_keys(
+            environment,
+            driver,
+            metadata,
+            keymapper,
+            devices,
+        )
+        print("Key generation finished successfully.")
+        if not any_key:
+            print("No keys generated during the process.")
+        if not any_cert:
+            print("No certs generated during the process.")
+    except (
+        OSError,
+        KeyError,
+        RuntimeError,
+        ValueError,
+        subprocess.CalledProcessError,
+    ) as error:
+        if isinstance(error, subprocess.CalledProcessError):
+            sys.stderr.write(os.fsdecode(error.stderr or b""))
+        if isinstance(error, KeyError) and error.args:
+            print(f"error: {error.args[0]}", file=sys.stderr)
+        elif not isinstance(error, KeygenError):
+            print(f"error: {error}", file=sys.stderr)
+        return 1
+    finally:
+        cleaned = driver.cleanup()
+    return 0 if cleaned else 1
