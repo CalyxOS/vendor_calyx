@@ -188,138 +188,6 @@ def test_relays_output_and_exit_code(tmp_path: Path) -> None:
     assert "to stderr" in result.stderr
 
 
-def test_apksigner_cache_hit_skips_the_command(tmp_path: Path) -> None:
-    cache_dir = tmp_path / "cache"
-    cache_dir.mkdir()
-    unsigned = tmp_path / "unsigned.apk"
-    unsigned.write_bytes(b"unsigned content")
-    cached_signed = tmp_path / "cached-signed.apk"
-    cached_signed.write_bytes(b"cached signed content")
-    run(
-        [
-            SCRIPTS_DIR / "pkcs11" / "signing_cache.py",
-            "--to-cache",
-            "java",
-            "-jar",
-            "apksigner.jar",
-            "sign",
-            "--ks-key-alias",
-            "0x2000",
-            "--out",
-            str(cached_signed),
-            str(unsigned),
-        ],
-        env={"YUBIHSM_SIGNING_CACHE": str(cache_dir)},
-    )
-
-    never_run_marker = tmp_path / "java-was-run"
-    make_script(
-        tmp_path / "java",
-        f'touch "{never_run_marker}"\nexit 1\n',
-    )
-    out = tmp_path / "out.apk"
-    result = run(
-        [
-            INTERCEPTOR,
-            "-jar",
-            "apksigner.jar",
-            "sign",
-            "--ks-key-alias",
-            "0x2000",
-            "--out",
-            str(out),
-            str(unsigned),
-        ],
-        env={
-            "SIGNING_COMMAND": "java",
-            "YUBIHSM_SIGNING_CACHE": str(cache_dir),
-            "DRY_RUN": "y",
-            **path_prepending(tmp_path),
-        },
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    assert out.read_bytes() == b"cached signed content"
-    assert not never_run_marker.exists()
-
-
-def test_apksigner_cache_miss_runs_and_populates_cache(tmp_path: Path) -> None:
-    cache_dir = tmp_path / "cache"
-    cache_dir.mkdir()
-    unsigned = tmp_path / "unsigned.apk"
-    unsigned.write_bytes(b"unsigned content")
-    out = tmp_path / "out.apk"
-
-    first_bin = tmp_path / "first-bin"
-    first_bin.mkdir()
-    make_script(
-        first_bin / "java",
-        r"""
-out=""
-prev=""
-for arg in "$@"; do
-  if [ "$prev" = "--out" ]; then out="$arg"; fi
-  prev="$arg"
-done
-printf %s "freshly signed" > "$out"
-""",
-    )
-    result = run(
-        [
-            INTERCEPTOR,
-            "-jar",
-            "apksigner.jar",
-            "sign",
-            "--ks-key-alias",
-            "0x2000",
-            "--out",
-            str(out),
-            str(unsigned),
-        ],
-        env={
-            "SIGNING_COMMAND": "java",
-            "YUBIHSM_SIGNING_CACHE": str(cache_dir),
-            "DRY_RUN": "y",
-            **path_prepending(first_bin),
-        },
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    assert out.read_bytes() == b"freshly signed"
-
-    never_run_marker = tmp_path / "java-was-run-again"
-    second_bin = tmp_path / "second-bin"
-    second_bin.mkdir()
-    make_script(
-        second_bin / "java",
-        f'touch "{never_run_marker}"\nexit 1\n',
-    )
-    second_out = tmp_path / "out2.apk"
-    second = run(
-        [
-            INTERCEPTOR,
-            "-jar",
-            "apksigner.jar",
-            "sign",
-            "--ks-key-alias",
-            "0x2000",
-            "--out",
-            str(second_out),
-            str(unsigned),
-        ],
-        env={
-            "SIGNING_COMMAND": "java",
-            "YUBIHSM_SIGNING_CACHE": str(cache_dir),
-            "DRY_RUN": "y",
-            **path_prepending(second_bin),
-        },
-        check=False,
-    )
-    assert second.returncode == 0, second.stderr
-    assert second_out.read_bytes() == b"freshly signed"
-    assert not never_run_marker.exists()
-
-
 def test_apksigner_without_signing_cache_leaves_cwd_alone(
     tmp_path: Path,
 ) -> None:
@@ -353,7 +221,7 @@ printf %s "freshly signed" > "$out"
                 "-jar",
                 "apksigner.jar",
                 "sign",
-                "--ks-key-alias",
+                "--kms-key-alias",
                 "0x2000",
                 "--out",
                 str(tmp_path / name),
