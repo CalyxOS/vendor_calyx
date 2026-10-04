@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from signing.metadata import load_metadata
 from signing.sign_orchestration import (
+    SignAbort,
     SignOrchestrator,
     SignStepError,
     load_devices_file,
@@ -652,6 +653,81 @@ def test_load_devices_file_gives_bash_no_standard_input(tmp_path: Path) -> None:
 
     assert devices == ("bramble",)
     assert stdin.read_text() == "/dev/null\n"
+
+
+def _orchestrator(
+    tmp_path: Path,
+    environment: dict[str, str],
+) -> SignOrchestrator:
+    return SignOrchestrator(
+        environment,
+        cwd=tmp_path,
+        devices_file=tmp_path / "devices",
+        metadata=load_metadata(SCRIPTS_DIR / "metadata.py"),
+        release_script=tmp_path / "release.sh",
+        generate_delta_script=tmp_path / "generate_delta.sh",
+    )
+
+
+def test_try_fails_fast_under_sign_assume_yes(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    orchestrator = _orchestrator(tmp_path, {"SIGN_ASSUME_YES": "y"})
+    calls: list[int] = []
+
+    def always_fails() -> None:
+        calls.append(1)
+        raise SignStepError("always fails")
+
+    with pytest.raises(SignAbort) as aborted:
+        orchestrator.try_("always_fails", always_fails)
+
+    assert aborted.value.code == 1
+    assert calls == [1]
+    assert "not retrying" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("devices", "available", "passes", "message"),
+    (
+        (2, 999 << 30, True, "Free space check passed, 999GB available"),
+        (2, 5 << 30, False, "Only 5GB free, but an estimated 40GB is needed"),
+        (1, (20 << 30) - 1, False, "Only 19GB free"),
+        (1, 20 << 30, True, "Free space check passed, 20GB available"),
+    ),
+)
+def test_check_free_space_needs_20gb_per_device(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    devices: int,
+    available: int,
+    passes: bool,
+    message: str,
+) -> None:
+    orchestrator = _orchestrator(tmp_path, {})
+    orchestrator.state.device_to_next_build = {
+        f"device{index}": index for index in range(devices)
+    }
+
+    def fake_run(
+        argv: list[str],
+        **kwargs: object,
+    ) -> subprocess.CompletedProcess[str]:
+        stdout = f"Avail\n{available}\n" if "--output=avail" in argv else ""
+        return subprocess.CompletedProcess(argv, 0, stdout, "")
+
+    monkeypatch.setattr("signing.sign_orchestration.subprocess.run", fake_run)
+
+    if passes:
+        orchestrator.check_free_space()
+    else:
+        with pytest.raises(SignStepError):
+            orchestrator.check_free_space()
+
+    captured = capsys.readouterr()
+    assert message in (captured.out if passes else captured.err)
 
 
 def test_sign_orchestrate_skips_previous_builds_matching_the_build_number(
