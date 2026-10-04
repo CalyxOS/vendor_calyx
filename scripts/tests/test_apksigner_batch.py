@@ -477,7 +477,6 @@ def _release(
             "BUILD_NUMBER": BUILD_NUMBER,
             "KEYMAPPER": "id2b",
             "OTA_ONLY": "y",
-            "USE_PYTHON_RELEASE_ORCHESTRATION": "y",
             "PYTHONPATH": str(SCRIPTS_DIR),
             "RELEASE_RECORD": str(record),
             "TMPDIR": str(tmpdir),

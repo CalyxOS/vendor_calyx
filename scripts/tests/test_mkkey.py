@@ -5,93 +5,16 @@
 
 from __future__ import annotations
 
-import stat
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run
+from conftest import SCRIPTS_DIR, assert_certificate_of, run
+from cryptography.hazmat.primitives import serialization
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=Test signing key"
 
 
-def install_make_key(directory: Path) -> Path:
-    make_key = directory / "make_key"
-    make_key.write_text(
-        """#!/bin/bash
-set -euo pipefail
-printf '%s\\n' "$@" >> "${MAKE_KEY_CALLS:?}"
-touch "$1.pk8" "$1.pem" "$1.x509.pem"
-""",
-    )
-    make_key.chmod(make_key.stat().st_mode | stat.S_IXUSR)
-    return make_key
-
-
-def test_mkkey_refuses_to_overwrite_existing_key(
-    tmp_path: Path,
-) -> None:
-    make_key = install_make_key(tmp_path)
-    calls = tmp_path / "make-key.calls"
-    work = tmp_path / "keys"
-    work.mkdir()
-    (work / "releasekey.pk8").touch()
-    (work / "releasekey.x509.pem").touch()
-    script = SCRIPTS_DIR / "mkkey.sh"
-
-    result = run(
-        [script, "releasekey", SUBJECT],
-        cwd=work,
-        env={"MAKE_KEY_BIN": str(make_key), "MAKE_KEY_CALLS": str(calls)},
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "key releasekey already exists" in result.stderr
-    assert not calls.exists()
-
-
-def test_mkkey_refuses_a_key_without_its_certificate(
-    tmp_path: Path,
-) -> None:
-    make_key = install_make_key(tmp_path)
-    calls = tmp_path / "make-key.calls"
-    work = tmp_path / "keys"
-    work.mkdir()
-    (work / "releasekey.pk8").write_bytes(b"private key")
-    script = SCRIPTS_DIR / "mkkey.sh"
-
-    result = run(
-        [script, "releasekey", SUBJECT],
-        cwd=work,
-        env={"MAKE_KEY_BIN": str(make_key), "MAKE_KEY_CALLS": str(calls)},
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "exists without releasekey.x509.pem" in result.stderr
-    assert (work / "releasekey.pk8").read_bytes() == b"private key"
-    assert not (work / "releasekey.x509.pem").exists()
-    assert not calls.exists()
-
-
-def test_mkkey_requires_name_and_subject(
-    tmp_path: Path,
-) -> None:
-    make_key = install_make_key(tmp_path)
-    script = SCRIPTS_DIR / "mkkey.sh"
-    result = run(
-        [script],
-        cwd=tmp_path,
-        env={"MAKE_KEY_BIN": str(make_key)},
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "incorrect number of arguments" in result.stderr
-    assert "Usage:" in result.stdout
-
-
-def test_mkkey_generates_a_matching_key_and_certificate_through_python(
+def test_mkkey_generates_a_matching_key_and_certificate(
     tmp_path: Path,
 ) -> None:
     work = tmp_path / "keys"
@@ -101,10 +24,6 @@ def test_mkkey_generates_a_matching_key_and_certificate_through_python(
     result = run(
         [script, "releasekey", SUBJECT],
         cwd=work,
-        env={
-            "USE_PYTHON_SIGNING": "y",
-            "MAKE_KEY_BIN": str(tmp_path / "missing-make_key"),
-        },
         check=False,
     )
     assert result.returncode == 0, result.stderr
@@ -128,54 +47,23 @@ def test_mkkey_generates_a_matching_key_and_certificate_through_python(
         ],
     )
     assert "Private-Key: (2048 bit" in private_key.stdout
-
-    subject = run(
-        [
-            "openssl",
-            "x509",
-            "-in",
-            certificate,
-            "-noout",
-            "-subject",
-            "-nameopt",
-            "RFC2253",
-        ],
-    )
-    assert (
-        subject.stdout.strip()
-        == "subject=CN=Test signing key,O=Calyx Institute,C=US"
+    assert_certificate_of(
+        serialization.load_der_private_key(
+            pkcs8_key.read_bytes(),
+            None,
+        ).public_key(),
+        certificate,
+        "CN=Test signing key,O=Calyx Institute,C=US",
     )
 
-    private_public_key = run(
-        [
-            "openssl",
-            "pkey",
-            "-inform",
-            "DER",
-            "-in",
-            pkcs8_key,
-            "-pubout",
-        ],
-    )
-    certificate_public_key = run(
-        ["openssl", "x509", "-in", certificate, "-pubkey", "-noout"],
-    )
-    assert private_public_key.stdout == certificate_public_key.stdout
 
-
-def test_python_mkkey_shows_why_openssl_refused_the_subject(
-    tmp_path: Path,
-) -> None:
+def test_mkkey_shows_why_openssl_refused_the_subject(tmp_path: Path) -> None:
     work = tmp_path / "keys"
     work.mkdir()
 
     result = run(
         [SCRIPTS_DIR / "mkkey.sh", "releasekey", "not-a-subject"],
         cwd=work,
-        env={
-            "USE_PYTHON_SIGNING": "y",
-            "MAKE_KEY_BIN": str(tmp_path / "missing-make_key"),
-        },
         check=False,
     )
 
@@ -184,7 +72,7 @@ def test_python_mkkey_shows_why_openssl_refused_the_subject(
 
 
 @pytest.mark.parametrize("key_directory", ("absolute", "parent"))
-def test_mkkey_generates_a_key_named_with_a_directory_through_python(
+def test_mkkey_generates_a_key_named_with_a_directory(
     tmp_path: Path,
     key_directory: str,
 ) -> None:
@@ -202,10 +90,6 @@ def test_mkkey_generates_a_key_named_with_a_directory_through_python(
     generated = run(
         [script, key_name, SUBJECT],
         cwd=work,
-        env={
-            "USE_PYTHON_SIGNING": "y",
-            "MAKE_KEY_BIN": str(tmp_path / "missing-make_key"),
-        },
         check=False,
     )
 
@@ -215,42 +99,66 @@ def test_mkkey_generates_a_key_named_with_a_directory_through_python(
     assert list(work.iterdir()) == []
 
 
+def _usage(script: Path) -> str:
+    return (
+        f"Usage: {script} key_name subject\n"
+        "Example key_name: networkstack\n"
+        "Example subject: '/C=US/ST=California/L=Mountain View/O=Android/"
+        "OU=Android/CN=Android/emailAddress=android@android.com'\n"
+    )
+
+
 @pytest.mark.parametrize(
-    ("arguments", "existing"),
+    ("arguments", "existing", "error", "usage"),
     (
-        ((), ()),
-        (("releasekey",), ()),
-        (("releasekey", SUBJECT), ("releasekey.pk8", "releasekey.x509.pem")),
-        (("releasekey", SUBJECT), ("releasekey.pem",)),
-        (("releasekey", SUBJECT), ("releasekey.pk8",)),
+        (
+            ("releasekey",),
+            (),
+            "error: incorrect number of arguments, please try again\n",
+            True,
+        ),
+        (
+            ("releasekey", SUBJECT),
+            ("releasekey.pk8", "releasekey.x509.pem"),
+            "error: key releasekey already exists, please try again\n",
+            True,
+        ),
+        (
+            ("releasekey", SUBJECT),
+            ("releasekey.pem",),
+            "error: key releasekey already exists, please try again\n",
+            True,
+        ),
+        (
+            ("releasekey", SUBJECT),
+            ("releasekey.pk8",),
+            "error: key releasekey exists without releasekey.x509.pem.\n"
+            "Restore the certificate from a backup, or delete releasekey.pk8 "
+            "if the key was never used.\n",
+            False,
+        ),
     ),
-    ids=("none", "one", "exists", "pem-exists", "no-certificate"),
+    ids=("one", "exists", "pem-exists", "no-certificate"),
 )
-def test_python_mkkey_refuses_as_bash_does(
+def test_mkkey_refuses_without_touching_the_keys(
     tmp_path: Path,
     arguments: tuple[str, ...],
     existing: tuple[str, ...],
+    error: str,
+    usage: bool,
 ) -> None:
-    make_key = install_make_key(tmp_path)
     script = SCRIPTS_DIR / "mkkey.sh"
-    results: list[tuple[int, str, str]] = []
-    for flag in ("", "y"):
-        work = tmp_path / f"keys{flag}"
-        work.mkdir()
-        for name in existing:
-            (work / name).write_bytes(b"existing")
-        result = run(
-            [script, *arguments],
-            cwd=work,
-            env={
-                "MAKE_KEY_BIN": str(make_key),
-                "MAKE_KEY_CALLS": str(tmp_path / "calls"),
-                "USE_PYTHON_SIGNING": flag,
-            },
-            check=False,
-        )
-        results.append((result.returncode, result.stdout, result.stderr))
-        assert sorted(path.name for path in work.iterdir()) == sorted(existing)
+    work = tmp_path / "keys"
+    work.mkdir()
+    for name in existing:
+        (work / name).write_bytes(b"existing")
 
-    assert results[1] == results[0]
-    assert results[0][0] == 1
+    result = run([script, *arguments], cwd=work, check=False)
+
+    assert (result.returncode, result.stdout, result.stderr) == (
+        1,
+        _usage(script) if usage else "",
+        error,
+    )
+    assert sorted(path.name for path in work.iterdir()) == sorted(existing)
+    assert all((work / name).read_bytes() == b"existing" for name in existing)

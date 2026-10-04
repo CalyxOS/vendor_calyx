@@ -6,42 +6,22 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 import re
 import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, YUBIHSM_SDK, run, run_cli
+from conftest import SCRIPTS_DIR, YUBIHSM_SDK, parameter_id, run, run_cli
 from signing import yubihsm_provision
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
 from yubihsm.defs import OBJECT
-from yubihsm_emulator import Connector, EmulatedYubiHsm
+from yubihsm_emulator import Connector
 
 PROVISION_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.provision.sh"
-
-FAKE_SHELL = """#!/bin/sh
-printf "%s\\n" "$*" >> "{root}/shell-calls"
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -a) action=$2; shift 2 ;;
-    --out) out=$2; shift 2 ;;
-    *) shift ;;
-  esac
-done
-case "$action" in
-  get-device-info)
-    printf "Serial number:\\t\\t123456\\nPart number:\\t\\tYSHSM2\\n" ;;
-  list-objects)
-    echo "Found 2 object(s)"
-    for id in 0x0101 0x0102; do
-      echo "id: $id, type: asymmetric-key, algo: rsa4096, sequence: 0, label: a"
-    done ;;
-  get-wrapped)
-    printf "wrapped-%s" "$out" > "$out" ;;
-esac
-"""
+WRAP_KEY_ID = 0x0010
 
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
@@ -56,14 +36,6 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
         ],
     ).stdout
     (root / "keymap.tsv").write_text(keymap)
-    shell = root / "yubihsm-shell"
-    shell.write_text(FAKE_SHELL.format(root=root))
-    shell.chmod(0o755)
-    device = yubihsm.device
-    device.put_authentication_key(0x0001, "signing-password")
-    device.put_wrap_key(0x0010)
-    for object_id in (0x0101, 0x0102):
-        device.put_asymmetric_key(object_id)
     return {
         "PYTHONPATH": os.pathsep.join([str(SCRIPTS_DIR), YUBIHSM_SDK]),
         "PATH": os.environ["PATH"],
@@ -72,53 +44,14 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
         "DEVICES_FILE": str(root / "devices"),
         "KEEP_PATH": str(root / "keep"),
         "KEYMAP_FILE": str(root / "keymap.tsv"),
-        "YUBIHSM_SHELL_BIN": str(shell),
         "YUBIHSM_CONNECTOR": yubihsm.url,
     }
 
 
-def test_backup_exports_every_asymmetric_key_under_wrap(
-    tmp_path: Path,
-    yubihsm: Connector,
-) -> None:
-    environment = _provisioning_tree(tmp_path, yubihsm)
-
-    result = run(
-        ["bash", PROVISION_SH, "backup"],
-        env=environment,
-        input_text="n\nsigning-password\ny\n",
-        check=False,
-    )
-
-    assert result.returncode == 0, result.stderr
-    keys = tmp_path / "keep" / "keys"
-    assert sorted(path.name for path in keys.iterdir()) == [
-        "0x0101-asymmetric-key.yhw",
-        "0x0102-asymmetric-key.yhw",
-    ]
-    audit = next((tmp_path / "keep" / "logs").rglob("*-provision.log"))
-    wrapped = [
-        line
-        for line in audit.read_text().splitlines()
-        if "get-wrapped" in line or "export-wrapped-key" in line
-    ]
-    assert len(wrapped) == 2
-    assert all("--wrap-id 0x0010" in line for line in wrapped)
-    assert "Provisioning completed successfully!" in result.stdout
-    for path in keys.iterdir():
-        key_id = int(path.name.split("-")[0], 16)
-        assert yubihsm.device.unwrap(
-            base64.b64decode(path.read_bytes()),
-            0x0010,
-        ) == (key_id, OBJECT.ASYMMETRIC_KEY)
-
-
-IMPLEMENTATIONS = ["bash", "python"]
-WRAP_KEY_ID = 0x0010
+PROVISION_FIXTURES = Path(__file__).parent / "fixtures" / "provision"
 
 
 def _wizard(
-    implementation: str,
     mode: str,
     environment: dict[str, str],
     input_text: str,
@@ -126,12 +59,8 @@ def _wizard(
     cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     return run(
-        ["bash", PROVISION_SH, mode],
-        env={
-            **environment,
-            "YUBIHSM_PYTHON_TOOLS": "y",
-            "USE_PYTHON_PROVISION": "y" if implementation == "python" else "",
-        },
+        [PROVISION_SH, mode],
+        env=environment,
         input_text=input_text,
         cwd=cwd,
         check=False,
@@ -217,20 +146,17 @@ def _keygen_environment(root: Path, avbtool: Path) -> dict[str, str]:
 
 def _outcome(
     tmp_path: Path,
-    implementation: str,
     mode: str,
     input_text: str,
     yubihsm: Connector,
     avbtool: Path | None = None,
-) -> tuple[int, str, str, dict[str, str], list[str], list[str]]:
-    root = tmp_path / implementation
-    root.mkdir()
-    yubihsm.plug(EmulatedYubiHsm())
-    environment = _provisioning_tree(root, yubihsm)
+) -> dict[str, object]:
+    root = tmp_path
     device = yubihsm.device
-    environment["SOURCE_DIRECTORY"] = str(_source_directory(root))
-    if avbtool is not None:
-        environment.update(_keygen_environment(root, avbtool))
+    device.put_authentication_key(0x0001, "signing-password")
+    device.put_wrap_key(WRAP_KEY_ID)
+    for object_id in (0x0101, 0x0102):
+        device.put_asymmetric_key(object_id)
     (root / "keys").mkdir()
     (root / "keys" / "0x0101-asymmetric-key.yhw").write_bytes(
         base64.b64encode(
@@ -241,25 +167,29 @@ def _outcome(
     if mode == "load-keys":
         for object_id in (0x0101, 0x0102):
             del device.objects[(object_id, OBJECT.ASYMMETRIC_KEY)]
-    result = _wizard(implementation, mode, environment, input_text, cwd=root)
+    environment = _provisioning_tree(root, yubihsm)
+    environment["SOURCE_DIRECTORY"] = str(_source_directory(root))
+    if avbtool is not None:
+        environment.update(_keygen_environment(root, avbtool))
+    result = _wizard(mode, environment, input_text, cwd=root)
     keep = root / "keep"
-    return (
-        result.returncode,
-        result.stdout.replace(str(root), "<root>"),
-        result.stderr.replace(str(root), "<root>"),
-        {
+    return {
+        "returncode": result.returncode,
+        "stdout": result.stdout.replace(str(root), "<root>"),
+        "stderr": result.stderr.replace(str(root), "<root>"),
+        "files": {
             name: content.replace(str(root), "<root>")
             for name, content in (
                 _tree(keep, yubihsm) if keep.exists() else {}
             ).items()
         },
-        _audit_comments(keep, yubihsm) if keep.exists() else [],
-        [
+        "audit": _audit_comments(keep, yubihsm) if keep.exists() else [],
+        "keys": [
             f"{object_id:#06x}"
             for object_id, object_type in sorted(device.objects)
             if object_type == OBJECT.ASYMMETRIC_KEY
         ],
-    )
+    }
 
 
 @pytest.mark.parametrize(
@@ -272,24 +202,31 @@ def _outcome(
         ("load-keys", "signing-password\nn\ny\n"),
         ("keygen", "n\nsigning-password\ny\n"),
     ],
+    ids=(
+        "backup",
+        "restore",
+        "backup-without-hsm",
+        "unknown-mode",
+        "load-keys",
+        "keygen",
+    ),
 )
-def test_python_wizard_matches_bash(
+def test_wizard_runs_its_stages(
     tmp_path: Path,
     mode: str,
     input_text: str,
-    yubihsm: Connector,
     request: pytest.FixtureRequest,
+    yubihsm: Connector,
 ) -> None:
+    expected = json.loads(
+        (PROVISION_FIXTURES / f"{parameter_id(request)}.json").read_text(),
+    )
+
     avbtool = None
     if mode == "keygen":
         aosp_top = request.getfixturevalue("aosp_top")
         avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
-    bash, python = (
-        _outcome(tmp_path, implementation, mode, input_text, yubihsm, avbtool)
-        for implementation in IMPLEMENTATIONS
-    )
-
-    assert python == bash
+    assert _outcome(tmp_path, mode, input_text, yubihsm, avbtool) == expected
 
 
 def test_wizard_gives_up_after_one_failure_under_sign_assume_yes(
