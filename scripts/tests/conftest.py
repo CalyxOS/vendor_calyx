@@ -66,10 +66,7 @@ def fake_pkcs11_modules(
 @pytest.fixture(scope="session")
 def aosp_top() -> Path:
     top = REPO_ROOT.parents[1]
-    required = (
-        top / "development" / "tools" / "make_key",
-        top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
-    )
+    required = (top / "out" / "host" / "linux-x86" / "bin" / "avbtool",)
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         pytest.skip(f"the Android tree lacks {', '.join(missing)}")

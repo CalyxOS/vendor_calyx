@@ -240,17 +240,6 @@ def test_release_dry_run_builds_plaintext_command_graph(
     assert "Not creating factory image due to OTA_ONLY=y" in result.stdout
 
 
-def test_python_release_names_the_script_it_ran_as(release_tree: Path) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"USE_PYTHON_RELEASE_ORCHESTRATION": "y"},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert f"Command: {SCRIPTS_DIR / 'release.sh'} bramble " in result.stderr
-
-
 def test_release_dry_run_leaves_the_files_release_sh_leaves(
     tmp_path: Path,
 ) -> None:
@@ -784,7 +773,7 @@ def test_release_normalizes_key_dir_for_child_processes(
     python: bool,
 ) -> None:
     """
-    payload_signer.openssl.sh reads KEY_DIR from the environment it
+    payload_signer.py reads KEY_DIR from the environment it
     inherits through ota_from_target_files, and strips it from key paths
     with ${key#$KEY_DIR*}, which needs exactly one trailing slash.
     """
@@ -935,25 +924,6 @@ def test_release_orchestration_refuses_a_bash_keymapper_file(
     assert result.returncode == 1
     assert "is not a Python keymapper (*.py)" in result.stderr
     assert "Traceback" not in result.stderr
-
-
-def test_bash_release_refuses_a_python_keymapper_file(
-    release_tree: Path,
-) -> None:
-    plugin = release_tree / "keymapper.plugin.py"
-    plugin.write_text(_PLUGIN_KEYMAPPER)
-
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"KEYMAPPER_FILE": str(plugin)},
-        python=False,
-    )
-
-    assert result.returncode == 1
-    assert "is a Python keymapper, which release.sh cannot load in Bash" in (
-        result.stderr
-    )
 
 
 _PLUGIN_KEYMAPPER = """
@@ -1113,10 +1083,7 @@ def test_release_dry_run_builds_pkcs11_command_graph(
     result = run_release(
         release_tree,
         "bramble",
-        environment={
-            **PKCS11_ENVIRONMENT,
-            "SIGNING_HELPER_TOOL": "pkcs11-tool",
-        },
+        environment=PKCS11_ENVIRONMENT,
         python=python,
     )
 
@@ -1124,9 +1091,9 @@ def test_release_dry_run_builds_pkcs11_command_graph(
     commands = result.stderr
     assert "--pkcs11_config " in commands
     assert "--extra_avbtool_signing_args" in commands
-    assert "signing_helper.pkcs11-tool.sh" in commands
+    assert "signing_helper.py" in commands
     assert "--payload_signer" in commands
-    assert "payload_signer.pkcs11-tool.sh" in commands
+    assert "payload_signer.py" in commands
     assert "test-only" not in result.stdout
     assert "test-only" not in result.stderr
 
@@ -1178,10 +1145,13 @@ def test_release_signs_ota_package_with_the_payload_signer(
     assert result.returncode == 0, result.stderr
     ota_command = _command_line(result.stderr, "ota_from_target_files")
     assert (
-        f"--payload_signer {SCRIPTS_DIR}/pkcs11/payload_signer.openssl.sh"
+        f"--payload_signer {SCRIPTS_DIR}/pkcs11/payload_signer.py"
         in ota_command
     )
-    assert ("--signapk_external_signer" in ota_command) is opted_in
+    assert (
+        "--signapk_external_signer "
+        f"{SCRIPTS_DIR}/pkcs11/payload_signer.py" in ota_command
+    ) is opted_in
 
 
 @implementations
@@ -1204,25 +1174,26 @@ def test_release_signs_target_files_with_threads(
 @pytest.mark.parametrize(
     ("environment", "helper", "payload_signer"),
     (
+        ({}, "/signing_helper.py", "/payload_signer.py"),
         (
-            {"AVB_SIGNING_HELPER_TOOL": "python"},
-            "signing_helper.py",
-            "payload_signer.openssl.sh",
+            {"AVB_SIGNING_HELPER_TOOL": "server"},
+            "signing_helper.server.py",
+            "/payload_signer.py",
         ),
         (
-            {"PAYLOAD_SIGNER_TOOL": "python"},
-            "signing_helper.openssl.sh",
-            "payload_signer.py",
+            {"PAYLOAD_SIGNER_TOOL": "server"},
+            "/signing_helper.py",
+            "payload_signer.server.py",
         ),
         (
-            {"SIGNING_HELPER_TOOL": "python"},
-            "signing_helper.py",
-            "payload_signer.py",
+            {"SIGNING_HELPER_TOOL": "server"},
+            "signing_helper.server.py",
+            "payload_signer.server.py",
         ),
     ),
-    ids=("avb-helper", "payload-signer", "both"),
+    ids=("default", "avb-helper", "payload-signer", "both"),
 )
-def test_release_can_select_python_signing_helpers(
+def test_release_selects_the_signing_helpers(
     release_tree: Path,
     environment: dict[str, str],
     helper: str,
@@ -1242,6 +1213,24 @@ def test_release_can_select_python_signing_helpers(
     )
     assert "test-only" not in result.stdout
     assert "test-only" not in result.stderr
+
+
+@pytest.mark.parametrize("tool", ("openssl", "pkcs11-tool"))
+def test_release_refuses_an_unknown_signing_helper_tool(
+    release_tree: Path,
+    tool: str,
+) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={**PKCS11_ENVIRONMENT, "SIGNING_HELPER_TOOL": tool},
+    )
+
+    assert result.returncode == 1
+    assert (
+        f"Unknown signing helper tool '{tool}', use 'python' or 'server'"
+        in result.stderr
+    )
 
 
 @implementations
@@ -1382,7 +1371,7 @@ def test_release_rejects_rollback_override_on_unsupported_device(
         ("bramble", {}),
         (
             "bramble",
-            {**PKCS11_ENVIRONMENT, "SIGNING_HELPER_TOOL": "pkcs11-tool"},
+            PKCS11_ENVIRONMENT,
         ),
         ("devon", {"AVB_ROLLBACK_INDEX_OVERRIDE": "42"}),
         ("bramble", {"KEY_SUFFIX": ""}),
@@ -1535,40 +1524,21 @@ def test_release_removes_its_temporaries(
     assert list((release_tree / "tmp").iterdir()) == []
 
 
-def test_use_python_release_orchestration_reports_its_vendor_limit(
-    release_tree: Path,
-) -> None:
-    """
-    The Python orchestrator supports only the softhsm and yubihsm
-    vendors and says so, where release.sh looks for a vendor include.
-    """
-    results = {
-        flag: run_release(
-            release_tree,
-            "bramble",
-            environment={
-                "PKCS11_VENDOR": "acme",
-                "USE_PYTHON_RELEASE_ORCHESTRATION": flag,
-            },
-        )
-        for flag in ("", "y")
-    }
-
-    assert results[""].returncode == results["y"].returncode == 1
-    assert "Could not find PKCS#11 vendor include script for 'acme'" in (
-        results[""].stderr
+def test_release_reports_an_unsupported_vendor(release_tree: Path) -> None:
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"PKCS11_VENDOR": "acme"},
     )
+
+    assert result.returncode == 1
     assert (
-        "PKCS11_VENDOR='acme' is not supported by the Python orchestrator. "
-        "Unset USE_PYTHON_RELEASE_ORCHESTRATION"
-    ) in results["y"].stderr
+        "error: PKCS11_VENDOR='acme' is not supported by the Python "
+        "orchestrator\n"
+    ) in result.stderr
 
 
-@pytest.mark.parametrize("flag", ("", "y"))
-def test_use_python_release_tools_checksums_without_sha256sum(
-    release_tree: Path,
-    flag: str,
-) -> None:
+def test_release_checksums_without_sha256sum(release_tree: Path) -> None:
     stubs = release_tree / "stubs"
     _install_tool(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
     _write_target_files_zip(
@@ -1579,7 +1549,6 @@ def test_use_python_release_tools_checksums_without_sha256sum(
         "bramble",
         environment={
             "PATH": f"{stubs}:{os.environ['PATH']}",
-            "USE_PYTHON_RELEASE_TOOLS": flag,
         },
         dry_run=False,
     )
@@ -1587,10 +1556,6 @@ def test_use_python_release_tools_checksums_without_sha256sum(
     out = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
     ota = out / f"bramble-ota_update-{BUILD_NUMBER}.zip"
     checksum = out / f"bramble-ota_update-{BUILD_NUMBER}.zip.sha256sum"
-    if not flag:
-        assert result.returncode != 0
-        assert ota.exists()
-        return
     assert result.returncode == 0, result.stderr
     assert checksum.read_text() == f"{sha256(ota)}  {ota.name}\n"
 
@@ -1861,29 +1826,32 @@ def test_release_goes_on_without_an_unwritable_exec_log(
     assert "Traceback" not in result.stderr
 
 
-@implementations
+def test_release_names_the_script_it_ran_as(release_tree: Path) -> None:
+    result = run_release(release_tree, "bramble")
+
+    assert result.returncode == 0, result.stderr
+    assert f"Command: {SCRIPTS_DIR / 'release.sh'} bramble " in result.stderr
+
+
 def test_release_signs_plain_keys_without_its_tmpdir(
     release_tree: Path,
-    python: bool,
 ) -> None:
     result = run_release(
         release_tree,
         "bramble",
         environment={"TMPDIR": str(release_tree / "missing")},
-        python=python,
     )
 
     assert result.returncode == 0, result.stderr
 
 
-def test_python_release_dry_run_warns_of_kms_without_the_server(
+def test_release_dry_run_warns_of_kms_without_the_server(
     release_tree: Path,
 ) -> None:
     result = run_release(
         release_tree,
         "bramble",
         environment={"USE_APKSIGNER_KMS": "y"},
-        python=True,
     )
 
     assert result.returncode == 0, result.stderr
