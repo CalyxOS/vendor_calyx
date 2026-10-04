@@ -880,7 +880,7 @@ def test_release_vendor_keymapper_sets_payload_signature_size(
     release_tree: Path,
 ) -> None:
     """
-    The vendor file exports KEYMAPPER before the keymapper file sets
+    The vendor sets KEYMAPPER before the keymapper sets
     PAYLOAD_SIGNER_MAXIMUM_SIGNATURE_SIZE, so a keymapper chosen only by
     the vendor still reserves room for a 4096-bit payload signature.
     """
@@ -1199,8 +1199,8 @@ def test_release_reports_an_unsupported_vendor(release_tree: Path) -> None:
 
     assert result.returncode == 1
     assert (
-        "error: PKCS11_VENDOR='acme' is not supported by the Python "
-        "orchestrator\n"
+        "error: PKCS11_VENDOR='acme' is not supported. Set PKCS11_VENDOR to "
+        "yubihsm or softhsm\n"
     ) in result.stderr
 
 
