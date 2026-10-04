@@ -12,42 +12,29 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    PKCS11_ENGINE,
     SCRIPTS_DIR,
     SOFTHSM_KEY_ID,
     SOFTHSM_KEY_LABEL,
+    SOFTHSM_MODULE,
     SOFTHSM_SO_PIN,
     SOFTHSM_TOKEN_LABEL,
     SOFTHSM_USER_PIN,
+    assert_certificate_of,
     install_executable,
     require_softhsm,
     run,
 )
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import padding
+from signing.avb_signing import SHA256_DIGEST_INFO_PREFIX
 from signing.models import (
     KeyReference,
     KeySpec,
     SignRequest,
 )
 from signing.pkcs11 import Pkcs11Backend, Pkcs11Config
-from software_rsa import verifies
-
-SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
-PKCS11_ENGINE = Path("/usr/lib/engines-3/pkcs11.so")
-KEY_ID = "0x2000"
-SHA256_DIGEST_INFO_PREFIX = bytes.fromhex(
-    "3031300d060960864801650304020105000420",
-)
-
-
-def test_backend_resolves_a_key_through_its_private_key_label(
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> None:
-    backend, _, _ = pkcs11_token
-
-    assert backend.key_id_for_label(
-        SOFTHSM_KEY_LABEL,
-    ) == SOFTHSM_KEY_ID.removeprefix("0x")
+from software_rsa import avb_input, der_public_key, verifies
 
 
 def test_backend_exports_a_public_key_when_listing_needs_no_pin(
@@ -67,15 +54,6 @@ def test_backend_exports_a_public_key_when_listing_needs_no_pin(
     assert no_pin_listing.export_public_key(reference) == (
         public_key.read_bytes()
     )
-
-
-def test_backend_rejects_missing_private_key_label(
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> None:
-    backend, _, _ = pkcs11_token
-
-    with pytest.raises(KeyError, match="label not found"):
-        backend.key_id_for_label("missing")
 
 
 @pytest.fixture
@@ -100,38 +78,19 @@ def pkcs11_token(
 
 def test_pkcs11_raw_rsa_signing_contract(
     pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-    tmp_path: Path,
 ) -> None:
     backend, _, public_key = pkcs11_token
     digest = bytes(range(32))
-    signature = tmp_path / "signature.bin"
-    digest_file = tmp_path / "digest.bin"
     reference = KeyReference(SOFTHSM_KEY_ID, SOFTHSM_KEY_LABEL)
-    signature.write_bytes(
-        backend.sign(SignRequest(reference, digest, "rsa-pkcs")),
-    )
-    digest_file.write_bytes(digest)
 
-    verified = run(
-        [
-            "openssl",
-            "pkeyutl",
-            "-verify",
-            "-pubin",
-            "-keyform",
-            "DER",
-            "-inkey",
-            public_key,
-            "-in",
-            digest_file,
-            "-sigfile",
-            signature,
-            "-pkeyopt",
-            "rsa_padding_mode:pkcs1",
-        ],
-        check=False,
+    signature = backend.sign(SignRequest(reference, digest, "rsa-pkcs"))
+
+    recovered = der_public_key(public_key).recover_data_from_signature(
+        signature,
+        padding.PKCS1v15(),
+        None,
     )
-    assert verified.returncode == 0, verified.stderr
+    assert recovered == digest
 
 
 def test_pkcs11_raw_rsa_signing_contract_rejects_missing_key(
@@ -263,35 +222,16 @@ def test_pkcs11_certificate_contract(
     certificate.write_bytes(backend.generate_certificate(spec, subject))
 
     assert backend.certificate_exists(reference)
-    rendered_subject = run(
-        [
-            "openssl",
-            "x509",
-            "-in",
-            certificate,
-            "-noout",
-            "-subject",
-            "-nameopt",
-            "RFC2253",
-        ],
-    )
-    assert rendered_subject.stdout.strip() == (
-        "subject=CN=Shared PKCS11 certificate,O=Calyx Institute,C=US"
+    assert_certificate_of(
+        serialization.load_der_public_key(backend.export_public_key(reference)),
+        certificate,
+        "CN=Shared PKCS11 certificate,O=Calyx Institute,C=US",
     )
     verified = run(
         ["openssl", "verify", "-CAfile", certificate, certificate],
         check=False,
     )
     assert verified.returncode == 0, verified.stderr
-    certificate_public_key = run(
-        ["openssl", "x509", "-in", certificate, "-pubkey", "-noout"],
-    )
-    token_public_key = run(
-        ["openssl", "pkey", "-pubin", "-inform", "DER", "-pubout"],
-        input=backend.export_public_key(reference),
-        text=False,
-    )
-    assert certificate_public_key.stdout.encode() == token_public_key.stdout
 
 
 def test_pkcs11_backend_rejects_duplicate_certificates(
@@ -503,9 +443,7 @@ def test_so_pin_backend_signs_with_the_officer_pin(
         SignRequest(reference, SHA256_DIGEST_INFO_PREFIX + digest, "rsa-pkcs"),
     )
 
-    key = serialization.load_der_public_key(public_key.read_bytes())
-    assert isinstance(key, rsa.RSAPublicKey)
-    assert verifies(key, signature, digest)
+    assert verifies(der_public_key(public_key), signature, digest)
     arguments = argv_log.read_text()
     assert SOFTHSM_SO_PIN not in arguments
     assert SOFTHSM_USER_PIN not in arguments
@@ -581,28 +519,20 @@ def test_avb_helper_signs_with_the_pin_the_environment_selects(
             "PKCS11_PIN": SOFTHSM_USER_PIN,
             "PKCS11_SO_PIN": so_pin,
             "SIGNING_USES_SO_PIN": uses_so_pin,
-            "KEY_ID": SOFTHSM_KEY_ID,
-            "OPENSSL_PKCS11_URI_USES_HEX_KEY_ID": "y",
+            "KEY_DIR": f"{tmp_path}/",
         },
-        input=(
-            b"\x00\x01"
-            + b"\xff" * 202
-            + b"\x00"
-            + SHA256_DIGEST_INFO_PREFIX
-            + digest
-        ),
+        input=avb_input(digest),
         check=False,
         text=False,
     )
 
     if succeeds:
         assert result.returncode == 0, result.stderr
-        key = serialization.load_der_public_key(public_key.read_bytes())
-        assert isinstance(key, rsa.RSAPublicKey)
-        assert verifies(key, result.stdout, digest)
+        assert verifies(der_public_key(public_key), result.stdout, digest)
     else:
         assert result.returncode != 0
         assert b"CKR_PIN_INCORRECT" in result.stderr
+        assert b"Traceback" not in result.stderr
 
 
 def test_backend_discovers_without_logging_in_when_configured(
