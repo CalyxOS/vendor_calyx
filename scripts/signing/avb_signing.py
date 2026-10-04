@@ -187,6 +187,7 @@ def pkcs11_signer_from_environment() -> Pkcs11Backend:
         tool=values.get("PKCS11_TOOL_BIN", "pkcs11-tool"),
         use_so_pin=use_so_pin,
         list_requires_no_pin=(values.get("LIST_REQUIRES_NO_PIN", "n") == "y"),
+        preload_module=values.get("PKCS11_VENDOR") == "yubihsm",
         environment=values,
     )
     return configuration.create_backend()
