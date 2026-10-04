@@ -10,7 +10,6 @@ import os
 import re
 import signal
 import stat
-import sys
 import zipfile
 from pathlib import Path
 
@@ -147,39 +146,6 @@ def test_package_holds_the_manifest_files(tmp_path: Path) -> None:
     assert not any(name.startswith("ceremony/vendor") for name in names)
     assert "ceremony/manifest.tsv" not in names
     assert f"{hashlib.sha256(data).hexdigest()}  " in stdout
-
-
-def test_package_flag_routes_through_python(tmp_path: Path) -> None:
-    fake_bin = tmp_path / "fake-path-bin"
-    fake_bin.mkdir()
-    fake_python3 = fake_bin / "python3"
-    fake_python3.write_text(
-        "#!/bin/sh\n"
-        'case " $* " in *" prepare-ceremony-package "*)\n'
-        "  echo FAKE_PYTHON3_INVOKED >&2\n"
-        "  exit 1\n"
-        "esac\n"
-        f'exec {sys.executable} "$@"\n',
-    )
-    fake_python3.chmod(fake_python3.stat().st_mode | stat.S_IXUSR)
-    manifest = tmp_path / "manifest.tsv"
-    manifest.write_text("filename\tsha256sum\tfilesize\tlink\n")
-    results = {
-        flag: run(
-            ["bash", PACKAGE_DIR / "prepare.package.sh"],
-            cwd=tmp_path,
-            env={
-                "PATH": f"{fake_bin}:{os.environ['PATH']}",
-                "MANIFEST_FILE": str(manifest),
-                "USE_PYTHON_PREPARE_PACKAGE": flag,
-            },
-            check=False,
-        )
-        for flag in ("", "y")
-    }
-
-    assert "FAKE_PYTHON3_INVOKED" in results["y"].stderr
-    assert "FAKE_PYTHON3_INVOKED" not in results[""].stderr
 
 
 def test_package_reports_a_download_killed_by_a_signal(tmp_path: Path) -> None:

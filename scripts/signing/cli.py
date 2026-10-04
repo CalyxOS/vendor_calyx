@@ -1500,25 +1500,16 @@ def _cmd_sign_app(args: argparse.Namespace) -> int:
     Returns:
         sign-app.sh's exit status.
     """
-    from . import sign_environment
     from .metadata import default_metadata_path, load_metadata
     from .sign_app import sign_app
 
     program, *arguments = args.arguments or ["sign-app.sh"]
-    try:
-        return sign_app(
-            os.environ,
-            load_metadata(default_metadata_path()),
-            arguments,
-            program=program,
-        )
-    except (RuntimeError, OSError, ValueError) as error:
-        message = sign_environment.describe_vendor_error(
-            error,
-            "USE_PYTHON_SIGN_APP",
-        )
-        print(f"error: {message}", file=sys.stderr)
-        return 1
+    return sign_app(
+        os.environ,
+        load_metadata(default_metadata_path()),
+        arguments,
+        program=program,
+    )
 
 
 def _cmd_generate_keymap(args: argparse.Namespace) -> int:
