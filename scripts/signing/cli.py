@@ -529,6 +529,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("generate-delta", add_help=False)
 
     subparsers.add_parser("keygen", add_help=False)
+    subparsers.add_parser("yubihsm-provision", add_help=False)
     subparsers.add_parser("mkkey", add_help=False)
     subparsers.add_parser("updatecommonkeys", add_help=False)
 
@@ -1400,6 +1401,21 @@ def _cmd_keygen(args: argparse.Namespace) -> int:
     from .keygen import keygen_main
 
     return keygen_main(os.environ, args.arguments)
+
+
+def _cmd_yubihsm_provision(args: argparse.Namespace) -> int:
+    """
+    Run the YubiHSM provisioning wizard.
+
+    Args:
+        args: Parsed namespace containing the wizard's arguments.
+
+    Returns:
+        The wizard's exit status.
+    """
+    from .yubihsm_provision import provision_main
+
+    return provision_main(os.environ, args.arguments)
 
 
 def _cmd_mkkey(args: argparse.Namespace) -> int:
@@ -2316,6 +2332,7 @@ _HANDLERS: dict[str, _CommandHandler] = {
     "generate-delta": _cmd_generate_delta,
     "sign-app": _cmd_sign_app,
     "keygen": _cmd_keygen,
+    "yubihsm-provision": _cmd_yubihsm_provision,
     "mkkey": _cmd_mkkey,
     "updatecommonkeys": _cmd_updatecommonkeys,
     "generate-keymap": _cmd_generate_keymap,
@@ -2383,6 +2400,7 @@ def main(argv: list[str] | None = None) -> int:
         ["generate-delta"],
         ["sign-app"],
         ["keygen"],
+        ["yubihsm-provision"],
         ["mkkey"],
         ["updatecommonkeys"],
     ):
