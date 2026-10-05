@@ -392,7 +392,7 @@ initialize_keymapper() {
   local err
   if [ -z "${devices+x}" ] || [ "${#devices[@]}" = "0" ]; then
     # TODO: This can probably be better...
-    local devices_path=$(dirname "$BASH_SOURCE")/../../../calyx/scripts/vars/devices
+    local devices_path=${DEVICES_FILE:-$(dirname "$BASH_SOURCE")/../../../calyx/scripts/vars/devices}
     source <(cat "$devices_path" | sed -e 's/^readonly /declare -g /') || true
   fi
   _generate_key_id_maps \
