@@ -296,16 +296,13 @@ is_any_token_initialized_pkcs11() {
 load_metadata() {
   local missing_something=
   if [ -z "${METADATA_FILE:-}" ]; then
-    METADATA_FILE=$scriptpath/metadata
+    METADATA_FILE=$scriptpath/metadata.py
   fi
   if [ -e "$METADATA_FILE" ]; then
-    # FIXME: Current metadata files may have issues with unbound variables.
-    set +u  # Turn off checking for unbound variable use.
-    PKCS11_MODULE=$PKCS11_MODULE source "$METADATA_FILE" || return $?
-    set -u  # Turn the checking back on.
+    source "$scriptpath/metadata" || return $?
   else
-    echo "ERROR: Please set METADATA_FILE to the path of a file that includes key mappings." >&2
-    echo "       Note that this file will be sourced as a script, so it should be trusted!" >&2
+    echo "ERROR: Please set METADATA_FILE to the path of a metadata.py module." >&2
+    echo "       Note that this module will be run as a script, so it should be trusted!" >&2
     missing_something=1
   fi
   if [ -z "${DEVICES_FILE:-}" ]; then
@@ -402,7 +399,7 @@ initialize_post_metadata_pkcs11() {
     echo "PKCS11_PIN not specified. Using $PKCS11_PIN." >&2
   fi
   if [ -n "${PKCS11_MODULE+x}" ] && [ -z "${PKCS11_MODULE:-}" ]; then
-    echo "WARNING: PKCS11_MODULE set to an empty string! Expecting it to be in the metadata file." >&2
+    echo "WARNING: PKCS11_MODULE set to an empty string!" >&2
     echo "         Unset PKCS11_MODULE entirely if you want this script to find it." >&2
   elif ! find_pkcs11_module || [ -z "${PKCS11_MODULE:-}" ]; then
     echo "Could not find PKCS#11 module. Please set PKCS11_MODULE to its location." >&2
