@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 
 from conftest import SCRIPTS_DIR, run
 
@@ -81,3 +82,73 @@ def test_mapped_key_types_are_known() -> None:
     arrays = read_metadata_arrays()
     mappings = dict(item.split("=", 1) for item in arrays["key_type_to_array"])
     assert set(arrays["mapped_key_types"]) <= set(mappings)
+
+
+def test_sourcing_metadata_fails_when_metadata_py_does_not_load(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "metadata").write_text((SCRIPTS_DIR / "metadata").read_text())
+    (tmp_path / "metadata.py").write_text("KEYS_AVB = (\n")
+
+    result = run(
+        [
+            "bash",
+            "-c",
+            'source "$1" || exit 7',
+            "metadata-test",
+            tmp_path / "metadata",
+        ],
+        check=False,
+    )
+
+    assert result.returncode == 7
+    assert f"cannot load {tmp_path}/metadata.py" in result.stderr
+
+
+def test_sourcing_metadata_refuses_an_array_that_is_not_a_tuple(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "metadata").write_text((SCRIPTS_DIR / "metadata").read_text())
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    (tmp_path / "metadata.py").write_text(
+        source.replace('KEYS_REPO = ("updater",)', 'KEYS_REPO = ("updater")'),
+    )
+
+    result = run(
+        [
+            "bash",
+            "-c",
+            'source "$1" || exit 7',
+            "metadata-test",
+            tmp_path / "metadata",
+        ],
+        check=False,
+    )
+
+    assert result.returncode == 7
+    assert "KEYS_REPO in" in result.stderr
+    assert "is not a tuple of strings" in result.stderr
+
+
+def test_sourcing_metadata_refuses_a_key_type_map_of_other_values(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "metadata").write_text((SCRIPTS_DIR / "metadata").read_text())
+    source = (SCRIPTS_DIR / "metadata.py").read_text()
+    (tmp_path / "metadata.py").write_text(
+        source.replace('"avb": "keys_avb",', '"avb": ("keys_avb",),'),
+    )
+
+    result = run(
+        [
+            "bash",
+            "-c",
+            'source "$1" || exit 7',
+            "metadata-test",
+            tmp_path / "metadata",
+        ],
+        check=False,
+    )
+
+    assert result.returncode == 7
+    assert "does not map strings to strings" in result.stderr
