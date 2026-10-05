@@ -110,7 +110,7 @@ def main() -> None:
                     "raw bytes",
                 )
             label_bytes = extension.value
-            label = label_bytes.decode().lstrip()
+            label = label_bytes[2:].decode()
             print(f"Importing {cert_file} {key_id} {label} ...")
             try:
                 Opaque.put_certificate(
