@@ -8,6 +8,7 @@
 import glob
 import os
 import subprocess
+import sys
 
 OUR_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.getenv("SOURCE_DIRECTORY", OUR_DIR)
@@ -19,7 +20,7 @@ def main():
     install_packages()
     start_connector()
     # hand over to HSM setup script
-    subprocess.run([os.path.join(OUR_DIR, "setup.py")])
+    sys.exit(subprocess.run([os.path.join(OUR_DIR, "setup.py")]).returncode)
 
 
 def extract_sdk():
