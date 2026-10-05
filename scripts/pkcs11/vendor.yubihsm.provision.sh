@@ -6,6 +6,7 @@
 
 set -euo pipefail
 ourpath=$(cd "$(dirname "$0")";pwd -P)
+scripts_path=${ourpath%/pkcs11}
 PROVISIONING_PATH=${PROVISIONING_PATH:-/dev/shm/hsmp}
 declare -g SOURCE_DIRECTORY
 # KEEP_PATH is established in initialize_provisioning_mode and set_mode.
@@ -194,12 +195,12 @@ paths_exist_and_are_equal() {
 }
 
 source_include_scripts() {
-  source "$basepath/$script_relpath/metadata" || return $?
+  source "$scripts_path/metadata" || return $?
   # Regrettably, the devices array is readonly, and this causes problems in
   # create_custom_metadata_for_keygen, even in a subshell, so we cheat our way out of it.
-  source <(cat "$basepath/$devices_relpath" | sed -e 's/^readonly /declare -g /') || return $?
-  source "$basepath/$script_relpath/common.include.sh" || return $?
-  source "$basepath/$pkcs11_relpath/vendor.yubihsm.include.sh" || return $?
+  source <(cat "${DEVICES_FILE:-$basepath/$devices_relpath}" | sed -e 's/^readonly /declare -g /') || return $?
+  source "$scripts_path/common.include.sh" || return $?
+  source "$ourpath/vendor.yubihsm.include.sh" || return $?
   try load_keymapper || return $?
   yubihsm_original_authkey=$YUBIHSM_AUTHKEY
   yubihsm_original_password=$YUBIHSM_PASSWORD
@@ -235,7 +236,7 @@ keygen() {
     export KEY_DIR=${KEY_DIR:-$KEEP_PATH/keys}
     mkdir -p -m0700 "$KEY_DIR" || return $?
     cd "$basepath" || return $?
-    "$basepath/$pkcs11_relpath/vendor.yubihsm.keygen.sh" "$KEY_DIR" || return $?
+    "$ourpath/vendor.yubihsm.keygen.sh" "$KEY_DIR" || return $?
   ) || return $?
 }
 
