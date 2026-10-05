@@ -8,7 +8,7 @@ set -euo pipefail
 
 readonly sign_pkcs11_scriptpath=$(cd "$(dirname "$0")/pkcs11";pwd -P)
 readonly sign_scriptpath=$(cd "$(dirname "$0")";pwd -P)
-readonly sign_devices_path=$(realpath "$sign_scriptpath/../../../calyx/scripts/vars/devices")
+readonly sign_devices_path=$(realpath "${DEVICES_FILE:-$sign_scriptpath/../../../calyx/scripts/vars/devices}")
 
 ORIGINAL_TMPDIR=${TMPDIR:-/dev/shm}
 TMPDIR=
