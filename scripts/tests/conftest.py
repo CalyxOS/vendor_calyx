@@ -14,7 +14,7 @@ import stat
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
+HSM_PROVISIONING_DIR = SCRIPTS_DIR / "hsm_provisioning"
 TEST_METADATA = Path(__file__).parent / "fixtures" / "metadata.py"
 KEYGEN_METADATA = Path(__file__).parent / "fixtures" / "keygen-metadata.py"
 ID2B_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
@@ -192,6 +193,37 @@ SOFTHSM_USER_PIN = "123456"
 SOFTHSM_KEY_ID = "0x2000"
 SOFTHSM_KEY_LABEL = "test-key"
 YUBIHSM_WRAP_ID = 0x0010
+
+
+def prepare_ceremony_package(
+    root: Path,
+    curl: str,
+    environment: Mapping[str, str],
+) -> subprocess.CompletedProcess[str]:
+    """Run prepare.package.sh in root/out and leave ceremony.zip there.
+
+    The source directory links vendor/calyx to this repository. root/bin
+    leads PATH and holds curl as the given script.
+    """
+    source = root / "source"
+    (source / "vendor").mkdir(parents=True)
+    (source / "vendor" / "calyx").symlink_to(REPO_ROOT)
+    fake_bin = root / "bin"
+    fake_bin.mkdir(exist_ok=True)
+    install_executable(fake_bin / "curl", curl)
+    out = root / "out"
+    out.mkdir()
+    return run(
+        [HSM_PROVISIONING_DIR / "prepare.package.sh"],
+        cwd=out,
+        env={
+            "PATH": f"{fake_bin}:{os.environ['PATH']}",
+            "TMPDIR": str(root),
+            "SOURCE_DIRECTORY": str(source),
+            **environment,
+        },
+        check=False,
+    )
 
 
 def require_softhsm(*, engine: bool = False) -> None:
