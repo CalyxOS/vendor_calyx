@@ -35,7 +35,6 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 _START = ("load_configuration", "maybe_start_yubihsm_connector_service")
 _END = ("finish",)
 _MODES = {
-    "restore": (*_START, *_END),
     "keygen": (
         *_START,
         "ask_signing_authkey_password_if_needed",
@@ -105,9 +104,6 @@ class ProvisionWizard:
     ) -> None:
         self.environment = environment
         self.cwd = cwd
-        self.provisioning_path = Path(
-            environment.get("PROVISIONING_PATH") or "/dev/shm/hsmp",
-        )
         environment["NEVER_START_YUBIHSM_CONNECTOR"] = "y"
         for name, default in (
             ("YUBIHSM_AUTHKEY", "1"),
@@ -116,7 +112,6 @@ class ProvisionWizard:
             if not environment.get(name):
                 environment[name] = default
         self.is_provisioning_mode = False
-        self.basepath = Path()
         self.keymapper: Keymapper | None = None
         self.signing_authkey_id = ""
         self.signing_authkey_password = environment.get(
@@ -125,7 +120,9 @@ class ProvisionWizard:
         )
         self.audit_log_path: Path | None = None
         self.keep_path = environment.get("KEEP_PATH", "")
-        self.source_directory = environment.get("SOURCE_DIRECTORY", "")
+        self.basepath = Path(
+            environment.get("SOURCE_DIRECTORY") or SCRIPTS_DIR.parents[2],
+        )
 
     def run(self, arguments: Sequence[str]) -> int:
         """
@@ -189,41 +186,20 @@ class ProvisionWizard:
                 )
                 return code
 
-    def _initialize_provisioning_mode(self) -> None:
-        self.is_provisioning_mode = True
-        if not self.provisioning_path.is_dir():
-            self.provisioning_path.mkdir(mode=0o700, parents=True)
-        if not self.keep_path:
-            self.keep_path = "/dev/shm/keep"
-
     def _set_mode(self, mode: str) -> tuple[str, ...] | None:
-        environment = self.environment
-        act_like_not_provisioning = False
-        if mode in ("restore", "backup"):
-            self._initialize_provisioning_mode()
-        elif mode == "keygen":
-            act_like_not_provisioning = True
-            if not self.keep_path:
-                self.keep_path = str(self.cwd)
-            self._initialize_provisioning_mode()
-        elif mode != "load-keys":
+        if mode not in _MODES:
             print(f"Unrecognized mode: {mode}", file=sys.stderr)
             return None
-
-        if not self.source_directory:
-            ourpath = str(SCRIPTS_DIR / "pkcs11")
-            index = ourpath.rfind("vendor/calyx/")
-            source = ourpath[:index] if index >= 0 else ourpath
-            self.source_directory = source.removesuffix("/")
-        if self.is_provisioning_mode and not act_like_not_provisioning:
-            self.basepath = self.provisioning_path
+        default_key_dir = f"{self.cwd}/keys"
+        if mode == "backup":
+            self.is_provisioning_mode = True
+            self.keep_path = self.keep_path or "/dev/shm/keep"
             default_key_dir = f"{self.keep_path}/keys"
-        else:
-            self.basepath = Path(self.source_directory)
-            default_key_dir = f"{self.cwd}/keys"
-        if not environment.get("KEY_DIR"):
-            environment["KEY_DIR"] = default_key_dir
-
+        elif mode == "keygen":
+            self.is_provisioning_mode = True
+            self.keep_path = self.keep_path or str(self.cwd)
+        if not self.environment.get("KEY_DIR"):
+            self.environment["KEY_DIR"] = default_key_dir
         print(f"Mode: {mode}")
         return _MODES[mode]
 
