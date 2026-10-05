@@ -21,7 +21,7 @@ TOP="$SCRIPTPATH/../../.."
 
 KEY_NAME=$1
 SUBJECT="$2"
-MKKEY=$TOP/development/tools/make_key
+MKKEY=${MAKE_KEY_BIN:-$TOP/development/tools/make_key}
 
 [[ -e ${MKKEY} ]] || error "${MKKEY} not found"
 [[ -e $(which openssl) ]] || error "openssl not found in PATH."

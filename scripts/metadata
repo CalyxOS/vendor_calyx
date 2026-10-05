@@ -2,10 +2,12 @@
 # SPDX-FileCopyrightText: The Calyx Institute
 # SPDX-License-Identifier: Apache-2.0
 #
-# The signing metadata lives in metadata.py. Sourcing this file defines it as Bash arrays.
+# The signing metadata lives in metadata.py, or in the module METADATA_FILE names.
+# Sourcing this file defines it as Bash arrays.
 
 _metadata_path=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P) || return $?
-_metadata_declarations=$(python3 -I - "$_metadata_path/metadata.py" <<'EOF'
+_metadata_module=${METADATA_FILE:-$_metadata_path/metadata.py}
+_metadata_declarations=$(python3 -I - "$_metadata_module" <<'EOF'
 import runpy
 import shlex
 import sys
@@ -48,8 +50,8 @@ for name in (
         print(")")
 EOF
 ) || {
-  echo "error: cannot load $_metadata_path/metadata.py" >&2
+  echo "error: cannot load $_metadata_module" >&2
   return 1
 }
 eval "$_metadata_declarations"
-unset _metadata_path _metadata_declarations
+unset _metadata_path _metadata_module _metadata_declarations

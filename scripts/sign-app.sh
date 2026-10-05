@@ -9,7 +9,7 @@ set -euo pipefail
 
 SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
 MAIN_PATH="$(realpath "$SCRIPTPATH/../../../")"
-KEY_DIR="$MAIN_PATH/keys"
+KEY_DIR=${KEY_DIR:-$MAIN_PATH/keys}
 
 source "$SCRIPTPATH/metadata"
 source "$SCRIPTPATH/common.include.sh"
