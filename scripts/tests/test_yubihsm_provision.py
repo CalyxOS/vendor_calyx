@@ -31,8 +31,8 @@ WRAP_KEY_ID = 0x0010
 
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
-    provisioning = root / "hsmp"
-    provisioning.mkdir()
+    source = root / "source"
+    source.mkdir()
     (root / "devices").write_text("readonly devices=(bramble)\n")
     keymap = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py")).to_tsv(
         ("bramble",),
@@ -42,7 +42,7 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
         "PYTHONPATH": os.pathsep.join([str(SCRIPTS_DIR), YUBIHSM_SDK]),
         "PATH": os.environ["PATH"],
         "HOME": str(root),
-        "PROVISIONING_PATH": str(provisioning),
+        "SOURCE_DIRECTORY": str(source),
         "DEVICES_FILE": str(root / "devices"),
         "KEEP_PATH": str(root / "keep"),
         "KEYMAP_FILE": str(root / "keymap.tsv"),
@@ -196,7 +196,6 @@ def _outcome(
     ("mode", "input_text"),
     [
         ("backup", "n\nsigning-password\ny\n"),
-        ("restore", "n\n"),
         ("backup", "n\nsigning-password\nn\nn\n"),
         ("bogus", ""),
         ("load-keys", "signing-password\nn\ny\n"),
@@ -204,7 +203,6 @@ def _outcome(
     ],
     ids=(
         "backup",
-        "restore",
         "backup-without-hsm",
         "unknown-mode",
         "load-keys",
