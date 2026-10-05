@@ -1,0 +1,234 @@
+#
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+#
+# This file is updated manually based on Android changes, especially for
+# including new core signing keys, APEXes, and APEX APKs.
+# Key re-mapping is not covered in this file.
+# IMPORTANT: PLEASE PRESERVE THE ORDER OF THESE ARRAYS, AS MAPPINGS TO KEY IDS
+# MAY DEPEND ON IT.
+
+# Android Verified Boot (AVB) partitions that can be signed with their own
+# independent keys.
+# RSA algorithm is required for AVB signing.
+# vbmeta can never be rotated.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_AVB = (
+    "vbmeta",
+    "boot",
+    "dtbo",
+    "init_boot",
+    "recovery",
+    "system",
+    "system_other",
+    "vendor",
+    "vbmeta_system",
+    "vbmeta_vendor",
+)
+
+# Standalone key types that do not belong in the other categories.
+KEYS_OTHER = (
+    # Although Android can accept multiple OTA certs for a release, a given
+    # release is signed with just one by design. We have an array for this to
+    # match the layout of other keys. This key was once the "release key" or
+    # releasekey, which doubled as the default signing key for apps, replacing
+    # testkey/devkey. However, given that the key used for OTA updates is a
+    # distinct key, we treat it as such today.
+    "ota",
+)
+
+# Core signing keys. Used by SELinuxMMAC to determine permissions. Each must be
+# unique.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_CORE = (
+    # testkey is the default signing key. This is not necessarily the OTA key.
+    # See KEYS_OTHER.
+    "build/make/target/product/security/testkey",
+    "build/make/target/product/security/media",
+    "build/make/target/product/security/shared",
+    "build/make/target/product/security/platform",
+    "build/make/target/product/security/networkstack",
+    "build/make/target/product/security/bluetooth",
+    "build/make/target/product/security/sdk_sandbox",
+    "build/make/target/product/security/nfc",
+)
+
+# APEXes, each of which has a container and payload.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_APEX = (
+    "com.android.adbd",
+    "com.android.adservices",
+    "com.android.appsearch",
+    "com.android.art",
+    "com.android.bluetooth",
+    "com.android.bt",
+    "com.android.btservices",
+    "com.android.cellbroadcast",
+    "com.android.compos",
+    "com.android.configinfrastructure",
+    "com.android.conscrypt",
+    "com.android.crashrecovery",
+    "com.android.devicelock",
+    "com.android.extservices",
+    "com.android.hardware.authsecret",
+    "com.android.hardware.biometrics.face.virtual",
+    "com.android.hardware.biometrics.fingerprint.virtual",
+    "com.android.hardware.boot",
+    "com.android.hardware.cas",
+    "com.android.hardware.neuralnetworks",
+    "com.android.hardware.rebootescrow",
+    "com.android.hardware.wifi",
+    "com.android.healthfitness",
+    "com.android.i18n",
+    "com.android.ipsec",
+    "com.android.media",
+    "com.android.mediaprovider",
+    "com.android.media.swcodec",
+    "com.android.neuralnetworks",
+    "com.android.nfcservices",
+    "com.android.npumanager",
+    "com.android.ondevicepersonalization",
+    "com.android.os.statsd",
+    "com.android.permission",
+    "com.android.profiling",
+    "com.android.resolv",
+    "com.android.rkpd",
+    "com.android.runtime",
+    "com.android.scheduling",
+    "com.android.sdkext",
+    "com.android.support.apexer",
+    "com.android.telephonymodules",
+    "com.android.tethering",
+    "com.android.tzdata",
+    "com.android.uprobestats",
+    "com.android.uwb",
+    "com.android.vibrator.drv2624",
+    "com.android.vibrator.sunfish",
+    "com.android.virt",
+    "com.android.vndk.current",
+    "com.android.vndk.current.on_vendor",
+    "com.android.webapp",
+    "com.android.wifi",
+    "com.google.pixel.vibrator.hal",
+    "com.android.telephonycore",
+)
+
+# APKs inside of APEXes.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_APEX_APK = (
+    # Mapping from build/tools/releasetools.
+    "packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources",
+    "packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin",
+    "packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources",
+    "packages/modules/AdServices/adservices/apk/com.android.adservices.api",
+    "packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources",
+    "packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog",
+    "packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources",
+    "packages/modules/AppSearch/apk/com.android.appsearch.apk",
+    "packages/modules/HealthFitness/apk/com.android.healthconnect.controller",
+    "packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore",
+    "packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute",
+    "packages/modules/Telephony/apex/com.android.telecom.resources",
+    "packages/modules/Telephony/apex/com.android.telecomui",
+    "packages/modules/WebApp/apex/com.android.webapp",
+    # Device-specific: raven, cheetah, tangorpro, felix.
+    # (It doesn't hurt to override/generate it anyway; keymappers can map it to
+    # "" to skip it.)
+    "device/google/gs-common/uwb-certs/com.qorvo.uwb",
+)
+
+# Extra keys for apps we sign
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_APP = (
+    "prebuilts/calyx/microg/certs/microg",
+    "external/calyx/chromium/certs/chromium",
+    "com.google.android.apps.photos",
+    "prebuilts/calyx/lupin/updater/certs/org.calyxos.lupin.updater",
+)
+
+# Extra keys for F-Droid repos we sign
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEYS_REPO = ("updater",)
+
+# List of all the key types.
+# This affects the order of key generation. Because some keys need to be RSA
+# (avb and apex payload), these keys should be generated first in case they
+# share IDs with other key types that might otherwise be generated with ECC.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+KEY_TYPES = (
+    "avb",
+    "apex_payload",
+    "other",
+    "core",
+    "apex_container",
+    "apex_apk",
+    "app",
+    "repo",
+)
+
+# Mapping of key types to keys_ arrays.
+KEY_TYPE_TO_ARRAY = {
+    "avb": "keys_avb",
+    "other": "keys_other",
+    "core": "keys_core",
+    "apex_container": "keys_apex",
+    "apex_payload": "keys_apex",
+    "apex_apk": "keys_apex_apk",
+    "app": "keys_app",
+    "repo": "keys_repo",
+}
+
+# Key types whose keys are remapped by passing -k to sign_target_files_apks.
+# This applies to most key types apart from avb, apex containers and payloads,
+# and other (ota).
+MAPPED_KEY_TYPES = (
+    "core",
+    "apex_apk",
+    "app",
+)
+
+# Devices that have been supported since switching to this new metadata scheme.
+# This should always contain all of the devices currently in
+# calyx/scripts/vars/devices along with any devices added there in the future,
+# but the order of items here must remain as-is.
+# PLEASE PRESERVE THE ORDER OF THIS ARRAY, ADDING NEW ITEMS AT THE BOTTOM.
+# DO NOT REMOVE ITEMS. IF NECESSARY, REPLACE WITH: ""
+ALL_DEVICES = (
+    "bramble",
+    "redfin",
+    "barbet",
+    "oriole",
+    "raven",
+    "FP4",
+    "bluejay",
+    "cheetah",
+    "panther",
+    "lynx",
+    "devon",
+    "hawao",
+    "rhode",
+    "tangorpro",
+    "felix",
+    "husky",
+    "shiba",
+    "FP5",
+    "akita",
+    "caiman",
+    "comet",
+    "komodo",
+    "tokay",
+    "otter",
+    "bangkk",
+    "fogo",
+    "fogos",
+    "tegu",
+    "FP6",
+    "stallion",
+)
