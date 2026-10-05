@@ -175,6 +175,8 @@ load_keymapper_and_maybe_pkcs11() {
 }
 
 prepare_signing_args() {
+  local scriptpath
+  scriptpath=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit $?;pwd -P) || return $?
   if [ -n "${PKCS11_MODULE:-}" ] || [ -n "${PKCS11_VENDOR:-}" ] || \
      [ -n "${PKCS11_VENDOR_FILE:-}" ]; then
     local tmpdir
@@ -183,16 +185,18 @@ prepare_signing_args() {
     $maybe_dry_run generate_sunpkcs11_config \
       | $maybe_dry_run_ignore tee "$tmpdir/sunpkcs11.cfg" >/dev/null
     local tool=${SIGNING_HELPER_TOOL:-openssl}
-    local signing_helper_tool=vendor/calyx/scripts/pkcs11/signing_helper.$tool.sh
-    local payload_signer_tool=vendor/calyx/scripts/pkcs11/payload_signer.$tool.sh
+    local signing_helper_tool=$scriptpath/pkcs11/signing_helper.$tool.sh
+    local payload_signer_tool=$scriptpath/pkcs11/payload_signer.$tool.sh
     if [ ! -e "$signing_helper_tool" ] || [ ! -e "$payload_signer_tool" ]; then
       echo "Looking for SIGNING_HELPER_TOOL '$tool', missing '$signing_helper_tool' and/or '$payload_signer_tool'" >&2
       return 1
     fi
+    local quoted_signing_helper_tool
+    printf -v quoted_signing_helper_tool %q "$signing_helper_tool"
     EXTRA_RELEASETOOLS_ARGS+=(
       --verbose
       --pkcs11_config "$tmpdir/sunpkcs11.cfg"
-      --extra_avbtool_signing_args "--signing_helper $signing_helper_tool"
+      --extra_avbtool_signing_args "--signing_helper $quoted_signing_helper_tool"
     )
     common_args=(
       --payload_signer "$payload_signer_tool"

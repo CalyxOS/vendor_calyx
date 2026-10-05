@@ -38,8 +38,8 @@ source "$SCRIPTPATH/common.include.sh"
 DEVICE=$(basename "$1")
 KEY_DIR=$(dirname "${1%/}")/
 SUBJECT="$2"
-GENVERITYKEY=$TOP/bin/generate_verity_key
-AVBTOOL=$TOP/bin/avbtool
+GENVERITYKEY=${GENERATE_VERITY_KEY_BIN:-$TOP/bin/generate_verity_key}
+AVBTOOL=${AVBTOOL_BIN:-$TOP/bin/avbtool}
 
 load_keymapper
 
