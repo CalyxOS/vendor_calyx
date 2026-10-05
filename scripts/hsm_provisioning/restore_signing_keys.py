@@ -78,7 +78,7 @@ def main():
             key_id_index = subject.find("id:")
             key_id = subject[key_id_index + 3:]
             label_bytes = pem.extensions.get_extension_for_oid(ObjectIdentifier("1.3.6.1.4.1.41482.4.9")).value.value
-            label = label_bytes.decode().lstrip()
+            label = label_bytes[2:].decode()
             print(f"Importing {cert_file} {key_id} {label} ...")
             try:
                 yubihsm.objects.Opaque.put_certificate(
