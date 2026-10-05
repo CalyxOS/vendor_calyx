@@ -155,6 +155,8 @@ prepare_manifest_and_files() {
         chmod 755 "$dest_file"
     elif [[ "$dest_file" =~ calyx-shamir-split$ ]]; then
         chmod 755 "$dest_file"
+    elif [ "$filename" = "start.sh" ]; then
+        chmod 755 "$dest_file"
     else
         chmod 644 "$dest_file"
     fi
