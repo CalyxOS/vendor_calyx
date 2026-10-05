@@ -6,16 +6,13 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import signal
-import stat
 import zipfile
 from pathlib import Path
 
 import pytest
-from conftest import REPO_ROOT, SCRIPTS_DIR, run
+from conftest import SCRIPTS_DIR, prepare_ceremony_package, sha256
 
-PACKAGE_DIR = SCRIPTS_DIR / "hsm_provisioning"
 FAKE_CURL = """#!/bin/sh
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -46,40 +43,17 @@ SMALL_MANIFEST = (
 )
 
 
-def _source_directory(root: Path) -> Path:
-    source = root / "source"
-    (source / "vendor").mkdir(parents=True)
-    (source / "vendor" / "calyx").symlink_to(REPO_ROOT)
-    return source
-
-
 def _outcome(
     tmp_path: Path,
     manifest: str | None,
 ) -> tuple[int, str, str, bytes | None]:
     tmp_path.mkdir(parents=True, exist_ok=True)
-    environment = {"SOURCE_DIRECTORY": str(_source_directory(tmp_path))}
+    environment: dict[str, str] = {}
     if manifest is not None:
         (tmp_path / "manifest.tsv").write_text(manifest)
         environment["MANIFEST_FILE"] = str(tmp_path / "manifest.tsv")
-    fake_bin = tmp_path / "bin"
-    fake_bin.mkdir()
-    curl = fake_bin / "curl"
-    curl.write_text(FAKE_CURL)
-    curl.chmod(curl.stat().st_mode | stat.S_IXUSR)
-    out = tmp_path / "out"
-    out.mkdir()
-    result = run(
-        [PACKAGE_DIR / "prepare.package.sh"],
-        cwd=out,
-        env={
-            "PATH": f"{fake_bin}:{os.environ['PATH']}",
-            "TMPDIR": str(tmp_path),
-            **environment,
-        },
-        check=False,
-    )
-    zip_path = out / "ceremony.zip"
+    result = prepare_ceremony_package(tmp_path, FAKE_CURL, environment)
+    zip_path = tmp_path / "out" / "ceremony.zip"
     return (
         result.returncode,
         result.stdout,
@@ -173,3 +147,21 @@ def test_package_reports_a_download_killed_by_a_signal(tmp_path: Path) -> None:
 
     assert returncode == 128 + signal.SIGXFSZ
     assert data is None
+
+
+@pytest.mark.parametrize("matches", (True, False))
+def test_package_checks_a_local_file_against_its_checksum(
+    tmp_path: Path,
+    matches: bool,
+) -> None:
+    provision = SCRIPTS_DIR / "hsm_provisioning" / "provision.py"
+    checksum = sha256(provision) if matches else "0" * 64
+    manifest = SMALL_MANIFEST.replace(
+        "vendor/calyx/scripts/hsm_provisioning/provision.py\n",
+        f"vendor/calyx/scripts/hsm_provisioning/provision.py\t{checksum}\n",
+    )
+
+    _, _, stderr, _ = _outcome(tmp_path, manifest)
+
+    warned = "does not match expected sha256sum and no link provided!"
+    assert (warned in stderr) is not matches, stderr
