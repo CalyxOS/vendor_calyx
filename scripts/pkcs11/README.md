@@ -6,7 +6,7 @@ See [dedicated documentation on provisioning](../hsm_provisioning/README.md).
 
 ## Adding new keys
 
-Edit `scripts/metadata` and run:
+Edit `scripts/metadata.py` and run:
 
     KEYMAPPER=id2b ./scripts/generate_keymap.sh > scripts/pkcs11/keymap.tsv
 
