@@ -400,8 +400,7 @@ def prepare_signing_args(
         ]
         args.signing += ["--payload_signer", payload_signer_tool]
         args.ota += ["--payload_signer", payload_signer_tool]
-        if environment.get("USE_SIGNAPK_EXTERNAL_SIGNER") == "y":
-            args.ota += ["--signapk_external_signer", payload_signer_tool]
+        args.ota += ["--signapk_external_signer", payload_signer_tool]
 
     interceptor = environment.get("SIGNING_COMMAND_INTERCEPTOR")
     if interceptor:
@@ -637,20 +636,16 @@ class SigningSession:
         "apksigner batch" process. avbtool's signing helper and the OTA
         payload signer default to signing_helper.server.py and
         payload_signer.server.py unless AVB_SIGNING_HELPER_TOOL,
-        PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL chooses them. With
-        USE_APKSIGNER_KMS=y, apksigner signs through apksig's "calyx" KMS
-        provider, whose helper signs through the server, instead of a
-        SunPKCS11 KeyStore.
+        PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL chooses them. apksigner
+        signs through apksig's "calyx" KMS provider, whose helper signs
+        through the server.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
         if self.dry_run:
             if Path(interceptor).name == "vendor.yubihsm.interceptor.py":
                 self._use_server_helpers()
-            else:
-                self._warn_kms_without_server()
             return
         if Path(interceptor).name != "vendor.yubihsm.interceptor.py":
-            self._warn_kms_without_server()
             return
         from .yubihsm_session_service import YubiHsmSessionService
 
@@ -681,7 +676,6 @@ class SigningSession:
                 f"Warning: not starting the signing server ({error}).",
                 file=sys.stderr,
             )
-            self._warn_kms_without_server()
             return
         self.environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
         self._use_server_helpers()
@@ -695,20 +689,10 @@ class SigningSession:
             for variable in ("AVB_SIGNING_HELPER_TOOL", "PAYLOAD_SIGNER_TOOL"):
                 if not self.environment.get(variable):
                     self.environment[variable] = "server"
-        if self.environment.get("USE_APKSIGNER_KMS") == "y":
-            self.environment["CALYX_APKSIGNER_SIGNING_HELPER"] = str(
-                _PKCS11_DIR / "apksigner_signing_helper.py",
-            )
-            self.args.signing += ["--apksigner_kms_type", "calyx"]
-
-    def _warn_kms_without_server(self) -> None:
-        if self.environment.get("USE_APKSIGNER_KMS") == "y":
-            print(
-                "Warning: USE_APKSIGNER_KMS=y signs through the signing "
-                "server, which this release does not host, so APKs are "
-                "signed through SunPKCS11.",
-                file=sys.stderr,
-            )
+        self.environment["CALYX_APKSIGNER_SIGNING_HELPER"] = str(
+            _PKCS11_DIR / "apksigner_signing_helper.py",
+        )
+        self.args.signing += ["--apksigner_kms_type", "calyx"]
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:

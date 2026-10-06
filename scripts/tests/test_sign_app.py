@@ -86,50 +86,6 @@ def _run_sign_app(
     return result, argv
 
 
-def test_sign_app_signs_through_a_sunpkcs11_keystore(
-    sign_app_tree: Path,
-    yubihsm: Connector,
-) -> None:
-    root = sign_app_tree
-
-    result, argv = _run_sign_app(root, yubihsm, APP, "app.apk")
-
-    assert result.returncode == 0, result.stderr
-    assert "Signed app.apk successfully" in result.stdout
-    assert (root / "app-signed.apk").read_text() == "signed"
-    assert argv == [
-        "-Xmx4096m",
-        "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11=ALL-UNNAMED",
-        f"-Djava.library.path={ANDROID_TOP}/lib64",
-        "-jar",
-        f"{ANDROID_TOP}/framework/apksigner.jar",
-        "sign",
-        "--v4-signing-enabled=false",
-        "--min-sdk-version",
-        "30",
-        "--v1-signing-enabled=false",
-        "--v2-signing-enabled=false",
-        "--ks",
-        "NONE",
-        "--ks-type",
-        "PKCS11",
-        "--ks-pass",
-        "env:PKCS11_PIN",
-        "--provider-class",
-        "sun.security.pkcs11.SunPKCS11",
-        "--provider-arg",
-        f"{root}/tmp/sunpkcs11.cfg",
-        "--ks-key-alias",
-        "0x1502",
-        "--out",
-        "app-signed.apk",
-        "app.apk",
-    ]
-    assert "library = /dev/null" in (root / "tmp/sunpkcs11.cfg").read_text()
-    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
-    assert "apksigner.jar sign" in audit_log.read_text()
-
-
 def test_sign_app_signs_through_the_calyx_kms_provider(
     sign_app_tree: Path,
     yubihsm: Connector,
@@ -142,7 +98,6 @@ def test_sign_app_signs_through_the_calyx_kms_provider(
         yubihsm,
         APP,
         "app.apk",
-        USE_APKSIGNER_KMS="y",
     )
 
     assert result.returncode == 0, result.stderr
@@ -165,6 +120,9 @@ def test_sign_app_signs_through_the_calyx_kms_provider(
         "app-signed.apk",
         "app.apk",
     ]
+    assert yubihsm.device.unread_log() == []
+    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
+    assert "apksigner.jar sign" in audit_log.read_text()
     assert list((root / "tmp").glob("yubihsm.*")) == []
 
 
@@ -208,7 +166,6 @@ def test_sign_app_kms_path_needs_the_certificate_file(
         yubihsm,
         APP,
         "app.apk",
-        USE_APKSIGNER_KMS="y",
     )
 
     assert result.returncode == 1
@@ -220,6 +177,7 @@ def test_sign_app_reads_the_password_file(
     sign_app_tree: Path,
     yubihsm: Connector,
 ) -> None:
+    (sign_app_tree / "keys" / "0x1502.x509.pem").write_text("certificate")
     password_file = sign_app_tree / "signing.txt"
     password_file.write_text("password\n")
     password_file.chmod(0o600)
@@ -340,7 +298,7 @@ def test_sign_app_cleans_up_after_sigterm(
     )
 
     assert result.returncode == 128 + signal.SIGTERM, result.stderr
-    assert not [path for path in (root / "tmp").iterdir() if path.is_dir()]
+    assert list((root / "tmp").iterdir()) == []
 
 
 def test_sign_app_lets_the_signing_finish_after_sigterm(
@@ -378,4 +336,4 @@ def test_sign_app_lets_the_signing_finish_after_sigterm(
     assert (root / "app-signed.apk").read_text() == "signed"
     logs = [path.read_text() for path in root.rglob("*.log")]
     assert any(" java " in log for log in logs), logs
-    assert not [path for path in (root / "tmp").iterdir() if path.is_dir()]
+    assert list((root / "tmp").iterdir()) == []
