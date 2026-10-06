@@ -12,14 +12,15 @@ import sys
 
 import cryptography.x509
 import yubihsm.exceptions
+from audit import extract_and_save_logs
 from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from setup import (
     ADMIN_AUTHKEY_ID,
     WRAP_KEY_ID,
+    audit_log_file,
     print_and_get_info,
-    save_audit_log,
 )
 from yubihsm.core import YubiHsm
 from yubihsm.defs import CAPABILITY, ERROR
@@ -67,6 +68,7 @@ def main() -> None:
     hsm = YubiHsm.connect(connector_url)
     session = hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
     hsm_name = print_and_get_info(hsm, session)
+    log_file = audit_log_file(hsm_name)
     try:
         # import all signing keys
         wrap_key = WrapKey(session, WRAP_KEY_ID)
@@ -85,8 +87,9 @@ def main() -> None:
                 if e.code != ERROR.OBJECT_EXISTS:
                     raise
                 print("  Key was already imported, skipping...")
+            finally:
+                extract_and_save_logs(session, log_file, f"restore: {key_file}")
         print(f"Successfully imported {len(key_files)} signing keys.")
-        save_audit_log(session, hsm_name)
 
         # import all key certs
         cert_files = sorted(glob.glob("0x*attestation.pem", root_dir=key_dir))
@@ -128,12 +131,18 @@ def main() -> None:
                     continue
                 else:
                     raise e
+            finally:
+                extract_and_save_logs(
+                    session,
+                    log_file,
+                    f"restore: {cert_file}",
+                )
         print(
             f"Successfully imported {len(cert_files)} signing key "
             "certificates.",
         )
     finally:
-        save_audit_log(session, hsm_name)
+        extract_and_save_logs(session, log_file, "restore: done")
         session.close()
 
 
