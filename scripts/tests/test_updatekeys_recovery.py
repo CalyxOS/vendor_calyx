@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import stat
 import subprocess
 from dataclasses import dataclass
@@ -62,14 +63,6 @@ case "$command" in
     ;;
   *) echo "unexpected openssl command: $command" >&2; exit 2 ;;
 esac
-"""
-
-
-MOVE = """#!/bin/bash
-set -euo pipefail
-[ -z "${FAIL_MOVE_SOURCE:-}" ] || \\
-  [ "$FAIL_MOVE_SOURCE" != "$1" ] || exit 40
-exec /usr/bin/mv "$@"
 """
 
 
@@ -154,7 +147,6 @@ def install_tree(
     mock_directory = root / "mock-bin"
     mock_directory.mkdir()
     install_executable(mock_directory / "openssl", OPENSSL)
-    install_executable(mock_directory / "mv", MOVE)
 
     keymapper_file = None
     if keymapper_config:
@@ -365,12 +357,13 @@ def test_runtime_key_migration_recovers_from_move_failure(
     tree.seed("com.android.runtime.release.pk8", "LEGACY KEY\n")
     tree.seed("com.android.runtime.release.x509.pem", "LEGACY CERT\n")
 
-    failed = tree.fail(
-        FAIL_MOVE_SOURCE="keys/com.android.runtime.release.x509.pem",
-    )
+    tree.seed("com.android.runtime.x509.pem/obstacle", "")
+
+    failed = tree.fail()
     assert failed["com.android.runtime.pk8"][1] == b"LEGACY KEY\n"
     assert "com.android.runtime.release.x509.pem" in failed
 
+    shutil.rmtree(tree.keys / "com.android.runtime.x509.pem")
     recovered = tree.succeed()
     assert not any(".release." in path for path in recovered)
     assert recovered["com.android.runtime.pk8"][1] == b"LEGACY KEY\n"
