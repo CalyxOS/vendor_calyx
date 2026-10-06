@@ -638,6 +638,11 @@ ensure_key_is_available_nolog() {
         --in "$KEY_DIR$key_id.x509.pem" \
         || return $?
     fi
+
+    if [ "${extract_logs_after_each_key:-}" = "y" ]; then
+      extract_logs "Function: ensure_key_is_available Key: $key_id Result: 0" \
+        || return $?
+    fi
   done
 }
 
@@ -722,8 +727,27 @@ ensure_all_keys_available_for_devices() {
       needed_keys[$key_id]=1
     done
   done
-  # using the _nolog version here, because this is called from sign.sh where we extract logs ourselves for the batch
-  verify_key_ids=n ensure_key_is_available_nolog "${!needed_keys[@]}" || return $?
+  {
+    if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
+      flock -x 3
+    fi
+    {
+      if [ -z "${AUDIT_LOG_PATH:-}" ] && [ "${DRY_RUN:-}" != "y" ]; then
+        read_yubihsm_deviceinfo || return $?
+        local name
+        name=$(get_name_for_hsm) || return $?
+        local AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-load-keys.log
+      fi
+      local err=0
+      extract_logs_after_each_key=y verify_key_ids=n \
+        ensure_key_is_available_nolog "${!needed_keys[@]}" || err=$?
+      if [ "$err" -ne 0 ]; then
+        extract_logs "Function: ensure_all_keys_available_for_devices Result: $err" \
+          || true
+      fi
+      return $err
+    } 3>/dev/null
+  } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
 }
 
 restore_all_keys_and_certs() {
