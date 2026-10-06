@@ -702,14 +702,20 @@ def test_initialize_softhsm_release_names_empty_log_paths_itself(
     assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
 
 
+@pytest.mark.parametrize(
+    ("preset", "expected"),
+    (("custom.log", "logs/custom.log"), ("/x.log", "/x.log")),
+)
 def test_initialize_softhsm_release_respects_preset_exec_log_path(
     tmp_path: Path,
+    preset: str,
+    expected: str,
 ) -> None:
     logs_dir = tmp_path / "logs"
     environment = {
         "PKCS11_VENDOR": "softhsm",
         "SOFTHSM_LOGS_DIR": str(logs_dir),
-        "EXEC_LOG_PATH": "custom.log",
+        "EXEC_LOG_PATH": preset,
     }
 
     maybe_initialize_vendor_release(
@@ -718,7 +724,7 @@ def test_initialize_softhsm_release_respects_preset_exec_log_path(
         build_number="2026081500",
     )
 
-    assert environment["EXEC_LOG_PATH"] == f"{logs_dir}/custom.log"
+    assert environment["EXEC_LOG_PATH"] == str(tmp_path / expected)
 
 
 def test_load_vendor_softhsm_applies_source_exports() -> None:
