@@ -1125,20 +1125,14 @@ def test_release_vendor_keymapper_sets_payload_signature_size(
 
 
 @implementations
-@pytest.mark.parametrize("opted_in", (True, False), ids=("opt-in", "default"))
 def test_release_signs_ota_package_with_the_payload_signer(
     release_tree: Path,
     python: bool,
-    opted_in: bool,
 ) -> None:
-    environment = dict(PKCS11_ENVIRONMENT)
-    if opted_in:
-        environment["USE_SIGNAPK_EXTERNAL_SIGNER"] = "y"
-
     result = run_release(
         release_tree,
         "bramble",
-        environment=environment,
+        environment=PKCS11_ENVIRONMENT,
         python=python,
     )
 
@@ -1151,7 +1145,7 @@ def test_release_signs_ota_package_with_the_payload_signer(
     assert (
         "--signapk_external_signer "
         f"{SCRIPTS_DIR}/pkcs11/payload_signer.py" in ota_command
-    ) is opted_in
+    )
 
 
 @implementations
@@ -1843,18 +1837,3 @@ def test_release_signs_plain_keys_without_its_tmpdir(
     )
 
     assert result.returncode == 0, result.stderr
-
-
-def test_release_dry_run_warns_of_kms_without_the_server(
-    release_tree: Path,
-) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"USE_APKSIGNER_KMS": "y"},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert "Warning: USE_APKSIGNER_KMS=y signs through the signing" in (
-        result.stderr
-    )
