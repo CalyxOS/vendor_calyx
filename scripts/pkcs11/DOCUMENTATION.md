@@ -352,14 +352,60 @@ that we could only fix [with a custom patch](https://review.calyxos.org/c/CalyxO
 
 The `apksigner` tool which is heavily used doesn't close the Yubi HSM sessions on its own
 leading to errors and requires waiting for sessions to time out.
-We use [a patch](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41550)
-that does log out of `SunPKCS11` on exit.
+[A patch](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41550)
+makes it log out of `SunPKCS11` on exit,
+but release and app signing do not load `SunPKCS11` at all
+(see [KMS-based APK signing](#kms-based-apk-signing)).
 
 ### Batch mode for `apksigner` for improved performance
 
-[This change](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41551) is intended to enhance performance
-by keeping the keystore loaded,
-as `PKCS#11` keystores may take a significant time to load depending on the implementation.
+[This change](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41551)
+lets one `apksigner` process run many signing commands.
+A YubiHSM release keeps one such process for all its APKs,
+which saves starting a JVM for each of them.
+Set `NEVER_START_APKSIGNER_BATCH=y` to sign every APK in its own process.
+
+### Signing server
+
+Signing through a new PKCS#11 session each time is slow.
+An AVB signature through the OpenSSL PKCS#11 engine,
+which reads the attributes of every key on the token first, took 8.3 seconds,
+and loading a `SunPKCS11` KeyStore against a network connector took 22 seconds,
+against 1.3 seconds for a signature over an open session.
+
+A YubiHSM release therefore runs a signing server (`scripts/signing/signing_server.py`)
+until it finishes.
+The server holds one authenticated YubiHSM session and the batch `apksigner` process,
+on the Unix socket named by `SIGNING_SERVER_SOCKET`.
+The server makes the AVB signatures of `pkcs11/signing_helper.server.py`,
+the OTA payload signatures and the OTA package's whole-file signature
+of `pkcs11/payload_signer.server.py`
+and the APK signatures of `pkcs11/apksigner_signing_helper.py`,
+and extracts the audit log after each signing command.
+
+The server checks each signature against the key's public key before returning it.
+When the server is not running, each helper signs through PKCS#11 on its own.
+For the AVB signing helper and the payload signer,
+`SIGNING_HELPER_TOOL`, `AVB_SIGNING_HELPER_TOOL` and `PAYLOAD_SIGNER_TOOL`
+choose `server`, the default while the server runs, or `python`,
+which always signs through PKCS#11.
+
+### KMS-based APK signing
+
+`apksigner` signs APKs through a KMS provider instead of Java's PKCS#11 KeyStore.
+The `tools/apksig` change "Add a KMS provider that signs through an external helper"
+adds an `external` KMS type that runs `APKSIGNER_EXTERNAL_SIGNER` for each signature,
+and the `build/make` change "releasetools: Sign APKs with an apksigner KMS type"
+makes `sign_target_files_apks` use it.
+The certificate comes from the key's `.x509.pem` file.
+
+`signapk -w`, which makes the OTA package's whole-file signature,
+hands its digest to the payload signer instead,
+through the `build/make` changes "signapk: Add an external whole-file signer"
+and "releasetools: Pass --signapk_external_signer to signapk".
+
+Every PKCS#11 release and `sign-app.sh` sign this way,
+so they need an otatools package built with these changes.
 
 ### Parallel Signing
 
