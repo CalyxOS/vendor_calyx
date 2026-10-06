@@ -191,10 +191,6 @@ def updatekeys_main(
         metadata = load_metadata(default_metadata_path())
         device = Path(key_path).name
         environment["KEY_DIR"] = f"{Path(key_path).parent}/"
-        generate_verity_key = (
-            environment.get("GENERATE_VERITY_KEY_BIN")
-            or f"{top}/bin/generate_verity_key"
-        )
         avbtool = environment.get("AVBTOOL_BIN") or f"{top}/bin/avbtool"
         keymapper = _load_script_keymapper(environment, metadata)
         expected = Path(environment["KEY_DIR"]) / device
@@ -211,8 +207,6 @@ def updatekeys_main(
             )
         if create_directory:
             _create_key_directory(arguments)
-        if not os.path.exists(generate_verity_key):
-            raise _error(f"{generate_verity_key} not found.", usage)
         if not os.path.exists(avbtool):
             raise _error(f"{avbtool} not found.", usage)
         if shutil.which("openssl") is None:
