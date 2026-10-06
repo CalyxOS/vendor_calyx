@@ -696,8 +696,8 @@ class SoftHsmVendor(Vendor):
         command: str,
     ) -> None:
         """
-        Create SOFTHSM_LOGS_DIR if missing, and put the release's exec log
-        in it.
+        Create SOFTHSM_LOGS_DIR if missing, and put a relative EXEC_LOG_PATH
+        under it.
 
         Raises:
             RuntimeError: If SOFTHSM_LOGS_DIR cannot be created.
@@ -723,8 +723,8 @@ class SoftHsmVendor(Vendor):
         timestamp = datetime.datetime.now(datetime.UTC).strftime(date_format)
         default_prefix = f"{build_number}-{device}-{timestamp}-{command}"
         _default(environment, "EXEC_LOG_PATH", f"{default_prefix}-exec.log")
-        environment["EXEC_LOG_PATH"] = (
-            f"{logs_dir}/{environment['EXEC_LOG_PATH']}"
+        environment["EXEC_LOG_PATH"] = str(
+            logs_dir / environment["EXEC_LOG_PATH"],
         )
 
     def split_devices_by_loaded_keys(
