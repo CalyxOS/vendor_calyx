@@ -497,7 +497,6 @@ def _release(
 HELPERS = SCRIPTS_DIR / "pkcs11"
 
 
-@pytest.mark.parametrize("kms", (False, True))
 @pytest.mark.parametrize(
     ("extra", "batch_runs"),
     [({}, True), ({"NEVER_START_APKSIGNER_BATCH": "y"}, False)],
@@ -508,10 +507,7 @@ def test_release_hosts_the_signing_server_for_its_tools(
     fake_java: Path,
     extra: dict[str, str],
     batch_runs: bool,
-    kms: bool,
 ) -> None:
-    if kms:
-        extra = {**extra, "USE_APKSIGNER_KMS": "y"}
     result, recorded = _release(
         tmp_path,
         short_tmpdir,
@@ -529,7 +525,7 @@ def test_release_hosts_the_signing_server_for_its_tools(
         assert recorded["batch"] is None
         assert _starts(fake_java) == []
     argv = " ".join(recorded["argv"])
-    assert ("--apksigner_kms_type calyx" in argv) == kms
+    assert "--apksigner_kms_type calyx" in argv
     assert f"--signing_helper {HELPERS}/signing_helper.server.py" in argv
     assert f"--payload_signer {HELPERS}/payload_signer.server.py" in argv
 
@@ -598,7 +594,7 @@ def test_release_dry_run_has_no_server(
     assert result.returncode == 0, result.stderr
     assert recorded is None
     assert "sign_target_files_apks" in result.stderr
-    assert "--apksigner_kms_type" not in result.stderr
+    assert "--apksigner_kms_type calyx" in result.stderr
     assert "signing_helper.server.py" in result.stderr
     assert "payload_signer.server.py" in result.stderr
 
