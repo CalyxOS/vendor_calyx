@@ -17,7 +17,6 @@ from . import sign_environment
 from .keymap import StaticKeymapper
 from .metadata import SigningMetadata
 from .release_execution import defer_signals, exit_on_signals, run_release_tool
-from .release_orchestration import generate_sunpkcs11_config
 from .vendor_yubihsm import get_device_identity
 
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
@@ -37,9 +36,8 @@ def sign_app(
     program: str = "sign-app.sh",
 ) -> int:
     """
-    Sign an app APK through the signing command interceptor, as
-    sign-app.sh does, through apksigner's external KMS provider when
-    USE_APKSIGNER_KMS=y, and through a SunPKCS11 KeyStore otherwise.
+    Sign an app APK through the signing command interceptor and
+    apksigner's external KMS provider.
 
     Args:
         environment: Process environment, mutated in place. The signing
@@ -83,10 +81,6 @@ def sign_app(
         Path(environment["KEYMAP_FILE"]),
     ).key_id("app", app)
 
-    tmpdir = Path(environment.get("TMPDIR") or "/tmp")
-    sun_config_path = tmpdir / "sunpkcs11.cfg"
-    sun_config_path.write_text(generate_sunpkcs11_config(environment))
-
     inherited = dict(environment)
     with exit_on_signals():
         try:
@@ -112,62 +106,33 @@ def sign_app(
             environment["SIGNING_COMMAND"] = "java"
             interceptor = environment["SIGNING_COMMAND_INTERCEPTOR"]
             output = f"{_strip_extension(apk)}-signed.apk"
-            if environment.get("USE_APKSIGNER_KMS") == "y":
-                certificate = f"{key_dir}{key_id}.x509.pem"
-                if not Path(certificate).is_file():
-                    return error(
-                        f"no certificate file found at {certificate} "
-                        f"for key {key_id}",
-                    )
-                environment["APKSIGNER_EXTERNAL_SIGNER"] = str(
-                    _SCRIPTS_DIR / "pkcs11/apksigner_signing_helper.py",
+            certificate = f"{key_dir}{key_id}.x509.pem"
+            if not Path(certificate).is_file():
+                return error(
+                    f"no certificate file found at {certificate} "
+                    f"for key {key_id}",
                 )
-                argv = [
-                    interceptor,
-                    "-jar",
-                    f"{main_path}/framework/apksigner.jar",
-                    "sign",
-                    "--v4-signing-enabled=false",
-                    "--min-sdk-version",
-                    "30",
-                    "--kms-type",
-                    "external",
-                    "--kms-key-alias",
-                    key_id,
-                    "--cert",
-                    certificate,
-                    "--out",
-                    output,
-                    apk,
-                ]
-            else:
-                argv = [
-                    interceptor,
-                    "-Xmx4096m",
-                    "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11=ALL-UNNAMED",
-                    f"-Djava.library.path={main_path}/lib64",
-                    "-jar",
-                    f"{main_path}/framework/apksigner.jar",
-                    "sign",
-                    "--v4-signing-enabled=false",
-                    "--min-sdk-version",
-                    "30",
-                    "--ks",
-                    "NONE",
-                    "--ks-type",
-                    "PKCS11",
-                    "--ks-pass",
-                    "env:PKCS11_PIN",
-                    "--provider-class",
-                    "sun.security.pkcs11.SunPKCS11",
-                    "--provider-arg",
-                    str(sun_config_path),
-                    "--ks-key-alias",
-                    key_id,
-                    "--out",
-                    output,
-                    apk,
-                ]
+            environment["APKSIGNER_EXTERNAL_SIGNER"] = str(
+                _SCRIPTS_DIR / "pkcs11/apksigner_signing_helper.py",
+            )
+            argv = [
+                interceptor,
+                "-jar",
+                f"{main_path}/framework/apksigner.jar",
+                "sign",
+                "--v4-signing-enabled=false",
+                "--min-sdk-version",
+                "30",
+                "--kms-type",
+                "external",
+                "--kms-key-alias",
+                key_id,
+                "--cert",
+                certificate,
+                "--out",
+                output,
+                apk,
+            ]
             with defer_signals():
                 code = run_release_tool(argv)
             if code == 0:
