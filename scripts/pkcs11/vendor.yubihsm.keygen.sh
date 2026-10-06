@@ -80,7 +80,7 @@ initialize_post_metadata() {
   declare -g hsm_key_out_dir
   hsm_key_out_dir=${HSM_KEY_OUT_DIR:-$key_out_dir/$yubihsm_id} \
     || return $?
-  AUDIT_LOG_PATH=$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-keygen.log
+  AUDIT_LOG_PATH=${YUBIHSM_LOGS_DIR:-$(pwd)/logs}/$name/$(get_formatted_date)-keygen.log
   export AUDIT_LOG_PATH
 
   extract_attestation_key || return $?
@@ -115,7 +115,7 @@ generate_keypair() {
   if [ "$is_key_id_exportable" = "y" ]; then
     local name=$key_id-asymmetric-key.yhw
     local out=$unique_key_out_dir/$name
-    mkdir -p "$unique_key_out_dir" || return $?
+    [ "${DRY_RUN:-}" = "y" ] || mkdir -p "$unique_key_out_dir" || return $?
     yubihsm -a get-wrapped \
       --wrap-id "$YUBIHSM_WRAP_KEY_ID" \
       --object-id "$key_id" \
@@ -152,7 +152,7 @@ generate_cert() {
   # We must do this now, and keep it forever, because it is possible that the
   # key might be exported and imported under wrap later, if it is exportable.
   local attestation_cert=$unique_key_out_dir/$key_id.attestation.pem
-  mkdir -p "$unique_key_out_dir" || return $?
+  [ "${DRY_RUN:-}" = "y" ] || mkdir -p "$unique_key_out_dir" || return $?
   yubihsm -a sign-attestation-certificate \
     --object-id "$key_id" \
     --attestation-id 0 \
@@ -162,7 +162,7 @@ generate_cert() {
 
   # Currently, we use the key attestation certificate as the key cert directly.
   local key_cert=$unique_key_out_dir/$key_id.x509.pem
-  cp -p "$attestation_cert" "$key_cert" || return $?
+  [ "${DRY_RUN:-}" = "y" ] || cp -p "$attestation_cert" "$key_cert" || return $?
   copy_exported_file_to_other_dirs "$key_cert" || return $?
 
   # Import the cert.
@@ -177,7 +177,7 @@ generate_cert() {
 
   # Extract the public key. (Purely for convenience. Can happen any time with
   # the x509 cert we already saved; no private key access required.)
-  case "$key_type" in
+  [ "${DRY_RUN:-}" = "y" ] || case "$key_type" in
     avb|apex_payload|apex_container)
       local public_key=$unique_key_out_dir/$key_id.pem
       if [ -e "$public_key" ]; then
@@ -208,7 +208,7 @@ generate_cert() {
         fi
       fi
       ;;
-  esac
+  esac || return $?
 
   # Generating the cert happens after the keypair, so this is our chance to limit the
   # on-demand key object.
@@ -244,6 +244,7 @@ does_cert_exist_yn() {
 }
 
 extract_attestation_key() {
+  [ "${DRY_RUN:-}" != "y" ] || return 0
   local out=$unique_key_out_dir/YubiHSM_attestation.pem
   mkdir -p "$unique_key_out_dir" || return $?
   yubihsm_nolog -a get-opaque --object-id 0x0000 --outformat PEM --out "$out" || return $?
@@ -251,6 +252,7 @@ extract_attestation_key() {
 }
 
 copy_exported_file_to_other_dirs() {
+  [ "${DRY_RUN:-}" != "y" ] || return 0
   # Copy the exported file to the HSM-unique keys directory, and also to the main keys
   # directory, provided the file doesn't already exist there. The goal of this whole
   # structure is to prevent loss of keys while also ensuring that keys for a particular
@@ -266,6 +268,7 @@ copy_exported_file_to_other_dirs() {
 }
 
 save_yubihsm_deviceinfo() {
+  [ "${DRY_RUN:-}" != "y" ] || return 0
   # Save the deviceinfo for the HSM so that its association with the folders' keys is clear.
   local out=$unique_key_out_dir/hsm_info.txt
   printf "%s\n" "$yubihsm_deviceinfo" > "$out" || return $?
@@ -273,6 +276,7 @@ save_yubihsm_deviceinfo() {
 }
 
 save_keymap() {
+  [ "${DRY_RUN:-}" != "y" ] || return 0
   # Save the keymap used during this generation.
   local out=$unique_key_out_dir/keymap.tsv
   if [ "$KEYMAPPER" = "static" ]; then
