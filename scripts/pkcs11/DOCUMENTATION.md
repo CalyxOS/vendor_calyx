@@ -95,7 +95,8 @@ A [static keymapper script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/
 was developed, but more work is needed to prevent unintended key ID changes in the future.
 
 As of writing, [the current list of all keys](https://gitlab.com/-/snippets/4889398)
-and their ID was generated [with this script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41571/5/scripts/keymapper.id2b.include.sh).
+and their ID was generated [with this script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41571/5/scripts/keymapper.id2b.include.sh),
+whose mapping `Id2bKeymapper` in `scripts/signing/keymap.py` computes.
 The YubiHSM uses just IDs and the mapping shows
 which ID matches which device/apex/etc key.
 The available ID space of the device is `0x20` to `0xfe`.
@@ -198,7 +199,7 @@ so disaster recovery (in case both devices break) is possible
 without just a few people being able to access our key material
 in plain text.
 
-There is [a provisioning script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41510/49/scripts/pkcs11/vendor.yubihsm.provision.sh)
+There is [a provisioning script](../hsm_provisioning/setup.py)
 that guides through the entire setup procedure.
 Ideally its code gets audited
 and the audited version is being used and verified during the ceremony.
@@ -244,7 +245,8 @@ Domains are not exclusive, can belong to both sets.
 Any key that is generated on the device that is marked non-exportable,
 cannot get backed up.
 
-At the end of the ceremony, there's audit logs and keys in the `/dev/shm/keep` folder.
+At the end of the ceremony, there's audit logs and keys in `$HOME/CalyxHSM`,
+or in the folder `KEEP_PATH` names.
 This folder must be manually saved and backed up.
 
 In order to generate the rest of the signing keys,
@@ -444,21 +446,21 @@ when the log buffer is full.
 To make sure all logs are extracted in a timely manner
 and in association with the triggering command,
 every signing-related command is passed through an
-[interceptor script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41510), `scripts/pkcs11/vendor.yubihsm.interceptor.sh`
+[interceptor script](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41510), `scripts/pkcs11/vendor.yubihsm.interceptor.py`
 (link: [Gerrit](https://review.calyxos.org/q/%22Issue:+calyxos%233431%22),
 [GitLab](https://gitlab.com/CalyxOS/calyxos/-/issues/3431)).
 In addition to facilitating the success of signing transactions
 by restarting failed components or retrying as needed,
 this interceptor extracts logs to a file after each signing command.
 
-Logs are extracted using the `extract_logs` function
-in [`scripts/pkcs11/vendor.yubihsm.include.sh`](https://review.calyxos.org/c/CalyxOS/vendor_calyx/+/41510).
-Its format is simple and plaintext,
-but all aspects of log extraction can be modified in this function.
+Logs are extracted by `extract_and_save_audit_log()`
+in `scripts/signing/vendor_yubihsm.py`,
+which formats each entry with `format_audit_log_entry()`.
+The format is simple and plaintext.
 
-Example of a log entry written by `extract_logs`:
+Example of a log entry written by `extract_and_save_audit_log()`:
 ```
-# 1763079385491  avbtool make_vbmeta_image --output IMAGES/vbmeta_vendor.img --key keys/0x2e00.pem --algorithm SHA256_RSA4096 --signing_helper vendor/calyx/scripts/pkcs11/signing_helper.openssl.sh --include_descriptors_from_image IMAGES/vendor.img --padding_size 4096 --rollback_index 1756684800 # Result: 0
+# 1763079385491  avbtool make_vbmeta_image --output IMAGES/vbmeta_vendor.img --key keys/0x2e00.pem --algorithm SHA256_RSA4096 --signing_helper vendor/calyx/scripts/pkcs11/signing_helper.server.py --include_descriptors_from_image IMAGES/vendor.img --padding_size 4096 --rollback_index 1756684800 # Result: 0
  1479 cmd: 0x47 len:    53 sKey: 0x0001 tKey: 0x2e00 2Key: 0xffff res: 0xc7 tick:     862298 hash: 951a1b524623c98fa42dc016eba9183c
 ```
 In this example, `1479` indicates that this was the `1479`th command that the HSM has audited.
@@ -531,10 +533,8 @@ The module's gengetopt parser resets `optind` before calling `getopt_long()`.
 while a module loaded with `RTLD_DEEPBIND` binds its own `optind` to glibc's.
 The reset never reaches the copy `getopt_long()` reads.
 
-`pkcs11_tool.yubihsm.sh` preloads `PKCS11_MODULE` before running
-`pkcs11-tool`, so that the module is relocated against the executable's `optind`,
-and `vendor.yubihsm.include.sh` makes it the YubiHSM vendor's `PKCS11_TOOL_BIN`.
-YubiHSM key generation preloads the module for its own `pkcs11-tool` calls.
+With `PKCS11_VENDOR=yubihsm`, the signing scripts preload the module into every
+`pkcs11-tool` they run, so that the module is relocated against the executable's `optind`.
 Java's SunPKCS11, OpenSSL's PKCS#11 engine and the YubiHSM SDK are not affected.
 The fix belongs in yubihsm-shell, whose configuration parser should not share
 `optind` with the program loading the module.
