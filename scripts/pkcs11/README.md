@@ -147,6 +147,6 @@ vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsi
 
 ### Signing Internals
 
-* payload signer is just for OTA payloads
+* payload signer is for OTA payloads and the whole-file signature of the OTA package
 * [signing helper](https://android.googlesource.com/platform/external/avb/+/0bcd559d39fbddec44fcadd38a3f91ee44e0108a/avbtool.py#439)
   is for AVB partitions and APEX payloads
