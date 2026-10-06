@@ -60,7 +60,6 @@ def run_updatekeys(
             "KEYMAPPER": keymapper,
             "METADATA_FILE": str(metadata),
             "AVBTOOL_BIN": str(AVBTOOL),
-            "GENERATE_VERITY_KEY_BIN": "/bin/true",
         },
         check=False,
     )

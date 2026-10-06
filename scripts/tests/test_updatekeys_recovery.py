@@ -103,7 +103,6 @@ class Tree:
             "KEYMAPPER": "id2b",
             "PATH": f"{self.root / 'mock-bin'}:/usr/bin:/bin",
             "AVBTOOL_BIN": str(tools / "avbtool"),
-            "GENERATE_VERITY_KEY_BIN": str(tools / "generate_verity_key"),
         }
         if self.keymapper_file:
             environment["KEYMAPPER_FILE"] = self.keymapper_file
@@ -150,7 +149,6 @@ def install_tree(
 ) -> Tree:
     tools = root / "tools"
     tools.mkdir(parents=True)
-    install_executable(tools / "generate_verity_key", "#!/bin/sh\n")
     install_executable(tools / "avbtool", AVBTOOL)
 
     mock_directory = root / "mock-bin"

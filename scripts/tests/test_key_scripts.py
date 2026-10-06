@@ -66,7 +66,7 @@ def test_key_scripts_check_their_arguments(
     (
         (
             "updatekeys",
-            f"{SCRIPTS_DIR}/../../../bin/generate_verity_key not found.",
+            f"{SCRIPTS_DIR}/../../../bin/avbtool not found.",
         ),
         ("updatecommonkeys", "key directory does not exist"),
     ),
