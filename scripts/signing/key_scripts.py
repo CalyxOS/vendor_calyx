@@ -348,10 +348,7 @@ def update_keys(
     current = key_directory / "com.android.runtime"
     for suffix in (".pk8", ".x509.pem"):
         if Path(f"{legacy}{suffix}").exists():
-            subprocess.run(
-                ("mv", f"{legacy}{suffix}", f"{current}{suffix}"),
-                check=True,
-            )
+            Path(f"{legacy}{suffix}").replace(f"{current}{suffix}")
     _provision_certificates(
         keymapper,
         key_directory,
