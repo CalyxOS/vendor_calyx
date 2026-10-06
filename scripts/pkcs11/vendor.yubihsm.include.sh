@@ -1314,8 +1314,13 @@ finalize_vendor_release() {
 
   # Extract logs.
   if [ -n "${AUDIT_LOG_PATH:-}" ]; then
-    extract_logs "Finished BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
-      || true
+    {
+      if [ -n "${YUBIHSM_LOCKFILE:-}" ]; then
+        flock -x 3
+      fi
+      extract_logs "Finished BUILD_NUMBER=$BUILD_NUMBER DEVICE=$DEVICE $0 ${*@Q}" \
+        3>/dev/null || true
+    } 3>>"${YUBIHSM_LOCKFILE:-/dev/null}"
   fi
 
   maybe_stop_apksigner_batch || true
