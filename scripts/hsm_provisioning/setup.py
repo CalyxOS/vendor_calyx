@@ -446,14 +446,18 @@ def provision_audit_auth_key(session, audit_key):
     print(f"Generated {label} with ID {auth_key.id}")
 
 
-def save_audit_log(session, hsm_name):
+def audit_log_file(hsm_name):
     # define folder for log files and ensure it exists
     now = datetime.now(timezone.utc)
     log_path = os.path.join(KEEP_PATH, "logs", hsm_name)
     os.makedirs(log_path, exist_ok=True)
     # define log file path
     date_str = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.strftime('%f')[:3]}"
-    log_file = os.path.join(log_path, f"{date_str}-provision.log")
+    return os.path.join(log_path, f"{date_str}-provision.log")
+
+
+def save_audit_log(session, hsm_name):
+    log_file = audit_log_file(hsm_name)
     # use other python script to actually extract logs
     comment = "provisioning: 4f is for audit log options, the rest is key setup"
     extract_and_save_logs(session, log_file, comment)
