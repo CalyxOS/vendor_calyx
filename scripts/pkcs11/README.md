@@ -18,7 +18,7 @@ Note that adding new devices also requires them adding them to the following fil
 
 The following Debian 13 packages are needed:
 
-    sudo apt install yubihsm-pkcs11 python3-yubihsm python3-usb python3-git yubihsm-shell yubihsm-connector opensc openssl libengine-pkcs11-openssl
+    sudo apt install yubihsm-pkcs11 python3-yubihsm python3-usb python3-git yubihsm-connector opensc openssl libengine-pkcs11-openssl
 
 Alternatively for Ubuntu 24.04/Mint 22.2, install the following packages:
 
@@ -28,11 +28,9 @@ and manually install the YubiHSM packages:
 
 [python3-yubihsm](http://ftp.us.debian.org/debian/pool/main/p/python-yubihsm/python3-yubihsm_3.1.1-1_all.deb),
 [yubihsm-connector](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-connector/yubihsm-connector_3.0.5-2_amd64.deb),
-[libykhsmauth2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libykhsmauth2_2.6.0-5_amd64.deb),
 [libyubihsm2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm2_2.6.0-5_amd64.deb),
 [libyubihsm-http2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm-http2_2.6.0-5_amd64.deb),
-[yubihsm-pkcs11](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-pkcs11_2.6.0-5_amd64.deb),
-[yubihsm-shell](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-shell_2.6.0-5_amd64.deb)
+[yubihsm-pkcs11](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-pkcs11_2.6.0-5_amd64.deb)
 
 Creating keys is a manual step that is required before signing anything.
 
@@ -65,7 +63,7 @@ the audit logs in the `./logs` repository must be manually pushed to the remote.
 
 Additionally to the packages installed in the key generation step, the following packages are needed:
 
-    sudo apt install parallel openjdk-21-jdk zip
+    sudo apt install openjdk-21-jdk zip
 
 ### Environment variables
 
@@ -78,6 +76,10 @@ they will need to be specified manually.
   Other supported values: `softhsm`
 - `YUBIHSM_AUTHKEY`: Authkey ID to use for signing. Should always be `0x0001`.
 - `YUBIHSM_PASSWORD`: Password to use for signing.
+- `YUBIHSM_PASSWORD_FILE`: File holding the signing password on its only line, used when
+  `YUBIHSM_PASSWORD` is unset or empty, so that the password need not sit in the environment of the shell
+  that starts the scripts. The file must have no permissions for group or others (`chmod 600`),
+  and any other file is refused.
 
 Contrary to the old signing scripts,
 the `vendor/calyx/scripts/sign.sh` script attempts to automate the selection of `BUILD_NUMBER` and `PREV_BUILD_NUMBER`.
