@@ -6,22 +6,22 @@
 from __future__ import annotations
 
 import pytest
+from conftest import yubihsm_config
 from cryptography import x509
-from signing.vendor_yubihsm import YubiHsmConfig, get_certificate
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from signing.vendor_yubihsm import (
+    get_certificate,
+    get_public_key,
+)
 from yubihsm.defs import COMMAND, ERROR
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm_emulator import Connector, self_signed_certificate
 
 
-def _config(yubihsm: Connector) -> YubiHsmConfig:
-    yubihsm.device.put_authentication_key(0x0001, "secret")
-    return YubiHsmConfig(yubihsm.url, "0x0001", "secret")
-
-
 def test_get_certificate_returns_the_attestation_certificate_as_pem(
     yubihsm: Connector,
 ) -> None:
-    pem = get_certificate(_config(yubihsm), "0x0000")
+    pem = get_certificate(yubihsm_config(yubihsm), "0x0000")
 
     assert (
         x509.load_pem_x509_certificate(pem)
@@ -32,7 +32,7 @@ def test_get_certificate_returns_the_attestation_certificate_as_pem(
 def test_get_certificate_reads_the_requested_object(
     yubihsm: Connector,
 ) -> None:
-    config = _config(yubihsm)
+    config = yubihsm_config(yubihsm)
     for key_id in (0x2000, 0x2001):
         yubihsm.device.put_certificate(
             key_id,
@@ -46,8 +46,21 @@ def test_get_certificate_reads_the_requested_object(
 
 
 def test_get_certificate_raises_the_device_error(yubihsm: Connector) -> None:
-    config = _config(yubihsm)
+    config = yubihsm_config(yubihsm)
     yubihsm.device.fail_next(COMMAND.GET_OPAQUE, ERROR.INSUFFICIENT_PERMISSIONS)
 
     with pytest.raises(YubiHsmDeviceError, match="INSUFFICIENT_PERMISSIONS"):
         get_certificate(config, "0x0000")
+
+
+def test_get_public_key_returns_the_key_of_the_requested_id(
+    yubihsm: Connector,
+) -> None:
+    config = yubihsm_config(yubihsm)
+    key = yubihsm.device.put_asymmetric_key(0x2000)
+    yubihsm.device.put_asymmetric_key(0x2001)
+
+    assert get_public_key(config, "0x2000") == key.public_key().public_bytes(
+        Encoding.DER,
+        PublicFormat.SubjectPublicKeyInfo,
+    )
