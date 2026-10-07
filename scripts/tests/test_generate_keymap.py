@@ -51,19 +51,6 @@ def test_id2b_keymap_rejects_device_missing_from_metadata(
     assert "all_devices" in result.stderr
 
 
-def test_static_keymapper_round_trips_id2b_keymap(tmp_path: Path) -> None:
-    result = generate_keymap(
-        tmp_path,
-        environment={
-            "KEYMAPPER": "static",
-            "KEYMAP_FILE": str(ID2B_KEYMAP),
-        },
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert result.stdout == ID2B_KEYMAP.read_text()
-
-
 def test_legacy_keymap_needs_a_device(tmp_path: Path) -> None:
     result = generate_keymap(
         tmp_path,

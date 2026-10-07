@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import base64
 import os
 import signal
 import subprocess
@@ -17,6 +16,7 @@ from pathlib import Path
 import pytest
 from conftest import (
     SCRIPTS_DIR,
+    back_up_yubihsm_key,
     default_signal_dispositions,
     install_executable,
     run,
@@ -652,9 +652,7 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     device.put_asymmetric_key(0x2100)
     key_dir = sign_tree / "keys"
     key_dir.mkdir()
-    (key_dir / "0x2100-asymmetric-key.yhw").write_bytes(
-        base64.b64encode(device.wrapped(0x2100, OBJECT.ASYMMETRIC_KEY, 0x0010)),
-    )
+    back_up_yubihsm_key(device, key_dir, 0x2100)
     del device.objects[(0x2100, OBJECT.ASYMMETRIC_KEY)]
     (key_dir / "0x2100.x509.pem").write_bytes(
         self_signed_certificate().public_bytes(serialization.Encoding.PEM),
@@ -679,7 +677,6 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
             "YUBIHSM_EXPORTABLE_DOMAIN": "1",
             "YUBIHSM_ONDEMAND_DOMAIN": "3",
             "YUBIHSM_KEY_CAPABILITIES": "sign-pkcs",
-            "YUBIHSM_OPAQUE_CAPABILITIES": "get-opaque",
             "YUBIHSM_AUTHKEY": "0x0001",
             "YUBIHSM_PASSWORD": "secret",
             "SKIP_LOG_UPLOAD": "true",
@@ -692,7 +689,7 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     assert device.get(0x2100, OBJECT.ASYMMETRIC_KEY) is not None
     assert [
         target
-        for _, command, target in device.history
+        for command, target in device.history
         if command == COMMAND.IMPORT_WRAPPED
     ] == [(0x0010, 0x2100)]
     (load_keys_log,) = (sign_tree / "logs").glob("*/*-load-keys.log")

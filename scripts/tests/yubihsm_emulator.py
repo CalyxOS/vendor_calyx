@@ -17,7 +17,6 @@ import http.server
 import os
 import struct
 import threading
-import time
 from collections.abc import Generator
 from dataclasses import dataclass
 from hashlib import sha256
@@ -205,7 +204,7 @@ class EmulatedYubiHsm:
         self.failures: dict[int, list[ERROR]] = {}
         self.corrupt_signatures = False
         self.sessions_opened = 0
-        self.history: list[tuple[float, int, tuple[int, int]]] = []
+        self.history: list[tuple[int, tuple[int, int]]] = []
         self.version = (2, 4, 0)
         self.device_key = ec.generate_private_key(ec.SECP256R1())
         self.attestation_key = rsa.generate_private_key(65537, 2048)
@@ -252,10 +251,6 @@ class EmulatedYubiHsm:
     ) -> None:
         """Make the next `times` uses of a command fail with an error."""
         self.failures.setdefault(command, []).extend([error] * times)
-
-    def drop_sessions(self) -> None:
-        """Forget every open session, as a device restart would."""
-        self.sessions.clear()
 
     def audit(self, *commands: COMMAND) -> None:
         """Turn on the audit log entry for each command."""
@@ -365,23 +360,14 @@ class EmulatedYubiHsm:
         wrap_id: int,
     ) -> bytes:
         """Return an object as EXPORT_WRAPPED under a wrap key would."""
-        wrap_key = self.objects[(wrap_id, OBJECT.WRAP_KEY)]
-        obj = self.objects[(object_id, object_type)]
-        nonce = os.urandom(13)
-        return nonce + AESCCM(wrap_key.data, tag_length=16).encrypt(
-            nonce,
-            obj.info() + _wrap_payload(obj),
-            None,
+        return _seal(
+            self.objects[(wrap_id, OBJECT.WRAP_KEY)],
+            self.objects[(object_id, object_type)],
         )
 
     def unwrap(self, blob: bytes, wrap_id: int) -> tuple[int, OBJECT]:
         """Return the ID and type of the object a wrapped blob holds."""
-        wrap_key = self.objects[(wrap_id, OBJECT.WRAP_KEY)]
-        plain = AESCCM(wrap_key.data, tag_length=16).decrypt(
-            blob[:13],
-            blob[13:],
-            None,
-        )
+        plain = _open(self.objects[(wrap_id, OBJECT.WRAP_KEY)], blob)
         fields = struct.unpack(_INFO_FORMAT, plain[:_INFO_LENGTH])
         return fields[1], OBJECT(fields[4])
 
@@ -573,7 +559,7 @@ class EmulatedYubiHsm:
             if pending:
                 raise DeviceError(pending.pop(0))
             data, target = self._dispatch(session, sid, command, payload)
-            self.history.append((time.time(), command, target))
+            self.history.append((command, target))
             reply = _response(command, data)
             result = command | 0x80
         except DeviceError as error:
@@ -691,9 +677,6 @@ class EmulatedYubiHsm:
             self._require(session, CAPABILITY.SET_OPTION)
             self._set_option(payload)
             return b"", none
-        if command == COMMAND.GET_OPTION:
-            self._require(session, CAPABILITY.GET_OPTION)
-            return self._get_option(payload), none
         if command == COMMAND.GET_LOG_ENTRIES:
             self._require(session, CAPABILITY.GET_LOG_ENTRIES)
             entries = self.unread_log()
@@ -736,21 +719,10 @@ class EmulatedYubiHsm:
             object_id, attesting_id = struct.unpack("!HH", payload)
             self._visible(session, object_id, OBJECT.ASYMMETRIC_KEY)
             if attesting_id != 0:
-                attesting = self._visible(
-                    session,
-                    attesting_id,
-                    OBJECT.ASYMMETRIC_KEY,
-                )
-                if not attesting.capabilities & (
-                    CAPABILITY.SIGN_ATTESTATION_CERTIFICATE
-                ):
-                    raise DeviceError(ERROR.INSUFFICIENT_PERMISSIONS)
-                self._visible(session, attesting_id, OBJECT.OPAQUE)
+                raise DeviceError(ERROR.INVALID_DATA)
             return (
-                self.attest(object_id, attesting_id).public_bytes(
-                    serialization.Encoding.DER,
-                ),
-                (object_id, attesting_id),
+                self.attest(object_id).public_bytes(serialization.Encoding.DER),
+                (object_id, 0),
             )
         if command == COMMAND.GET_OBJECT_INFO:
             object_id, object_type = struct.unpack("!HB", payload)
@@ -872,13 +844,7 @@ class EmulatedYubiHsm:
                 raise DeviceError(ERROR.INSUFFICIENT_PERMISSIONS)
             if obj.capabilities & ~wrap_key.delegated_capabilities:
                 raise DeviceError(ERROR.INSUFFICIENT_PERMISSIONS)
-            nonce = os.urandom(13)
-            sealed = AESCCM(wrap_key.data, tag_length=16).encrypt(
-                nonce,
-                obj.info() + _wrap_payload(obj),
-                None,
-            )
-            return nonce + sealed, (wrap_id, object_id)
+            return _seal(wrap_key, obj), (wrap_id, object_id)
         if command == COMMAND.IMPORT_WRAPPED:
             self._require(session, CAPABILITY.IMPORT_WRAPPED)
             (wrap_id,) = struct.unpack("!H", payload[:2])
@@ -886,11 +852,7 @@ class EmulatedYubiHsm:
             if not wrap_key.capabilities & CAPABILITY.IMPORT_WRAPPED:
                 raise DeviceError(ERROR.INSUFFICIENT_PERMISSIONS)
             try:
-                plain = AESCCM(wrap_key.data, tag_length=16).decrypt(
-                    payload[2:15],
-                    payload[15:],
-                    None,
-                )
+                plain = _open(wrap_key, payload[2:])
             except Exception:
                 raise DeviceError(ERROR.INVALID_DATA) from None
             fields = struct.unpack(_INFO_FORMAT, plain[:_INFO_LENGTH])
@@ -1005,18 +967,6 @@ class EmulatedYubiHsm:
             )
         return listed
 
-    def _get_option(self, payload: bytes) -> bytes:
-        (option,) = struct.unpack("!B", payload)
-        if option == OPTION.FORCE_AUDIT:
-            return bytes([self.force_audit])
-        if option == OPTION.COMMAND_AUDIT:
-            return b"".join(
-                bytes([command, self.command_audit.get(command, AUDIT.OFF)])
-                for command in sorted(COMMAND)
-                if command not in (COMMAND.ERROR,)
-            )
-        raise DeviceError(ERROR.INVALID_DATA)
-
     def _set_option(self, payload: bytes) -> None:
         option, length = struct.unpack("!BH", payload[:3])
         value = payload[3 : 3 + length]
@@ -1039,21 +989,10 @@ class EmulatedYubiHsm:
         else:
             raise DeviceError(ERROR.INVALID_DATA)
 
-    def attest(self, object_id: int, attesting_id: int = 0) -> x509.Certificate:
+    def attest(self, object_id: int) -> x509.Certificate:
         """Issue an attestation certificate for an asymmetric key as the
-        device does, with the key's label as a DER UTF8String. A nonzero
-        attesting_id signs with that asymmetric key, under the subject of
-        the certificate stored with the same ID."""
-        if attesting_id:
-            signer = _load_key(
-                self.objects[(attesting_id, OBJECT.ASYMMETRIC_KEY)].data,
-            )
-            issuer = stored_certificate(
-                self.objects[(attesting_id, OBJECT.OPAQUE)],
-            ).subject
-        else:
-            signer = self.attestation_key
-            issuer = self.attestation_certificate.subject
+        device does with its attestation key, with the key's label as a
+        DER UTF8String."""
         obj = self.objects[(object_id, OBJECT.ASYMMETRIC_KEY)]
         key = _load_key(obj.data)
         label = obj.label.rstrip(b"\0")
@@ -1080,7 +1019,7 @@ class EmulatedYubiHsm:
                     ],
                 ),
             )
-            .issuer_name(issuer)
+            .issuer_name(self.attestation_certificate.subject)
             .public_key(key.public_key())
             .serial_number(object_id)
             .not_valid_before(now)
@@ -1096,7 +1035,7 @@ class EmulatedYubiHsm:
             (9, bytes([0x0C, len(label)]) + label),
         ):
             builder = builder.add_extension(extension(index, value), False)
-        return builder.sign(signer, hashes.SHA256())
+        return builder.sign(self.attestation_key, hashes.SHA256())
 
 
 _KEY_POOL = Path(__file__).parent / "fixtures" / "rsa"
@@ -1140,6 +1079,23 @@ def _private_der(key: rsa.RSAPrivateKey) -> bytes:
         serialization.Encoding.DER,
         serialization.PrivateFormat.PKCS8,
         serialization.NoEncryption(),
+    )
+
+
+def _seal(wrap_key: StoredObject, obj: StoredObject) -> bytes:
+    nonce = os.urandom(13)
+    return nonce + AESCCM(wrap_key.data, tag_length=16).encrypt(
+        nonce,
+        obj.info() + _wrap_payload(obj),
+        None,
+    )
+
+
+def _open(wrap_key: StoredObject, blob: bytes) -> bytes:
+    return AESCCM(wrap_key.data, tag_length=16).decrypt(
+        blob[:13],
+        blob[13:],
+        None,
     )
 
 

@@ -59,9 +59,9 @@ def test_get_storage_info_raises_on_device_failure(
     [
         (10, 100, False),
         (4, 100, True),
-        (10, 24, True),
-        (4, 24, True),
-        (5, 25, False),
+        (10, 14, True),
+        (4, 14, True),
+        (5, 15, False),
     ],
 )
 def test_should_make_space_on_hsm_thresholds(
