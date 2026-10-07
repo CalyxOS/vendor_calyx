@@ -23,14 +23,13 @@ from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
 from .confirmation import ask_variable, confirm
-from .keymap import Keymapper, StaticKeymapper, normalize_key_dir
+from .keymap import Keymapper, normalize_key_dir
 from .vendor_yubihsm import (
     YubiHsmConfig,
-    ensure_all_keys_available_for_devices,
     ensure_keys_are_available,
     extract_and_save_audit_log,
     get_device_identity,
-    populate_devices_with_loaded_keys_arrays,
+    get_loaded_key_ids,
 )
 from .vendor_yubihsm_connector import YubiHsmConnector, YubiHsmConnectorConfig
 
@@ -376,93 +375,6 @@ def formatted_date() -> str:
     return now.strftime("%Y-%m-%d_%H-%M-%S-") + f"{now.microsecond // 1000:03d}"
 
 
-def maybe_initialize_vendor_release(
-    environment: MutableMapping[str, str],
-    *,
-    device: str,
-    build_number: str,
-    keymapper: Keymapper | None = None,
-    command: str = "release",
-) -> None:
-    """
-    Run the vendor's release initialization once, when a vendor is set.
-
-    Args:
-        environment: Process environment, mutated in place with any
-            resolved values.
-        device: The device being released.
-        build_number: The requested build number, before any
-            AVB_ROLLBACK_INDEX_OVERRIDE bump.
-        keymapper: The release's keymapper, whose key_id() names the
-            vbmeta key to load. Defaults to the static keymapper over
-            KEYMAP_FILE, which the yubihsm vendor selects.
-        command: Base name of the script being run, without .sh, which
-            the vendors put into log names.
-
-    Returns:
-        None.
-
-    Raises:
-        UnsupportedVendorError: See load_vendor().
-        RuntimeError: If initialization fails.
-    """
-    if not environment.get("PKCS11_VENDOR"):
-        return
-    if environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE") == "y":
-        return
-    vendor = load_vendor(environment)
-    assert vendor is not None
-    vendor.initialize_release(
-        environment,
-        device=device,
-        build_number=build_number,
-        keymapper=keymapper,
-        command=command,
-    )
-    environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] = "y"
-
-
-def finalize_vendor_release(
-    environment: MutableMapping[str, str],
-    *,
-    device: str,
-    build_number: str,
-    record_finish: bool,
-    inherited: Mapping[str, str],
-    command: str = "release",
-) -> None:
-    """
-    Close the vendor's release and stop what it started.
-
-    Args:
-        environment: Process environment.
-        device: The device being released.
-        build_number: The requested build number.
-        record_finish: Whether release initialization completed, so that
-            the vendor records the end of the release.
-        inherited: The environment the caller started with, telling apart
-            what the caller started from what it inherited.
-        command: Base name of the script being run, without .sh.
-
-    Returns:
-        None.
-    """
-    try:
-        vendor = load_vendor(environment)
-    except RuntimeError:
-        return
-    if vendor is None:
-        return
-    vendor.finalize_release(
-        environment,
-        device=device,
-        build_number=build_number,
-        record_finish=record_finish,
-        command=command,
-    )
-    vendor.cleanup(environment, inherited=inherited)
-
-
 class Vendor(abc.ABC):
     """
     A PKCS#11 vendor.
@@ -541,7 +453,7 @@ class Vendor(abc.ABC):
         *,
         device: str,
         build_number: str,
-        keymapper: Keymapper | None,
+        keymapper: Keymapper,
         command: str,
     ) -> None:
         """
@@ -551,7 +463,7 @@ class Vendor(abc.ABC):
             environment: Process environment to mutate in place.
             device: Device being released.
             build_number: Requested build number.
-            keymapper: The release's keymapper, or None outside a release.
+            keymapper: The release's keymapper.
             command: Base name of the script being run, without .sh.
 
         Returns:
@@ -670,7 +582,7 @@ class SoftHsmVendor(Vendor):
         *,
         device: str,
         build_number: str,
-        keymapper: Keymapper | None,
+        keymapper: Keymapper,
         command: str,
     ) -> None:
         """
@@ -731,7 +643,6 @@ class YubiHsmVendor(Vendor):
             "YUBIHSM_KEY_CAPABILITIES",
             "sign-pkcs,sign-pss,sign-ecdsa,sign-eddsa",
         )
-        _default(environment, "YUBIHSM_OPAQUE_CAPABILITIES", "")
         _default(environment, "YUBIHSM_ONDEMAND_DOMAIN", "2")
         _default(environment, "YUBIHSM_EXPORTABLE_DOMAIN", "3")
         _default(
@@ -859,7 +770,7 @@ class YubiHsmVendor(Vendor):
         *,
         device: str,
         build_number: str,
-        keymapper: Keymapper | None,
+        keymapper: Keymapper,
         command: str,
     ) -> None:
         """
@@ -893,10 +804,6 @@ class YubiHsmVendor(Vendor):
                     exec_dir / f"{formatted_date()}-{default_prefix}.log",
                 )
 
-                if keymapper is None:
-                    keymapper = StaticKeymapper.from_file(
-                        Path(environment["KEYMAP_FILE"]),
-                    )
                 key_id = keymapper.key_id("avb", "vbmeta", device)
 
                 extract_and_save_audit_log(
@@ -908,21 +815,15 @@ class YubiHsmVendor(Vendor):
 
                 if (environment.get("ENSURE_KEY_IS_AVAILABLE") or "y") == "y":
                     result = 1
+                    is_ondemand = key_id_is_ondemand(keymapper)
                     try:
                         ensure_keys_are_available(
                             config,
                             Path(environment.get("KEY_DIR", "keys/")),
-                            (key_id,),
-                            restore_mode=False,
-                            is_ondemand=key_id_is_ondemand(keymapper),
-                            exportable_domain=environment[
-                                "YUBIHSM_EXPORTABLE_DOMAIN"
-                            ],
-                            ondemand_domain=environment[
+                            (key_id,) if is_ondemand(int(key_id, 16)) else (),
+                            is_ondemand=is_ondemand,
+                            lookup_domains=environment[
                                 "YUBIHSM_ONDEMAND_DOMAIN"
-                            ],
-                            opaque_capabilities=environment[
-                                "YUBIHSM_OPAQUE_CAPABILITIES"
                             ],
                         )
                         result = 0
@@ -977,11 +878,25 @@ class YubiHsmVendor(Vendor):
         keymapper: Keymapper,
         devices: Sequence[str],
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-        return populate_devices_with_loaded_keys_arrays(
-            yubihsm_config_from_environment(environment),
-            keymapper,
-            devices,
-        )
+        config = yubihsm_config_from_environment(environment)
+        key_ids_by_device = {
+            device: keymapper.device_key_ids(device) for device in devices
+        }
+        for device, key_ids in key_ids_by_device.items():
+            if not key_ids:
+                raise RuntimeError(f"The keymapper has no keys for {device}")
+        loaded = get_loaded_key_ids(config)
+        with_loaded_keys: list[str] = []
+        without_loaded_keys: list[str] = []
+        for device in devices:
+            if all(
+                int(key_id, 16) in loaded
+                for key_id in key_ids_by_device[device]
+            ):
+                with_loaded_keys.append(device)
+            else:
+                without_loaded_keys.append(device)
+        return tuple(with_loaded_keys), tuple(without_loaded_keys)
 
     def ensure_keys_for_devices(
         self,
@@ -1019,17 +934,25 @@ class YubiHsmVendor(Vendor):
                     )
 
             try:
-                ensure_all_keys_available_for_devices(
+                key_dir = Path(environment.get("KEY_DIR", "keys/"))
+                ondemand_domain = environment["YUBIHSM_ONDEMAND_DOMAIN"]
+                key_ids_by_device = {
+                    device: keymapper.device_key_ids(device)
+                    for device in devices
+                }
+                needed_keys: set[str] = set()
+                for device, key_ids in key_ids_by_device.items():
+                    if not key_ids:
+                        raise RuntimeError(
+                            f"The keymapper has no keys for {device}",
+                        )
+                    needed_keys.update(key_ids)
+                ensure_keys_are_available(
                     config,
-                    keymapper,
-                    Path(environment.get("KEY_DIR", "keys/")),
-                    devices,
+                    key_dir,
+                    tuple(sorted(needed_keys)),
                     is_ondemand=key_id_is_ondemand(keymapper),
-                    exportable_domain=environment["YUBIHSM_EXPORTABLE_DOMAIN"],
-                    ondemand_domain=environment["YUBIHSM_ONDEMAND_DOMAIN"],
-                    opaque_capabilities=environment[
-                        "YUBIHSM_OPAQUE_CAPABILITIES"
-                    ],
+                    lookup_domains=ondemand_domain,
                     after_key=lambda key_id: extract(
                         "Function: ensure_key_is_available "
                         f"Key: {key_id} Result: 0",

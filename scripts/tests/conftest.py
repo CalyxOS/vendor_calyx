@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib.util
 import os
@@ -22,6 +23,7 @@ import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
+from yubihsm.defs import OBJECT
 from yubihsm_emulator import (
     DEFAULT_AUTHKEY_ID,
     DEFAULT_PASSWORD,
@@ -405,17 +407,38 @@ def yubihsm_config(
 def plug_yubihsm(
     connector: Connector,
     *,
-    total_records: int = 256,
+    free_records: int = 254,
 ) -> EmulatedYubiHsm:
     """
-    Plug a new device with room for total_records objects into connector.
-    It holds the default authentication key and the wrap key
-    YUBIHSM_WRAP_ID, two objects in all.
+    Plug a new device into connector that holds the default
+    authentication key and the wrap key YUBIHSM_WRAP_ID, with room for
+    free_records objects besides them.
     """
-    device = EmulatedYubiHsm(total_records=total_records)
+    device = EmulatedYubiHsm(total_records=2 + free_records)
     device.put_wrap_key(YUBIHSM_WRAP_ID)
     connector.plug(device)
     return device
+
+
+def back_up_yubihsm_key(
+    device: EmulatedYubiHsm,
+    key_dir: Path,
+    key_id: int,
+) -> Path:
+    """
+    Write the asymmetric key key_id of device, wrapped under
+    YUBIHSM_WRAP_ID, to its base64 backup in key_dir.
+
+    Returns:
+        The path of the backup.
+    """
+    backup = key_dir / f"{key_id:#06x}-asymmetric-key.yhw"
+    backup.write_bytes(
+        base64.b64encode(
+            device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, YUBIHSM_WRAP_ID),
+        ),
+    )
+    return backup
 
 
 T = TypeVar("T")

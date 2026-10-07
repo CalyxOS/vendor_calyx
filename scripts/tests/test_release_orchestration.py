@@ -24,6 +24,7 @@ from conftest import (
     parameter_id,
     run,
     sha256,
+    stub,
 )
 from signing.keymap import load_keymapper
 from signing.metadata import load_metadata
@@ -1342,13 +1343,82 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
     )
 
     with pytest.raises(ReleaseAbort):
-        session.prepare_for_signing_full(
-            device="bramble",
-            build_number=BUILD_NUMBER,
-            command_argv=[],
-        )
+        session.prepare_for_signing_full(command_argv=[])
 
     assert parents == ["/dev/shm"]
+
+
+@pytest.mark.parametrize("initialized", (False, True))
+def test_release_session_finalizes_then_cleans_up_its_vendor(
+    release_tree: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    initialized: bool,
+) -> None:
+    calls: list[tuple[str, object]] = []
+    session: ReleaseOrchestrator
+
+    class Vendor:
+        def initialize_release(
+            self,
+            environment: dict[str, str],
+            **options: object,
+        ) -> None:
+            calls.append(("initialize_release", options["build_number"]))
+
+        def finalize_release(
+            self,
+            environment: dict[str, str],
+            **options: object,
+        ) -> None:
+            assert session.tmpdir is not None
+            assert session.tmpdir.is_dir()
+            calls.append(("finalize_release", options["record_finish"]))
+
+        def cleanup(
+            self,
+            environment: dict[str, str],
+            *,
+            inherited: dict[str, str],
+        ) -> None:
+            calls.append(
+                ("cleanup", inherited is session.inherited_environment),
+            )
+
+    monkeypatch.setattr("signing.sign_environment.load_vendor", stub(Vendor()))
+    monkeypatch.setattr(
+        "signing.sign_environment.maybe_initialize_vendor",
+        stub(None),
+    )
+    environment = {
+        **PKCS11_ENVIRONMENT,
+        "KEYMAPPER": "id2b",
+        "TMPDIR": str(release_tree),
+        "BUILD_NUMBER": BUILD_NUMBER,
+    }
+    if initialized:
+        environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] = "y"
+    session = ReleaseOrchestrator(
+        environment,
+        cwd=release_tree,
+        metadata=load_metadata(TEST_METADATA),
+        device="bramble",
+        target_files_arg=None,
+    )
+
+    def run_steps() -> None:
+        session.prepare_for_signing_full(command_argv=[])
+        assert environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] == "y"
+
+    monkeypatch.setattr(session, "_run_steps", run_steps)
+    assert session.run() == 0
+
+    expected: list[tuple[str, object]] = []
+    if not initialized:
+        expected.append(("initialize_release", BUILD_NUMBER))
+    expected += [("finalize_release", not initialized), ("cleanup", True)]
+    assert calls == expected
+    assert session.tmpdir is not None
+    assert not session.tmpdir.exists()
 
 
 @pytest.mark.parametrize(
