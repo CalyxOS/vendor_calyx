@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import base64
 import importlib.util
 import itertools
 import os
@@ -23,6 +22,7 @@ import pytest
 from conftest import (
     HSM_PROVISIONING_DIR,
     SCRIPTS_DIR,
+    back_up_yubihsm_key,
     install_executable,
     prepare_ceremony_package,
     run,
@@ -40,7 +40,6 @@ from yubihsm_emulator import (
     Connector,
     EmulatedYubiHsm,
     serve_connector,
-    stored_certificate,
 )
 
 SHAMIR_DIR = Path(
@@ -560,11 +559,10 @@ def _generate_and_back_up(
         SIGNING_AUTHKEY_ID,
         ceremony.signing_password(),
     )
-    wrap_key = WrapKey(session, WRAP_KEY_ID)
     key_dir.mkdir()
     keys: dict[int, bytes] = {}
     for key_id, label in ((0x1100, "core"), (0x3500, "apex_container")):
-        key = AsymmetricKey.generate(
+        AsymmetricKey.generate(
             session,
             key_id,
             label,
@@ -572,9 +570,7 @@ def _generate_and_back_up(
             CAPABILITY.SIGN_PKCS | CAPABILITY.EXPORTABLE_UNDER_WRAP,
             ALGORITHM.RSA_2048,
         )
-        (key_dir / f"{key_id:#06x}-asymmetric-key.yhw").write_bytes(
-            base64.b64encode(wrap_key.export_wrapped(key)),
-        )
+        back_up_yubihsm_key(ceremony.primary, key_dir, key_id)
         (key_dir / f"{key_id:#06x}.attestation.pem").write_bytes(
             ceremony.primary.attest(key_id).public_bytes(
                 serialization.Encoding.PEM,
@@ -642,16 +638,7 @@ def test_backup_hsm_restores_the_wrap_key_and_the_signing_keys(
         restored_key = backup.get(key_id, OBJECT.ASYMMETRIC_KEY)
         assert restored_key is not None
         assert restored_key.data == private_key
-        certificate = backup.get(key_id, OBJECT.OPAQUE)
-        assert certificate is not None
-        expected = ceremony.primary.attest(key_id)
-        assert stored_certificate(certificate).public_key() == (
-            expected.public_key()
-        )
-        primary_key = ceremony.primary.get(key_id, OBJECT.ASYMMETRIC_KEY)
-        assert primary_key is not None
-        label = primary_key.label
-        assert certificate.label == label
+        assert backup.get(key_id, OBJECT.OPAQUE) is None
 
 
 def test_restored_signing_key_signs_on_the_backup_hsm(

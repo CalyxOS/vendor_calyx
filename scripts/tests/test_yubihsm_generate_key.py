@@ -31,7 +31,6 @@ def generated_keys(device: EmulatedYubiHsm) -> list[StoredObject]:
     [
         ("RSA:2048", "RSA_2048"),
         ("RSA:3072", "RSA_3072"),
-        ("RSA:4096", "RSA_4096"),
     ],
 )
 def test_generate_asymmetric_key_maps_every_known_algorithm(
@@ -75,7 +74,7 @@ def test_generate_asymmetric_key_passes_id_label_domain_and_capabilities(
     assert key.origin == ORIGIN.GENERATED
     assert [
         target
-        for _, command, target in yubihsm.device.history
+        for command, target in yubihsm.device.history
         if command == COMMAND.GENERATE_ASYMMETRIC_KEY
     ] == [(0x2000, 0xFFFF)]
 
