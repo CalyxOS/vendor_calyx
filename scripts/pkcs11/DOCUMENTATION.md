@@ -553,8 +553,26 @@ In practice, the following storage usage has been observed for a key and certifi
 
 When accounting for the negligible usage of other required objects - 
 the authentication keys and wrap key -
-this leaves room for a maximum of `40` RSA 4096-bit keys to be loaded
-at any given time, assuming no other keys are present.
+keys with their certificates leave room for a maximum of `40` RSA 4096-bit keys
+to be loaded at any given time, assuming no other keys are present.
+The signing scripts load keys without their certificates (see [Certificates](#certificates)),
+which leaves room for about `67` of them.
+
+### Certificates
+
+Java's PKCS#11 support finds a private key only through a certificate on the token,
+so signing through it needs every key's certificate stored on the HSM as well.
+No signing path goes through it any more.
+AVB, payload and whole-file signatures need only the private key,
+and `apksigner` takes the certificate from the key's `.x509.pem` file
+(see [KMS-based APK signing](#kms-based-apk-signing)).
+
+The certificates therefore stay on disk.
+Key generation writes them to `.x509.pem` files only,
+and loading a key on demand or restoring keys imports the wrapped key alone.
+A certificate an older version of the scripts stored on the HSM stays there
+until its key is evicted to make room for another,
+when it is deleted with the key if its `.x509.pem` file is on disk.
 
 ### pkcs11-tool and the YubiHSM PKCS#11 module
 
@@ -608,60 +626,3 @@ It would be nice to soft-proof to the public
 that we only sign official releases and nothing else.
 
 [Third-party article about publicly auditable YubiHSM](https://gist.github.com/karalabe/fb7ac43f3899f511b5547279c036bf4e)
-
-### Off-HSM certificate storage
-
-As [outlined earlier](#Storage-limitations),
-a certificate consumes significant storage space,
-comprising `40%` of the on-HSM usage for an RSA 4096-bit entry
-or 75% of the usage for an ECC 384-bit entry.
-If these certificates could be kept off-HSM,
-it would make more on-HSM storage available
-without needing to move wrapped keys in and out (as often),
-thus reducing complexity and wear on the HSM.
-So, do they need to be stored on the HSM at all?
-Kind of, due to the way Java's PKCS#11 support works.
-
-Our whole reason for using an HSM is to secure our private keys.
-Unlike private keys, certificates are public objects
-that don't need to be stored in a non-extractable manner. 
-Ultimately, an asymmetric signing operation makes use of a private key,
-not a certificate.
-However, by current design, PKCS#11 support via Java
-requires certificates to be obtainable via the PKCS#11 provider
-in order to perform signing.
-For YubiHSM 2's implementation,
-this does mean that the certificates need to be loaded into the HSM as well.
-
-AOSP supports a `--signing_helper` for AVB signing,
-and we implement this support in a script via pkcs11-tool or openssl.
-Although they both use PKCS#11 for this signing,
-*neither requires a certificate object on the HSM*;
-they merely make use of the private key, 
-and refer to on-disk certificate files when needed.
-Already, this would seem to offer an opportunity to remove dozens of certificates from the HSM.
-However, currently, our AVB keys also act as OTA keys,
-which are used for whole-file signing with `signapk -w`
-and by `--payload_signer`.
-The former is Java-based,
-so it continues to require a certificate to be loaded.
-
-Investigating the behavior of `signapk -w`
-and replacing it with an alternative
-that does not depend on PKCS#11 via Java should eliminate the need,
-in our current scheme, to have certificates stored on-HSM
-for any of our device-specific keys (currently 27).
-This would save 270 pages,
-making room for another 10 RSA 4096-bit entries (including their certs)
-or 33 ECC 384-bit entries (including their certs);
-if certs weren't required, that number of pages would allow for
-an additional 18 RSA 4096-bit keys or 135 ECC 384-bit keys.
-
-To go further and free up even more space,
-and potentially offer greater flexibility in signing implementation,
-one idea could be to expand apksigner to support a signing helper itself, 
-thereby eliminating the need to interact with Java's PKCS#11 at all.
-
-Alternatively, perhaps YubiHSM's PKCS#11 library could be adapted
-to support an option of providing certificate objects 
-via on-disk storage rather than on-HSM storage.

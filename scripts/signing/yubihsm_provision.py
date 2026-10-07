@@ -27,7 +27,7 @@ from .vendor_yubihsm import (
     extract_and_save_audit_log,
     get_device_identity,
     list_restorable_objects,
-    restore_all_keys_and_certs,
+    restore_all_keys,
 )
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
@@ -388,7 +388,7 @@ class ProvisionWizard:
 
     def _load_keys(self) -> None:
         print()
-        print("Restoring all keys and certs...")
+        print("Restoring all keys...")
         environment = self.environment
         assert self.keymapper is not None
         assert self.audit_log_path is not None
@@ -398,22 +398,21 @@ class ProvisionWizard:
         def restore() -> None:
             if environment.get("DRY_RUN") == "y":
                 print(
-                    render_release_tool(["restore_all_keys_and_certs"]),
+                    render_release_tool(["restore_all_keys"]),
                     end="",
                     file=sys.stderr,
                 )
                 return
-            restore_all_keys_and_certs(
+            restore_all_keys(
                 self._config(),
                 Path(self.key_dir),
                 log_file,
                 is_ondemand=sign_environment.key_id_is_ondemand(keymapper),
                 exportable_domain=environment["YUBIHSM_EXPORTABLE_DOMAIN"],
                 ondemand_domain=environment["YUBIHSM_ONDEMAND_DOMAIN"],
-                opaque_capabilities=environment["YUBIHSM_OPAQUE_CAPABILITIES"],
             )
 
-        code = self.try_("restore_all_keys_and_certs", restore)
+        code = self.try_("restore_all_keys", restore)
         if code:
             raise StepFailed(code)
 
