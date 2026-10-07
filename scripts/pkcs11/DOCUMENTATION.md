@@ -145,7 +145,7 @@ Only the admin key is set up to have the ability to reset the HSM
 to factory settings (outside of physically holding the rim of the HSM).
 
 The capabilities and delegated capabilities of each key
-are defined [at the top of our setup script](vendor.yubihsm.setup.py).
+are defined [at the top of our setup script](../hsm_provisioning/setup.py).
 
 **TODO** Are all of those capabilities needed or could we reduce them
 without shooting ourselves in the foot with regards to later usage.
