@@ -13,7 +13,6 @@ import sys
 import cryptography.x509
 import yubihsm.exceptions
 from audit import extract_and_save_logs
-from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from setup import (
@@ -102,7 +101,7 @@ def main() -> None:
             key_id_index = subject.find("id:")
             key_id = subject[key_id_index + 3 :]
             extension = pem.extensions.get_extension_for_oid(
-                ObjectIdentifier("1.3.6.1.4.1.41482.4.9"),
+                cryptography.x509.ObjectIdentifier("1.3.6.1.4.1.41482.4.9"),
             ).value
             if not isinstance(
                 extension,
