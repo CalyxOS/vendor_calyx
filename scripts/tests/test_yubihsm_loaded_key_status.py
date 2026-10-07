@@ -10,33 +10,17 @@ import shutil
 import pytest
 from conftest import run, yubihsm_config
 from signing.vendor_yubihsm import (
-    LoadedKeyStatus,
-    YubiHsmConfig,
     get_device_identity,
-    get_loaded_key_status,
+    get_loaded_key_ids,
 )
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import (
-    DEFAULT_AUTHKEY_ID,
-    DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
 )
 
 SCOPED_AUTHKEY_ID = 0x0002
 SCOPED_PASSWORD = "scoped"
-
-
-def config(
-    yubihsm: Connector,
-    auth_key: int = DEFAULT_AUTHKEY_ID,
-    password: str = DEFAULT_PASSWORD,
-) -> YubiHsmConfig:
-    return YubiHsmConfig(
-        connector_url=yubihsm.url,
-        auth_key=f"0x{auth_key:04x}",
-        password=password,
-    )
 
 
 def put_key_and_certificate(
@@ -52,42 +36,24 @@ def put_key_and_certificate(
     )
 
 
-def test_get_loaded_key_status_partitions_keys_certs_and_both(
+def test_get_loaded_key_ids_reports_only_keys_in_every_domain(
     yubihsm: Connector,
 ) -> None:
     device = yubihsm.device
-    put_key_and_certificate(device, 0x2000, 0xFFFF)
-    device.put_asymmetric_key(0x2001)
+    put_key_and_certificate(device, 0x2000, 0b100)
+    device.put_asymmetric_key(0x2001, domains=0b001)
     device.put_certificate(0x2002, device.attestation_certificate)
     device.put_wrap_key(0x2003)
     objects = dict(device.objects)
 
-    status = get_loaded_key_status(config(yubihsm))
+    loaded = get_loaded_key_ids(yubihsm_config(yubihsm))
 
-    assert status == LoadedKeyStatus(
-        loaded_key_ids=frozenset({0x2000, 0x2001}),
-        loaded_cert_ids=frozenset({0x2000, 0x2002}),
-        fully_loaded_ids=frozenset({0x2000}),
-    )
+    assert loaded == {0x2000, 0x2001}
     assert device.objects == objects
-    assert COMMAND.LIST_OBJECTS in {command for _, command, _ in device.history}
+    assert COMMAND.LIST_OBJECTS in {command for command, _ in device.history}
 
 
-def test_get_loaded_key_status_reports_keys_in_every_domain(
-    yubihsm: Connector,
-) -> None:
-    """
-    Keys outside the on-demand domain are reported as loaded too.
-    """
-    put_key_and_certificate(yubihsm.device, 0x2000, 0b100)
-    put_key_and_certificate(yubihsm.device, 0x2100, 0b001)
-
-    status = get_loaded_key_status(config(yubihsm))
-
-    assert status.fully_loaded_ids == frozenset({0x2000, 0x2100})
-
-
-def test_get_loaded_key_status_skips_objects_outside_the_auth_key_domains(
+def test_get_loaded_key_ids_skips_objects_outside_the_auth_key_domains(
     yubihsm: Connector,
 ) -> None:
     yubihsm.device.put_authentication_key(
@@ -104,15 +70,15 @@ def test_get_loaded_key_status_skips_objects_outside_the_auth_key_domains(
         domains=0b011,
     )
 
-    status = get_loaded_key_status(
-        config(yubihsm, SCOPED_AUTHKEY_ID, SCOPED_PASSWORD),
+    loaded = get_loaded_key_ids(
+        yubihsm_config(
+            yubihsm,
+            auth_key=SCOPED_AUTHKEY_ID,
+            password=SCOPED_PASSWORD,
+        ),
     )
 
-    assert status == LoadedKeyStatus(
-        loaded_key_ids=frozenset({0x2000}),
-        loaded_cert_ids=frozenset({0x2000, 0x2200}),
-        fully_loaded_ids=frozenset({0x2000}),
-    )
+    assert loaded == {0x2000}
 
 
 def test_device_identity_reports_device_info_as_yubihsm_shell_does(
