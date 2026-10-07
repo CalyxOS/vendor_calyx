@@ -1330,20 +1330,17 @@ def _restorable_key_ids_on_disk(key_dir: Path) -> tuple[str, ...]:
         key_dir: Directory to scan.
 
     Returns:
-        Deduplicated key IDs found in key_dir, those of certificates first,
-        then those of wrapped keys whose certificate is missing, each group
-        sorted.
+        Deduplicated key IDs found in key_dir, sorted.
     """
-    found: dict[str, None] = {}
+    found: set[str] = set()
     for pattern in ("*.x509.pem", "*-asymmetric-key.yhw"):
-        for path in sorted(key_dir.glob(pattern)):
+        for path in key_dir.glob(pattern):
             name = path.name
             if name.endswith("-asymmetric-key.yhw"):
-                key_id = name[: -len("-asymmetric-key.yhw")]
+                found.add(name[: -len("-asymmetric-key.yhw")])
             else:
-                key_id = name[: -len(".x509.pem")]
-            found.setdefault(key_id)
-    return tuple(found)
+                found.add(name[: -len(".x509.pem")])
+    return tuple(sorted(found))
 
 
 def restore_all_keys_and_certs(

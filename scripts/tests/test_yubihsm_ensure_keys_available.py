@@ -1055,14 +1055,14 @@ def test_restore_all_keys_and_certs_tolerates_missing_backup_half(
     )
 
 
-def test_restore_all_keys_and_certs_restores_certified_keys_first(
+def test_restore_all_keys_and_certs_restores_keys_in_id_order(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     key_dir = tmp_path / "keys"
     key_dir.mkdir()
-    for object_id in (0x3000, 0x3002):
+    for object_id in (0x3002, 0x3000):
         _key(device, key_dir, object_id, loaded=False)
         _certificate(device, key_dir, object_id, loaded=False)
     _key(device, key_dir, 0x3001, loaded=False)
@@ -1072,9 +1072,9 @@ def test_restore_all_keys_and_certs_restores_certified_keys_first(
     assert _changes(device) == [
         (COMMAND.IMPORT_WRAPPED, 0x3000),
         (COMMAND.PUT_OPAQUE, 0x3000),
+        (COMMAND.IMPORT_WRAPPED, 0x3001),
         (COMMAND.IMPORT_WRAPPED, 0x3002),
         (COMMAND.PUT_OPAQUE, 0x3002),
-        (COMMAND.IMPORT_WRAPPED, 0x3001),
     ]
 
 
