@@ -8,7 +8,9 @@ from __future__ import annotations
 import importlib.util
 import os
 import signal
+import socket
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -245,9 +247,14 @@ printf %s "freshly signed" > "$out"
 
 
 def test_retries_after_connector_failure(tmp_path: Path) -> None:
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
     connector_binary = make_script(
         tmp_path / "fake-yubihsm-connector",
-        "sleep 300\n",
+        f'exec "{sys.executable}" -c "import socket, time; '
+        f"listener = socket.create_server(('127.0.0.1', {port})); "
+        'time.sleep(300)"\n',
     )
     call_count_file = tmp_path / "call-count"
     make_script(
@@ -272,7 +279,7 @@ echo "signed on try $count"
             "SIGNING_COMMAND": "avbtool",
             "YUBIHSM_CONNECTOR_PIDFILE": str(pid_file),
             "YUBIHSM_CONNECTOR_BIN": str(connector_binary),
-            "YUBIHSM_CONNECTOR": "http://127.0.0.1:12345",
+            "YUBIHSM_CONNECTOR": f"http://127.0.0.1:{port}",
             "DRY_RUN": "y",
             **path_prepending(tmp_path),
         },
