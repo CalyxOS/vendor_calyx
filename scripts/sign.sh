@@ -482,6 +482,7 @@ sort_and_separate_devices_by_key_availability() {
 
   # 1. Sort devices by their order in all_devices
   for device in "${all_devices[@]}"; do
+    [ -n "$device" ] || continue
     if [ -n "${device_to_next_build[$device]:-}" ]; then
       device_to_next_build_sorted+=("$device")
     fi

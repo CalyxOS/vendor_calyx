@@ -38,7 +38,7 @@ APK=${2}
 if [ ! -f "$APK" ]; then
     error "$APK is not an existing regular file or does not exist." >&2
 fi
-if [[ ! " ${keys_app[@]} " =~ " ${APP} " ]]; then
+if [ -z "$APP" ] || [[ ! " ${keys_app[@]} " =~ " ${APP} " ]]; then
   error "Unsupported app ${APP}"
 fi
 
