@@ -60,7 +60,7 @@ PRODUCT=$1
 BUILD=$BUILD_NUMBER
 
 if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
-  BUILD=$((BUILD + 1))
+  BUILD=$((10#$BUILD + 1))
 fi
 
 if [[ -z ${2:-} ]] ; then
