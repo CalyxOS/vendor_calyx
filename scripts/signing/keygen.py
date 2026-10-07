@@ -41,8 +41,8 @@ from .vendor_yubihsm import (
     generate_asymmetric_key,
     get_certificate,
     get_device_identity,
-    get_loaded_key_status,
-    import_certificate,
+    get_loaded_key_ids,
+    get_public_key,
     limit_ondemand_objects,
 )
 
@@ -795,13 +795,12 @@ class YubiHsmKeygenDriver(KeygenDriver):
                 "from YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.",
                 file=sys.stderr,
             )
-        for name in ("YUBIHSM_KEY_CAPABILITIES", "YUBIHSM_OPAQUE_CAPABILITIES"):
-            print(
-                f"Using additional {name}: "
-                f"{environment.get(name) or '(none)'}.",
-                file=sys.stderr,
-            )
-            environment[name] = environment.get(name, "")
+        print(
+            "Using additional YUBIHSM_KEY_CAPABILITIES: "
+            f"{environment.get('YUBIHSM_KEY_CAPABILITIES') or '(none)'}.",
+            file=sys.stderr,
+        )
+        environment.setdefault("YUBIHSM_KEY_CAPABILITIES", "")
 
     def initialize_post_metadata(self) -> None:
         """
@@ -888,14 +887,13 @@ class YubiHsmKeygenDriver(KeygenDriver):
     def key_exists(self, mapped_value: str) -> bool:
         if (self.key_out_dir / f"{mapped_value}-asymmetric-key.yhw").exists():
             return True
-        status = get_loaded_key_status(self._config())
-        return int(mapped_value, 16) in status.loaded_key_ids
+        return self._key_is_loaded(mapped_value)
+
+    def _key_is_loaded(self, key_id: str) -> bool:
+        return int(key_id, 16) in get_loaded_key_ids(self._config())
 
     def cert_exists(self, mapped_value: str) -> bool:
-        if (self.key_out_dir / f"{mapped_value}.x509.pem").exists():
-            return True
-        status = get_loaded_key_status(self._config())
-        return int(mapped_value, 16) in status.loaded_cert_ids
+        return (self.key_out_dir / f"{mapped_value}.x509.pem").exists()
 
     def generate_keypair(
         self,
@@ -960,6 +958,46 @@ class YubiHsmKeygenDriver(KeygenDriver):
         )
         self._copy_to_other_dirs(output)
 
+    def _write_stored_certificate(self, key_id: str, certificate: Path) -> bool:
+        """
+        Write the certificate stored on the HSM under a key's ID, if there
+        is one and it certifies the key, except under DRY_RUN.
+
+        Args:
+            key_id: The key's ID, e.g. "0x2000".
+            certificate: File to write the certificate to.
+
+        Returns:
+            Whether the HSM holds a certificate of the key.
+        """
+        from cryptography.hazmat.primitives.serialization import (
+            Encoding,
+            PublicFormat,
+        )
+        from cryptography.x509 import load_pem_x509_certificate
+        from yubihsm.defs import ERROR
+        from yubihsm.exceptions import YubiHsmDeviceError
+
+        try:
+            stored = get_certificate(self._config(), key_id)
+            public_key = get_public_key(self._config(), key_id)
+        except YubiHsmDeviceError as error:
+            if error.code == ERROR.OBJECT_NOT_FOUND:
+                return False
+            raise
+        certified_key = load_pem_x509_certificate(stored).public_key()
+        if (
+            certified_key.public_bytes(
+                Encoding.DER,
+                PublicFormat.SubjectPublicKeyInfo,
+            )
+            != public_key
+        ):
+            return False
+        if not self._dry_run():
+            certificate.write_bytes(stored)
+        return True
+
     def generate_cert(
         self,
         key_id: str,
@@ -967,63 +1005,51 @@ class YubiHsmKeygenDriver(KeygenDriver):
         algorithm: str,
     ) -> None:
         """
-        Use the key's attestation certificate as its certificate and import
-        it.
+        Use the key's attestation certificate as its certificate, kept on
+        disk only, since signing never reads it from the HSM. A certificate
+        of the key an older version of the scripts stored on the HSM is
+        written out instead, since releases have signed with it.
+
+        Raises:
+            KeygenError: If the key is backed up but not on the HSM, outside
+                DRY_RUN.
         """
         environment = self.environment
-        domains = self._domains(key_id)
-        capabilities = (
-            f"{environment['YUBIHSM_OPAQUE_CAPABILITIES']},"
-            "exportable-under-wrap"
-        )
         if not self._dry_run():
+            if not self._key_is_loaded(key_id):
+                print(
+                    f"Key {key_id} is not on the HSM. Load it from its "
+                    "backup before keygen writes its certificate.",
+                    file=sys.stderr,
+                )
+                raise KeygenError(f"key {key_id} is not on the HSM")
             self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
-        attestation = self.unique_key_out_dir / f"{key_id}.attestation.pem"
-
-        def attest() -> None:
-            attestation.write_bytes(
-                attest_key(self._config(), key_id),
-            )
-
-        self.logged(
-            [
-                "attest-key",
-                *self._connection_arguments(),
-                "--key-id",
-                key_id,
-                "--attestation-id",
-                "0",
-                "--output",
-                str(attestation),
-            ],
-            attest,
-        )
-        self._copy_to_other_dirs(attestation)
         certificate = self.unique_key_out_dir / f"{key_id}.x509.pem"
-        if not self._dry_run():
-            shutil.copy2(attestation, certificate)
+        if not self._write_stored_certificate(key_id, certificate):
+            attestation = self.unique_key_out_dir / f"{key_id}.attestation.pem"
+
+            def attest() -> None:
+                attestation.write_bytes(
+                    attest_key(self._config(), key_id),
+                )
+
+            self.logged(
+                [
+                    "attest-key",
+                    *self._connection_arguments(),
+                    "--key-id",
+                    key_id,
+                    "--attestation-id",
+                    "0",
+                    "--output",
+                    str(attestation),
+                ],
+                attest,
+            )
+            self._copy_to_other_dirs(attestation)
+            if not self._dry_run():
+                shutil.copy2(attestation, certificate)
         self._copy_to_other_dirs(certificate)
-        self.logged(
-            [
-                "import-certificate",
-                *self._connection_arguments(),
-                "--key-id",
-                key_id,
-                "--input",
-                str(certificate),
-                "--domain",
-                domains,
-                "--capabilities",
-                capabilities,
-            ],
-            lambda: import_certificate(
-                self._config(),
-                key_id=key_id,
-                domains=domains,
-                capabilities=capabilities,
-                certificate_pem=certificate.read_bytes(),
-            ),
-        )
         if not self._dry_run():
             export_public_keys(
                 environment,

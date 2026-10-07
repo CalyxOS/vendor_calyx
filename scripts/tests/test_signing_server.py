@@ -125,7 +125,7 @@ def test_sign_reopens_an_expired_session(yubihsm: Connector) -> None:
     service = _service(yubihsm)
     sign = _sign_request(0x2000, hashlib.sha256(b"x").digest())
     service.handle(sign)
-    yubihsm.device.drop_sessions()
+    yubihsm.device.sessions.clear()
 
     response = service.handle(sign)
 
