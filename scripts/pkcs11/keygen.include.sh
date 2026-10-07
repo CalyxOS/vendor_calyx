@@ -214,7 +214,7 @@ generate_keys() {
             || key_algorithm=$(get_key_algorithm "$key_type" "$key_name") || return $?
           printf "%s\n" "$msg"
           DEVICE=$device \
-          generate_keypair "$key_id" "$label" "$key_type" "$key_name" "$key_algorithm" \
+          generate_keypair "$key_id" "$label" "$key_algorithm" \
             || return $?
           _any_key_generated=y
         else
@@ -228,7 +228,7 @@ generate_keys() {
           [ -n "$key_algorithm" ] \
             || key_algorithm=$(get_key_algorithm "$key_type" "$key_name") || return $?
           DEVICE=$device \
-          generate_cert "$key_id" "$mapped_value" "$key_type" "$key_name" "$key_algorithm" \
+          generate_cert "$key_id" "$mapped_value" "$key_type" "$key_algorithm" \
             || return $?
           _any_cert_generated=y
         fi
@@ -407,9 +407,7 @@ generate_keypair_pkcs11() {
   local key_id=$1
   key_id=$(get_key_id_for_pkcs11-tool "$key_id")
   local key_label=$2
-  local key_type=$3
-  local key_name=$4
-  local key_algorithm=$5
+  local key_algorithm=$3
   local -a args=()
   if [ "${MODIFICATION_USES_SO_PIN:-}" = "y" ]; then
     args=("${pkcs11_tool_args_so_pin[@]}")
@@ -431,8 +429,7 @@ generate_cert_pkcs11() {
   key_id=$(get_key_id_for_pkcs11-tool "$key_id")
   local key_label=$2
   local key_type=$3
-  local key_name=$4
-  local key_algorithm=$5
+  local key_algorithm=$4
   local escaped_key_label_for_signing_subject=${key_label//\//\\/}
   local tmpfile
   tmpfile=$(mktemp "${TMPDIR:-/tmp}/cert.XXXXXX") || return $?
