@@ -112,6 +112,7 @@ fill_avb_arguments() {
   avb_arguments=()
   local keyname
   for keyname in "${keys_avb[@]}"; do
+    [ -n "$keyname" ] || continue
     local keyval=$(get_key avb "$keyname" || exit $?) || return $?
     local alg
     if [ -n "${AVB_RSA_KEY_SIZE:-}" ]; then
