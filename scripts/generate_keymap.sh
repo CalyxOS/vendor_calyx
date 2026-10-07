@@ -28,6 +28,7 @@ main() {
   printf "%s\t%s\t%s\t%s\n" "ID" "Device" "Key Type" "Key"
   local key_type
   for key_type in "${key_types[@]}"; do
+    [ -n "$key_type" ] || continue
     local array_name
     case "$key_type" in
       avb)
@@ -41,6 +42,7 @@ main() {
     indirect_array="${array_name}[@]" || return $?
     local key
     for key in "${!indirect_array}"; do
+      [ -n "$key" ] || continue
       # Skip getting key value for each device if it's not a per-device key.
       local -a devices_array
       local per_device=

@@ -42,6 +42,7 @@ if [[ -e calyxos.keystore ]]; then
 fi
 
 for k in "${keys_app[@]}"; do
+  [ -n "$k" ] || continue
   keyval=$(KEY_DIR= get_key app "$k" || exit $?)
   keyval=$(basename "$keyval")
   if [[ ! -e ${keyval}.pk8 || ! -e ${keyval}.x509.pem ]]; then

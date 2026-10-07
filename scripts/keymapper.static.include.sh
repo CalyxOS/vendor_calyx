@@ -160,6 +160,7 @@ fill_avb_arguments() {
   local avb_algorithm=SHA256_RSA${AVB_RSA_KEY_SIZE:-${RSA_KEY_SIZE:-4096}}
   avb_arguments=()
   for partition in "${keys_avb[@]}"; do
+    [ -n "$partition" ] || continue
     local avb_algorithm
     if declare -F get_key_algorithm >/dev/null; then
       avb_algorithm=$(get_key_algorithm avb "$partition")

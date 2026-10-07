@@ -158,6 +158,7 @@ else
 
   # Populate key mappings for APEXes.
   for key in "${keys_apex[@]}"; do
+    [ -n "$key" ] || continue
     EXTRA_SIGNING_ARGS+=(--extra_apks "$key.apex=$(get_key apex_container "$key" || exit $?)")
     EXTRA_SIGNING_ARGS+=(--extra_apex_payload_key "$key.apex=$(get_key apex_payload "$key" .pem || exit $?)")
   done
@@ -165,6 +166,7 @@ else
   # Populate key mappings for everything else.
   declare -A already_remapped
   for key in build/make/target/product/security/devkey "${keys_core[@]}"; do
+    [ -n "$key" ] || continue
     [ -z "${already_remapped[$key]:-}" ] || continue
     value=$(get_key core "$key" || exit $?)
     [ -n "$value" ] || continue
@@ -172,6 +174,7 @@ else
     already_remapped[$key]=1
   done
   for key in "${keys_apex_apk[@]}"; do
+    [ -n "$key" ] || continue
     [ -z "${already_remapped[$key]:-}" ] || continue
     value=$(get_key apex_apk "$key" || exit $?)
     [ -n "$value" ] || continue
@@ -179,6 +182,7 @@ else
     already_remapped[$key]=1
   done
   for key in "${keys_app[@]}"; do
+    [ -n "$key" ] || continue
     [ -z "${already_remapped[$key]:-}" ] || continue
     value=$(get_key app "$key" || exit $?)
     [ -n "$value" ] || continue
