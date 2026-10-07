@@ -23,7 +23,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
-from .keymap import Keymapper
 from .vendor_yubihsm_connector import (
     YubiHsmConnector,
     YubiHsmConnectorConfig,
@@ -205,7 +204,7 @@ def should_make_space_on_hsm(info: StorageInfo) -> bool:
     Returns:
         True if free records or free pages are running low.
     """
-    return info.free_records < 5 or info.free_pages < 25
+    return info.free_records < 5 or info.free_pages < 15
 
 
 @dataclass(frozen=True, slots=True)
@@ -485,21 +484,9 @@ def list_restorable_objects(
     return _run_with_session(lambda: connect_yubihsm_session(config), operation)
 
 
-@dataclass(frozen=True, slots=True)
-class LoadedKeyStatus:
+def get_loaded_key_ids(config: YubiHsmConfig) -> frozenset[int]:
     """
-    Which object IDs currently have their asymmetric key, their
-    certificate, or both, loaded on the HSM.
-    """
-
-    loaded_key_ids: frozenset[int]
-    loaded_cert_ids: frozenset[int]
-    fully_loaded_ids: frozenset[int]
-
-
-def get_loaded_key_status(config: YubiHsmConfig) -> LoadedKeyStatus:
-    """
-    Report which object IDs currently have their key, cert, or both.
+    Report which object IDs currently have their key loaded.
 
     Scans every object in the domains of the authentication key.
 
@@ -507,7 +494,7 @@ def get_loaded_key_status(config: YubiHsmConfig) -> LoadedKeyStatus:
         config: Connector URL, authentication key, and password.
 
     Returns:
-        The sets of key/cert/fully-loaded object IDs.
+        The object IDs of the loaded keys.
 
     Raises:
         yubihsm.exceptions.YubiHsmError: If the SDK session or
@@ -518,16 +505,8 @@ def get_loaded_key_status(config: YubiHsmConfig) -> LoadedKeyStatus:
     from yubihsm.defs import OBJECT
 
     objects = list_restorable_objects(config, None)
-    loaded_keys = {
+    return frozenset(
         obj.id for obj in objects if obj.object_type == OBJECT.ASYMMETRIC_KEY
-    }
-    loaded_certs = {
-        obj.id for obj in objects if obj.object_type == OBJECT.OPAQUE
-    }
-    return LoadedKeyStatus(
-        loaded_key_ids=frozenset(loaded_keys),
-        loaded_cert_ids=frozenset(loaded_certs),
-        fully_loaded_ids=frozenset(loaded_keys & loaded_certs),
     )
 
 
@@ -787,58 +766,43 @@ def get_certificate(config: YubiHsmConfig, key_id: str) -> bytes:
     return _run_with_session(lambda: connect_yubihsm_session(config), operation)
 
 
-def import_certificate(
-    config: YubiHsmConfig,
-    *,
-    key_id: str,
-    domains: str,
-    capabilities: str,
-    certificate_pem: bytes,
-) -> None:
+def get_public_key(config: YubiHsmConfig, key_id: str) -> bytes:
     """
-    Import an X.509 certificate as an opaque object.
-
-    The certificate is stored as-is, not wrapped, since it carries no
-    private key material.
+    Return an asymmetric key's public key as DER SubjectPublicKeyInfo.
 
     Args:
         config: Connector URL, authentication key, and password.
-        key_id: The ID to give the imported object, e.g. "0x2000".
-        domains: Domain(s) to assign the object to, e.g. "3".
-        capabilities: Capabilities to give the object, e.g.
-            "get-opaque".
-        certificate_pem: The certificate, PEM-encoded.
+        key_id: The key's ID, e.g. "0x2000".
 
     Returns:
-        None.
+        The public key, DER-encoded.
 
     Raises:
         yubihsm.exceptions.YubiHsmError: If the SDK session or
-            operation fails, e.g. because an object with this ID
-            already exists.
+            operation fails, e.g. because no key with this ID exists.
         RuntimeError: If a managed connector fails to restart after a
             connector-level failure.
     """
-    from cryptography.x509 import load_pem_x509_certificate
-    from yubihsm.defs import ERROR
-    from yubihsm.objects import Opaque
+    from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
+    from cryptography.hazmat.primitives.serialization import (
+        Encoding,
+        PublicFormat,
+    )
+    from yubihsm.objects import AsymmetricKey
 
     object_id = int(key_id, 16)
-    domain_bits = parse_domains(domains)
-    capability_flags = parse_capabilities(capabilities)
-    certificate = load_pem_x509_certificate(certificate_pem)
 
-    def operation(session: AuthSession) -> None:
-        Opaque.put_certificate(
+    def operation(session: AuthSession) -> bytes:
+        public_key: PublicKeyTypes = AsymmetricKey(
             session,
             object_id,
-            "",
-            domain_bits,
-            capability_flags,
-            certificate,
+        ).get_public_key()
+        return public_key.public_bytes(
+            Encoding.DER,
+            PublicFormat.SubjectPublicKeyInfo,
         )
 
-    _run_write_with_session(config, operation, ERROR.OBJECT_EXISTS)
+    return _run_with_session(lambda: connect_yubihsm_session(config), operation)
 
 
 def limit_ondemand_objects(
@@ -918,432 +882,139 @@ def limit_ondemand_objects(
         )
 
 
-def _resolve_domain_and_capabilities(
-    *,
-    is_ondemand: bool,
-    exportable_domain: str,
-    ondemand_domain: str,
-    opaque_capabilities: str,
-) -> tuple[str, str]:
-    """
-    Choose the domain and capabilities to import a key ID's objects with.
-
-    A key gets exportable_domain (plus ondemand_domain if it is on-demand)
-    and the base capabilities with exportable-under-wrap appended.
-
-    Returns:
-        (domain, opaque_capabilities) to import with.
-    """
-    domain = (
-        f"{exportable_domain},{ondemand_domain}"
-        if is_ondemand
-        else exportable_domain
-    )
-    return (
-        domain,
-        f"{opaque_capabilities},exportable-under-wrap",
-    )
-
-
 def ensure_keys_are_available(
     config: YubiHsmConfig,
     key_dir: Path,
     key_ids: Sequence[str],
     *,
-    restore_mode: bool,
     is_ondemand: Callable[[int], bool],
-    verify_key_ids: bool = True,
-    exportable_domain: str,
-    ondemand_domain: str,
-    opaque_capabilities: str,
+    lookup_domains: str,
     after_key: Callable[[str], None] | None = None,
 ) -> None:
     """
-    Ensure each of key_ids' asymmetric key and certificate are loaded
-    onto the HSM, importing from disk (evicting other on-demand
-    objects to make room if needed) whatever is not already present.
+    Ensure each of key_ids' asymmetric key is loaded onto the HSM,
+    importing its wrapped backup from disk (evicting another on-demand
+    key to make room if needed) when it is not already present.
 
-    Only objects that is_ondemand marks as on-demand are evicted, also
-    among the objects outside key_ids in the searched domains.
+    Signing never reads a certificate from the HSM, so none is
+    imported. A certificate left on the HSM under an evicted key's ID
+    is evicted with that key, once the new key has loaded.
 
-    An object evicted to make room for a key or certificate that then
-    fails to import is imported again from its backup before the error
-    is raised. Evictions made for an object that did load stay.
+    Only keys that is_ondemand marks as on-demand are evicted, also
+    among the keys outside key_ids in the searched domains. A key
+    evicted to make room for a key that then fails to import is
+    imported again from its backup before the error is raised.
 
     Args:
         config: Connector URL, authentication key, and password.
         key_dir: Directory backups are read from.
         key_ids: The "0x%04x"-style key IDs to ensure are available,
             e.g. "0x2000".
-        restore_mode: If True, a key/cert missing its on-disk backup is
-            skipped rather than treated as an error, unless that leaves
-            nothing to load for the key. Every key_id, not just an
-            on-demand one, is considered, and the domain search also
-            covers exportable_domain.
         is_ondemand: True if an object ID may be freely evicted and
             reloaded, i.e. it was exported under wrap.
-        verify_key_ids: If False, skip filtering key_ids down to the
-            on-demand subset first, which restore_mode keeps whole.
-        exportable_domain: Domain assigned to exportable keys/certs.
-        ondemand_domain: Domain assigned to on-demand keys/certs, and
-            searched for eviction candidates.
-        opaque_capabilities: Base capabilities for imported
-            certificates, before the exportable-under-wrap suffix.
-        after_key: Called with each key ID once its key and certificate
-            are loaded, unless both were loaded already.
+        lookup_domains: Comma-separated domains searched for loaded
+            keys and eviction candidates.
+        after_key: Called with each key ID once its key is loaded,
+            unless it was loaded already.
 
     Returns:
         None.
 
     Raises:
-        RuntimeError: If a key or cert cannot be found on disk outside
-            restore_mode, if no eviction candidate can be found while
-            space is needed, or if restore_mode leaves nothing to load
-            for a key.
+        RuntimeError: If a key's wrapped backup cannot be found on disk,
+            or if no eviction candidate can be found while space is
+            needed.
         yubihsm.exceptions.YubiHsmError: If the SDK session or an
             operation fails.
     """
     from yubihsm.defs import OBJECT
 
-    if verify_key_ids:
-        key_ids = [
-            key_id
-            for key_id in key_ids
-            if is_ondemand(int(key_id, 16)) or restore_mode
-        ]
+    deletion_ineligible = {int(key_id, 16) for key_id in key_ids}
 
-    deletion_ineligible_keys = {int(key_id, 16) for key_id in key_ids}
-    deletion_ineligible_certs = set(deletion_ineligible_keys)
-
-    lookup_domain = ondemand_domain
-    if restore_mode:
-        lookup_domain = f"{exportable_domain},{ondemand_domain}"
-    existing = list_restorable_objects(config, lookup_domain)
+    existing = list_restorable_objects(config, lookup_domains)
     middle_id = existing[len(existing) // 2].id if existing else 0
 
     for key_id in key_ids:
         object_id = int(key_id, 16)
-        should_make_space = should_make_space_on_hsm(get_storage_info(config))
-        deletion_candidate_key_id: int | None = None
-        deletion_candidate_cert_id: int | None = None
-        key_found = False
-        cert_found = False
-        prefer_lowest_id = object_id >= middle_id
-
-        for obj in existing:
-            if obj.id == object_id:
-                if obj.object_type == OBJECT.ASYMMETRIC_KEY:
-                    key_found = True
-                elif obj.object_type == OBJECT.OPAQUE:
-                    cert_found = True
-                continue
-
-            if not should_make_space:
-                if key_found and cert_found:
-                    break
-                continue
-
-            if (
-                (
-                    deletion_candidate_key_id is None
-                    or deletion_candidate_cert_id is None
-                )
-                and is_object_available_on_disk(
-                    key_dir,
-                    obj.id,
-                    obj.object_type,
-                )
-                and is_ondemand(obj.id)
-            ):
-                if (
-                    obj.object_type == OBJECT.ASYMMETRIC_KEY
-                    and obj.id not in deletion_ineligible_keys
-                ):
-                    if not prefer_lowest_id:
-                        deletion_candidate_key_id = obj.id
-                    elif deletion_candidate_key_id is None:
-                        deletion_candidate_key_id = obj.id
-                elif (
-                    obj.object_type == OBJECT.OPAQUE
-                    and obj.id not in deletion_ineligible_certs
-                ):
-                    if not prefer_lowest_id:
-                        deletion_candidate_cert_id = obj.id
-                    elif deletion_candidate_cert_id is None:
-                        deletion_candidate_cert_id = obj.id
-
-        if key_found and cert_found:
+        if any(
+            obj.id == object_id and obj.object_type == OBJECT.ASYMMETRIC_KEY
+            for obj in existing
+        ):
             continue
 
-        key_missing_on_disk = False
-        if not key_found:
-            if not _is_nonempty_regular_file(
-                key_dir / f"{key_id}-asymmetric-key.yhw",
-            ):
-                message = (
-                    f"Wanted to load key {key_id} but could not find a "
-                    "wrapped copy on disk"
-                )
-                if not restore_mode:
-                    raise RuntimeError(message)
-                print(message, file=sys.stderr)
-                key_missing_on_disk = True
-            if should_make_space and deletion_candidate_key_id is None:
+        backup = key_dir / f"{key_id}-asymmetric-key.yhw"
+        if not _is_nonempty_regular_file(backup):
+            raise RuntimeError(
+                f"Wanted to load key {key_id} but could not find "
+                "a wrapped copy on disk",
+            )
+
+        deletion_candidate: int | None = None
+        if should_make_space_on_hsm(get_storage_info(config)):
+            prefer_lowest_id = object_id >= middle_id
+            for obj in existing:
+                if (
+                    obj.object_type == OBJECT.ASYMMETRIC_KEY
+                    and obj.id not in deletion_ineligible
+                    and is_ondemand(obj.id)
+                    and is_object_available_on_disk(
+                        key_dir,
+                        obj.id,
+                        obj.object_type,
+                    )
+                    and (not prefer_lowest_id or deletion_candidate is None)
+                ):
+                    deletion_candidate = obj.id
+            if deletion_candidate is None:
                 raise RuntimeError(
                     f"Could not find any on-demand key to delete to make "
                     f"room for {key_id}",
                 )
 
-        cert_missing_on_disk = False
-        if not cert_found:
-            if not is_object_available_on_disk(
-                key_dir,
-                object_id,
-                OBJECT.OPAQUE,
-            ):
-                message = (
-                    f"Wanted to load cert {key_id} but could not find it "
-                    "on disk"
+        # Decode before evicting, so an unreadable backup fails with the
+        # HSM still untouched.
+        wrapped = decode_wrapped_key_backup(backup.read_bytes(), str(backup))
+        if deletion_candidate is not None:
+            delete_object(config, deletion_candidate, OBJECT.ASYMMETRIC_KEY)
+            deletion_ineligible.add(deletion_candidate)
+        try:
+            import_wrapped_key(config, key_id, wrapped)
+        except Exception:
+            if deletion_candidate is not None:
+                evicted = f"0x{deletion_candidate:04x}"
+                evicted_backup = key_dir / f"{evicted}-asymmetric-key.yhw"
+                import_wrapped_key(
+                    config,
+                    evicted,
+                    decode_wrapped_key_backup(
+                        evicted_backup.read_bytes(),
+                        str(evicted_backup),
+                    ),
                 )
-                if not restore_mode:
-                    raise RuntimeError(message)
-                print(message, file=sys.stderr)
-                cert_missing_on_disk = True
-            if should_make_space and deletion_candidate_cert_id is None:
-                raise RuntimeError(
-                    f"Could not find any on-demand cert to delete to make "
-                    f"room for {key_id}",
-                )
+            raise
 
-        if (
-            restore_mode
-            and (key_found or key_missing_on_disk)
-            and (cert_found or cert_missing_on_disk)
+        if deletion_candidate is not None and any(
+            obj.id == deletion_candidate
+            and obj.object_type == OBJECT.OPAQUE
+            and is_object_available_on_disk(key_dir, obj.id, obj.object_type)
+            for obj in existing
         ):
-            raise RuntimeError(
-                f"Failed to find any on-disk keys or certs for {key_id}",
-            )
+            from yubihsm.exceptions import YubiHsmError
 
-        domain, resolved_opaque_capabilities = _resolve_domain_and_capabilities(
-            is_ondemand=is_ondemand(object_id),
-            exportable_domain=exportable_domain,
-            ondemand_domain=ondemand_domain,
-            opaque_capabilities=opaque_capabilities,
-        )
-
-        if not key_found and not key_missing_on_disk:
-            # Decode before evicting, so an unreadable backup fails with the
-            # HSM still untouched.
-            backup = key_dir / f"{key_id}-asymmetric-key.yhw"
-            wrapped = decode_wrapped_key_backup(
-                backup.read_bytes(),
-                str(backup),
-            )
-            if deletion_candidate_key_id is not None:
-                delete_object(
-                    config,
-                    deletion_candidate_key_id,
-                    OBJECT.ASYMMETRIC_KEY,
-                )
-                deletion_ineligible_keys.add(deletion_candidate_key_id)
             try:
-                import_wrapped_key(config, key_id, wrapped)
-            except Exception:
-                if deletion_candidate_key_id is not None:
-                    evicted = f"0x{deletion_candidate_key_id:04x}"
-                    evicted_backup = key_dir / f"{evicted}-asymmetric-key.yhw"
-                    import_wrapped_key(
-                        config,
-                        evicted,
-                        decode_wrapped_key_backup(
-                            evicted_backup.read_bytes(),
-                            str(evicted_backup),
-                        ),
-                    )
-                raise
-
-        if not cert_found and not cert_missing_on_disk:
-            certificate_pem = (key_dir / f"{key_id}.x509.pem").read_bytes()
-            if deletion_candidate_cert_id is not None:
-                delete_object(config, deletion_candidate_cert_id, OBJECT.OPAQUE)
-                deletion_ineligible_certs.add(deletion_candidate_cert_id)
-            try:
-                import_certificate(
-                    config,
-                    key_id=key_id,
-                    domains=domain,
-                    capabilities=resolved_opaque_capabilities,
-                    certificate_pem=certificate_pem,
+                delete_object(config, deletion_candidate, OBJECT.OPAQUE)
+            except (YubiHsmError, RuntimeError) as error:
+                print(
+                    "Warning: could not delete the certificate of evicted "
+                    f"key 0x{deletion_candidate:04x} ({error}).",
+                    file=sys.stderr,
                 )
-            except Exception:
-                if deletion_candidate_cert_id is not None:
-                    evicted = f"0x{deletion_candidate_cert_id:04x}"
-                    evicted_domain, evicted_capabilities = (
-                        _resolve_domain_and_capabilities(
-                            is_ondemand=True,
-                            exportable_domain=exportable_domain,
-                            ondemand_domain=ondemand_domain,
-                            opaque_capabilities=opaque_capabilities,
-                        )
-                    )
-                    import_certificate(
-                        config,
-                        key_id=evicted,
-                        domains=evicted_domain,
-                        capabilities=evicted_capabilities,
-                        certificate_pem=(
-                            key_dir / f"{evicted}.x509.pem"
-                        ).read_bytes(),
-                    )
-                raise
 
         if after_key is not None:
             after_key(key_id)
 
 
-def _device_key_ids(
-    keymapper: Keymapper,
-    devices: Sequence[str],
-) -> dict[str, frozenset[str]]:
-    """
-    Map each device to the key IDs of its per-device keys, the entries of
-    the keymapper's device_specific_key_ids_map.
-
-    Args:
-        keymapper: The release's keymapper.
-        devices: Device names to build entries for.
-
-    Returns:
-        Each requested device mapped to its set of per-device key IDs.
-
-    Raises:
-        RuntimeError: If a device has no per-device keys.
-        ValueError: If the keymapper does not assign key IDs.
-    """
-    result = {device: keymapper.device_key_ids(device) for device in devices}
-    for device, ids in result.items():
-        if not ids:
-            raise RuntimeError(f"The keymapper has no keys for {device}")
-    return result
-
-
-def populate_devices_with_loaded_keys_arrays(
-    config: YubiHsmConfig,
-    keymapper: Keymapper,
-    devices: Sequence[str],
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """
-    Partition devices by whether every key they need is already loaded.
-
-    A device counts as loaded only if every per-device key ID the
-    keymapper gives it has both its key and its certificate on the HSM.
-
-    Args:
-        config: Connector URL, authentication key, and password.
-        keymapper: Keymapper giving each device's per-device key IDs.
-        devices: Device names to partition.
-
-    Returns:
-        A (devices_with_loaded_keys, devices_without_loaded_keys) pair,
-        each in the same order as devices.
-
-    Raises:
-        yubihsm.exceptions.YubiHsmError: If the SDK session or
-            operation fails.
-        RuntimeError: If a managed connector fails to restart after a
-            connector-level failure.
-    """
-    key_ids_by_device = _device_key_ids(keymapper, devices)
-    fully_loaded = get_loaded_key_status(config).fully_loaded_ids
-
-    with_loaded_keys: list[str] = []
-    without_loaded_keys: list[str] = []
-    for device in devices:
-        key_ids = key_ids_by_device[device]
-        if all(int(key_id, 16) in fully_loaded for key_id in key_ids):
-            with_loaded_keys.append(device)
-        else:
-            without_loaded_keys.append(device)
-    return tuple(with_loaded_keys), tuple(without_loaded_keys)
-
-
-def ensure_all_keys_available_for_devices(
-    config: YubiHsmConfig,
-    keymapper: Keymapper,
-    key_dir: Path,
-    devices: Sequence[str],
-    *,
-    is_ondemand: Callable[[int], bool],
-    exportable_domain: str,
-    ondemand_domain: str,
-    opaque_capabilities: str,
-    after_key: Callable[[str], None] | None = None,
-) -> None:
-    """
-    Ensure every per-device key the given devices need is loaded.
-
-    It extracts no audit log.
-
-    Args:
-        config: Connector URL, authentication key, and password.
-        keymapper: Keymapper giving each device's per-device key IDs.
-        key_dir: Directory backups are read from.
-        devices: Device names whose keys must be available.
-        is_ondemand: Whether a numeric object ID is an on-demand object.
-        exportable_domain: Domain(s) for restore-mode-only keys.
-        ondemand_domain: Domain(s) searched for on-demand objects.
-        opaque_capabilities: Capabilities to apply to imported certs.
-        after_key: See ensure_keys_are_available().
-
-    Returns:
-        None.
-
-    Raises:
-        yubihsm.exceptions.YubiHsmError: If the SDK session or
-            operation fails.
-        RuntimeError: If a managed connector fails to restart after a
-            connector-level failure.
-    """
-    key_ids_by_device = _device_key_ids(keymapper, devices)
-    needed_keys: set[str] = set()
-    for device in devices:
-        needed_keys.update(key_ids_by_device[device])
-    ensure_keys_are_available(
-        config,
-        key_dir,
-        tuple(sorted(needed_keys)),
-        restore_mode=False,
-        is_ondemand=is_ondemand,
-        verify_key_ids=False,
-        exportable_domain=exportable_domain,
-        ondemand_domain=ondemand_domain,
-        opaque_capabilities=opaque_capabilities,
-        after_key=after_key,
-    )
-
-
-def _restorable_key_ids_on_disk(key_dir: Path) -> tuple[str, ...]:
-    """
-    List the deduplicated key IDs backed up in a key directory.
-
-    Args:
-        key_dir: Directory to scan.
-
-    Returns:
-        Deduplicated key IDs found in key_dir, sorted.
-    """
-    found: set[str] = set()
-    for pattern in ("*.x509.pem", "*-asymmetric-key.yhw"):
-        for path in key_dir.glob(pattern):
-            name = path.name
-            if name.endswith("-asymmetric-key.yhw"):
-                found.add(name[: -len("-asymmetric-key.yhw")])
-            else:
-                found.add(name[: -len(".x509.pem")])
-    return tuple(sorted(found))
-
-
-def restore_all_keys_and_certs(
+def restore_all_keys(
     config: YubiHsmConfig,
     key_dir: Path,
     log_file: Path,
@@ -1351,24 +1022,22 @@ def restore_all_keys_and_certs(
     is_ondemand: Callable[[int], bool],
     exportable_domain: str,
     ondemand_domain: str,
-    opaque_capabilities: str,
 ) -> None:
     """
-    Bulk-restore every key/cert backed up in a key directory.
+    Bulk-restore every key backed up in a key directory.
 
     A manual disaster-recovery tool. Restores one key at a time in
-    restore_mode and extracts the audit log after every key, so that a
+    both domains and extracts the audit log after every key, so that a
     long restore cannot fill the HSM's audit log. Stops at the first
     key that fails.
 
     Args:
         config: Connector URL, authentication key, and password.
-        key_dir: Directory to restore keys and certificates from.
+        key_dir: Directory to restore keys from.
         log_file: Audit log file to append entries to after each key.
         is_ondemand: Whether a numeric object ID is an on-demand object.
         exportable_domain: Domain(s) for restore-mode-only keys.
         ondemand_domain: Domain(s) searched for on-demand objects.
-        opaque_capabilities: Capabilities to apply to imported certs.
 
     Returns:
         None.
@@ -1377,24 +1046,22 @@ def restore_all_keys_and_certs(
         yubihsm.exceptions.YubiHsmError: If the SDK session or
             operation fails.
         RuntimeError: If a managed connector fails to restart after a
-            connector-level failure, or if no eviction candidate can be
-            found while space is needed.
+            connector-level failure, if a key's wrapped backup is empty or
+            not a regular file, or if no eviction candidate can be found
+            while space is needed.
     """
     result = 0
     try:
-        for key_id in _restorable_key_ids_on_disk(key_dir):
+        for path in sorted(key_dir.glob("*-asymmetric-key.yhw")):
+            key_id = path.name.removesuffix("-asymmetric-key.yhw")
             key_result = 1
             try:
                 ensure_keys_are_available(
                     config,
                     key_dir,
                     (key_id,),
-                    restore_mode=True,
                     is_ondemand=is_ondemand,
-                    verify_key_ids=False,
-                    exportable_domain=exportable_domain,
-                    ondemand_domain=ondemand_domain,
-                    opaque_capabilities=opaque_capabilities,
+                    lookup_domains=f"{exportable_domain},{ondemand_domain}",
                 )
                 key_result = 0
             finally:
@@ -1412,7 +1079,7 @@ def restore_all_keys_and_certs(
         extract_and_save_audit_log(
             config,
             log_file,
-            comment=f"Function: restore_all_keys_and_certs Result: {result}",
+            comment=f"Function: restore_all_keys Result: {result}",
         )
 
 
@@ -1593,8 +1260,8 @@ def _recent_log_lines(log_file: Path) -> set[str]:
 def extract_and_save_audit_log(
     config: YubiHsmConfig,
     log_file: Path,
-    comment: str | None = None,
-) -> tuple[LogEntry, ...]:
+    comment: str,
+) -> None:
     """
     Append a device's new audit log entries and a comment line to a log
     file, over one session opened when first needed and opened again
@@ -1603,10 +1270,7 @@ def extract_and_save_audit_log(
     Args:
         config: Connector URL, authentication key, and password.
         log_file: Path to append the comment line and entries to.
-        comment: Optional single-line comment recorded with the entries.
-
-    Returns:
-        The audit log entries appended to log_file.
+        comment: Single-line comment recorded with the entries.
 
     Raises:
         OSError: If log_file's directory cannot be created or written.
@@ -1631,7 +1295,7 @@ def extract_and_save_audit_log(
         return _retry_after_connector_restart(attempt)
 
     try:
-        return save_audit_log(
+        save_audit_log(
             lambda: run(lambda session: session.get_log_entries().entries),
             lambda number: run(lambda session: session.set_log_index(number)),
             log_file,
@@ -1646,14 +1310,13 @@ def save_audit_log(
     read: Callable[[], Sequence[LogEntry]],
     acknowledge: Callable[[int], None],
     log_file: Path,
-    comment: str | None = None,
-) -> tuple[LogEntry, ...]:
+    comment: str,
+) -> None:
     """
     Append the entries read returns and a comment line to a log file,
     then acknowledge them.
 
-    Nothing is written when there are no entries and no comment, a comment
-    line is always written otherwise, and only entries appended to the log
+    A comment line is always written, and only entries appended to the log
     file are acknowledged to the device. An entry whose line log_file holds
     already, left on the device by an acknowledgement that failed, is not
     written again, and the file is synced before the acknowledgement.
@@ -1662,22 +1325,15 @@ def save_audit_log(
         read: Returns every entry the device retains, oldest first.
         acknowledge: Marks entries up to and including a number as saved.
         log_file: Path to append the comment line and entries to.
-        comment: Optional single-line comment recorded with the entries.
-
-    Returns:
-        The audit log entries appended to log_file.
+        comment: Single-line comment recorded with the entries.
 
     Raises:
         OSError: If log_file's directory cannot be created or written.
         AuditLogNotAcknowledged: If the entries are written but the device
             does not take the acknowledgement.
     """
-    clean_comment = (
-        "" if comment is None else comment.replace("\n", "").replace("\r", "")
-    )
+    clean_comment = comment.replace("\n", "").replace("\r", "")
     entries_read = tuple(read())
-    if not entries_read and not clean_comment:
-        return ()
 
     log_file.parent.mkdir(parents=True, exist_ok=True)
     written = _recent_log_lines(log_file)
@@ -1701,4 +1357,3 @@ def save_audit_log(
                 f"wrote {len(entries)} audit log entries to {log_file} "
                 f"but could not acknowledge them: {error}",
             ) from error
-    return entries
