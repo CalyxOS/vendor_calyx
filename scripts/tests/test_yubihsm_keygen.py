@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
 from yubihsm.defs import COMMAND, OBJECT
-from yubihsm_emulator import Connector, stored_certificate
+from yubihsm_emulator import Connector, EmulatedYubiHsm
 
 KEYGEN_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.keygen.sh"
 KEYGEN_FIXTURE = Path(__file__).parent / "fixtures" / "yubihsm-keygen.json"
@@ -109,35 +109,43 @@ def _assert_files_match_the_device(root: Path, yubihsm: Connector) -> None:
                 0x0010,
             ) == (key_id, OBJECT.ASYMMETRIC_KEY)
         elif name.endswith(".x509.pem"):
-            key_id = int(name.split(".")[0], 16)
-            stored = device.get(key_id, OBJECT.OPAQUE)
-            assert stored is not None
-            assert x509.load_pem_x509_certificate(
-                path.read_bytes(),
-            ) == stored_certificate(stored)
+            stem = name.split(".")[0]
+            assert path.read_bytes() == (
+                path.with_name(f"{stem}.attestation.pem").read_bytes()
+            )
+            _assert_public_key_of(
+                device,
+                int(stem, 16),
+                x509.load_pem_x509_certificate(path.read_bytes()).public_key(),
+            )
         elif (
             name.startswith("0x")
             and name.count(".") == 1
             and (name.endswith(".pem"))
         ):
-            key = device.get(int(name.split(".")[0], 16), OBJECT.ASYMMETRIC_KEY)
-            assert key is not None
-            private = serialization.load_der_private_key(
-                key.data,
-                None,
-                unsafe_skip_rsa_key_validation=True,
+            _assert_public_key_of(
+                device,
+                int(name.split(".")[0], 16),
+                serialization.load_pem_public_key(path.read_bytes()),
             )
-            public = serialization.load_pem_public_key(path.read_bytes())
-            expected = private.public_key()
-            assert isinstance(
-                public,
-                (rsa.RSAPublicKey, ec.EllipticCurvePublicKey),
-            )
-            assert isinstance(
-                expected,
-                (rsa.RSAPublicKey, ec.EllipticCurvePublicKey),
-            )
-            assert public.public_numbers() == expected.public_numbers()
+
+
+def _assert_public_key_of(
+    device: EmulatedYubiHsm,
+    key_id: int,
+    public: object,
+) -> None:
+    key = device.get(key_id, OBJECT.ASYMMETRIC_KEY)
+    assert key is not None
+    private = serialization.load_der_private_key(
+        key.data,
+        None,
+        unsafe_skip_rsa_key_validation=True,
+    )
+    expected = private.public_key()
+    assert isinstance(public, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
+    assert isinstance(expected, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
+    assert public.public_numbers() == expected.public_numbers()
 
 
 def _audit_comments(root: Path, yubihsm: Connector) -> list[str]:
@@ -202,7 +210,7 @@ def test_yubihsm_keygen_skips_backed_up_keys(
     assert "No certs generated during the process." in rerun.stdout
     assert _objects(yubihsm, OBJECT.ASYMMETRIC_KEY) == generated
     assert COMMAND.GENERATE_ASYMMETRIC_KEY not in [
-        command for _, command, _ in yubihsm.device.history[commands:]
+        command for command, _ in yubihsm.device.history[commands:]
     ]
 
 
@@ -283,7 +291,7 @@ def test_yubihsm_keygen_previews_its_device_writes_under_dry_run(
         COMMAND.SIGN_ATTESTATION_CERTIFICATE,
         COMMAND.PUT_OPAQUE,
         COMMAND.DELETE_OBJECT,
-    } & {command for _, command, _ in yubihsm.device.history}
+    } & {command for command, _ in yubihsm.device.history}
     assert _tree(root / "keys") == {}
     generated = [
         line.split("--key-id ")[1].split()[0]

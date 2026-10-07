@@ -31,8 +31,6 @@ WRAP_KEY_ID = 0x0010
 
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
-    source = root / "source"
-    source.mkdir()
     (root / "devices").write_text("readonly devices=(bramble)\n")
     keymap = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py")).to_tsv(
         ("bramble",),
@@ -42,7 +40,7 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
         "PYTHONPATH": os.pathsep.join([str(SCRIPTS_DIR), YUBIHSM_SDK]),
         "PATH": os.environ["PATH"],
         "HOME": str(root),
-        "SOURCE_DIRECTORY": str(source),
+        "SOURCE_DIRECTORY": str(_source_directory(root)),
         "DEVICES_FILE": str(root / "devices"),
         "KEEP_PATH": str(root / "keep"),
         "KEYMAP_FILE": str(root / "keymap.tsv"),
@@ -168,7 +166,6 @@ def _outcome(
         for object_id in (0x0101, 0x0102):
             del device.objects[(object_id, OBJECT.ASYMMETRIC_KEY)]
     environment = _provisioning_tree(root, yubihsm)
-    environment["SOURCE_DIRECTORY"] = str(_source_directory(root))
     if avbtool is not None:
         environment.update(_keygen_environment(root, avbtool))
     result = _wizard(mode, environment, input_text, cwd=root)
@@ -340,11 +337,7 @@ def test_wizard_load_keys_dry_run_restores_nothing(
     def restore(*arguments: object, **options: object) -> None:
         raise AssertionError("restored under DRY_RUN")
 
-    monkeypatch.setattr(
-        yubihsm_provision,
-        "restore_all_keys_and_certs",
-        restore,
-    )
+    monkeypatch.setattr(yubihsm_provision, "restore_all_keys", restore)
     wizard = yubihsm_provision.ProvisionWizard(
         {"DRY_RUN": "y", "KEY_DIR": str(tmp_path)},
         cwd=tmp_path,
@@ -354,4 +347,4 @@ def test_wizard_load_keys_dry_run_restores_nothing(
 
     getattr(wizard, "_load_keys")()
 
-    assert "restore_all_keys_and_certs" in capsys.readouterr().err
+    assert "restore_all_keys" in capsys.readouterr().err
