@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import os
 import signal
+import socket
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 def _process_is_alive(pid: int) -> bool:
@@ -169,6 +171,47 @@ class YubiHsmConnector:
         )
         self._config.pid_file.write_text(f"{process.pid}\n")
         self._process = process
+
+    def wait_until_listening(self, timeout: float = 10.0) -> None:
+        """
+        Wait until the connector this instance started accepts connections
+        on the host and port of the connector URL.
+
+        Args:
+            timeout: Seconds to wait before giving up.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the connector exits, or does not listen within
+                timeout seconds.
+        """
+        if not self._managed() or self._process is None:
+            return
+        url = urlsplit(self._config.connector_url)
+        if url.hostname is None:
+            return
+        address = (
+            url.hostname,
+            url.port or (443 if url.scheme == "https" else 80),
+        )
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                socket.create_connection(address, timeout=1).close()
+            except OSError:
+                pass
+            else:
+                return
+            if self._process.poll() is not None:
+                raise RuntimeError("yubihsm-connector exited after starting.")
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "yubihsm-connector did not listen on "
+                    f"{url.hostname}:{address[1]} after starting.",
+                )
+            time.sleep(0.1)
 
     def stop(self) -> None:
         """
