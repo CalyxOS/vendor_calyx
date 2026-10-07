@@ -50,7 +50,7 @@ prompt_missing_variables() {
     no_incremental=y
   fi
   if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
-    echo "Build number overriden to $((BUILD_NUMBER + 1)) for AVB Rollback Index override build"
+    echo "Build number overriden to $((10#$BUILD_NUMBER + 1)) for AVB Rollback Index override build"
   fi
   ask_variable NUM_SIGN_JOBS "3" n y || return $?
   ask_variable NUM_INCREMENTAL_JOBS "3" n y || return $?
