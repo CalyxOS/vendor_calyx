@@ -150,7 +150,7 @@ class YubiHsmSessionService:
                     lambda session: session.set_log_index(number),
                 ),
                 self._audit_log_path,
-                request.get("comment"),
+                request["comment"],
             )
         except AuditLogNotAcknowledged as error:
             return {"status": "ok", "unacknowledged": str(error)}

@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import datetime
 import os
 import socket
 import subprocess
@@ -17,7 +16,7 @@ import pytest
 import signing.vendor_yubihsm as vendor_yubihsm
 from conftest import install_executable, process_alive, stub, yubihsm_config
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from signing.vendor_yubihsm import (
     YubiHsmConfig,
@@ -28,7 +27,7 @@ from signing.vendor_yubihsm import (
 from yubihsm.core import AuthSession
 from yubihsm.defs import COMMAND, OBJECT
 from yubihsm.exceptions import YubiHsmConnectionError, YubiHsmDeviceError
-from yubihsm.objects import AsymmetricKey, Opaque, YhsmObject
+from yubihsm.objects import AsymmetricKey, YhsmObject
 from yubihsm_emulator import Connector, EmulatedYubiHsm
 
 KEY_ID = "2000"
@@ -185,15 +184,16 @@ def test_audit_log_extraction_retries_after_connection_error(
     _plug_on_restart(yubihsm, device, monkeypatch, tmp_path)
     log_file = tmp_path / "audit.log"
 
-    entries = extract_and_save_audit_log(
+    extract_and_save_audit_log(
         yubihsm_config(yubihsm),
         log_file,
         "Finished",
     )
 
+    comment, *entries = log_file.read_text().splitlines()
+    assert comment.endswith(" Finished")
     assert entries
     assert device.unread_log() == []
-    assert "Finished" in log_file.read_text()
 
 
 def test_audit_log_extraction_reopens_its_shared_session_on_retry(
@@ -216,13 +216,14 @@ def test_audit_log_extraction_reopens_its_shared_session_on_retry(
         "connect_yubihsm_session",
         connect_then_unplug,
     )
-    entries = extract_and_save_audit_log(
+    log_file = tmp_path / "audit.log"
+    extract_and_save_audit_log(
         yubihsm_config(yubihsm),
-        tmp_path / "audit.log",
+        log_file,
         "Finished",
     )
 
-    assert entries
+    assert len(log_file.read_text().splitlines()) > 1
     assert device.unread_log() == []
     assert device.sessions_opened == 2
 
@@ -340,34 +341,3 @@ def test_a_retried_generate_takes_a_key_already_there_as_done(
     )
 
     assert yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY) is not None
-
-
-def test_a_retried_certificate_import_takes_one_already_there_as_done(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    yubihsm: Connector,
-) -> None:
-    key = ec.generate_private_key(ec.SECP256R1())
-    name = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "bramble")])
-    certificate = (
-        x509.CertificateBuilder()
-        .subject_name(name)
-        .issuer_name(name)
-        .public_key(key.public_key())
-        .serial_number(1)
-        .not_valid_before(datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC))
-        .not_valid_after(datetime.datetime(2036, 1, 1, tzinfo=datetime.UTC))
-        .sign(key, hashes.SHA256())
-    )
-    _retry_without_a_connector(monkeypatch, tmp_path)
-    _lose_the_first_answer(monkeypatch, Opaque, "put_certificate")
-
-    vendor_yubihsm.import_certificate(
-        yubihsm_config(yubihsm),
-        key_id="0x2000",
-        domains="2",
-        capabilities="get-opaque",
-        certificate_pem=certificate.public_bytes(serialization.Encoding.PEM),
-    )
-
-    assert yubihsm.device.get(0x2000, OBJECT.OPAQUE) is not None

@@ -459,15 +459,19 @@ class SigningSession:
                 self.transcript.stop()
         return 0
 
-    def _finalize_vendor_release(self) -> None:
-        sign_environment.finalize_vendor_release(
+    def _finalize_vendor_release(
+        self,
+        vendor: sign_environment.Vendor,
+        build_number: str,
+    ) -> None:
+        vendor.finalize_release(
             self.environment,
             device=self.device,
-            build_number=self.environment.get("BUILD_NUMBER", ""),
+            build_number=build_number,
             record_finish=self.vendor_release_initialized,
-            inherited=self.inherited_environment,
             command=self.command,
         )
+        vendor.cleanup(self.environment, inherited=self.inherited_environment)
 
     def _resolve_keys(self, keymapper: Keymapper) -> None:
         """
@@ -484,12 +488,10 @@ class SigningSession:
     def prepare_for_signing_full(
         self,
         *,
-        device: str,
-        build_number: str,
         command_argv: list[str],
     ) -> None:
         try:
-            sign_environment.load_vendor(self.environment)
+            vendor = sign_environment.load_vendor(self.environment)
             try:
                 keymapper = load_keymapper(self.environment, self.metadata)
             except ValueError as error:
@@ -502,9 +504,8 @@ class SigningSession:
             except ValueError as error:
                 print(error, file=sys.stderr)
                 raise ReleaseAbort(1) from error
-            parent = self.environment.get("TMPDIR") or "/dev/shm"
-            tmpdir = Path(parent)
-            if _signs_through_pkcs11(self.environment):
+            if vendor is not None:
+                parent = self.environment.get("TMPDIR") or "/dev/shm"
                 tmpdir = Path(tempfile.mkdtemp(prefix="signing.", dir=parent))
                 self.tmpdir = tmpdir
                 self._resources.callback(
@@ -512,26 +513,29 @@ class SigningSession:
                     tmpdir,
                     ignore_errors=True,
                 )
-            self._resources.callback(self._finalize_vendor_release)
-            sign_environment.maybe_initialize_vendor(
-                self.environment,
-                tmpdir=tmpdir,
-            )
-            release_initialized = self.environment.get(
-                "PKCS11_VENDOR_INITIALIZED_RELEASE",
-            )
-            sign_environment.maybe_initialize_vendor_release(
-                self.environment,
-                device=device,
-                build_number=build_number,
-                keymapper=keymapper,
-                command=self.command,
-            )
-            self.vendor_release_initialized = (
-                release_initialized != "y"
-                and self.environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE")
-                == "y"
-            )
+                build_number = self.environment.get("BUILD_NUMBER", "")
+                self._resources.callback(
+                    self._finalize_vendor_release,
+                    vendor,
+                    build_number,
+                )
+                sign_environment.maybe_initialize_vendor(
+                    self.environment,
+                    tmpdir=tmpdir,
+                )
+                if (
+                    self.environment.get("PKCS11_VENDOR_INITIALIZED_RELEASE")
+                    != "y"
+                ):
+                    vendor.initialize_release(
+                        self.environment,
+                        device=self.device,
+                        build_number=build_number,
+                        keymapper=keymapper,
+                        command=self.command,
+                    )
+                    self.environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] = "y"
+                    self.vendor_release_initialized = True
             self._maybe_start_signing_server()
             prepare_signing_args(self.environment, self.args)
         except (RuntimeError, OSError) as error:
@@ -715,8 +719,6 @@ class ReleaseOrchestrator(SigningSession):
         skip_signing = self.environment.get("SKIP_SIGNING") == "y"
         if not skip_signing:
             self.prepare_for_signing_full(
-                device=self.device,
-                build_number=self.environment["BUILD_NUMBER"],
                 command_argv=[
                     self.program,
                     self.device,
@@ -1110,8 +1112,6 @@ class DeltaOrchestrator(SigningSession):
             raise ReleaseAbort(1)
         try:
             self.prepare_for_signing_full(
-                device=self.device,
-                build_number=self.environment.get("BUILD_NUMBER", ""),
                 command_argv=[
                     self.program,
                     self.device,
