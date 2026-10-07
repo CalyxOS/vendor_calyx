@@ -251,12 +251,12 @@ yubihsm() {
   extract_logs "$prepend" \
     || \
     {
-      err=${err:-$?}
+      local log_err=$?
       echo "Failed to extract logs" >&2
       if [ "${NO_LOG_FAIL:-}" = "y" ]; then
-        return 0
+        return ${err:-0}
       else
-        return $err
+        return ${err:-$log_err}
       fi
     }
   return ${err:-0}
