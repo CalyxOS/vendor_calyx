@@ -52,7 +52,7 @@ load_keymapper() {
     echo "Failed to initialize keymapper: $keymapper_path" >&2
     return $err
   }
-  echo "Using keymapper: $keymapper" >&2
+  echo "Using keymapper: ${KEYMAPPER_FILE:-$keymapper}" >&2
 }
 
 initialize_keymapper() {
