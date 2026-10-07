@@ -514,7 +514,8 @@ sort_and_separate_devices_by_key_availability() {
     if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
       next_target=$((next_target + 1))
     fi
-    if [ -n "$next_build" ]; then
+    local preexisting_build=${device_to_preexisting_build[$device]:-}
+    if [ -n "$next_build" ] && [ "$next_build" != "$preexisting_build" ]; then
       sign_pairs_without_loaded_keys+=("$device,$next_build,$next_target")
     fi
     local prev_build=${device_to_prev_build[$device]:-}
