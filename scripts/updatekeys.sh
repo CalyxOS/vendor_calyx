@@ -50,6 +50,7 @@ load_keymapper
 [[ -d $1 ]] || error "key directory does not exist"
 
 for k in "${keys_core[@]}"; do
+  [ -n "$k" ] || continue
   keyval=$(get_key core "$k" || exit $?)
   [ -n "$keyval" ] || continue
   if [[ ! -e ${keyval}.pk8 || ! -e ${keyval}.x509.pem ]]; then
@@ -61,6 +62,7 @@ for k in "${keys_core[@]}"; do
 done
 
 for k in "${keys_apex_apk[@]}"; do
+  [ -n "$k" ] || continue
   keyval=$(get_key apex_apk "$k" || exit $?)
   [ -n "$keyval" ] || continue
   if [[ ! -e ${keyval}.pk8 || ! -e ${keyval}.x509.pem ]]; then
@@ -97,6 +99,7 @@ if [[ -e ${KEY_DIR%/}/com.android.runtime.release.x509.pem ]]; then
 fi
 
 for apex in "${keys_apex[@]}"; do
+  [ -n "$apex" ] || continue
   keyval=$(get_key apex_container "$apex" || exit $?)
   [ -n "$keyval" ] || continue
   if [[ ! -e $keyval.pk8 || ! -e $keyval.x509.pem ]]; then
@@ -108,6 +111,7 @@ for apex in "${keys_apex[@]}"; do
 done
 
 for apex in "${keys_apex[@]}"; do
+  [ -n "$apex" ] || continue
   keyval=$(KEY_SUFFIX= get_key apex_payload "$apex" || exit $?)
   [ -n "$keyval" ] || continue
   if [[ ! -e $keyval.pem ]]; then

@@ -162,6 +162,7 @@ generate_keys() {
   declare -A already_generated
   local key_type
   for key_type in "${key_types[@]?Key types should be listed in metadata}"; do
+    [ -n "$key_type" ] || continue
     echo "###################################"
     echo "### GENERATING KEYS: $key_type"
     echo "###################################"
@@ -171,6 +172,7 @@ generate_keys() {
     indirect_array="${array_name}[@]" || return $?
     local key_name
     for key_name in "${!indirect_array}"; do
+      [ -n "$key_name" ] || continue
       echo "# KEY: $key_name"
 
       # Skip getting key value for each device if it's not a per-device key.
