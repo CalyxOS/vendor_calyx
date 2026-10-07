@@ -10,11 +10,9 @@ import os
 import pathlib
 import sys
 
-import cryptography.hazmat._oid
 import cryptography.x509
 import yubihsm
 import yubihsm.exceptions
-from cryptography.hazmat.bindings._rust import ObjectIdentifier
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from yubihsm.defs import CAPABILITY, ERROR
 from yubihsm.objects import WrapKey
@@ -80,7 +78,7 @@ def main():
             subject = pem.subject.rfc4514_string()
             key_id_index = subject.find("id:")
             key_id = subject[key_id_index + 3:]
-            label_bytes = pem.extensions.get_extension_for_oid(ObjectIdentifier("1.3.6.1.4.1.41482.4.9")).value.value
+            label_bytes = pem.extensions.get_extension_for_oid(cryptography.x509.ObjectIdentifier("1.3.6.1.4.1.41482.4.9")).value.value
             label = label_bytes[2:].decode()
             print(f"Importing {cert_file} {key_id} {label} ...")
             try:
