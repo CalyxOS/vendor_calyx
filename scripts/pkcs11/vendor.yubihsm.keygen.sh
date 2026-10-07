@@ -92,9 +92,7 @@ initialize_post_metadata() {
 generate_keypair() {
   local key_id=$1
   local key_label=$2
-  local key_type=$3   # unused
-  local key_name=$4   # unused
-  local key_algorithm=$5
+  local key_algorithm=$3
   local yubico_key_algorithm
   yubico_key_algorithm=$(get_yubico_key_algorithm_name "$key_algorithm") || return $?
   local domain
@@ -128,10 +126,7 @@ generate_keypair() {
 
 generate_cert() {
   local key_id=$1
-  local key_label=$2  # unused
   local key_type=$3
-  local key_name=$4
-  local key_algorithm=$5
   local domain
   local capabilities
   domain=$(get_domains_for_key_id "$key_id") || return $?
