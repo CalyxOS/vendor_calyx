@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import contextlib
 import os
 import re
 import struct
@@ -58,13 +59,13 @@ class YubiHsmConfig:
 
 def restart_connector() -> None:
     """
-    Restart the local yubihsm-connector this process manages, unless
-    NEVER_START_YUBIHSM_CONNECTOR=y leaves the connector to the user.
-    The caller sets YUBIHSM_CONNECTOR_PIDFILE.
+    Restart the local yubihsm-connector this process manages and wait
+    until it listens, unless NEVER_START_YUBIHSM_CONNECTOR=y leaves the
+    connector to the user. The caller sets YUBIHSM_CONNECTOR_PIDFILE.
 
     Raises:
         RuntimeError: If the existing connector cannot be stopped before
-            restarting it.
+            restarting it, or the new one exits or does not listen.
         OSError: If the connector binary cannot be executed.
     """
     if os.environ.get("NEVER_START_YUBIHSM_CONNECTOR") == "y":
@@ -81,6 +82,7 @@ def restart_connector() -> None:
         ),
     )
     connector.restart()
+    connector.wait_until_listening()
 
 
 def _run_with_session(
@@ -112,7 +114,6 @@ def _run_with_session(
             not a connection error, or if YUBIHSM_CONNECTOR_PIDFILE is
             unset, or if the retry itself fails.
     """
-    from yubihsm.exceptions import YubiHsmConnectionError
 
     def attempt() -> T:
         session = session_factory()
@@ -120,6 +121,29 @@ def _run_with_session(
             return operation(session)
         finally:
             session.close()
+
+    return _retry_after_connector_restart(attempt)
+
+
+def _retry_after_connector_restart(attempt: Callable[[], T]) -> T:
+    """
+    Run an attempt, and run it once more after a pause and a connector
+    restart if it fails with a connection error while
+    ``YUBIHSM_CONNECTOR_PIDFILE`` is set.
+
+    Args:
+        attempt: Callable performing the whole operation, safe to call
+            again after a connection error.
+
+    Returns:
+        The attempt's result, from the first call or the retry.
+
+    Raises:
+        Exception: Whatever attempt raises, if it is not a connection
+            error, or if YUBIHSM_CONNECTOR_PIDFILE is unset, or if the
+            retry itself fails.
+    """
+    from yubihsm.exceptions import YubiHsmConnectionError
 
     try:
         return attempt()
@@ -1576,7 +1600,8 @@ def extract_and_save_audit_log(
 ) -> tuple[LogEntry, ...]:
     """
     Append a device's new audit log entries and a comment line to a log
-    file, reading and acknowledging them over one session.
+    file, over one session opened when first needed and opened again
+    after a connector restart.
 
     Args:
         config: Connector URL, authentication key, and password.
@@ -1591,16 +1616,33 @@ def extract_and_save_audit_log(
         AuditLogNotAcknowledged: If the entries are written but the device
             does not take the acknowledgement.
     """
-    session = connect_yubihsm_session(config)
+    from yubihsm.exceptions import YubiHsmConnectionError
+
+    sessions: list[AuthSession] = []
+
+    def run(operation: Callable[[AuthSession], T]) -> T:
+        def attempt() -> T:
+            if not sessions:
+                sessions.append(connect_yubihsm_session(config))
+            try:
+                return operation(sessions[0])
+            except YubiHsmConnectionError:
+                with contextlib.suppress(Exception):
+                    sessions.pop().close()
+                raise
+
+        return _retry_after_connector_restart(attempt)
+
     try:
         return save_audit_log(
-            lambda: session.get_log_entries().entries,
-            session.set_log_index,
+            lambda: run(lambda session: session.get_log_entries().entries),
+            lambda number: run(lambda session: session.set_log_index(number)),
             log_file,
             comment,
         )
     finally:
-        session.close()
+        if sessions:
+            sessions.pop().close()
 
 
 def save_audit_log(
