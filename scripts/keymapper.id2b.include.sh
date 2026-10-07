@@ -266,6 +266,7 @@ fill_avb_arguments() {
   local avb_algorithm=SHA256_RSA${AVB_RSA_KEY_SIZE:-${RSA_KEY_SIZE:-4096}}
   avb_arguments=()
   for partition in "${keys_avb[@]}"; do
+    [ -n "$partition" ] || continue
     local avb_algorithm
     if declare -F get_key_algorithm >/dev/null; then
       avb_algorithm=$(get_key_algorithm avb "$partition")
@@ -300,8 +301,9 @@ _generate_key_id_maps() {
     local key
     for key in "${!array}"; do
       local id=$(printf "%02x" "$i")
-      declare -g "${lookup_array_name}[$key]=$id" || return $?
       i=$((i+1))
+      [ -n "$key" ] || continue
+      declare -g "${lookup_array_name}[$key]=$id" || return $?
     done
   done
 }
@@ -322,11 +324,13 @@ _generate_reverse_key_id_map() {
     # Device does not really matter, so use the first one.
     local first_device=${all_devices[0]}
     for key in "${!array}"; do
+      [ -n "$key" ] || continue
       local key_id
       local is_per_device
       is_per_device=$(get_key_is_per_device_yn "$key_type" "$key") || return $?
       local device
       for device in "${devices_to_use[@]}"; do
+        [ -n "$device" ] || continue
         key_id=$(DEVICE=$device get_key_id "$key_type" "$key") || return $?
         local new_map_value
         new_map_value="${key_id_to_type_and_name_pairs[$key_id]:-}"$'\t'"$key_type:$key"
