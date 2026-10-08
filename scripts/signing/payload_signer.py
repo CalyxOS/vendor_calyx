@@ -129,9 +129,6 @@ def main(argv: list[str] | None = None) -> int:
         ValueError: If the payload digest is invalid.
     """
     args, _ = build_parser().parse_known_args(argv)
-    verify_signature = os.environ.get("DEBUG_PAYLOAD_SIGNER") or "y"
-    if verify_signature not in {"y", "n"}:
-        raise ValueError("DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'")
     digest = args.input_file.read_bytes()
     if len(digest) != 32:
         raise ValueError("payload SHA-256 digest must be exactly 32 bytes")
@@ -148,6 +145,9 @@ def main(argv: list[str] | None = None) -> int:
         )
     verify = True
     if signature is None:
+        verify_signature = os.environ.get("DEBUG_PAYLOAD_SIGNER") or "y"
+        if verify_signature not in {"y", "n"}:
+            raise ValueError("DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'")
         signer = pkcs11_signer_from_environment()
         reference = KeyReference(key_name, key_name)
         require_matching_public_key(signer, reference, public_key)
