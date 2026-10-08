@@ -24,9 +24,11 @@ from signing.avb_signing import (
     key_name_from_path,
     pkcs11_signer_from_environment,
 )
-from signing.key_consistency import require_matching_public_key
+from signing.key_consistency import (
+    require_matching_public_key,
+    require_signature_from_public_key,
+)
 from signing.models import KeyReference, SignRequest
-from signing.payload_signing import verify_payload_signature
 
 
 def write_signature_atomically(output: Path, signature: bytes) -> None:
@@ -132,24 +134,14 @@ def main(argv: list[str] | None = None) -> int:
     digest = args.input_file.read_bytes()
     key_name = key_name_from_path(args.key_file, os.environ)
     reference = KeyReference(key_name, key_name)
-    openssl = os.environ.get("OPENSSL_BIN", "openssl")
-    public_key = require_matching_public_key(
-        signer,
-        reference,
-        public_key_file(args.key_file),
-        openssl,
-    )
+    public_key = public_key_file(args.key_file)
+    require_matching_public_key(signer, reference, public_key)
     if len(digest) != 32:
         raise ValueError("payload SHA-256 digest must be exactly 32 bytes")
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
     signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
     if verify_signature == "y":
-        verify_payload_signature(
-            public_key,
-            digest,
-            signature,
-            openssl,
-        )
+        require_signature_from_public_key(public_key, digest_info, signature)
     write_signature_atomically(args.output_file, signature)
     return 0
 
