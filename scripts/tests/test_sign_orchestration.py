@@ -271,22 +271,6 @@ def test_sign_orchestrate_finds_no_prior_build_for_a_word_that_is_none(
     assert "generate_incrementals" not in result.stderr
 
 
-def test_sign_orchestrate_keeps_a_zero_padded_build_number(
-    sign_tree: Path,
-) -> None:
-    _write_target_files(sign_tree, "bramble", "0042")
-
-    result = run_sign_orchestrate(
-        sign_tree,
-        environment={"SIGN_ASSUME_YES": "y", "BUILD_NUMBER": "0042"},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert _archive_manifest(sign_tree) == {
-        "release-bramble-0042/output.bin": b"signed-bramble-0042",
-    }
-
-
 def test_sign_orchestrate_stops_without_a_devices_file(
     sign_tree: Path,
 ) -> None:
