@@ -8,7 +8,7 @@ from __future__ import annotations
 import shutil
 
 import pytest
-from conftest import run
+from conftest import run, yubihsm_config
 from signing.vendor_yubihsm import (
     LoadedKeyStatus,
     YubiHsmConfig,
@@ -125,7 +125,14 @@ def test_device_identity_reports_device_info_as_yubihsm_shell_does(
         [shell, f"--connector={yubihsm.url}", "-a", "get-device-info"],
     )
 
-    identity = get_device_identity(config(yubihsm))
+    identity = get_device_identity(yubihsm_config(yubihsm))
 
     assert identity.device_info == printed.stdout
     assert identity.name == "YubiHSM2-123456"
+
+
+def test_device_identity_needs_a_part_number(yubihsm: Connector) -> None:
+    yubihsm.device.part_number = ""
+
+    with pytest.raises(RuntimeError, match="did not report a part number"):
+        get_device_identity(yubihsm_config(yubihsm))
