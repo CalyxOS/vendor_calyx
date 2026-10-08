@@ -113,13 +113,13 @@ def test_updatekeys_avb_key_paths_match_release_signing_expectation(
 
     metadata = load_metadata(TEST_METADATA)
     keymapper = Id2bKeymapper(metadata)
-    get_key = make_get_key(keymapper, device="bramble", key_dir="keys/")
+    get_key = make_get_key(keymapper, {}, device="bramble")
     release_args = build_release_arguments(metadata, get_key, device="bramble")
 
     avb_key_paths = [
-        release_args.avb_arguments[index + 1]
-        for index, arg in enumerate(release_args.avb_arguments)
-        if arg.endswith("_key")
+        release_args.signing_args[index + 1]
+        for index, arg in enumerate(release_args.signing_args)
+        if arg.startswith("--avb_") and arg.endswith("_key")
     ]
     assert avb_key_paths
     for path in avb_key_paths:

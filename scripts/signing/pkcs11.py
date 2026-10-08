@@ -12,10 +12,8 @@ import os
 import re
 import subprocess
 import tempfile
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import MappingProxyType
 from urllib.parse import quote
 
 from .models import (
@@ -33,21 +31,6 @@ _SIGNING_MECHANISMS = {
     "sha384-rsa-pkcs": "SHA384-RSA-PKCS",
     "sha512-rsa-pkcs": "SHA512-RSA-PKCS",
 }
-
-
-def environment_with(overrides: Mapping[str, str]) -> dict[str, str]:
-    """
-    Copy the process environment and apply overrides onto it.
-
-    Args:
-        overrides: Variables to set or replace in the copy.
-
-    Returns:
-        A new environment mapping suitable for ``subprocess.run(env=...)``.
-    """
-    environment = os.environ.copy()
-    environment.update(overrides)
-    return environment
 
 
 def preload_module(environment: dict[str, str], module: Path) -> None:
@@ -90,10 +73,6 @@ class Pkcs11Config:
     use_so_pin: bool = False
     list_requires_no_pin: bool = False
     preload_module: bool = False
-    environment: Mapping[str, str] = field(
-        default_factory=dict[str, str],
-        repr=False,
-    )
 
     def __post_init__(self) -> None:
         """
@@ -121,11 +100,6 @@ class Pkcs11Config:
             raise ValueError("OpenSSL executable must not be empty")
         if self.certificate_days <= 0:
             raise ValueError("certificate validity must be positive")
-        object.__setattr__(
-            self,
-            "environment",
-            MappingProxyType(dict(self.environment)),
-        )
 
 
 class Pkcs11Backend:
@@ -364,7 +338,7 @@ class Pkcs11Backend:
             certificate = temporary_directory / "certificate.pem"
             openssl_config.write_text(self._openssl_config())
             openssl_config.chmod(0o600)
-            environment = environment_with(self.config.environment)
+            environment = os.environ.copy()
             environment["PKCS11_BACKEND_PIN"] = signing_pin
             environment["OPENSSL_CONF"] = str(openssl_config)
             subprocess.run(
@@ -614,7 +588,7 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         Returns:
             A copy of the process environment augmented for this backend.
         """
-        environment = environment_with(self.config.environment)
+        environment = os.environ.copy()
         if self.config.pin is not None:
             environment["PKCS11_BACKEND_PIN"] = self.config.pin
         if self.config.discovery_pin is not None:

@@ -8,13 +8,18 @@ from __future__ import annotations
 import json
 import os
 import signal
-import stat
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
-from conftest import REPO_ROOT, SCRIPTS_DIR, default_signal_dispositions, run
+from conftest import (
+    REPO_ROOT,
+    SCRIPTS_DIR,
+    default_signal_dispositions,
+    install_executable,
+    run,
+)
 from signing import sign_app
 from signing.metadata import default_metadata_path, load_metadata
 from yubihsm_emulator import Connector
@@ -32,11 +37,6 @@ open(out, "w").write("signed")
 """
 
 
-def _executable(path: Path, contents: str) -> None:
-    path.write_text(contents)
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
-
-
 @pytest.fixture
 def sign_app_tree(tmp_path: Path) -> Path:
     root = tmp_path / "android"
@@ -44,7 +44,7 @@ def sign_app_tree(tmp_path: Path) -> Path:
     (root / "logs").mkdir()
     (root / "logs" / "upload.py").write_text("#!/bin/sh\n")
     (root / "bin").mkdir()
-    _executable(root / "bin" / "java", _FAKE_JAVA)
+    install_executable(root / "bin" / "java", _FAKE_JAVA)
     (root / "tmp").mkdir()
     (root / "app.apk").write_text("unsigned")
     return root
@@ -268,13 +268,12 @@ def test_sign_app_cleans_up_after_sigterm(
 ) -> None:
     root = sign_app_tree
     (root / "keys" / "0x1502.x509.pem").write_text("certificate")
-    java = root / "bin" / "java"
-    java.write_text(
+    install_executable(
+        root / "bin" / "java",
         f"#!{sys.executable}\n"
         "import os, signal\n"
         "os.killpg(os.getpgid(0), signal.SIGTERM)\n",
     )
-    java.chmod(0o755)
 
     result = subprocess.run(
         [SCRIPTS_DIR / "sign-app.sh", APP, "app.apk"],
@@ -297,8 +296,8 @@ def test_sign_app_lets_the_signing_finish_after_sigterm(
 ) -> None:
     root = sign_app_tree
     (root / "keys" / "0x1502.x509.pem").write_text("certificate")
-    java = root / "bin" / "java"
-    java.write_text(
+    install_executable(
+        root / "bin" / "java",
         f"#!{sys.executable}\n"
         "import os, signal, sys, time\n"
         "pid = os.getppid()\n"
@@ -309,7 +308,6 @@ def test_sign_app_lets_the_signing_finish_after_sigterm(
         "time.sleep(2)\n"
         "open(sys.argv[sys.argv.index('--out') + 1], 'w').write('signed')\n",
     )
-    java.chmod(0o755)
 
     result = subprocess.run(
         [SCRIPTS_DIR / "sign-app.sh", APP, "app.apk"],

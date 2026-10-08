@@ -8,16 +8,17 @@ from __future__ import annotations
 import os
 import shutil
 import signal
-import stat
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from conftest import (
     SCRIPTS_DIR,
     default_signal_dispositions,
+    install_executable,
     process_alive,
-    run_cli,
+    run,
     wait_until,
 )
 
@@ -85,9 +86,40 @@ printf '%s' "delta-$device-$old-$new" > "incrementals/$device-$old-$new.bin"
 """
 
 
-def _install_tool(path: Path, content: str) -> None:
-    path.write_text(content)
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
+SIGN_BUILDS = """
+import sys
+from pathlib import Path
+from signing.sign_execution import sign_builds
+from signing.sign_planning import BuildNumber
+release, archive, tmpdir, jobs, *pairs = sys.argv[1:]
+raise SystemExit(sign_builds(
+    [
+        (d, BuildNumber(b), BuildNumber(t))
+        for d, b, t in (p.split(",") for p in pairs)
+    ],
+    release_script=Path(release),
+    archive_dir=Path(archive),
+    jobs=int(jobs),
+    original_tmpdir=Path(tmpdir),
+))
+"""
+
+GENERATE_INCREMENTALS = """
+import sys
+from pathlib import Path
+from signing.sign_execution import generate_incrementals
+from signing.sign_planning import BuildNumber
+script, tmpdir, jobs, *triples = sys.argv[1:]
+raise SystemExit(generate_incrementals(
+    [
+        (d, BuildNumber(old), BuildNumber(new))
+        for d, old, new in (t.split(",") for t in triples)
+    ],
+    generate_delta_script=Path(script),
+    jobs=int(jobs),
+    original_tmpdir=Path(tmpdir),
+))
+"""
 
 
 def run_sign_builds(
@@ -100,27 +132,24 @@ def run_sign_builds(
     check: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     release_script = root / "release.sh"
-    _install_tool(release_script, release_tool)
+    install_executable(release_script, release_tool)
     archive_dir = root / "archive"
     archive_dir.mkdir(exist_ok=True)
     original_tmpdir = root / "tmp"
     original_tmpdir.mkdir(exist_ok=True)
-    return run_cli(
+    return run(
         [
-            "sign-builds",
-            "--jobs",
-            str(jobs),
-            "--release-script",
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
             release_script,
-            "--archive-dir",
             archive_dir,
-            "--original-tmpdir",
             original_tmpdir,
-            "--pairs",
+            str(jobs),
             *pairs,
         ],
         cwd=root,
-        env=environment,
+        env={"PYTHONPATH": str(SCRIPTS_DIR), **(environment or {})},
         check=check,
     )
 
@@ -135,23 +164,21 @@ def run_generate_incrementals(
     check: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     generate_delta_script = root / "generate_delta.sh"
-    _install_tool(generate_delta_script, generate_delta_tool)
+    install_executable(generate_delta_script, generate_delta_tool)
     original_tmpdir = root / "tmp"
     original_tmpdir.mkdir(exist_ok=True)
-    return run_cli(
+    return run(
         [
-            "generate-incrementals",
-            "--jobs",
-            str(jobs),
-            "--generate-delta-script",
+            sys.executable,
+            "-c",
+            GENERATE_INCREMENTALS,
             generate_delta_script,
-            "--original-tmpdir",
             original_tmpdir,
-            "--triples",
+            str(jobs),
             *triples,
         ],
         cwd=root,
-        env=environment,
+        env={"PYTHONPATH": str(SCRIPTS_DIR), **(environment or {})},
         check=check,
     )
 
@@ -250,7 +277,7 @@ def test_sign_builds_archives_jobs_whose_output_is_not_utf8(
     tmp_path: Path,
 ) -> None:
     release_script = tmp_path / "release.sh"
-    _install_tool(
+    install_executable(
         release_script,
         FAKE_RELEASE_TOOL.replace(
             'device="$1"\n',
@@ -263,19 +290,13 @@ def test_sign_builds_archives_jobs_whose_output_is_not_utf8(
 
     result = subprocess.run(
         [
-            "python3",
-            "-m",
-            "signing",
-            "sign-builds",
-            "--jobs",
-            "2",
-            "--release-script",
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
             str(release_script),
-            "--archive-dir",
             "archive",
-            "--original-tmpdir",
             "tmp",
-            "--pairs",
+            "2",
             "bramble,100,100",
             "redfin,200,200",
         ],
@@ -416,7 +437,7 @@ def test_sign_builds_waits_for_a_job_that_closes_its_output(
     tmp_path: Path,
 ) -> None:
     release_script = tmp_path / "release.sh"
-    _install_tool(
+    install_executable(
         release_script,
         "#!/bin/sh\n"
         "exec > /dev/null 2>&1\n"
@@ -428,19 +449,13 @@ def test_sign_builds_waits_for_a_job_that_closes_its_output(
 
     result = subprocess.run(
         [
-            "python3",
-            "-m",
-            "signing",
-            "sign-builds",
-            "--jobs",
-            "1",
-            "--release-script",
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
             str(release_script),
-            "--archive-dir",
             "archive",
-            "--original-tmpdir",
             "tmp",
-            "--pairs",
+            "1",
             "bramble,100,100",
         ],
         cwd=tmp_path,
@@ -497,15 +512,14 @@ def test_sign_builds_sigterm_terminates_jobs_but_not_the_caller(
     tmp_path: Path,
 ) -> None:
     release_script = tmp_path / "release.sh"
-    _install_tool(release_script, FAKE_SLOW_RELEASE_TOOL)
+    install_executable(release_script, FAKE_SLOW_RELEASE_TOOL)
     archive_dir = tmp_path / "archive"
     archive_dir.mkdir()
     original_tmpdir = tmp_path / "tmp"
     original_tmpdir.mkdir()
     pidfile = tmp_path / "child.pid"
     caller = r"""
-python3 -m signing sign-builds --jobs 1 --release-script "$1" \
-  --archive-dir "$2" --original-tmpdir "$3" --pairs bramble,100,100 &
+python3 -c "$SIGN_BUILDS" "$1" "$2" "$3" 1 bramble,100,100 &
 cli=$!
 while [ ! -s "$CHILD_PIDFILE" ]; do sleep 0.05; done
 kill -TERM "$cli"
@@ -529,6 +543,7 @@ echo "caller survived, cli exited $status"
             **os.environ,
             "PYTHONPATH": str(SCRIPTS_DIR),
             "CHILD_PIDFILE": str(pidfile),
+            "SIGN_BUILDS": SIGN_BUILDS,
         },
         capture_output=True,
         text=True,
@@ -544,6 +559,68 @@ echo "caller survived, cli exited $status"
         timeout=5,
     ), "the release job's child process was not terminated"
     assert list(original_tmpdir.iterdir()) == []
+
+
+def test_sign_builds_runs_on_through_a_hangup_it_ignores(
+    tmp_path: Path,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        'echo started > "$STARTED.$1"\n'
+        "sleep 1\n"
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    archive_dir = tmp_path / "archive"
+    archive_dir.mkdir()
+    original_tmpdir = tmp_path / "tmp"
+    original_tmpdir.mkdir()
+    caller = r"""
+set -m
+trap '' HUP
+python3 -c "$SIGN_BUILDS" "$1" "$2" "$3" 3 \
+  bramble,100,100 redfin,100,100 oriole,100,100 &
+cli=$!
+for device in bramble redfin oriole; do
+  while [ ! -s "$STARTED.$device" ]; do sleep 0.05; done
+done
+kill -HUP -- "-$cli"
+status=0
+wait "$cli" || status=$?
+echo "cli exited $status"
+"""
+
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            caller,
+            "bash",
+            str(release_script),
+            str(archive_dir),
+            str(original_tmpdir),
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "STARTED": str(tmp_path / "started"),
+            "SIGN_BUILDS": SIGN_BUILDS,
+        },
+        capture_output=True,
+        text=True,
+        timeout=30,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert "cli exited 0" in result.stdout, result.stderr
+    assert sorted(path.name for path in archive_dir.iterdir()) == [
+        "release-bramble-100",
+        "release-oriole-100",
+        "release-redfin-100",
+    ]
 
 
 def test_exit_on_signals_leaves_an_ignored_signal_ignored() -> None:
@@ -562,7 +639,7 @@ def test_generate_incrementals_writes_deltas_and_aggregates_failures(
 ) -> None:
     result = run_generate_incrementals(
         tmp_path,
-        ["bramble,100,200", "redfin,150,"],
+        ["bramble,100,200", "redfin,150,200"],
         environment={"FAIL_DEVICES": "redfin"},
     )
 
@@ -574,20 +651,5 @@ def test_generate_incrementals_writes_deltas_and_aggregates_failures(
     )
     delta = tmp_path / "incrementals" / "bramble-100-200.bin"
     assert delta.read_text() == "delta-bramble-100-200"
-    assert not (tmp_path / "incrementals" / "redfin-150-.bin").exists()
+    assert not (tmp_path / "incrementals" / "redfin-150-200.bin").exists()
     assert list((tmp_path / "tmp").iterdir()) == []
-
-
-@pytest.mark.parametrize("jobs", ("0", "50%", "+1"))
-def test_sign_builds_takes_only_a_positive_job_count(
-    tmp_path: Path,
-    jobs: str,
-) -> None:
-    result = run_cli(
-        ["sign-builds", "--jobs", jobs, "--pairs", "bramble,1,1"],
-        cwd=tmp_path,
-        check=False,
-    )
-
-    assert result.returncode == 2
-    assert f"must be a positive number, not {jobs!r}" in result.stderr

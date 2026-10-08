@@ -9,7 +9,6 @@ import os
 import re
 import shlex
 import signal
-import stat
 import subprocess
 import sys
 import time
@@ -21,13 +20,14 @@ from conftest import (
     SCRIPTS_DIR,
     TEST_METADATA,
     default_signal_dispositions,
+    install_executable,
     parameter_id,
     run,
-    run_cli,
     sha256,
 )
 from signing.keymap import load_keymapper
 from signing.metadata import load_metadata
+from signing.release_execution import format_sha256sum
 from signing.release_orchestration import (
     ReleaseAbort,
     ReleaseOrchestrator,
@@ -104,19 +104,13 @@ def _write_target_files_zip(path: Path) -> None:
             )
 
 
-def _install_tool(path: Path, script: str) -> None:
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(script)
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
-
-
 def _install_fake_release_tools(root: Path) -> None:
     for name, content in (
         ("sign_target_files_apks", "signed-target-files"),
         ("ota_from_target_files", "ota-update-zip"),
         ("img_from_target_files", "factory-img-zip"),
     ):
-        _install_tool(
+        install_executable(
             root / "bin" / name,
             '#!/bin/sh\neval "out=\\${$#}"\n'
             f'printf %s "{content}" > "$out"\n',
@@ -567,7 +561,7 @@ def test_release_refuses_a_missing_avb_custom_key(
 def test_release_records_its_output_in_exec_log_path(
     release_tree: Path,
 ) -> None:
-    _install_tool(
+    install_executable(
         release_tree / "bin" / "sign_target_files_apks",
         "#!/bin/sh\necho tool-stdout\necho tool-stderr >&2\n"
         'eval "out=\\${$#}"\nprintf %s signed > "$out"\n',
@@ -623,7 +617,7 @@ def test_release_normalizes_key_dir_for_child_processes(
     through ota_from_target_files, and strips it from key paths, which
     needs exactly one trailing slash.
     """
-    _install_tool(
+    install_executable(
         release_tree / "bin" / "ota_from_target_files",
         '#!/bin/sh\neval "out=\\${$#}"\n'
         'printf "KEY_DIR=[%s]" "$KEY_DIR" > "$out"\n',
@@ -1033,7 +1027,7 @@ def test_release_dry_run_adds_one_to_a_zero_padded_build_in_base_10(
 def test_release_stops_when_target_files_signing_fails(
     release_tree: Path,
 ) -> None:
-    _install_tool(
+    install_executable(
         release_tree / "bin" / "sign_target_files_apks",
         "#!/bin/sh\nexit 23\n",
     )
@@ -1159,14 +1153,18 @@ def test_release_dry_run_renders_the_expected_commands(
     )
 
 
-def test_compute_sha256sum_matches_sha256sum(tmp_path: Path) -> None:
+def test_format_sha256sum_matches_sha256sum(tmp_path: Path) -> None:
     target = tmp_path / "artifact.zip"
     target.write_bytes(b"release artifact bytes\n" * 100_000)
 
-    bash_result = run(["sha256sum", target.name], cwd=tmp_path)
-    python_result = run_cli(["compute-sha256sum", target.name], cwd=tmp_path)
+    expected = run(["sha256sum", target.name], cwd=tmp_path).stdout
 
-    assert python_result.stdout == bash_result.stdout
+    previous = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        assert format_sha256sum(target.name) == expected
+    finally:
+        os.chdir(previous)
 
 
 @pytest.mark.parametrize("pkcs11", (False, True), ids=("plaintext", "pkcs11"))
@@ -1180,7 +1178,7 @@ def test_release_removes_its_temporaries(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     if fails:
-        _install_tool(
+        install_executable(
             release_tree / "bin" / "sign_target_files_apks",
             "#!/bin/sh\nexit 23\n",
         )
@@ -1212,7 +1210,7 @@ def test_release_reports_an_unsupported_vendor(release_tree: Path) -> None:
 
 def test_release_checksums_without_sha256sum(release_tree: Path) -> None:
     stubs = release_tree / "stubs"
-    _install_tool(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
+    install_executable(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
     _write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
@@ -1242,7 +1240,7 @@ def test_python_release_cleans_up_when_terminated(
     signum: signal.Signals,
 ) -> None:
     started = release_tree / "started"
-    _install_tool(
+    install_executable(
         release_tree / "bin" / "sign_target_files_apks",
         f'#!/bin/sh\ntouch "{started}"\nsleep 30\n',
     )
@@ -1355,18 +1353,6 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
         )
 
     assert parents == ["/dev/shm"]
-
-
-def test_run_release_tool_reports_a_tool_it_cannot_start(
-    tmp_path: Path,
-) -> None:
-    result = run_cli(
-        ["run-release-tool", "--", str(tmp_path / "missing-tool")],
-        check=False,
-    )
-
-    assert result.returncode == 127
-    assert "Traceback" not in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -1535,7 +1521,7 @@ def test_run_release_tool_prints_and_runs_like_print_and_run(
     from signing.release_execution import run_release_tool
 
     tool = tmp_path / "tool"
-    _install_tool(
+    install_executable(
         tool,
         f'#!/bin/sh\neval "out=\\${{$#}}"\nprintf %s "$*" > "$out"\n'
         f"exit {status}\n",

@@ -8,11 +8,10 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import io
-import stat
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run, run_bytes, stub
+from conftest import SCRIPTS_DIR, install_executable, run, stub
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -23,12 +22,10 @@ PYTHON_PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
 @pytest.fixture
 def failing_pkcs11_tool(tmp_path: Path) -> Path:
     """Create a provider tool that emits a YubiHSM recovery marker."""
-    tool = tmp_path / "failing-pkcs11-tool"
-    tool.write_text(
+    return install_executable(
+        tmp_path / "failing-pkcs11-tool",
         "#!/bin/sh\necho 'Connector operation failed: simulated' >&2\nexit 1\n",
     )
-    tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
-    return tool
 
 
 def python_helper_env(tool: Path) -> dict[str, str]:
@@ -45,10 +42,10 @@ def python_helper_env(tool: Path) -> dict[str, str]:
 def test_avb_helper_preserves_provider_stderr(
     failing_pkcs11_tool: Path,
 ) -> None:
-    result = run_bytes(
+    result = run(
         [PYTHON_SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
         env=python_helper_env(failing_pkcs11_tool),
-        input_data=(
+        input=(
             b"\x00\x01"
             + b"\xff" * 202
             + b"\x00"
@@ -56,6 +53,7 @@ def test_avb_helper_preserves_provider_stderr(
             + bytes(range(32))
         ),
         check=False,
+        text=False,
     )
 
     assert result.returncode != 0
@@ -70,7 +68,7 @@ def test_payload_helper_preserves_provider_stderr(
     digest = tmp_path / "digest.bin"
     output = tmp_path / "signature.bin"
     digest.write_bytes(bytes(range(32)))
-    result = run_bytes(
+    result = run(
         [
             PYTHON_PAYLOAD_SIGNER,
             "-in",
@@ -82,6 +80,7 @@ def test_payload_helper_preserves_provider_stderr(
         ],
         env=python_helper_env(failing_pkcs11_tool),
         check=False,
+        text=False,
     )
 
     assert result.returncode != 0

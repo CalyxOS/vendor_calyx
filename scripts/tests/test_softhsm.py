@@ -7,80 +7,38 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, aosp_jar_command, run, run_bytes
+from conftest import (
+    PKCS11_ENGINE,
+    SCRIPTS_DIR,
+    SOFTHSM_MODULE,
+    SOFTHSM_SO_PIN,
+    aosp_jar_command,
+    require_softhsm,
+    run,
+    softhsm_environment,
+)
 
-SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
-PKCS11_ENGINE = Path("/usr/lib/engines-3/pkcs11.so")
-SO_PIN = "12345678"
-USER_PIN = "123456"
 TOKEN_LABEL = "androsign-test"
 SOFTHSM_KEYGEN_FIXTURE = (
     Path(__file__).parent / "fixtures" / "softhsm-keygen.json"
 )
 
 
-def require_softhsm() -> None:
-    missing = [
-        name
-        for name in ("softhsm2-util", "pkcs11-tool")
-        if shutil.which(name) is None
-    ]
-    missing.extend(
-        str(path)
-        for path in (SOFTHSM_MODULE, PKCS11_ENGINE)
-        if not path.is_file()
-    )
-    if missing:
-        pytest.skip(
-            f"SoftHSM test dependencies are missing: {', '.join(missing)}",
-        )
-
-
-def initialized_softhsm_token(directory: Path) -> dict[str, str]:
-    token_dir = directory / "tokens"
-    token_dir.mkdir(parents=True)
-    config = directory / "softhsm2.conf"
-    config.write_text(
-        f"""directories.tokendir = {token_dir}
-objectstore.backend = file
-log.level = WARNING
-slots.removable = true
-slots.mechanisms = ALL
-library.reset_on_fork = false
-""",
-    )
-    environment = {
-        "SOFTHSM2_CONF": str(config),
-        "SOFTHSM_TOKEN_DIR": str(token_dir),
-        "PKCS11_MODULE": str(SOFTHSM_MODULE),
+def softhsm_token(
+    directory: Path,
+    *,
+    initialize: bool = True,
+) -> dict[str, str]:
+    return {
+        **softhsm_environment(directory, TOKEN_LABEL, initialize=initialize),
+        "SOFTHSM_TOKEN_DIR": str(directory / "tokens"),
         "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": str(PKCS11_ENGINE),
-        "PKCS11_TOOL_BIN": str(Path(shutil.which("pkcs11-tool") or "")),
-        "PKCS11_TOKEN_LABEL": TOKEN_LABEL,
-        "PKCS11_SO_PIN": SO_PIN,
-        "PKCS11_PIN": USER_PIN,
+        "PKCS11_SO_PIN": SOFTHSM_SO_PIN,
         "PKCS11_TESTING": "y",
     }
-    initialized = run(
-        [
-            "softhsm2-util",
-            "--init-token",
-            "--free",
-            "--label",
-            TOKEN_LABEL,
-            "--so-pin",
-            SO_PIN,
-            "--pin",
-            USER_PIN,
-        ],
-        env=environment,
-        check=False,
-    )
-    assert initialized.returncode == 0, initialized.stderr
-    return environment
 
 
 def token_inventory(environment: dict[str, str]) -> list[tuple[str, str]]:
@@ -112,8 +70,8 @@ def token_inventory(environment: dict[str, str]) -> list[tuple[str, str]]:
 
 @pytest.fixture
 def softhsm_env(tmp_path: Path) -> dict[str, str]:
-    require_softhsm()
-    return initialized_softhsm_token(tmp_path)
+    require_softhsm(engine=True)
+    return softhsm_token(tmp_path)
 
 
 @pytest.fixture
@@ -453,14 +411,14 @@ def test_softhsm_signing_rejects_wrong_pin(
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "2000")
     environment["PKCS11_PIN"] = "wrong-pin"
-    signed = run_bytes(
+    signed = run(
         [
             SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
             "SHA256_RSA2048",
             output / "0x2000.pem",
         ],
         env=environment,
-        input_data=(
+        input=(
             b"\x00\x01"
             + b"\xff" * 202
             + b"\x00"
@@ -468,6 +426,7 @@ def test_softhsm_signing_rejects_wrong_pin(
             + bytes(range(32))
         ),
         check=False,
+        text=False,
     )
 
     assert signed.returncode != 0
@@ -481,14 +440,14 @@ def test_softhsm_signing_rejects_missing_key(
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, "ffff")
-    signed = run_bytes(
+    signed = run(
         [
             SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
             "SHA256_RSA2048",
             output / "0x2000.pem",
         ],
         env=environment,
-        input_data=(
+        input=(
             b"\x00\x01"
             + b"\xff" * 202
             + b"\x00"
@@ -496,6 +455,7 @@ def test_softhsm_signing_rejects_missing_key(
             + bytes(range(32))
         ),
         check=False,
+        text=False,
     )
 
     assert signed.returncode != 0
@@ -630,31 +590,11 @@ def test_keygen_initializes_empty_softhsm_store(
     minimal_keygen_metadata: tuple[Path, Path],
     aosp_top: Path,
 ) -> None:
-    require_softhsm()
-    token_dir = tmp_path / "empty-tokens"
-    token_dir.mkdir()
-    config = tmp_path / "empty-softhsm2.conf"
-    config.write_text(
-        f"""directories.tokendir = {token_dir}
-objectstore.backend = file
-log.level = WARNING
-slots.removable = true
-slots.mechanisms = ALL
-library.reset_on_fork = false
-""",
-    )
+    require_softhsm(engine=True)
     metadata, devices = minimal_keygen_metadata
     output = tmp_path / "initialized-keys"
     environment = {
-        "SOFTHSM2_CONF": str(config),
-        "SOFTHSM_TOKEN_DIR": str(token_dir),
-        "PKCS11_MODULE": str(SOFTHSM_MODULE),
-        "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": str(PKCS11_ENGINE),
-        "PKCS11_TOOL_BIN": str(Path(shutil.which("pkcs11-tool") or "")),
-        "PKCS11_TOKEN_LABEL": TOKEN_LABEL,
-        "PKCS11_SO_PIN": SO_PIN,
-        "PKCS11_PIN": USER_PIN,
-        "PKCS11_TESTING": "y",
+        **softhsm_token(tmp_path / "empty", initialize=False),
         "METADATA_FILE": str(metadata),
         "DEVICES_FILE": str(devices),
         "AVBTOOL_BIN": str(
@@ -889,10 +829,10 @@ def test_softhsm_keygen_fills_the_token(
     minimal_keygen_metadata: tuple[Path, Path],
     aosp_top: Path,
 ) -> None:
-    require_softhsm()
+    require_softhsm(engine=True)
     metadata, devices = minimal_keygen_metadata
     environment = {
-        **initialized_softhsm_token(tmp_path / "token"),
+        **softhsm_token(tmp_path / "token"),
         "METADATA_FILE": str(metadata),
         "DEVICES_FILE": str(devices),
         "AVBTOOL_BIN": str(

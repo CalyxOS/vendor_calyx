@@ -154,7 +154,23 @@ def _error(code: ERROR) -> bytes:
     return struct.pack("!BHB", COMMAND.ERROR, 1, code)
 
 
-def _self_signed(name: str, key: rsa.RSAPrivateKey) -> x509.Certificate:
+def self_signed_certificate(
+    name: str = "test",
+    key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey | None = None,
+) -> x509.Certificate:
+    """
+    Return a certificate for key, issued by itself to the common name name
+    and valid from 2020 for a hundred years.
+
+    Args:
+        name: Common name of the subject and the issuer.
+        key: Key to certify and sign with, a new EC P-256 key by default.
+
+    Returns:
+        The certificate.
+    """
+    if key is None:
+        key = ec.generate_private_key(ec.SECP256R1())
     subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, name)])
     now = datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC)
     return (
@@ -193,7 +209,7 @@ class EmulatedYubiHsm:
         self.version = (2, 4, 0)
         self.device_key = ec.generate_private_key(ec.SECP256R1())
         self.attestation_key = rsa.generate_private_key(65537, 2048)
-        self.attestation_certificate = _self_signed(
+        self.attestation_certificate = self_signed_certificate(
             f"YubiHSM Attestation ({serial})",
             self.attestation_key,
         )
