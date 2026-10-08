@@ -377,18 +377,14 @@ A YubiHSM release therefore runs a signing server (`scripts/signing/signing_serv
 until it finishes.
 The server holds one authenticated YubiHSM session and the batch `apksigner` process,
 on the Unix socket named by `SIGNING_SERVER_SOCKET`.
-The server makes the AVB signatures of `pkcs11/signing_helper.server.py`,
+The server makes the AVB signatures of `pkcs11/signing_helper.py`,
 the OTA payload signatures and the OTA package's whole-file signature
-of `pkcs11/payload_signer.server.py`
+of `pkcs11/payload_signer.py`
 and the APK signatures of `pkcs11/apksigner_signing_helper.py`,
 and extracts the audit log after each signing command.
 
 The server checks each signature against the key's public key before returning it.
-When the server is not running, each helper signs through PKCS#11 on its own.
-For the AVB signing helper and the payload signer,
-`SIGNING_HELPER_TOOL`, `AVB_SIGNING_HELPER_TOOL` and `PAYLOAD_SIGNER_TOOL`
-choose `server`, the default while the server runs, or `python`,
-which always signs through PKCS#11.
+When the server is not running or cannot sign, each helper signs through PKCS#11 on its own.
 
 ### KMS-based APK signing
 
@@ -506,7 +502,7 @@ The format is simple and plaintext.
 
 Example of a log entry written by `extract_and_save_audit_log()`:
 ```
-# 1763079385491  avbtool make_vbmeta_image --output IMAGES/vbmeta_vendor.img --key keys/0x2e00.pem --algorithm SHA256_RSA4096 --signing_helper vendor/calyx/scripts/pkcs11/signing_helper.server.py --include_descriptors_from_image IMAGES/vendor.img --padding_size 4096 --rollback_index 1756684800 # Result: 0
+# 1763079385491  avbtool make_vbmeta_image --output IMAGES/vbmeta_vendor.img --key keys/0x2e00.pem --algorithm SHA256_RSA4096 --signing_helper vendor/calyx/scripts/pkcs11/signing_helper.py --include_descriptors_from_image IMAGES/vendor.img --padding_size 4096 --rollback_index 1756684800 # Result: 0
  1479 cmd: 0x47 len:    53 sKey: 0x0001 tKey: 0x2e00 2Key: 0xffff res: 0xc7 tick:     862298 hash: 951a1b524623c98fa42dc016eba9183c
 ```
 In this example, `1479` indicates that this was the `1479`th command that the HSM has audited.
