@@ -262,6 +262,7 @@ def test_wizard_backup_reports_a_failed_export(
         {
             "KEY_DIR": str(tmp_path),
             "YUBIHSM_CONNECTOR": "http://127.0.0.1:1",
+            "YUBIHSM_AUTHKEY": "0x0001",
             "YUBIHSM_PASSWORD": "password",
             "YUBIHSM_WRAP_KEY_ID": "0x0010",
         },
