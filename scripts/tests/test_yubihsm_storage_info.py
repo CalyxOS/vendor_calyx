@@ -6,28 +6,18 @@
 from __future__ import annotations
 
 import pytest
+from conftest import yubihsm_config
 from signing.vendor_yubihsm import (
     StorageInfo,
-    YubiHsmConfig,
     get_storage_info,
     should_make_space_on_hsm,
 )
 from yubihsm.defs import COMMAND, ERROR
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm_emulator import (
-    DEFAULT_AUTHKEY_ID,
-    DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
 )
-
-
-def config(yubihsm: Connector) -> YubiHsmConfig:
-    return YubiHsmConfig(
-        connector_url=yubihsm.url,
-        auth_key=f"{DEFAULT_AUTHKEY_ID:#06x}",
-        password=DEFAULT_PASSWORD,
-    )
 
 
 def test_get_storage_info_parses_big_endian_response(
@@ -38,7 +28,7 @@ def test_get_storage_info_parses_big_endian_response(
     device.put_wrap_key(0x0010)
     device.put_asymmetric_key(0x2000)
 
-    info = get_storage_info(config(yubihsm))
+    info = get_storage_info(yubihsm_config(yubihsm))
 
     assert info == StorageInfo(
         total_records=200,
@@ -59,7 +49,7 @@ def test_get_storage_info_raises_on_device_failure(
     )
 
     with pytest.raises(YubiHsmDeviceError) as raised:
-        get_storage_info(config(yubihsm))
+        get_storage_info(yubihsm_config(yubihsm))
 
     assert raised.value.code == ERROR.INSUFFICIENT_PERMISSIONS
 

@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import TEST_METADATA
+from conftest import TEST_METADATA, install_executable
 from signing import keygen, sign_environment
 from signing.keygen import (
     KeygenError,
@@ -296,9 +296,7 @@ def test_yubihsm_keygen_cleanup_fails_when_the_upload_fails(
 ) -> None:
     logs = tmp_path / "logs"
     logs.mkdir()
-    upload = logs / "upload.py"
-    upload.write_text("#!/bin/sh\nexit 3\n")
-    upload.chmod(0o755)
+    install_executable(logs / "upload.py", "#!/bin/sh\nexit 3\n")
     audit_log = tmp_path / "audit.log"
     audit_log.write_text("entry\n")
     driver = YubiHsmKeygenDriver(
