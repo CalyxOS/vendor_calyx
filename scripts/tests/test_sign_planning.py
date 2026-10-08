@@ -13,17 +13,15 @@ from signing.sign_planning import (
     IncrementalTriple,
     SignPair,
     find_prev_signed_device_builds,
-    gather_device_builds_to_sign,
-    gather_latest_device_builds,
+    gather_device_builds,
     gather_signable_devices,
     parse_build_numbers,
     partition_by_key_availability,
-    sorted_build_numbers,
 )
 
 
-def test_gather_device_builds_to_sign_ignores_non_matching_files() -> None:
-    result = gather_device_builds_to_sign(
+def test_gather_device_builds_ignores_non_matching_files() -> None:
+    result = gather_device_builds(
         ["not_a_target_files_zip.txt", "calyx_bramble-target_files-x.zip"],
         [2026081500],
     )
@@ -48,7 +46,7 @@ def test_find_prev_signed_device_builds_applies_rollback_offset() -> None:
         ["release-bramble-2026081501"],
         device_to_next_build={"bramble": 2026081501},
         build_numbers=[2026081500],
-        avb_rollback_index_override="1",
+        avb_rollback_index_override=True,
         target_files_exists=stub(True),
     )
 
@@ -77,8 +75,8 @@ def test_find_prev_signed_device_builds_restricts_to_prev_build_numbers(
     assert result.device_to_prev_build == expected
 
 
-def test_gather_latest_device_builds_picks_the_highest_build() -> None:
-    result = gather_latest_device_builds(
+def test_gather_device_builds_picks_the_highest_build() -> None:
+    result = gather_device_builds(
         [
             "calyx_bramble-target_files-2026081400.zip",
             "calyx_redfin-target_files-2026081300.zip",
@@ -88,11 +86,10 @@ def test_gather_latest_device_builds_picks_the_highest_build() -> None:
     )
 
     assert result == {"bramble": 2026081500, "redfin": 2026081600}
-    assert sorted_build_numbers(result) == (2026081500, 2026081600)
 
 
-def test_gather_device_builds_to_sign_keeps_the_requested_builds() -> None:
-    result = gather_device_builds_to_sign(
+def test_gather_device_builds_keeps_the_requested_builds() -> None:
+    result = gather_device_builds(
         [
             "calyx_bramble-target_files-2026081400.zip",
             "calyx_bramble-target_files-2026081500.zip",
@@ -109,7 +106,7 @@ def test_planning_skips_names_without_a_numeric_build() -> None:
         "calyx_bramble-target_files-latest.zip",
         "calyx_redfin-target_files-2026081500.zip",
     ]
-    next_builds = gather_latest_device_builds(target_files)
+    next_builds = gather_device_builds(target_files)
     previous = find_prev_signed_device_builds(
         ["release-bramble-latest", "release-redfin-2026080100"],
         device_to_next_build=next_builds,
@@ -138,7 +135,7 @@ def test_gather_signable_devices_keeps_known_devices_in_metadata_order() -> (
 
 def test_gather_builds_of_no_build_numbers_or_target_files_is_empty() -> None:
     assert (
-        gather_device_builds_to_sign(
+        gather_device_builds(
             (
                 "calyx_bramble-target_files-2026081400.zip",
                 "calyx_redfin-target_files-2026081600.zip",
@@ -147,16 +144,16 @@ def test_gather_builds_of_no_build_numbers_or_target_files_is_empty() -> None:
         )
         == {}
     )
-    assert gather_latest_device_builds(()) == {}
+    assert gather_device_builds(()) == {}
 
 
 @pytest.mark.parametrize(
     ("avb_rollback_index_override", "target"),
-    ((None, 2026081500), ("42", 2026081501)),
+    ((False, 2026081500), (True, 2026081501)),
     ids=("no-rollback", "rollback"),
 )
 def test_partition_skips_a_preexisting_build_with_or_without_keys(
-    avb_rollback_index_override: str | None,
+    avb_rollback_index_override: bool,
     target: int,
 ) -> None:
     plan = partition_by_key_availability(
