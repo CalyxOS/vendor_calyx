@@ -52,7 +52,7 @@ def test_limit_ondemand_objects_audits_each_delete(
     assert len(sections) == 2
     for (comment, entries), key_hex in zip(sections, ("0x2000", "0x2001")):
         assert comment.endswith(
-            f" Command: delete-object --object-id {key_hex} "
+            f" Operation: delete-object --object-id {key_hex} "
             "--object-type asymmetric-key Result: 0",
         )
         assert " cmd: 0x58 " in entries[-1]
