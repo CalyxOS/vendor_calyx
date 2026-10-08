@@ -18,8 +18,7 @@ from pathlib import Path
 
 from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
 from .metadata import SigningMetadata, default_metadata_path, load_metadata
-from .models import KeyReference, KeySpec
-from .plaintext import PlaintextBackend, provision_certified_keys
+from .plaintext import generate_certified_key, provision_certified_keys
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
@@ -87,11 +86,12 @@ def mkkey_main(program: str, arguments: Sequence[str]) -> int:
     except ScriptError:
         return 1
 
-    spec = KeySpec(KeyReference(label=Path(key_name).name), 2048)
-    backend = PlaintextBackend(Path(key_name).parent)
     try:
-        backend.generate_key(spec)
-        backend.generate_certificate(spec, subject)
+        generate_certified_key(
+            Path(key_name).parent,
+            Path(key_name).name,
+            subject,
+        )
     except subprocess.CalledProcessError as error:
         sys.stderr.write(os.fsdecode(error.stderr or b""))
         print(f"error: {error}", file=sys.stderr)
@@ -335,7 +335,7 @@ def update_keys(
         key_suffix=key_suffix,
     )
     vbmeta_public = key_directory / keymapper.avb_custom_key(device)
-    provision_avb_key(avbtool, vbmeta_private, vbmeta_public)
+    _provision_avb_key(avbtool, vbmeta_private, vbmeta_public)
 
     vbmeta_system_private = key_directory / keymapper.key(
         "avb",
@@ -344,13 +344,20 @@ def update_keys(
         suffix=key_suffix,
         key_suffix=key_suffix,
     )
-    generate_rsa_key(vbmeta_system_private)
+    _generate_rsa_key(vbmeta_system_private)
 
     custom_public_key = key_directory / "avb_pkmd.bin"
     if custom_public_key.exists():
         custom_public_key.replace(vbmeta_public)
 
-    migrate_runtime_key(key_directory)
+    legacy = key_directory / "com.android.runtime.release"
+    current = key_directory / "com.android.runtime"
+    for suffix in (".pk8", ".x509.pem"):
+        if Path(f"{legacy}{suffix}").exists():
+            subprocess.run(
+                ("mv", f"{legacy}{suffix}", f"{current}{suffix}"),
+                check=True,
+            )
     _provision_certificates(
         keymapper,
         key_directory,
@@ -374,7 +381,7 @@ def update_keys(
         if private_key in seen_payloads:
             continue
         seen_payloads.add(private_key)
-        provision_avb_key(avbtool, private_key, Path(f"{base}.avbpubkey"))
+        _provision_avb_key(avbtool, private_key, Path(f"{base}.avbpubkey"))
 
 
 def _provision_certificates(
@@ -405,18 +412,12 @@ def _provision_certificates(
         path = key_directory / label
         if not Path(f"{path}.pk8").exists() and Path(f"{path}.pem").exists():
             raise FileExistsError(f"key {path} already exists")
-    provision_certified_keys(
-        PlaintextBackend(key_directory),
-        dict.fromkeys(labels, subject),
-    )
+    provision_certified_keys(key_directory, dict.fromkeys(labels, subject))
 
 
-def generate_rsa_key(private_key: Path) -> None:
+def _generate_rsa_key(private_key: Path) -> None:
     """
     Generate an RSA 4096 PEM private key unless one is there.
-
-    Args:
-        private_key: PEM destination for the RSA private key.
 
     Raises:
         subprocess.CalledProcessError: If OpenSSL fails.
@@ -429,7 +430,7 @@ def generate_rsa_key(private_key: Path) -> None:
     )
 
 
-def provision_avb_key(
+def _provision_avb_key(
     avbtool: str,
     private_key: Path,
     public_key: Path,
@@ -440,15 +441,10 @@ def provision_avb_key(
     The public key is derived again on every call and replaced only when
     it differs, so an empty, stale or orphaned one is corrected.
 
-    Args:
-        avbtool: Executable used to derive AVB public keys.
-        private_key: PEM destination for the RSA private key.
-        public_key: Destination for the AVB public key.
-
     Raises:
         subprocess.CalledProcessError: If OpenSSL or avbtool fails.
     """
-    generate_rsa_key(private_key)
+    _generate_rsa_key(private_key)
     derived = public_key.with_name(f"{public_key.name}.tmp")
     try:
         subprocess.run(
@@ -469,26 +465,6 @@ def provision_avb_key(
         os.replace(derived, public_key)
     finally:
         derived.unlink(missing_ok=True)
-
-
-def migrate_runtime_key(key_directory: Path) -> None:
-    """
-    Rename the legacy runtime key and certificate to their current names.
-
-    Args:
-        key_directory: Directory containing plaintext signing artifacts.
-
-    Raises:
-        subprocess.CalledProcessError: If a move command fails.
-    """
-    legacy = key_directory / "com.android.runtime.release"
-    current = key_directory / "com.android.runtime"
-    for suffix in (".pk8", ".x509.pem"):
-        if Path(f"{legacy}{suffix}").exists():
-            subprocess.run(
-                ("mv", f"{legacy}{suffix}", f"{current}{suffix}"),
-                check=True,
-            )
 
 
 def update_common_keys(
@@ -521,7 +497,7 @@ def update_common_keys(
         label = Path(keymapper.key("app", key_name)).name
         if label:
             subjects[label] = subject.replace("_KEY_LABEL_", label)
-    provision_certified_keys(PlaintextBackend(key_directory), subjects)
+    provision_certified_keys(key_directory, subjects)
 
 
 def _convert_chromium_keystore(key_directory: Path) -> None:

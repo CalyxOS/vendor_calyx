@@ -148,7 +148,7 @@ class LabelledSoftwareSigner(SoftwareSigner):
 
 
 def verifies(
-    key: rsa.RSAPrivateKey,
+    key: rsa.RSAPrivateKey | rsa.RSAPublicKey,
     signature: bytes,
     digest: bytes,
     algorithm: hashes.HashAlgorithm | None = None,
@@ -157,7 +157,8 @@ def verifies(
     Check an RSA PKCS#1 v1.5 signature over a precomputed digest.
 
     Args:
-        key: Key whose public half should verify the signature.
+        key: Public key that should verify the signature, or the private
+            key whose public half should.
         signature: Signature to check.
         digest: Precomputed message digest.
         algorithm: Hash that produced the digest, SHA-256 by default.
@@ -165,8 +166,10 @@ def verifies(
     Returns:
         Whether the signature verifies.
     """
+    if isinstance(key, rsa.RSAPrivateKey):
+        key = key.public_key()
     try:
-        key.public_key().verify(
+        key.verify(
             signature,
             digest,
             padding.PKCS1v15(),

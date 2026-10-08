@@ -235,7 +235,7 @@ def read_yubihsm_password_file(environment: MutableMapping[str, str]) -> bool:
         Whether the password was read from the file.
 
     Raises:
-        RuntimeError: If the file breaks the --password-file rules.
+        RuntimeError: If the file is not a private file of one line.
     """
     password_file = environment.get("YUBIHSM_PASSWORD_FILE")
     if environment.get("YUBIHSM_PASSWORD") or not password_file:
