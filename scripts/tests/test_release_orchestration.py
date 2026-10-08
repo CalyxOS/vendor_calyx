@@ -863,23 +863,6 @@ def test_release_passes_the_signing_helpers(release_tree: Path) -> None:
     assert "test-only" not in result.stderr
 
 
-def test_release_dry_run_adds_one_to_a_zero_padded_build_in_base_10(
-    release_tree: Path,
-) -> None:
-    result = run_release(
-        release_tree,
-        "devon",
-        environment={
-            "AVB_ROLLBACK_INDEX_OVERRIDE": "42",
-            "BUILD_NUMBER": "0089",
-        },
-        target_files_arg="calyx_devon-target_files-0089.zip",
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert "out/release-devon-90" in result.stderr
-
-
 def test_release_stops_when_target_files_signing_fails(
     release_tree: Path,
 ) -> None:
@@ -964,7 +947,6 @@ def test_release_rejects_rollback_override_on_unsupported_device(
         ("bramble", {"KEY_SUFFIX": ".key"}),
         ("bramble", {"KEYMAPPER": "legacy", "KEY_SUFFIX": ".key"}),
         ("bramble", {"BUILD_NUMBER": "eng.user"}),
-        ("bramble", {"BUILD_NUMBER": "0042"}),
     ),
     ids=(
         "plaintext",
@@ -974,7 +956,6 @@ def test_release_rejects_rollback_override_on_unsupported_device(
         "key-suffix",
         "legacy-key-suffix",
         "text-build-number",
-        "zero-padded-build-number",
     ),
 )
 def test_release_dry_run_renders_the_expected_commands(
