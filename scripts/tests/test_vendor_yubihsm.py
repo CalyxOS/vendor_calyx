@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from conftest import yubihsm_config
 from signing.vendor_yubihsm import (
     AuditLogNotAcknowledged,
     YubiHsmConfig,
@@ -19,7 +20,7 @@ from yubihsm_emulator import Connector
 
 def _drained_audit_log(yubihsm: Connector) -> YubiHsmConfig:
     yubihsm.device.log_index = yubihsm.device.log[-1][0]
-    return YubiHsmConfig(yubihsm.url, "0x0001", "password")
+    return yubihsm_config(yubihsm)
 
 
 def test_extract_and_save_audit_log_skips_write_with_no_entries_or_comment(
@@ -58,7 +59,7 @@ def test_extract_and_save_audit_log_reads_and_acknowledges_in_one_session(
     tmp_path: Path,
     yubihsm: Connector,
 ) -> None:
-    config = YubiHsmConfig(yubihsm.url, "0x0001", "password")
+    config = yubihsm_config(yubihsm)
     log_file = tmp_path / "audit.log"
 
     entries = extract_and_save_audit_log(config, log_file, "comment")
@@ -72,7 +73,7 @@ def test_extract_and_save_audit_log_writes_an_unacknowledged_entry_once(
     tmp_path: Path,
     yubihsm: Connector,
 ) -> None:
-    config = YubiHsmConfig(yubihsm.url, "0x0001", "password")
+    config = yubihsm_config(yubihsm)
     log_file = tmp_path / "audit.log"
     yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX)
 

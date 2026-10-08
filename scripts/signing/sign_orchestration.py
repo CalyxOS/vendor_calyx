@@ -739,11 +739,7 @@ class SignOrchestrator:
 
             return (
                 "generate incremental updates for",
-                [
-                    f"{t.device},{t.old_build},"
-                    f"{'' if t.new_build is None else t.new_build}"
-                    for t in triples
-                ],
+                [f"{t.device},{t.old_build},{t.new_build}" for t in triples],
                 run,
             )
 

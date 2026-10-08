@@ -6,25 +6,16 @@
 from __future__ import annotations
 
 import pytest
+from conftest import yubihsm_config
 from cryptography.hazmat.primitives import serialization
-from signing.vendor_yubihsm import YubiHsmConfig, generate_asymmetric_key
+from signing.vendor_yubihsm import generate_asymmetric_key
 from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, ERROR, OBJECT, ORIGIN
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm_emulator import (
-    DEFAULT_AUTHKEY_ID,
-    DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
     StoredObject,
 )
-
-
-def config(yubihsm: Connector) -> YubiHsmConfig:
-    return YubiHsmConfig(
-        connector_url=yubihsm.url,
-        auth_key=f"0x{DEFAULT_AUTHKEY_ID:04x}",
-        password=DEFAULT_PASSWORD,
-    )
 
 
 def generated_keys(device: EmulatedYubiHsm) -> list[StoredObject]:
@@ -49,7 +40,7 @@ def test_generate_asymmetric_key_maps_every_known_algorithm(
     expected_member: str,
 ) -> None:
     generate_asymmetric_key(
-        config(yubihsm),
+        yubihsm_config(yubihsm),
         key_id="0x2000",
         label="vbmeta",
         domains="3",
@@ -67,7 +58,7 @@ def test_generate_asymmetric_key_passes_id_label_domain_and_capabilities(
     yubihsm: Connector,
 ) -> None:
     generate_asymmetric_key(
-        config(yubihsm),
+        yubihsm_config(yubihsm),
         key_id="0x2000",
         label="vbmeta",
         domains="1,2",
@@ -96,7 +87,7 @@ def test_generate_asymmetric_key_rejects_unknown_algorithm(
 ) -> None:
     with pytest.raises(ValueError, match=f"Unknown algorithm '{algorithm}'"):
         generate_asymmetric_key(
-            config(yubihsm),
+            yubihsm_config(yubihsm),
             key_id="0x2000",
             label="vbmeta",
             domains="3",
@@ -115,7 +106,7 @@ def test_generate_asymmetric_key_keeps_an_existing_key(
 
     with pytest.raises(YubiHsmDeviceError) as raised:
         generate_asymmetric_key(
-            config(yubihsm),
+            yubihsm_config(yubihsm),
             key_id="0x2000",
             label="vbmeta",
             domains="3",

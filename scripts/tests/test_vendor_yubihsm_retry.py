@@ -6,14 +6,13 @@
 from __future__ import annotations
 
 import os
-import stat
 import subprocess
 import time
 from pathlib import Path
 
 import pytest
 import signing.vendor_yubihsm as vendor_yubihsm
-from conftest import process_alive
+from conftest import install_executable, process_alive, yubihsm_config
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
@@ -74,9 +73,10 @@ def test_restarts_the_connector_and_retries_after_connection_error(
     yubihsm: Connector,
 ) -> None:
     device = _unplug(yubihsm, monkeypatch)
-    binary = tmp_path / "retry-yubihsm-connector"
-    binary.write_text("#!/bin/sh\nsleep 300\n")
-    binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
+    binary = install_executable(
+        tmp_path / "retry-yubihsm-connector",
+        "#!/bin/sh\nsleep 300\n",
+    )
     launcher = subprocess.run(
         ["sh", "-c", 'setsid "$1" >/dev/null 2>&1 & echo $!', "sh", binary],
         check=True,
@@ -98,7 +98,7 @@ def test_restarts_the_connector_and_retries_after_connection_error(
 
     monkeypatch.setattr(vendor_yubihsm, "restart_connector", restart_and_plug)
     try:
-        result = attest_key(config(yubihsm), KEY_ID)
+        result = attest_key(yubihsm_config(yubihsm), KEY_ID)
 
         second_pid = _read_pid(pid_file)
         assert _issued_for_the_key(result, device)
@@ -119,7 +119,7 @@ def test_does_not_retry_without_connector_pidfile(
     monkeypatch.delenv("YUBIHSM_CONNECTOR_PIDFILE", raising=False)
 
     with pytest.raises(YubiHsmConnectionError):
-        attest_key(config(yubihsm), KEY_ID)
+        attest_key(yubihsm_config(yubihsm), KEY_ID)
 
 
 def test_does_not_retry_on_a_device_error(
@@ -135,7 +135,7 @@ def test_does_not_retry_on_a_device_error(
     )
 
     with pytest.raises(YubiHsmDeviceError):
-        attest_key(config(yubihsm), KEY_ID)
+        attest_key(yubihsm_config(yubihsm), KEY_ID)
 
     assert yubihsm.device.sessions_opened == 1
 
