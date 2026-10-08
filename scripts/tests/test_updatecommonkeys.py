@@ -12,9 +12,12 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR
+from conftest import SCRIPTS_DIR, assert_certificate_of
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=Test app signing key"
+LABEL_SUBJECT = "/O=Calyx Institute/CN=_KEY_LABEL_"
 
 
 def _run_updatecommonkeys(
@@ -22,9 +25,10 @@ def _run_updatecommonkeys(
     key_dir: Path,
     *,
     keymapper: str = "legacy",
+    subject: str = SUBJECT,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [script, key_dir, SUBJECT],
+        [script, key_dir, subject],
         env={**os.environ, "KEYMAPPER": keymapper},
         stdin=subprocess.DEVNULL,
         capture_output=True,
@@ -67,13 +71,11 @@ def _run_in_terminal(
     return os.waitstatus_to_exitcode(status), output.decode(errors="replace")
 
 
-def _public_key(path: Path, *, certificate: bool) -> bytes:
-    argv: list[str | Path]
-    if certificate:
-        argv = ["openssl", "x509", "-in", path, "-noout", "-pubkey"]
-    else:
-        argv = ["openssl", "pkey", "-inform", "DER", "-in", path, "-pubout"]
-    return subprocess.run(argv, capture_output=True, check=True).stdout
+def _pk8_public_key(path: Path) -> PublicKeyTypes:
+    return serialization.load_der_private_key(
+        path.read_bytes(),
+        None,
+    ).public_key()
 
 
 @pytest.mark.parametrize(
@@ -100,7 +102,12 @@ def test_updatecommonkeys_generates_the_app_keys(
     key_dir = tmp_path / "keys"
     key_dir.mkdir()
 
-    result = _run_updatecommonkeys(script, key_dir, keymapper=keymapper)
+    result = _run_updatecommonkeys(
+        script,
+        key_dir,
+        keymapper=keymapper,
+        subject=LABEL_SUBJECT,
+    )
 
     assert result.returncode == 0, result.stderr
     assert sorted(path.name for path in key_dir.iterdir()) == sorted(
@@ -108,11 +115,18 @@ def test_updatecommonkeys_generates_the_app_keys(
     )
     for private_key in key_dir.glob("*.pk8"):
         certificate = private_key.with_suffix(".x509.pem")
-        assert _public_key(private_key, certificate=False) == (
-            _public_key(certificate, certificate=True)
+        assert_certificate_of(
+            _pk8_public_key(private_key),
+            certificate,
+            "CN=_KEY_LABEL_,O=Calyx Institute",
         )
     before = {path: path.read_bytes() for path in key_dir.iterdir()}
-    rerun = _run_updatecommonkeys(script, key_dir, keymapper=keymapper)
+    rerun = _run_updatecommonkeys(
+        script,
+        key_dir,
+        keymapper=keymapper,
+        subject=LABEL_SUBJECT,
+    )
     assert rerun.returncode == 0, rerun.stderr
     assert {path: path.read_bytes() for path in key_dir.iterdir()} == before
 
@@ -255,12 +269,9 @@ def test_updatecommonkeys_converts_the_chromium_keystore(
     certificate = key_dir / "chromium.x509.pem"
     keystore_certificate = tmp_path / "keystore.pem"
     keystore_certificate.write_bytes(exported)
-    assert _public_key(certificate, certificate=True) == _public_key(
-        keystore_certificate,
-        certificate=True,
-    )
-    assert _public_key(key_dir / "chromium.pk8", certificate=False) == (
-        _public_key(certificate, certificate=True)
+    assert_certificate_of(
+        _pk8_public_key(key_dir / "chromium.pk8"),
+        certificate,
     )
     certificates = [
         subprocess.run(
