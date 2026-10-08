@@ -1,7 +1,7 @@
 {
   "audit": [
-    "# Operation: export-wrapped-key --connector <connector> --authkey 0x0001 --wrap-id 0x0010 --key-id 0x0101 --output <keep>/keys//0x0101-asymmetric-key.yhw Result: 0",
-    "# Operation: export-wrapped-key --connector <connector> --authkey 0x0001 --wrap-id 0x0010 --key-id 0x0102 --output <keep>/keys//0x0102-asymmetric-key.yhw Result: 0"
+    "# Operation: export-wrapped-key --connector <connector> --authkey 0x0001 --wrap-id 0x0010 --key-id 0x0101 --output <keep>/keys/0x0101-asymmetric-key.yhw Result: 0",
+    "# Operation: export-wrapped-key --connector <connector> --authkey 0x0001 --wrap-id 0x0010 --key-id 0x0102 --output <keep>/keys/0x0102-asymmetric-key.yhw Result: 0"
   ],
   "files": {
     "keys/0x0101-asymmetric-key.yhw": "<wrapped 0x0101 ASYMMETRIC_KEY>",
