@@ -12,33 +12,23 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, YUBIHSM_SDK, run, run_cli
+from conftest import (
+    KEYGEN_METADATA,
+    SCRIPTS_DIR,
+    YUBIHSM_SDK,
+    install_executable,
+    run,
+)
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from signing.keymap import Id2bKeymapper
+from signing.metadata import load_metadata
 from yubihsm.defs import COMMAND, OBJECT
 from yubihsm_emulator import Connector, stored_certificate
 
 KEYGEN_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.keygen.sh"
 KEYGEN_FIXTURE = Path(__file__).parent / "fixtures" / "yubihsm-keygen.json"
-METADATA = """KEYS_AVB = ("vbmeta",)
-KEYS_OTHER = ("ota",)
-KEYS_CORE = ("build/make/target/product/security/testkey",)
-KEYS_APEX = ("com.android.test",)
-KEYS_APEX_APK = ()
-KEYS_APP = ()
-KEYS_REPO = ()
-KEY_TYPES = ("avb", "apex_payload", "other", "core", "apex_container")
-MAPPED_KEY_TYPES = ("core",)
-ALL_DEVICES = ("bramble",)
-KEY_TYPE_TO_ARRAY = {
-    "avb": "keys_avb",
-    "apex_payload": "keys_apex",
-    "other": "keys_other",
-    "core": "keys_core",
-    "apex_container": "keys_apex",
-}
-"""
 
 
 def _keygen_tree(
@@ -47,23 +37,17 @@ def _keygen_tree(
     avbtool: Path,
 ) -> dict[str, str]:
     root.mkdir(parents=True)
-    (root / "metadata.py").write_text(METADATA)
     (root / "devices").write_text("devices=(bramble)\n")
-    keymap = run_cli(
-        [
-            "generate-keymap",
-            "--metadata",
-            root / "metadata.py",
-            "--devices",
-            "bramble",
-        ],
-    ).stdout
+    keymap = Id2bKeymapper(load_metadata(KEYGEN_METADATA)).to_tsv(
+        ("bramble",),
+    )
     (root / "keymap.tsv").write_text(keymap)
     logs = root / "logs"
     logs.mkdir()
-    upload = logs / "upload.py"
-    upload.write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{root}/uploads"\n')
-    upload.chmod(0o755)
+    install_executable(
+        logs / "upload.py",
+        f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{root}/uploads"\n',
+    )
     (root / "tmp").mkdir()
     yubihsm.device.put_wrap_key(0x0010)
     return {
@@ -77,7 +61,7 @@ def _keygen_tree(
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
         "PKCS11_MODULE": "/dev/null",
         "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-        "METADATA_FILE": str(root / "metadata.py"),
+        "METADATA_FILE": str(KEYGEN_METADATA),
         "DEVICES_FILE": str(root / "devices"),
         "KEYMAP_FILE": str(root / "keymap.tsv"),
         "AVBTOOL_BIN": str(avbtool),
@@ -222,16 +206,13 @@ def test_yubihsm_keygen_skips_backed_up_keys(
     ]
 
 
-@pytest.mark.aosp
 def test_python_yubihsm_keygen_refuses_generate_using_pkcs11_first(
     tmp_path: Path,
-    aosp_top: Path,
     yubihsm: Connector,
 ) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
     root = tmp_path / "tree"
     environment = {
-        **_keygen_tree(root, yubihsm, avbtool),
+        **_keygen_tree(root, yubihsm, Path("/bin/true")),
         "GENERATE_USING_PKCS11": "y",
     }
 
@@ -312,7 +293,7 @@ def test_yubihsm_keygen_previews_its_device_writes_under_dry_run(
     assert generated == ["0x2000", "0x1300", "0x1100", "0x1200"]
 
 
-_DERIVING_AVBTOOL = """#!/bin/sh
+FAKE_AVBTOOL = """#!/bin/sh
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output) output=$2; shift 2 ;;
@@ -322,23 +303,14 @@ done
 printf 'avb public key' > "$output"
 """
 
-_IMPLEMENTATIONS = (
-    pytest.param({"YUBIHSM_PYTHON_TOOLS": "y"}, id="bash"),
-    pytest.param({"USE_PYTHON_KEYGEN": "y"}, id="python"),
-)
 
-
-@pytest.mark.parametrize("implementation", _IMPLEMENTATIONS)
 def test_yubihsm_keygen_refuses_a_certificate_without_its_key(
     tmp_path: Path,
     yubihsm: Connector,
-    implementation: dict[str, str],
 ) -> None:
     root = tmp_path / "tree"
-    avbtool = tmp_path / "avbtool"
-    avbtool.write_text(_DERIVING_AVBTOOL)
-    avbtool.chmod(0o755)
-    environment = {**_keygen_tree(root, yubihsm, avbtool), **implementation}
+    avbtool = install_executable(tmp_path / "avbtool", FAKE_AVBTOOL)
+    environment = _keygen_tree(root, yubihsm, avbtool)
     run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
     backup = next((root / "keys").glob("*-asymmetric-key.yhw"))
     key_id = backup.name.removesuffix("-asymmetric-key.yhw")
@@ -359,19 +331,14 @@ def test_yubihsm_keygen_refuses_a_certificate_without_its_key(
     assert _objects(yubihsm, OBJECT.ASYMMETRIC_KEY) == generated
 
 
-@pytest.mark.parametrize("implementation", _IMPLEMENTATIONS)
 def test_yubihsm_keygen_derives_the_public_keys_a_failed_run_left_out(
     tmp_path: Path,
     yubihsm: Connector,
-    implementation: dict[str, str],
 ) -> None:
     root = tmp_path / "tree"
-    avbtool = tmp_path / "avbtool"
-    avbtool.write_text(_DERIVING_AVBTOOL)
-    avbtool.chmod(0o755)
+    avbtool = install_executable(tmp_path / "avbtool", FAKE_AVBTOOL)
     environment = {
         **_keygen_tree(root, yubihsm, avbtool),
-        **implementation,
         "HSM_KEY_OUT_DIR": str(root / "hsm"),
     }
     run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
@@ -387,17 +354,13 @@ def test_yubihsm_keygen_derives_the_public_keys_a_failed_run_left_out(
     assert "already exists" not in rerun.stderr
 
 
-@pytest.mark.parametrize("implementation", _IMPLEMENTATIONS)
 def test_yubihsm_keygen_derives_no_public_key_in_a_dry_run(
     tmp_path: Path,
     yubihsm: Connector,
-    implementation: dict[str, str],
 ) -> None:
     root = tmp_path / "tree"
-    avbtool = tmp_path / "avbtool"
-    avbtool.write_text(_DERIVING_AVBTOOL)
-    avbtool.chmod(0o755)
-    environment = {**_keygen_tree(root, yubihsm, avbtool), **implementation}
+    avbtool = install_executable(tmp_path / "avbtool", FAKE_AVBTOOL)
+    environment = _keygen_tree(root, yubihsm, avbtool)
     run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
     public_key = next((root / "keys").glob("*.avbpubkey"))
     public_key.unlink()

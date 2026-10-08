@@ -9,7 +9,7 @@ argument lists of a release.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, MutableMapping, Sequence
 from dataclasses import dataclass
 
 from .keymap import Keymapper
@@ -32,37 +32,40 @@ class UnsupportedRollbackDeviceError(ValueError):
 @dataclass(frozen=True, slots=True)
 class ReleaseArguments:
     """
-    The three argument lists passed to AOSP's release-tools.
+    The argument lists passed to sign_target_files_apks and
+    ota_from_target_files.
     """
 
     signing_args: tuple[str, ...]
     ota_args: tuple[str, ...]
-    avb_arguments: tuple[str, ...]
 
 
 def make_get_key(
     keymapper: Keymapper,
+    environment: MutableMapping[str, str],
     *,
     device: str,
-    key_dir: str = "keys/",
-    key_suffix: str = ".pem",
 ) -> GetKey:
     """
-    Bind a keymapper and device into a key resolver.
+    Bind a keymapper and device into a key resolver under the
+    keymapper's KEY_DIR.
 
-    AVB keys are requested with KEY_SUFFIX and APEX payload keys with
-    .pem, and each keymapper decides which suffix it applies.
+    AVB keys are requested with KEY_SUFFIX, which defaults to .pem only
+    when unset, and APEX payload keys with .pem. Each keymapper decides
+    which suffix it applies.
 
     Args:
         keymapper: Keymapper to resolve keys through.
+        environment: Process environment to read KEY_DIR and KEY_SUFFIX
+            from, with the keymapper's KEY_DIR export applied in place.
         device: Device to resolve per-device keys for.
-        key_dir: Prefix matching the KEY_DIR environment convention.
-        key_suffix: Value of KEY_SUFFIX.
 
     Returns:
         A callable taking key_type and key_name, which returns the key
         path, or an empty value for a key the keymapper does not map.
     """
+    key_dir = keymapper.key_dir(environment)
+    key_suffix = environment.get("KEY_SUFFIX", ".pem")
 
     def get_key(key_type: str, key_name: str) -> str:
         suffix = {"avb": key_suffix, "apex_payload": ".pem"}.get(key_type, "")
@@ -89,7 +92,8 @@ def build_release_arguments(
     extra_ota_args: Sequence[str] = (),
 ) -> ReleaseArguments:
     """
-    Build the AVB, signing and OTA argument lists for one release.
+    Build the signing and OTA argument lists for one release, the AVB
+    arguments last in the signing list.
 
     Args:
         metadata: Validated signing metadata (keys_avb/keys_apex/etc.).
@@ -104,7 +108,7 @@ def build_release_arguments(
         extra_ota_args: Same, for EXTRA_OTA_ARGS.
 
     Returns:
-        The three argument lists.
+        The two argument lists.
 
     Raises:
         UnsupportedRollbackDeviceError: If avb_rollback_index_override is
@@ -175,7 +179,6 @@ def build_release_arguments(
     ota_args += ["--package_key", ota_key]
 
     return ReleaseArguments(
-        signing_args=tuple(signing_args),
+        signing_args=(*signing_args, *avb_arguments),
         ota_args=tuple(ota_args),
-        avb_arguments=tuple(avb_arguments),
     )

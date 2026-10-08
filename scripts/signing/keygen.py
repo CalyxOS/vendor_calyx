@@ -21,10 +21,6 @@ from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
 from . import sign_environment
-from .configuration import (
-    EnvironmentPin,
-    Pkcs11BackendConfiguration,
-)
 from .confirmation import ask_variable
 from .files import write_file_atomically
 from .keymap import Keymapper, load_keymapper
@@ -32,6 +28,7 @@ from .metadata import SigningMetadata, load_metadata
 from .models import KeyReference, KeySpec
 from .pkcs11 import (
     Pkcs11Backend,
+    Pkcs11Config,
     initialize_pkcs11_token,
     is_any_pkcs11_token_initialized,
 )
@@ -426,50 +423,44 @@ class Pkcs11KeygenDriver(KeygenDriver):
             user_pin=environment["PKCS11_PIN"],
         )
 
-    def _configuration(self, *, discovery: bool) -> Pkcs11BackendConfiguration:
+    def _backend(self, *, discovery: bool = False) -> Pkcs11Backend:
         """
-        Build the PKCS#11 backend configuration from the environment, for
-        key discovery or for modification.
+        Build the PKCS#11 backend from the environment, for key discovery
+        or for modification.
         """
         environment = self.environment
-        pin_source = None
-        signing_pin_source = None
-        discovery_pin_source = None
-        use_so_pin = False
-        list_requires_no_pin = False
+        user_pin = environment.get("PKCS11_PIN") or None
+        pin = signing_pin = discovery_pin = None
+        use_so_pin = list_requires_no_pin = False
         if discovery:
             if environment.get("LIST_REQUIRES_NO_PIN", "n") == "y":
                 list_requires_no_pin = True
-            elif environment.get("PKCS11_PIN"):
-                pin_source = EnvironmentPin("PKCS11_PIN")
+            else:
+                pin = user_pin
         elif environment.get("MODIFICATION_USES_SO_PIN") == "y":
             if environment.get("PKCS11_SO_PIN"):
                 use_so_pin = True
-                pin_source = EnvironmentPin("PKCS11_SO_PIN")
-            if environment.get("PKCS11_PIN"):
-                signing_pin_source = EnvironmentPin("PKCS11_PIN")
-                discovery_pin_source = EnvironmentPin("PKCS11_PIN")
-        elif environment.get("PKCS11_PIN"):
-            pin_source = EnvironmentPin("PKCS11_PIN")
+                pin = environment["PKCS11_SO_PIN"]
+            signing_pin = discovery_pin = user_pin
+        else:
+            pin = user_pin
         engine = environment.get("PKCS11_OPENSSL_ENGINE_LIBRARY_PATH")
-        return Pkcs11BackendConfiguration(
-            module=Path(environment["PKCS11_MODULE"]),
-            pin_source=pin_source,
-            discovery_pin_source=discovery_pin_source,
-            signing_pin_source=signing_pin_source,
-            token_label=environment.get("PKCS11_TOKEN_LABEL") or None,
-            slot=environment.get("PKCS11_SLOT") or None,
-            tool=environment["PKCS11_TOOL_BIN"],
-            openssl=environment.get("OPENSSL_BIN", "openssl"),
-            openssl_engine=Path(engine) if engine else None,
-            certificate_days=int(environment["CERT_EXPIRY_DAYS"]),
-            use_so_pin=use_so_pin,
-            list_requires_no_pin=list_requires_no_pin,
-            environment=dict(environment),
+        return Pkcs11Backend(
+            Pkcs11Config(
+                module=Path(environment["PKCS11_MODULE"]),
+                pin=pin,
+                discovery_pin=discovery_pin,
+                signing_pin=signing_pin,
+                token_label=environment.get("PKCS11_TOKEN_LABEL") or None,
+                slot=environment.get("PKCS11_SLOT") or None,
+                tool=environment["PKCS11_TOOL_BIN"],
+                openssl=environment.get("OPENSSL_BIN", "openssl"),
+                openssl_engine=Path(engine) if engine else None,
+                certificate_days=int(environment["CERT_EXPIRY_DAYS"]),
+                use_so_pin=use_so_pin,
+                list_requires_no_pin=list_requires_no_pin,
+            ),
         )
-
-    def _backend(self, *, discovery: bool = False) -> Pkcs11Backend:
-        return self._configuration(discovery=discovery).create_backend()
 
     def _reference(self, key_id: str, label: str = "") -> KeyReference:
         return KeyReference(key_id=key_id, label=label)

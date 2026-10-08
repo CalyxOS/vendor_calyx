@@ -6,15 +6,15 @@
 from __future__ import annotations
 
 import base64
-import datetime
 from collections.abc import Callable
 from pathlib import Path
 from typing import NotRequired, TypedDict, Unpack
 
 import pytest
+from conftest import YUBIHSM_WRAP_ID, plug_yubihsm, yubihsm_config
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from signing.keymap import StaticKeymapper
 from signing.vendor_yubihsm import (
     YubiHsmConfig,
@@ -31,6 +31,7 @@ from yubihsm_emulator import (
     DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
+    self_signed_certificate,
 )
 
 WRAP_ID = 0x0010
@@ -41,22 +42,6 @@ ONDEMAND_DOMAINS = EXPORTABLE_DOMAIN | ONDEMAND_DOMAIN
 KEY_CAPABILITIES = CAPABILITY.SIGN_PKCS | CAPABILITY.EXPORTABLE_UNDER_WRAP
 OPAQUE_CAPABILITIES = CAPABILITY.GET_OPAQUE | CAPABILITY.EXPORTABLE_UNDER_WRAP
 FIXED_RECORDS = 2
-
-
-def _self_signed_certificate() -> x509.Certificate:
-    key = ec.generate_private_key(ec.SECP256R1())
-    subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "test")])
-    now = datetime.datetime.now(datetime.UTC)
-    return (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(subject)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now)
-        .not_valid_after(now + datetime.timedelta(days=1))
-        .sign(key, hashes.SHA256())
-    )
 
 
 def config(yubihsm: Connector) -> YubiHsmConfig:
@@ -94,7 +79,11 @@ def _key(
         capabilities=KEY_CAPABILITIES,
     )
     if backed_up:
-        wrapped = device.wrapped(object_id, OBJECT.ASYMMETRIC_KEY, WRAP_ID)
+        wrapped = device.wrapped(
+            object_id,
+            OBJECT.ASYMMETRIC_KEY,
+            YUBIHSM_WRAP_ID,
+        )
         _backup_path(key_dir, object_id).write_bytes(base64.b64encode(wrapped))
     if not loaded:
         del device.objects[(object_id, OBJECT.ASYMMETRIC_KEY)]
@@ -110,7 +99,7 @@ def _certificate(
     loaded: bool = True,
     backed_up: bool = True,
 ) -> x509.Certificate:
-    certificate = _self_signed_certificate()
+    certificate = self_signed_certificate()
     if loaded:
         device.put_certificate(
             object_id,
@@ -310,7 +299,7 @@ def test_unreadable_backup_fails_before_evicting(
     A malformed backup of the key being loaded fails before an
     on-demand object is evicted to make room for it.
     """
-    device = _plug(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
     _backup_path(tmp_path, 0x2000).write_bytes(b"\xf3raw")
     _certificate(device, tmp_path, 0x2000, loaded=False)
     _key(device, tmp_path, 0x2002)
@@ -340,7 +329,7 @@ def test_truncated_backup_fails_before_evicting(
     A backup cut short partway through its base64 text is refused while
     decoding, before the on-demand object is evicted to make room.
     """
-    device = _plug(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
     _key(device, tmp_path, 0x2000, loaded=False)
     _certificate(device, tmp_path, 0x2000, loaded=False)
     backup = _backup_path(tmp_path, 0x2000)
@@ -609,7 +598,7 @@ def test_verify_key_ids_keeps_exportable_non_ondemand_in_restore_mode(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     key = _key(
         device,
         tmp_path,
@@ -690,7 +679,7 @@ def test_object_outside_the_ondemand_domain_is_not_evicted(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
     _key(device, tmp_path, 0x2000, loaded=False)
     _certificate(device, tmp_path, 0x2000, loaded=False)
     _key(device, tmp_path, 0x2001, domains=UNEXPORTABLE_DOMAIN)
@@ -821,7 +810,7 @@ def test_backup_of_another_key_leaves_no_object_behind(
     A backup holding another key's blob imports that key, which is
     deleted again, and the key evicted to make room is loaded again.
     """
-    device = _plug(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 2 + 1)
     _key(device, tmp_path, 0x2004, loaded=False)
     _backup_path(tmp_path, 0x2000).write_bytes(
         _backup_path(tmp_path, 0x2004).read_bytes(),
@@ -929,7 +918,7 @@ def test_populate_devices_partitions_by_full_key_availability(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     _key(device, tmp_path, 0x1000, backed_up=False)
     _certificate(device, tmp_path, 0x1000, backed_up=False)
     _key(device, tmp_path, 0x1001, backed_up=False)
@@ -957,13 +946,13 @@ def test_populate_devices_rejects_a_device_without_keymap_rows(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    _plug(yubihsm)
+    plug_yubihsm(yubihsm)
     keymap_file = tmp_path / "keymap.tsv"
     _write_keymap(keymap_file, [])
 
     with pytest.raises(RuntimeError, match="has no keys for unknown-device"):
         populate_devices_with_loaded_keys_arrays(
-            config(yubihsm),
+            yubihsm_config(yubihsm),
             StaticKeymapper.from_file(keymap_file),
             ["unknown-device"],
         )
@@ -973,7 +962,7 @@ def test_ensure_all_keys_available_for_devices_unions_multiple_devices(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     keys = {
         object_id: _key(device, tmp_path, object_id, loaded=False)
         for object_id in (0x2000, 0x2001)
@@ -990,7 +979,7 @@ def test_ensure_all_keys_available_for_devices_unions_multiple_devices(
     )
 
     ensure_all_keys_available_for_devices(
-        config(yubihsm),
+        yubihsm_config(yubihsm),
         StaticKeymapper.from_file(keymap_file),
         tmp_path,
         ["bramble", "redfin"],
@@ -1013,7 +1002,7 @@ def test_restore_all_keys_and_certs_logs_each_key_as_it_is_restored(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     _audit_loads(device)
     audit_log = tmp_path / "audit.log"
     key_dir = tmp_path / "keys"
@@ -1093,7 +1082,7 @@ def test_restore_all_keys_and_certs_extracts_log_even_on_failure(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm, total_records=FIXED_RECORDS + 1)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 1)
     _audit_loads(device)
     audit_log = tmp_path / "audit.log"
     key_dir = tmp_path / "keys"
@@ -1124,7 +1113,7 @@ def test_restore_all_keys_and_certs_reports_failure_when_logging_a_key_fails(
     """
     import signing.vendor_yubihsm as vendor_yubihsm
 
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     _audit_loads(device)
     audit_log = tmp_path / "audit.log"
     key_dir = tmp_path / "keys"
@@ -1166,7 +1155,7 @@ def test_restore_all_keys_and_certs_reports_failure_when_reading_the_log_fails(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     _audit_loads(device)
     audit_log = tmp_path / "audit.log"
     key_dir = tmp_path / "keys"

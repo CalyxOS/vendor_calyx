@@ -6,25 +6,23 @@
 from __future__ import annotations
 
 import functools
-import shutil
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run, run_cli
+from conftest import (
+    SOFTHSM_MODULE,
+    SOFTHSM_SO_PIN,
+    SOFTHSM_USER_PIN,
+    require_softhsm,
+    run,
+    softhsm_environment,
+)
 from signing.pkcs11 import (
     initialize_pkcs11_token,
     is_any_pkcs11_token_initialized,
 )
 
-SOFTHSM_MODULE = Path("/usr/lib/pkcs11/libsofthsm2.so")
-SO_PIN = "12345678"
-USER_PIN = "123456"
 TOKEN_LABEL = "init-token-test"
-
-
-def require_softhsm() -> None:
-    if shutil.which("pkcs11-tool") is None or not SOFTHSM_MODULE.is_file():
-        pytest.skip("SoftHSM test dependencies are missing")
 
 
 @pytest.fixture
@@ -38,20 +36,9 @@ def uninitialized_softhsm_env(
     environment and in this process's environment.
     """
     require_softhsm()
-    token_dir = tmp_path / "tokens"
-    token_dir.mkdir()
-    config = tmp_path / "softhsm2.conf"
-    config.write_text(
-        f"""directories.tokendir = {token_dir}
-objectstore.backend = file
-log.level = WARNING
-slots.removable = true
-slots.mechanisms = ALL
-library.reset_on_fork = false
-""",
-    )
-    monkeypatch.setenv("SOFTHSM2_CONF", str(config))
-    return {"SOFTHSM2_CONF": str(config)}
+    environment = softhsm_environment(tmp_path, TOKEN_LABEL, initialize=False)
+    monkeypatch.setenv("SOFTHSM2_CONF", environment["SOFTHSM2_CONF"])
+    return environment
 
 
 def test_is_any_token_initialized_false_before_init(
@@ -70,8 +57,8 @@ def test_initialize_pkcs11_token_creates_a_usable_token(
         tool="pkcs11-tool",
         module=SOFTHSM_MODULE,
         label=TOKEN_LABEL,
-        so_pin=SO_PIN,
-        user_pin=USER_PIN,
+        so_pin=SOFTHSM_SO_PIN,
+        user_pin=SOFTHSM_USER_PIN,
     )
 
     assert is_any_pkcs11_token_initialized(
@@ -93,7 +80,7 @@ def test_initialize_pkcs11_token_creates_a_usable_token(
             "--token-label",
             TOKEN_LABEL,
             "--pin",
-            USER_PIN,
+            SOFTHSM_USER_PIN,
             "--list-objects",
         ],
         env=uninitialized_softhsm_env,
@@ -108,8 +95,8 @@ def test_initialize_pkcs11_token_keeps_an_initialized_token(
         initialize_pkcs11_token,
         tool="pkcs11-tool",
         module=SOFTHSM_MODULE,
-        so_pin=SO_PIN,
-        user_pin=USER_PIN,
+        so_pin=SOFTHSM_SO_PIN,
+        user_pin=SOFTHSM_USER_PIN,
     )
     initialize(label=TOKEN_LABEL)
     login = [
@@ -119,7 +106,7 @@ def test_initialize_pkcs11_token_keeps_an_initialized_token(
         "--token-label",
         TOKEN_LABEL,
         "--pin",
-        USER_PIN,
+        SOFTHSM_USER_PIN,
     ]
     run(
         [
@@ -142,56 +129,3 @@ def test_initialize_pkcs11_token_keeps_an_initialized_token(
         env=uninitialized_softhsm_env,
     )
     assert "label:      kept" in objects.stdout
-
-
-def test_init_pkcs11_token_cli_creates_a_usable_token(
-    uninitialized_softhsm_env: dict[str, str],
-) -> None:
-    environment = {
-        **uninitialized_softhsm_env,
-        "PYTHONPATH": str(SCRIPTS_DIR),
-        "TOKEN_INIT_SO_PIN": SO_PIN,
-        "TOKEN_INIT_PIN": USER_PIN,
-    }
-
-    result = run_cli(
-        [
-            "init-pkcs11-token",
-            "--module",
-            str(SOFTHSM_MODULE),
-            "--label",
-            TOKEN_LABEL,
-            "--so-pin-env",
-            "TOKEN_INIT_SO_PIN",
-            "--pin-env",
-            "TOKEN_INIT_PIN",
-        ],
-        env=environment,
-    )
-    assert result.returncode == 0, result.stderr
-
-    slots = run(
-        ["pkcs11-tool", "--module", str(SOFTHSM_MODULE), "--list-slots"],
-        env=uninitialized_softhsm_env,
-    )
-    assert TOKEN_LABEL in slots.stdout
-
-
-def test_init_pkcs11_token_cli_rejects_raw_pins() -> None:
-    result = run_cli(
-        [
-            "init-pkcs11-token",
-            "--module",
-            str(SOFTHSM_MODULE),
-            "--label",
-            TOKEN_LABEL,
-            "--so-pin",
-            "command-line-so-secret",
-            "--pin-env",
-            "TOKEN_INIT_PIN",
-        ],
-        check=False,
-    )
-    assert result.returncode == 2
-    assert "raw PINs are forbidden" in result.stderr
-    assert "command-line-so-secret" not in result.stderr

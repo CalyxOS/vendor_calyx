@@ -6,10 +6,8 @@
 from __future__ import annotations
 
 import base64
-import datetime
 import os
 import signal
-import stat
 import subprocess
 import sys
 import time
@@ -17,10 +15,13 @@ from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, default_signal_dispositions, run_cli
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from conftest import (
+    SCRIPTS_DIR,
+    default_signal_dispositions,
+    install_executable,
+    run,
+)
+from cryptography.hazmat.primitives import serialization
 from signing.metadata import load_metadata
 from signing.sign_orchestration import (
     SignAbort,
@@ -30,7 +31,7 @@ from signing.sign_orchestration import (
     load_devices_file,
 )
 from yubihsm.defs import COMMAND, OBJECT
-from yubihsm_emulator import Connector
+from yubihsm_emulator import Connector, self_signed_certificate
 
 BUILD_NUMBER = "2026081500"
 OLD_BUILD_NUMBER = "2026081400"
@@ -86,12 +87,6 @@ esac
 """
 
 
-def _install(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
-
-
 @pytest.fixture
 def sign_tree(tmp_path: Path) -> Path:
     """
@@ -99,9 +94,12 @@ def sign_tree(tmp_path: Path) -> Path:
     that `python3 -m signing sign-orchestrate` runs end to end against
     them.
     """
-    _install(tmp_path / "fakes" / "release.sh", FAKE_RELEASE_SH)
-    _install(tmp_path / "fakes" / "generate_delta.sh", FAKE_GENERATE_DELTA_SH)
-    _install(tmp_path / "bin" / "df", FAKE_DF)
+    install_executable(tmp_path / "fakes" / "release.sh", FAKE_RELEASE_SH)
+    install_executable(
+        tmp_path / "fakes" / "generate_delta.sh",
+        FAKE_GENERATE_DELTA_SH,
+    )
+    install_executable(tmp_path / "bin" / "df", FAKE_DF)
     work = tmp_path / "work"
     (work / "tmp").mkdir(parents=True)
     return work
@@ -128,16 +126,28 @@ def _archive_manifest(work: Path) -> dict[str, bytes]:
     }
 
 
-def run_sign_orchestrate(
+def _sign_orchestrate_command(
     work: Path,
-    *,
-    devices: tuple[str, ...] | None = ("bramble",),
-    environment: Mapping[str, str | None] | None = None,
-    answers: str = "",
-) -> subprocess.CompletedProcess[str]:
+    devices: tuple[str, ...] | None,
+    environment: Mapping[str, str | None] | None,
+) -> tuple[list[str | Path], dict[str, str]]:
     devices_file = work / "devices"
     if devices is not None:
         devices_file.write_text(f"devices=({' '.join(devices)})\n")
+    command: list[str | Path] = [
+        sys.executable,
+        "-m",
+        "signing",
+        "sign-orchestrate",
+        "--metadata",
+        SCRIPTS_DIR / "metadata.py",
+        "--devices-file",
+        devices_file,
+        "--release-script",
+        work.parent / "fakes" / "release.sh",
+        "--generate-delta-script",
+        work.parent / "fakes" / "generate_delta.sh",
+    ]
     variables = {
         **os.environ,
         "PATH": f"{work.parent / 'bin'}{os.pathsep}{os.environ['PATH']}",
@@ -150,26 +160,24 @@ def run_sign_orchestrate(
         "NUM_INCREMENTAL_JOBS": "2",
         **(environment or {}),
     }
-    return run_cli(
-        [
-            "sign-orchestrate",
-            "--metadata",
-            str(SCRIPTS_DIR / "metadata.py"),
-            "--devices-file",
-            str(devices_file),
-            "--release-script",
-            str(work.parent / "fakes" / "release.sh"),
-            "--generate-delta-script",
-            str(work.parent / "fakes" / "generate_delta.sh"),
-        ],
+    return command, {
+        name: value for name, value in variables.items() if value is not None
+    }
+
+
+def run_sign_orchestrate(
+    work: Path,
+    *,
+    devices: tuple[str, ...] | None = ("bramble",),
+    environment: Mapping[str, str | None] | None = None,
+    answers: str = "",
+) -> subprocess.CompletedProcess[str]:
+    command, variables = _sign_orchestrate_command(work, devices, environment)
+    return run(
+        command,
         cwd=work,
-        env={
-            name: value
-            for name, value in variables.items()
-            if value is not None
-        },
-        replace_env=True,
-        input_text=answers,
+        env=variables,
+        input=answers,
         check=False,
     )
 
@@ -375,6 +383,56 @@ def test_sign_orchestrate_takes_no_previous_build_newer_than_the_one_signed(
     ]
 
 
+def test_sign_orchestrate_offers_no_previous_build_newer_than_the_one_signed(
+    sign_tree: Path,
+) -> None:
+    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
+    _write_target_files(sign_tree, "bramble", str(int(BUILD_NUMBER) + 100))
+    _archive_previous_build(sign_tree, "bramble", OLD_BUILD_NUMBER)
+    _archive_previous_build(sign_tree, "bramble", str(int(BUILD_NUMBER) + 50))
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        environment={"SIGN_ASSUME_YES": "y", "PREV_BUILD_NUMBER": None},
+        answers="\n",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (
+        f"Generating incremental updates for: bramble,{OLD_BUILD_NUMBER},"
+        f"{BUILD_NUMBER}"
+    ) in result.stdout
+
+
+def test_sign_orchestrate_asks_for_no_previous_build_for_a_rollback_build(
+    sign_tree: Path,
+) -> None:
+    (sign_tree.parent / "fakes" / "release.sh").write_text(
+        "#!/bin/sh\n"
+        "set -e\n"
+        "build=$((BUILD_NUMBER + 1))\n"
+        'mkdir -p "out/release-$1-$build"\n'
+        'printf "%s" "${PREV_BUILD_NUMBER-unset}" '
+        '> "out/release-$1-$build/output.bin"\n',
+    )
+    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
+    _archive_previous_build(sign_tree, "bramble", OLD_BUILD_NUMBER)
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        environment={
+            "SIGN_ASSUME_YES": "y",
+            "AVB_ROLLBACK_INDEX_OVERRIDE": "1",
+            "PREV_BUILD_NUMBER": None,
+        },
+        answers=f"{OLD_BUILD_NUMBER}\n",
+    )
+
+    assert result.returncode == 0, result.stderr
+    output = sign_tree / "archive" / f"release-bramble-{int(BUILD_NUMBER) + 1}"
+    assert (output / "output.bin").read_text() == "unset"
+
+
 def test_sign_orchestrate_exits_cleanly_with_nothing_to_sign(
     sign_tree: Path,
 ) -> None:
@@ -410,7 +468,7 @@ def test_sign_orchestrate_asks_for_yubihsm_credentials_after_free_space(
     sign_tree: Path,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    _install(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
+    install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
     module = sign_tree / "yubihsm_pkcs11.so"
     module.touch()
     environment = {
@@ -480,7 +538,7 @@ def test_sign_orchestrate_treats_every_softhsm_device_as_loaded(
     sign_tree: Path,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    _install(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
+    install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
 
     result = run_sign_orchestrate(
         sign_tree,
@@ -503,7 +561,7 @@ def test_sign_orchestrate_reports_unsupported_vendor(
     sign_tree: Path,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    _install(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
+    install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
 
     result = run_sign_orchestrate(
         sign_tree,
@@ -571,23 +629,6 @@ def test_sign_orchestrate_survives_an_upload_script_it_cannot_run(
     assert "Traceback" not in result.stderr
 
 
-def _self_signed_certificate_pem() -> bytes:
-    key = ec.generate_private_key(ec.SECP256R1())
-    subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "test")])
-    now = datetime.datetime.now(datetime.UTC)
-    certificate = (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(subject)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now)
-        .not_valid_after(now + datetime.timedelta(days=1))
-        .sign(key, hashes.SHA256())
-    )
-    return certificate.public_bytes(serialization.Encoding.PEM)
-
-
 def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     sign_tree: Path,
     yubihsm: Connector,
@@ -606,7 +647,7 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     device.put_asymmetric_key(0x2000)
     device.put_certificate(
         0x2000,
-        x509.load_pem_x509_certificate(_self_signed_certificate_pem()),
+        self_signed_certificate(),
     )
     device.put_asymmetric_key(0x2100)
     key_dir = sign_tree / "keys"
@@ -615,9 +656,14 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
         base64.b64encode(device.wrapped(0x2100, OBJECT.ASYMMETRIC_KEY, 0x0010)),
     )
     del device.objects[(0x2100, OBJECT.ASYMMETRIC_KEY)]
-    (key_dir / "0x2100.x509.pem").write_bytes(_self_signed_certificate_pem())
-    _install(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
-    _install(sign_tree.parent / "bin" / "yubihsm-has-key", YUBIHSM_HAS_KEY)
+    (key_dir / "0x2100.x509.pem").write_bytes(
+        self_signed_certificate().public_bytes(serialization.Encoding.PEM),
+    )
+    install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
+    install_executable(
+        sign_tree.parent / "bin" / "yubihsm-has-key",
+        YUBIHSM_HAS_KEY,
+    )
 
     result = run_sign_orchestrate(
         sign_tree,
@@ -879,37 +925,15 @@ def test_sign_orchestrate_cleans_up_when_terminated(
     signum: signal.Signals,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    devices_file = sign_tree / "devices"
-    devices_file.write_text("devices=(bramble)\n")
+    command, variables = _sign_orchestrate_command(
+        sign_tree,
+        ("bramble",),
+        None,
+    )
     process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "signing",
-            "sign-orchestrate",
-            "--metadata",
-            str(SCRIPTS_DIR / "metadata.py"),
-            "--devices-file",
-            str(devices_file),
-            "--release-script",
-            str(sign_tree.parent / "fakes" / "release.sh"),
-            "--generate-delta-script",
-            str(sign_tree.parent / "fakes" / "generate_delta.sh"),
-        ],
+        command,
         cwd=sign_tree,
-        env={
-            **os.environ,
-            "PATH": (
-                f"{sign_tree.parent / 'bin'}{os.pathsep}{os.environ['PATH']}"
-            ),
-            "PYTHONPATH": str(SCRIPTS_DIR),
-            "TMPDIR": str(sign_tree / "tmp"),
-            "PKCS11_VENDOR": "",
-            "BUILD_NUMBER": BUILD_NUMBER,
-            "PREV_BUILD_NUMBER": "",
-            "NUM_SIGN_JOBS": "2",
-            "NUM_INCREMENTAL_JOBS": "2",
-        },
+        env=variables,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -967,6 +991,31 @@ def test_sign_orchestrate_reports_an_unreadable_free_space(
     assert "Traceback" not in result.stderr
 
 
+def test_sign_orchestrate_reports_bad_metadata_without_a_traceback(
+    tmp_path: Path,
+) -> None:
+    metadata = tmp_path / "metadata.py"
+    metadata.write_text("KEYS_AVB = ()\n")
+
+    result = run(
+        [
+            sys.executable,
+            "-m",
+            "signing",
+            "sign-orchestrate",
+            "--metadata",
+            metadata,
+        ],
+        cwd=tmp_path,
+        env={"PYTHONPATH": str(SCRIPTS_DIR)},
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    assert "error: " in result.stderr
+
+
 def test_sign_orchestrate_cleans_up_under_the_inherited_signal_handlers(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -990,53 +1039,3 @@ def test_sign_orchestrate_cleans_up_under_the_inherited_signal_handlers(
         signal.signal(signal.SIGTERM, previous)
 
     assert handlers == [signal.SIG_IGN]
-
-
-def test_sign_orchestrate_offers_no_previous_build_newer_than_the_one_signed(
-    sign_tree: Path,
-) -> None:
-    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    _write_target_files(sign_tree, "bramble", str(int(BUILD_NUMBER) + 100))
-    _archive_previous_build(sign_tree, "bramble", OLD_BUILD_NUMBER)
-    _archive_previous_build(sign_tree, "bramble", str(int(BUILD_NUMBER) + 50))
-
-    result = run_sign_orchestrate(
-        sign_tree,
-        environment={"SIGN_ASSUME_YES": "y", "PREV_BUILD_NUMBER": None},
-        answers="\n",
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert (
-        f"Generating incremental updates for: bramble,{OLD_BUILD_NUMBER},"
-        f"{BUILD_NUMBER}"
-    ) in result.stdout
-
-
-def test_sign_orchestrate_asks_for_no_previous_build_for_a_rollback_build(
-    sign_tree: Path,
-) -> None:
-    (sign_tree.parent / "fakes" / "release.sh").write_text(
-        "#!/bin/sh\n"
-        "set -e\n"
-        "build=$((BUILD_NUMBER + 1))\n"
-        'mkdir -p "out/release-$1-$build"\n'
-        'printf "%s" "${PREV_BUILD_NUMBER-unset}" '
-        '> "out/release-$1-$build/output.bin"\n',
-    )
-    _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
-    _archive_previous_build(sign_tree, "bramble", OLD_BUILD_NUMBER)
-
-    result = run_sign_orchestrate(
-        sign_tree,
-        environment={
-            "SIGN_ASSUME_YES": "y",
-            "AVB_ROLLBACK_INDEX_OVERRIDE": "1",
-            "PREV_BUILD_NUMBER": None,
-        },
-        answers=f"{OLD_BUILD_NUMBER}\n",
-    )
-
-    assert result.returncode == 0, result.stderr
-    output = sign_tree / "archive" / f"release-bramble-{int(BUILD_NUMBER) + 1}"
-    assert (output / "output.bin").read_text() == "unset"
