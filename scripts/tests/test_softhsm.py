@@ -493,15 +493,10 @@ common.SignFile(sys.argv[5], sys.argv[6], "keys/0x2000", None, whole_file=True)
 
 
 @pytest.mark.aosp
-@pytest.mark.parametrize(
-    "payload_signer",
-    ("payload_signer.py", "payload_signer.server.py"),
-)
 def test_releasetools_signs_packages_through_the_external_signer(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
     aosp_top: Path,
-    payload_signer: str,
 ) -> None:
     _, base_environment = generated_softhsm_keys
     java, *_ = aosp_jar_command(aosp_top, "signapk.jar")
@@ -516,7 +511,7 @@ def test_releasetools_signs_packages_through_the_external_signer(
             aosp_top / "out" / "host" / "linux-x86",
             java,
             "/dev/null",
-            SCRIPTS_DIR / "pkcs11" / payload_signer,
+            SCRIPTS_DIR / "pkcs11" / "payload_signer.py",
             package,
             "signed.zip",
         ],

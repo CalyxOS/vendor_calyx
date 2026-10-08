@@ -129,9 +129,6 @@ class ReleaseAbort(Exception):
         self.code = code
 
 
-_HELPER_SUFFIXES = {"python": ".py", "server": ".server.py"}
-
-
 def _extract_android_info_field(target_files: Path, field: str) -> str:
     """
     Read the second "="-separated field of each OTA/android-info.txt line
@@ -300,33 +297,16 @@ def prepare_signing_args(
 
     Args:
         environment: Process environment to read PKCS11_MODULE/
-            PKCS11_VENDOR/SIGNING_HELPER_TOOL/etc. from, and to point
+            PKCS11_VENDOR and the overrides from, and to point
             CALYX_APKSIGNER_SIGNING_HELPER at the apksigner helper in.
         args: Argument lists to extend in place.
 
     Returns:
         None.
-
-    Raises:
-        RuntimeError: If a helper tool variable names anything other
-            than python or server.
     """
     if _signs_through_pkcs11(environment):
-        tool = environment.get("SIGNING_HELPER_TOOL") or "python"
-        avb_tool = environment.get("AVB_SIGNING_HELPER_TOOL") or tool
-        payload_tool = environment.get("PAYLOAD_SIGNER_TOOL") or tool
-        for chosen in (avb_tool, payload_tool):
-            if chosen not in _HELPER_SUFFIXES:
-                raise RuntimeError(
-                    f"Unknown signing helper tool '{chosen}', use 'python' "
-                    "or 'server'",
-                )
-        signing_helper_tool = (
-            f"{_PKCS11_DIR}/signing_helper{_HELPER_SUFFIXES[avb_tool]}"
-        )
-        payload_signer_tool = (
-            f"{_PKCS11_DIR}/payload_signer{_HELPER_SUFFIXES[payload_tool]}"
-        )
+        signing_helper_tool = f"{_PKCS11_DIR}/signing_helper.py"
+        payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.py"
         args.releasetools += [
             "--verbose",
             "--pkcs11_config",
@@ -561,17 +541,13 @@ class SigningSession:
 
         The server holds one YubiHSM session for signatures and audit-log
         extraction and, unless NEVER_START_APKSIGNER_BATCH=y, one
-        "apksigner batch" process. The AVB signing helper and the OTA
-        payload signer default to their server helpers unless
-        AVB_SIGNING_HELPER_TOOL, PAYLOAD_SIGNER_TOOL or SIGNING_HELPER_TOOL
-        chooses them.
+        "apksigner batch" process.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
-        if self.dry_run:
-            if Path(interceptor).name == "vendor.yubihsm.interceptor.py":
-                self._use_server_helpers()
-            return
-        if Path(interceptor).name != "vendor.yubihsm.interceptor.py":
+        if (
+            self.dry_run
+            or Path(interceptor).name != "vendor.yubihsm.interceptor.py"
+        ):
             return
         from .yubihsm_session_service import YubiHsmSessionService
 
@@ -604,17 +580,6 @@ class SigningSession:
             )
             return
         self.environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
-        self._use_server_helpers()
-
-    def _use_server_helpers(self) -> None:
-        """
-        Point the release at the signing paths the signing server serves,
-        unless the variables that choose them are set.
-        """
-        if not self.environment.get("SIGNING_HELPER_TOOL"):
-            for variable in ("AVB_SIGNING_HELPER_TOOL", "PAYLOAD_SIGNER_TOOL"):
-                if not self.environment.get(variable):
-                    self.environment[variable] = "server"
 
     def _invoke(self, argv: list[str]) -> int:
         if self.dry_run:

@@ -27,7 +27,7 @@ from software_rsa import rsa_key, verifies
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector, EmulatedYubiHsm
 
-HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.server.py"
+HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.py"
 SHA256_DIGEST_INFO_PREFIX = bytes.fromhex(
     "3031300d060960864801650304020105000420",
 )
@@ -190,7 +190,7 @@ def test_extract_audit_log_retry_writes_the_entries_once(
     assert len(log_path.read_text().splitlines()) == 2
 
 
-PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.server.py"
+PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
 INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
 
 
@@ -275,7 +275,7 @@ def _softhsm_fallback(
     }
 
 
-def test_helper_falls_back_to_the_python_helper_without_a_server(
+def test_helper_falls_back_to_pkcs11_without_a_server(
     tmp_path: Path,
     softhsm_rsa_key: tuple[dict[str, str], Path],
 ) -> None:
@@ -371,7 +371,7 @@ def test_payload_signer_signs_with_the_server_key_its_path_names(
     assert not verifies(rsa_key("server-b"), signature.read_bytes(), digest)
 
 
-def test_payload_signer_falls_back_to_the_python_signer_without_a_server(
+def test_payload_signer_falls_back_to_pkcs11_without_a_server(
     tmp_path: Path,
     softhsm_rsa_key: tuple[dict[str, str], Path],
 ) -> None:
