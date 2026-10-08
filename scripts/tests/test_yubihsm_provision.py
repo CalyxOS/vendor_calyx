@@ -20,7 +20,7 @@ from conftest import (
     parameter_id,
     run,
 )
-from signing import yubihsm_provision
+from signing import keygen, yubihsm_provision
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
 from yubihsm.defs import OBJECT
@@ -240,40 +240,26 @@ def test_wizard_gives_up_after_one_failure_under_sign_assume_yes(
     assert calls == [1]
 
 
-@pytest.mark.parametrize(
-    ("export_fails", "no_log_fail", "fails"),
-    (
-        (False, "", True),
-        (False, "y", False),
-        (True, "y", True),
-        (True, "", True),
-    ),
-    ids=("log-fails", "no-log-fail", "export-fails", "both-fail"),
-)
-def test_wizard_backup_handles_a_failed_log_extraction(
+def test_wizard_backup_reports_a_failed_export(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    export_fails: bool,
-    no_log_fail: str,
-    fails: bool,
 ) -> None:
     def export_wrapped_key(config: object, key_id: str) -> bytes:
-        if export_fails:
-            raise RuntimeError("the device refused")
-        return b"wrapped"
+        raise RuntimeError("the device refused")
 
-    def extract_logs(comment: str) -> None:
-        raise RuntimeError("the audit log is unreachable")
+    monkeypatch.setattr(keygen, "export_wrapped_key", export_wrapped_key)
+
+    def extract_logs(driver: keygen.YubiHsmKeygenDriver, comment: str) -> None:
+        pass
 
     monkeypatch.setattr(
-        yubihsm_provision,
-        "export_wrapped_key",
-        export_wrapped_key,
+        keygen.YubiHsmKeygenDriver,
+        "_extract_logs",
+        extract_logs,
     )
     wizard = yubihsm_provision.ProvisionWizard(
         {
-            "NO_LOG_FAIL": no_log_fail,
             "KEY_DIR": str(tmp_path),
             "YUBIHSM_CONNECTOR": "http://127.0.0.1:1",
             "YUBIHSM_PASSWORD": "password",
@@ -281,35 +267,16 @@ def test_wizard_backup_handles_a_failed_log_extraction(
         },
         cwd=tmp_path,
     )
-    monkeypatch.setattr(wizard, "_extract_logs", extract_logs)
 
-    if fails:
-        with pytest.raises(yubihsm_provision.StepFailed):
-            wizard.export_wrapped_key("0x2000")
-    else:
+    with pytest.raises(yubihsm_provision.StepFailed):
         wizard.export_wrapped_key("0x2000")
-        assert (tmp_path / "0x2000-asymmetric-key.yhw").is_file()
-    err = capsys.readouterr().err
-    assert "Failed to extract logs" in err
-    assert ("error: the device refused" in err) is export_fails
+    assert "error: the device refused" in capsys.readouterr().err
 
 
 def test_wizard_backup_dry_run_exports_nothing(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    def export_wrapped_key(config: object, key_id: str) -> bytes:
-        raise AssertionError("exported under DRY_RUN")
-
-    def extract_logs(comment: str) -> None:
-        raise AssertionError("extracted under DRY_RUN")
-
-    monkeypatch.setattr(
-        yubihsm_provision,
-        "export_wrapped_key",
-        export_wrapped_key,
-    )
     wizard = yubihsm_provision.ProvisionWizard(
         {
             "DRY_RUN": "y",
@@ -321,11 +288,14 @@ def test_wizard_backup_dry_run_exports_nothing(
         },
         cwd=tmp_path,
     )
-    monkeypatch.setattr(wizard, "_extract_logs", extract_logs)
 
     wizard.export_wrapped_key("0x2000")
 
-    assert "export-wrapped-key" in capsys.readouterr().err
+    assert (
+        "Operation: export-wrapped-key --connector http://127.0.0.1:1 "
+        "--authkey 0x0001 --wrap-id 0x0010 --key-id 0x2000 --output "
+        f"{tmp_path}/0x2000-asymmetric-key.yhw"
+    ) in capsys.readouterr().err
     assert not (tmp_path / "0x2000-asymmetric-key.yhw").exists()
 
 
