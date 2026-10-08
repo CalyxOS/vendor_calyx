@@ -11,13 +11,12 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
-from conftest import plug_yubihsm, yubihsm_config
+from conftest import YUBIHSM_WRAP_ID, plug_yubihsm, yubihsm_config
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from signing.vendor_yubihsm import (
     RestorableObject,
-    YubiHsmConfig,
     import_certificate,
     is_object_available_on_disk,
     limit_ondemand_objects,
@@ -30,8 +29,6 @@ from yubihsm.defs import ALGORITHM, CAPABILITY, COMMAND, ERROR, OBJECT
 from yubihsm.exceptions import YubiHsmDeviceError
 from yubihsm.objects import YhsmObject
 from yubihsm_emulator import (
-    DEFAULT_AUTHKEY_ID,
-    DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
     StoredObject,
@@ -39,40 +36,13 @@ from yubihsm_emulator import (
     stored_certificate,
 )
 
-WRAP_ID = 0x0010
 FIXED_RECORDS = 2
-
-
-def config(yubihsm: Connector) -> YubiHsmConfig:
-    return YubiHsmConfig(
-        connector_url=yubihsm.url,
-        auth_key=f"{DEFAULT_AUTHKEY_ID:#06x}",
-        password=DEFAULT_PASSWORD,
-    )
-
-
-def _plug(
-    yubihsm: Connector,
-    *,
-    objects: int = 0,
-    free_records: int = 100,
-) -> EmulatedYubiHsm:
-    """
-    Plug in a device holding a wrap key, sized to have free_records
-    free records once `objects` more objects are stored on it.
-    """
-    device = EmulatedYubiHsm(
-        total_records=FIXED_RECORDS + objects + free_records,
-    )
-    device.put_wrap_key(WRAP_ID)
-    yubihsm.plug(device)
-    return device
 
 
 def _back_up_key(device: EmulatedYubiHsm, key_dir: Path, key_id: int) -> None:
     (key_dir / f"{key_id:#06x}-asymmetric-key.yhw").write_bytes(
         base64.b64encode(
-            device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, WRAP_ID),
+            device.wrapped(key_id, OBJECT.ASYMMETRIC_KEY, YUBIHSM_WRAP_ID),
         ),
     )
 
@@ -372,11 +342,11 @@ def test_is_object_available_on_disk_rejects_non_pem_certificate_file(
 def test_import_certificate_parses_pem_and_imports(
     yubihsm: Connector,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     pem = _self_signed_certificate_pem()
 
     import_certificate(
-        config(yubihsm),
+        yubihsm_config(yubihsm),
         key_id="0x2000",
         domains="3",
         capabilities="get-opaque",
@@ -398,13 +368,13 @@ def test_import_certificate_parses_pem_and_imports(
 def test_import_certificate_refuses_an_existing_object(
     yubihsm: Connector,
 ) -> None:
-    device = _plug(yubihsm)
+    device = plug_yubihsm(yubihsm)
     _put_key_and_certificate(device, 0x2000)
     existing = device.get(0x2000, OBJECT.OPAQUE)
 
     with pytest.raises(YubiHsmDeviceError) as raised:
         import_certificate(
-            config(yubihsm),
+            yubihsm_config(yubihsm),
             key_id="0x2000",
             domains="3",
             capabilities="get-opaque",
@@ -474,18 +444,23 @@ def test_limit_ondemand_objects_reports_every_delete(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
-    device = _plug(yubihsm, objects=2, free_records=4)
+    device = plug_yubihsm(yubihsm, total_records=FIXED_RECORDS + 2 + 4)
     _put_key_and_certificate(device, 0x2000, domains=0b100)
     _back_up_key(device, tmp_path, 0x2000)
     _back_up_certificate(device, tmp_path, 0x2000)
     reported: list[str] = []
 
-    limit_ondemand_objects(config(yubihsm), tmp_path, "3", reported.append)
+    limit_ondemand_objects(
+        yubihsm_config(yubihsm),
+        tmp_path,
+        "3",
+        reported.append,
+    )
 
     assert sorted(reported) == [
-        "Command: delete-object --object-id 0x2000 --object-type "
+        "Operation: delete-object --object-id 0x2000 --object-type "
         "asymmetric-key Result: 0",
-        "Command: delete-object --object-id 0x2000 --object-type "
+        "Operation: delete-object --object-id 0x2000 --object-type "
         "opaque Result: 0",
     ]
     assert _on_device(device) == []
@@ -511,7 +486,7 @@ def test_limit_ondemand_objects_reports_a_failed_delete(
 
     assert raised.value.code == ERROR.INSUFFICIENT_PERMISSIONS
     assert reported == [
-        "Command: delete-object --object-id 0x2000 --object-type "
+        "Operation: delete-object --object-id 0x2000 --object-type "
         "asymmetric-key Result: 1",
     ]
     assert _on_device(device) == [(0x2000, OBJECT.ASYMMETRIC_KEY)]
@@ -589,6 +564,6 @@ def test_limit_ondemand_objects_dry_run_prints_deletes_without_deleting(
     assert _deleted(device) == []
     assert deletes == []
     assert (
-        "yubihsm -a delete-object --object-id 0x2000 "
+        "Operation: delete-object --object-id 0x2000 "
         "--object-type asymmetric-key\n"
     ) in capsys.readouterr().err
