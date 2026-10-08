@@ -297,7 +297,7 @@ log_start() {
     return ${err:-1}
   fi
 
-  export YUBIHSM_LOGS_DIR="$KEEP_PATH/logs"
+  export YUBIHSM_LOGS_DIR="${KEEP_PATH:-$(pwd)}/logs"
   AUDIT_LOG_PATH="$YUBIHSM_LOGS_DIR/$(get_name_for_hsm)/$(get_formatted_date)-provision.log"
   mkdir -p "$YUBIHSM_LOGS_DIR/$(get_name_for_hsm)" || return $?
   export AUDIT_LOG_PATH
