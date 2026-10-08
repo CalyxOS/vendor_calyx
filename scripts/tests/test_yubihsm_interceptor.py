@@ -8,15 +8,13 @@ from __future__ import annotations
 import importlib.util
 import os
 import signal
-import stat
 import subprocess
 from pathlib import Path
 from types import ModuleType
 
 import pytest
-from conftest import SCRIPTS_DIR, run, stub
+from conftest import SCRIPTS_DIR, install_executable, run, stub, yubihsm_config
 from signing.signing_server import SigningServer
-from signing.vendor_yubihsm import YubiHsmConfig
 from signing.yubihsm_session_service import YubiHsmSessionService
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector
@@ -41,9 +39,7 @@ def _load_interceptor() -> ModuleType:
 
 
 def make_script(path: Path, body: str) -> Path:
-    path.write_text(f"#!/bin/sh\n{body}\n")
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
-    return path
+    return install_executable(path, f"#!/bin/sh\n{body}\n")
 
 
 def path_prepending(directory: Path) -> dict[str, str]:
@@ -566,7 +562,7 @@ def test_retries_an_unacknowledged_extraction_without_writing_it_twice(
     make_script(tmp_path / "avbtool", "exit 0\n")
     audit_log = tmp_path / "audit.log"
     service = YubiHsmSessionService(
-        YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+        yubihsm_config(yubihsm),
         audit_log_path=audit_log,
     )
     server = SigningServer(
