@@ -8,7 +8,6 @@ The YubiHSM provisioning wizard behind vendor.yubihsm.provision.sh.
 
 from __future__ import annotations
 
-import base64
 import getpass
 import subprocess
 import sys
@@ -17,14 +16,11 @@ from pathlib import Path
 
 from . import sign_environment
 from .confirmation import confirm
-from .files import write_file_atomically
 from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
 from .metadata import default_metadata_path, load_metadata
 from .release_execution import render_release_tool
 from .vendor_yubihsm import (
     YubiHsmConfig,
-    export_wrapped_key,
-    extract_and_save_audit_log,
     get_device_identity,
     list_restorable_objects,
     restore_all_keys,
@@ -297,20 +293,11 @@ class ProvisionWizard:
         if code:
             raise StepFailed(code)
 
-    def _extract_logs(self, comment: str) -> None:
-        config = self._config()
-        assert self.audit_log_path is not None
-        extract_and_save_audit_log(
-            config,
-            self.audit_log_path,
-            comment,
-        )
-
     def export_wrapped_key(self, key_id: str) -> None:
         """
         Export a key wrapped into its backup file under key_dir, and record
-        the export in the audit log, or under DRY_RUN=y print the command
-        line instead.
+        the export in the audit log, or under DRY_RUN=y print the record
+        instead.
 
         Args:
             key_id: The key's ID, e.g. "0x2000".
@@ -319,51 +306,16 @@ class ProvisionWizard:
             StepFailed: If the export or, unless NO_LOG_FAIL=y, the audit
                 log extraction fails.
         """
-        environment = self.environment
-        output = f"{self.key_dir}/{key_id}-asymmetric-key.yhw"
-        command = [
-            "export-wrapped-key",
-            "--connector",
-            environment["YUBIHSM_CONNECTOR"],
-            "--authkey",
-            environment["YUBIHSM_AUTHKEY"],
-            "--wrap-id",
-            environment["YUBIHSM_WRAP_KEY_ID"],
-            "--key-id",
-            key_id,
-            "--output",
-            output,
-        ]
-        if environment.get("DRY_RUN") == "y":
-            print(
-                render_release_tool(["python3", "-m", "signing", *command]),
-                end="",
-                file=sys.stderr,
-            )
-            return
-        error: BaseException | None = None
+        from .keygen import YubiHsmKeygenDriver
+
+        key_dir = Path(self.key_dir)
         try:
-            wrapped = export_wrapped_key(self._config(), key_id)
-            write_file_atomically(
-                Path(output),
-                base64.b64encode(wrapped),
+            YubiHsmKeygenDriver(self.environment, key_dir).back_up_wrapped_key(
+                key_id,
+                key_dir / f"{key_id}-asymmetric-key.yhw",
             )
-        except Exception as caught:
-            print(f"error: {caught}", file=sys.stderr)
-            error = caught
-        try:
-            self._extract_logs(
-                f"Operation: {' '.join(command)} "
-                f"Result: {0 if error is None else 1}",
-            )
-        except Exception as log_error:
-            print("Failed to extract logs", file=sys.stderr)
-            if environment.get("NO_LOG_FAIL") == "y":
-                if error is not None:
-                    raise StepFailed(1) from error
-                return
-            raise StepFailed(1) from log_error
-        if error is not None:
+        except Exception as error:
+            print(f"error: {error}", file=sys.stderr)
             raise StepFailed(1) from error
 
     def _backup_primary(self) -> None:
