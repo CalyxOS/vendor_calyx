@@ -403,7 +403,7 @@ def _provision_certificates(
         path = key_directory / label
         if not Path(f"{path}.pk8").exists() and Path(f"{path}.pem").exists():
             raise FileExistsError(f"key {path} already exists")
-    provision_certified_keys(key_directory, dict.fromkeys(labels, subject))
+    provision_certified_keys(key_directory, labels, subject)
 
 
 def _generate_rsa_key(private_key: Path) -> None:
@@ -483,12 +483,12 @@ def update_common_keys(
     if not subject:
         raise ValueError("certificate subject must not be empty")
     _convert_chromium_keystore(key_directory)
-    subjects: dict[str, str] = {}
-    for key_name in metadata.keys_for_type("app"):
-        label = Path(keymapper.key("app", key_name)).name
-        if label:
-            subjects[label] = subject.replace("_KEY_LABEL_", label)
-    provision_certified_keys(key_directory, subjects)
+    labels = {
+        Path(keymapper.key("app", key_name)).name
+        for key_name in metadata.keys_for_type("app")
+    }
+    labels.discard("")
+    provision_certified_keys(key_directory, labels, subject)
 
 
 def _convert_chromium_keystore(key_directory: Path) -> None:

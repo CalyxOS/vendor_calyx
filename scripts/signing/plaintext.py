@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Iterable
 from pathlib import Path
 
 from .models import DEFAULT_CERTIFICATE_DAYS
@@ -149,7 +149,8 @@ class InconsistentKeyStateError(RuntimeError):
 
 def provision_certified_keys(
     key_directory: Path,
-    subjects: Mapping[str, str],
+    labels: Iterable[str],
+    subject: str,
 ) -> None:
     """
     Generate an RSA 2048 key and its self-signed certificate under every
@@ -160,7 +161,8 @@ def provision_certified_keys(
 
     Args:
         key_directory: Key directory to provision.
-        subjects: Certificate subject of each key, by label.
+        labels: Labels of the keys to provision.
+        subject: Certificate subject of every key.
 
     Raises:
         InconsistentKeyStateError: If a key exists without its
@@ -170,7 +172,7 @@ def provision_certified_keys(
         subprocess.CalledProcessError: If OpenSSL fails.
     """
     missing: list[str] = []
-    for label in sorted(subjects):
+    for label in sorted(set(labels)):
         key_exists = _key_path(key_directory, label, ".pk8").is_file()
         certificate_exists = _key_path(
             key_directory,
@@ -190,4 +192,4 @@ def provision_certified_keys(
         if not key_exists:
             missing.append(label)
     for label in missing:
-        generate_certified_key(key_directory, label, subjects[label])
+        generate_certified_key(key_directory, label, subject)
