@@ -512,37 +512,8 @@ def test_release_hosts_the_signing_server_for_its_tools(
         assert _starts(fake_java) == []
     argv = " ".join(recorded["argv"])
     assert "--apksigner_kms_type external" in argv
-    assert f"--signing_helper {HELPERS}/signing_helper.server.py" in argv
-    assert f"--payload_signer {HELPERS}/payload_signer.server.py" in argv
-
-
-@pytest.mark.parametrize(
-    ("tool", "avb", "payload"),
-    [
-        ({"AVB_SIGNING_HELPER_TOOL": "python"}, "py", "server.py"),
-        ({"PAYLOAD_SIGNER_TOOL": "python"}, "server.py", "py"),
-        ({"SIGNING_HELPER_TOOL": "python"}, "py", "py"),
-    ],
-)
-def test_release_keeps_a_chosen_signing_helper(
-    tmp_path: Path,
-    short_tmpdir: Path,
-    fake_java: Path,
-    tool: dict[str, str],
-    avb: str,
-    payload: str,
-) -> None:
-    result, recorded = _release(
-        tmp_path,
-        short_tmpdir,
-        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR, **tool},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert recorded is not None
-    argv = " ".join(recorded["argv"])
-    assert f"--signing_helper {HELPERS}/signing_helper.{avb} " in argv + " "
-    assert f"--payload_signer {HELPERS}/payload_signer.{payload} " in argv + " "
+    assert f"--signing_helper {HELPERS}/signing_helper.py" in argv
+    assert f"--payload_signer {HELPERS}/payload_signer.py" in argv
 
 
 @pytest.mark.parametrize(
@@ -581,8 +552,8 @@ def test_release_dry_run_has_no_server(
     assert recorded is None
     assert "sign_target_files_apks" in result.stderr
     assert "--apksigner_kms_type external" in result.stderr
-    assert "signing_helper.server.py" in result.stderr
-    assert "payload_signer.server.py" in result.stderr
+    assert "signing_helper.py" in result.stderr
+    assert "payload_signer.py" in result.stderr
 
 
 def test_batch_process_sees_environment_set_after_the_handler(

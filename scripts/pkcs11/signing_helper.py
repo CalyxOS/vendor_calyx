@@ -5,7 +5,8 @@
 #
 
 """
-Sign avbtool input through the backend-neutral Python PKCS#11 layer.
+Sign avbtool input through the release's SigningServer, or else through
+the backend-neutral Python PKCS#11 layer.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from signing.key_consistency import (
     require_signature_from_public_key,
 )
 from signing.models import KeyReference, SignRequest
+from signing.yubihsm_session_service import sign_digest_through_server
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,19 +52,24 @@ def main(argv: list[str] | None = None) -> int:
         unexpected = " ".join(arguments[2:])
         raise ValueError(f"Unexpected arguments: {unexpected}")
     algorithm, key_file = arguments
-    signer = pkcs11_signer_from_environment()
     key_path = Path(key_file)
-    key_name = key_name_from_path(key_path, os.environ)
-    reference = KeyReference(key_name, key_name)
-    require_matching_public_key(signer, reference, key_path)
     data = sys.stdin.buffer.read()
-    digest_info, _ = avb_input_digest(algorithm, data)
-    signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
-    require_signature_from_public_key(
-        key_path,
-        digest_info,
-        signature,
-    )
+    digest_info, digest = avb_input_digest(algorithm, data)
+    key_name = key_name_from_path(key_path, os.environ)
+    signature = None
+    socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
+    if socket_path:
+        signature = sign_digest_through_server(
+            Path(socket_path),
+            key_name,
+            digest,
+        )
+    if signature is None:
+        signer = pkcs11_signer_from_environment()
+        reference = KeyReference(key_name, key_name)
+        require_matching_public_key(signer, reference, key_path)
+        signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
+    require_signature_from_public_key(key_path, digest_info, signature)
     sys.stdout.buffer.write(signature)
     return 0
 
