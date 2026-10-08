@@ -101,12 +101,6 @@ class ProvisionWizard:
         self.environment = environment
         self.cwd = cwd
         environment["NEVER_START_YUBIHSM_CONNECTOR"] = "y"
-        for name, default in (
-            ("YUBIHSM_AUTHKEY", "1"),
-            ("YUBIHSM_PASSWORD", "password"),
-        ):
-            if not environment.get(name):
-                environment[name] = default
         self.is_provisioning_mode = False
         self.keymapper: Keymapper | None = None
         self.signing_authkey_id = ""
