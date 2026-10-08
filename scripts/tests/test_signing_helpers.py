@@ -174,3 +174,43 @@ def test_payload_helper_rejects_invalid_digest_size(
             ],
         )
     assert not output.exists()
+
+
+def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    helper = load_helper(PYTHON_PAYLOAD_SIGNER)
+    public_key = tmp_path / "ota.pem"
+    public_key.write_bytes(
+        rsa.generate_private_key(65537, 2048)
+        .public_key()
+        .public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ),
+    )
+    digest = tmp_path / "digest.bin"
+    digest.write_bytes(hashlib.sha256(b"payload").digest())
+    output = tmp_path / "signature.bin"
+    monkeypatch.delenv("SIGNING_SERVER_SOCKET", raising=False)
+    monkeypatch.delenv("DEBUG_PAYLOAD_SIGNER", raising=False)
+    monkeypatch.setattr(
+        helper,
+        "pkcs11_signer_from_environment",
+        stub(SimpleNamespace(sign=stub(bytes(256)))),
+    )
+    monkeypatch.setattr(helper, "require_matching_public_key", stub(None))
+
+    with pytest.raises(ValueError, match="does not verify"):
+        helper.main(
+            [
+                "-in",
+                str(digest),
+                "-out",
+                str(output),
+                "-inkey",
+                str(public_key),
+            ],
+        )
+    assert not output.exists()
