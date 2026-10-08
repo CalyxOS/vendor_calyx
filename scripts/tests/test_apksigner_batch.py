@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import stat
 import subprocess
 import sys
 import tempfile
@@ -18,7 +17,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import SCRIPTS_DIR, TEST_METADATA, aosp_jar_command, run
+from conftest import (
+    SCRIPTS_DIR,
+    TEST_METADATA,
+    aosp_jar_command,
+    install_executable,
+    run,
+)
 from signing.apksigner_batch import (
     ApksignerBatch,
     run_in_batch,
@@ -94,9 +99,7 @@ while True:
 def fake_java(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    java = bin_dir / "java"
-    java.write_text(FAKE_JAVA)
-    java.chmod(java.stat().st_mode | stat.S_IXUSR)
+    install_executable(bin_dir / "java", FAKE_JAVA)
     log = tmp_path / "java.log"
     log.touch()
     monkeypatch.setenv("FAKE_JAVA_LOG", str(log))
@@ -430,12 +433,14 @@ def _release_tree(root: Path) -> Path:
     (root / "device/common/clear-factory-images-variables.sh").touch()
     tools = root / "bin"
     tools.mkdir()
-    sign = tools / "sign_target_files_apks"
-    sign.write_text(RECORDING_SIGN_TARGET_FILES)
-    sign.chmod(0o755)
-    ota = tools / "ota_from_target_files"
-    ota.write_text('#!/bin/sh\neval "out=\\${$#}"\nprintf ota > "$out"\n')
-    ota.chmod(0o755)
+    install_executable(
+        tools / "sign_target_files_apks",
+        RECORDING_SIGN_TARGET_FILES,
+    )
+    install_executable(
+        tools / "ota_from_target_files",
+        '#!/bin/sh\neval "out=\\${$#}"\nprintf ota > "$out"\n',
+    )
     with zipfile.ZipFile(
         root / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
         "w",

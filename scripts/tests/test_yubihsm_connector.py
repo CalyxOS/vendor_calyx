@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
-import stat
 import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import process_alive, wait_until
+from conftest import install_executable, process_alive, wait_until
 from signing.vendor_yubihsm_connector import (
     YubiHsmConnector,
     YubiHsmConnectorConfig,
@@ -25,9 +24,10 @@ def fake_connector_binary(tmp_path: Path) -> Path:
     It keeps its own path as its command line, which is what
     is_running() looks for.
     """
-    binary = tmp_path / "fake-yubihsm-connector"
-    binary.write_text('#!/bin/bash\nexec -a "$0" sleep 300\n')
-    binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
+    binary = install_executable(
+        tmp_path / "fake-yubihsm-connector",
+        '#!/bin/bash\nexec -a "$0" sleep 300\n',
+    )
     return binary
 
 

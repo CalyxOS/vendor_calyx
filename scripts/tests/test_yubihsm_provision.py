@@ -13,7 +13,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, YUBIHSM_SDK, parameter_id, run, run_cli
+from conftest import (
+    SCRIPTS_DIR,
+    YUBIHSM_SDK,
+    install_executable,
+    parameter_id,
+    run,
+)
 from signing import yubihsm_provision
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
@@ -28,13 +34,9 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
     provisioning = root / "hsmp"
     provisioning.mkdir()
     (root / "devices").write_text("readonly devices=(bramble)\n")
-    keymap = run_cli(
-        [
-            "generate-keymap",
-            "--devices",
-            "bramble",
-        ],
-    ).stdout
+    keymap = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py")).to_tsv(
+        ("bramble",),
+    )
     (root / "keymap.tsv").write_text(keymap)
     return {
         "PYTHONPATH": os.pathsep.join([str(SCRIPTS_DIR), YUBIHSM_SDK]),
@@ -61,7 +63,7 @@ def _wizard(
     return run(
         [PROVISION_SH, mode],
         env=environment,
-        input_text=input_text,
+        input=input_text,
         cwd=cwd,
         check=False,
     )
@@ -122,9 +124,7 @@ KEY_TYPE_TO_ARRAY = {
 def _source_directory(root: Path) -> Path:
     source = root / "src"
     (source / "logs").mkdir(parents=True)
-    upload = source / "logs" / "upload.py"
-    upload.write_text("#!/bin/sh\n")
-    upload.chmod(0o755)
+    install_executable(source / "logs" / "upload.py", "#!/bin/sh\n")
     return source
 
 

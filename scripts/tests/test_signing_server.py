@@ -9,21 +9,19 @@ import base64
 import hashlib
 import os
 import socket
-import stat
 import subprocess
 import threading
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR
+from conftest import SCRIPTS_DIR, install_executable, yubihsm_config
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from signing import signing_server
 from signing.signing_server import Message, SigningServer, request
-from signing.vendor_yubihsm import YubiHsmConfig
 from signing.yubihsm_session_service import YubiHsmSessionService
 from software_rsa import rsa_key, verifies
 from yubihsm.defs import COMMAND
@@ -90,7 +88,7 @@ def _service(
     audit_log_path: Path | None = None,
 ) -> YubiHsmSessionService:
     return YubiHsmSessionService(
-        YubiHsmConfig(yubihsm.url, "0x0001", "password"),
+        yubihsm_config(yubihsm),
         audit_log_path=audit_log_path,
     )
 
@@ -316,9 +314,7 @@ def test_interceptor_appends_the_audit_log_through_the_server(
     )
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    avbtool = bin_dir / "avbtool"
-    avbtool.write_text("#!/bin/sh\nexit 0\n")
-    avbtool.chmod(avbtool.stat().st_mode | stat.S_IXUSR)
+    install_executable(bin_dir / "avbtool", "#!/bin/sh\nexit 0\n")
     audit_log = tmp_path / "audit.log"
 
     result = subprocess.run(

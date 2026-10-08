@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run
+from conftest import SCRIPTS_DIR, install_executable, run
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys recovery"
 NONCE = "$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')"
@@ -71,11 +71,6 @@ set -euo pipefail
   [ "$FAIL_MOVE_SOURCE" != "$1" ] || exit 40
 exec /usr/bin/mv "$@"
 """
-
-
-def _write_executable(path: Path, contents: str) -> None:
-    path.write_text(contents)
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
 
 
 Manifest = dict[str, tuple[int, bytes]]
@@ -155,13 +150,13 @@ def install_tree(
 ) -> Tree:
     tools = root / "tools"
     tools.mkdir(parents=True)
-    _write_executable(tools / "generate_verity_key", "#!/bin/sh\n")
-    _write_executable(tools / "avbtool", AVBTOOL)
+    install_executable(tools / "generate_verity_key", "#!/bin/sh\n")
+    install_executable(tools / "avbtool", AVBTOOL)
 
     mock_directory = root / "mock-bin"
     mock_directory.mkdir()
-    _write_executable(mock_directory / "openssl", OPENSSL)
-    _write_executable(mock_directory / "mv", MOVE)
+    install_executable(mock_directory / "openssl", OPENSSL)
+    install_executable(mock_directory / "mv", MOVE)
 
     keymapper_file = None
     if keymapper_config:
