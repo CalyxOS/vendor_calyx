@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 from conftest import stub
 from signing.sign_planning import (
-    BuildNumber,
     IncrementalTriple,
     SignPair,
     find_prev_signed_device_builds,
@@ -121,69 +120,10 @@ def test_planning_skips_names_without_a_numeric_build() -> None:
     assert previous.device_to_prev_build == {"redfin": 2026080100}
 
 
-def test_build_numbers_order_numerically_and_keep_their_text() -> None:
-    builds = gather_latest_device_builds(
-        [
-            "calyx_bramble-target_files-0042.zip",
-            "calyx_bramble-target_files-100.zip",
-            "calyx_redfin-target_files-0042.zip",
-        ],
-    )
-
-    assert builds == {"bramble": 100, "redfin": 42}
-    assert f"calyx_redfin-target_files-{builds['redfin']}.zip" == (
-        "calyx_redfin-target_files-0042.zip"
-    )
-    plan = partition_by_key_availability(
-        ["redfin"],
-        [],
-        device_to_next_build=builds,
-        device_to_prev_build={},
-        device_to_preexisting_build={},
-    )
-    assert [
-        (str(pair.build), str(pair.target_build))
-        for pair in plan.sign_pairs_with_loaded_keys
-    ] == [("0042", "0042")]
-
-
-def test_build_numbers_match_by_their_text() -> None:
-    files = ["calyx_bramble-target_files-0042.zip"]
-
-    assert gather_device_builds_to_sign(files, [BuildNumber("42")]) == {}
-    assert gather_device_builds_to_sign(files, [BuildNumber("0042")]) == {
-        "bramble": 42,
-    }
-    result = find_prev_signed_device_builds(
-        ["release-bramble-0042"],
-        device_to_next_build={"bramble": BuildNumber("100")},
-        build_numbers=[BuildNumber("42")],
-        prev_build_numbers=[BuildNumber("42")],
-        target_files_exists=stub(True),
-    )
-    assert result.device_to_preexisting_build == {}
-    assert result.device_to_prev_build == {}
-
-
-def test_a_preexisting_build_matches_the_next_build_by_its_text() -> None:
-    plan = partition_by_key_availability(
-        ["bramble"],
-        [],
-        device_to_next_build={"bramble": BuildNumber("0042")},
-        device_to_prev_build={},
-        device_to_preexisting_build={"bramble": BuildNumber("42")},
-    )
-
-    assert [
-        (str(pair.build), str(pair.target_build))
-        for pair in plan.sign_pairs_with_loaded_keys
-    ] == [("0042", "0042")]
-
-
 def test_parse_build_numbers_skips_words_that_are_not_numbers() -> None:
-    assert parse_build_numbers(["2026081500", "2026081600,", "eng", "07"]) == [
-        BuildNumber("2026081500"),
-        BuildNumber("07"),
+    assert parse_build_numbers(["2026081500", "2026081600,", "eng", "7"]) == [
+        2026081500,
+        7,
     ]
 
 
@@ -282,11 +222,3 @@ def test_find_prev_builds_ignores_an_archive_without_target_files(
         "redfin": 2026081200,
     }
     assert result.device_to_preexisting_build == {"redfin": 2026081500}
-
-
-def test_sorted_build_numbers_keeps_builds_that_differ_in_padding() -> None:
-    builds = sorted_build_numbers(
-        {"bramble": BuildNumber("042"), "redfin": BuildNumber("42")},
-    )
-
-    assert [str(build) for build in builds] == ["042", "42"]

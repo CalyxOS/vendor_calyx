@@ -33,7 +33,7 @@ for fail_device in $FAIL_DEVICES; do
 done
 out_build=$BUILD_NUMBER
 if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
-  out_build=$((10#$BUILD_NUMBER + 1))
+  out_build=$((BUILD_NUMBER + 1))
 fi
 mkdir -p "out/release-$device-$out_build"
 printf '%s' "signed-$device-$out_build" \
@@ -90,11 +90,10 @@ SIGN_BUILDS = """
 import sys
 from pathlib import Path
 from signing.sign_execution import sign_builds
-from signing.sign_planning import BuildNumber
 release, archive, tmpdir, jobs, *pairs = sys.argv[1:]
 raise SystemExit(sign_builds(
     [
-        (d, BuildNumber(b), BuildNumber(t))
+        (d, int(b), int(t))
         for d, b, t in (p.split(",") for p in pairs)
     ],
     release_script=Path(release),
@@ -108,11 +107,10 @@ GENERATE_INCREMENTALS = """
 import sys
 from pathlib import Path
 from signing.sign_execution import generate_incrementals
-from signing.sign_planning import BuildNumber
 script, tmpdir, jobs, *triples = sys.argv[1:]
 raise SystemExit(generate_incrementals(
     [
-        (d, BuildNumber(old), BuildNumber(new))
+        (d, int(old), int(new))
         for d, old, new in (t.split(",") for t in triples)
     ],
     generate_delta_script=Path(script),
@@ -240,16 +238,6 @@ def test_sign_builds_moves_using_target_build_not_build(
     assert result.returncode == 0, result.stderr
     output = tmp_path / "archive" / "release-raven-301" / "output.bin"
     assert output.read_text() == "signed-raven-301"
-
-
-def test_generate_incrementals_keeps_zero_padded_build_numbers(
-    tmp_path: Path,
-) -> None:
-    result = run_generate_incrementals(tmp_path, ["bramble,0041,0042"])
-
-    assert result.returncode == 0, result.stderr
-    delta = tmp_path / "incrementals" / "bramble-0041-0042.bin"
-    assert delta.read_text() == "delta-bramble-0041-0042"
 
 
 def test_sign_builds_partial_failure_completes_other_devices(
