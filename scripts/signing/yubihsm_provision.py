@@ -351,8 +351,6 @@ class ProvisionWizard:
             environment["YUBIHSM_CONNECTOR"],
             "--authkey",
             environment["YUBIHSM_AUTHKEY"],
-            "--password-env",
-            "YUBIHSM_PASSWORD",
             "--wrap-id",
             environment["YUBIHSM_WRAP_KEY_ID"],
             "--key-id",
@@ -379,7 +377,7 @@ class ProvisionWizard:
             error = caught
         try:
             self._extract_logs(
-                f"Command: python3 -m signing {' '.join(command)} "
+                f"Operation: {' '.join(command)} "
                 f"Result: {0 if error is None else 1}",
             )
         except Exception as log_error:
