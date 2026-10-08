@@ -17,6 +17,7 @@ from signing.release_arguments import build_release_arguments, make_get_key
 
 pytestmark = [pytest.mark.aosp, pytest.mark.usefixtures("aosp_top")]
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys integration test"
+LABEL_SUBJECT = "/O=Calyx Institute/CN=_KEY_LABEL_"
 AOSP_TOP = REPO_ROOT.parents[1]
 AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 MODES_FIXTURE = Path(__file__).parent / "fixtures" / "updatekeys-modes.json"
@@ -82,7 +83,7 @@ def assert_avb_public_key_matches(root: Path, key_name: str) -> None:
 
 
 def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
-    first = run_updatekeys(updatekeys_tree)
+    first = run_updatekeys(updatekeys_tree, subject=LABEL_SUBJECT)
     assert first.returncode == 0, first.stderr
     keys = updatekeys_tree / "keys"
     before = {
@@ -90,7 +91,7 @@ def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
     }
     assert sorted(before) == sorted(json.loads(MODES_FIXTURE.read_text()))
 
-    second = run_updatekeys(updatekeys_tree)
+    second = run_updatekeys(updatekeys_tree, subject=LABEL_SUBJECT)
     assert second.returncode == 0, second.stderr
     after = {
         path.name: sha256(path) for path in keys.iterdir() if path.is_file()
@@ -98,17 +99,6 @@ def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
     assert after == before
     assert_avb_public_key_matches(updatekeys_tree, "0x2000")
     assert_avb_public_key_matches(updatekeys_tree, "0x1300")
-
-
-def test_updatekeys_avb_key_paths_match_release_signing_expectation(
-    updatekeys_tree: Path,
-) -> None:
-    """
-    build_release_arguments() looks up the AVB keys updatekeys.sh
-    generates, so every path it requests must exist after a run.
-    """
-    result = run_updatekeys(updatekeys_tree)
-    assert result.returncode == 0, result.stderr
 
     metadata = load_metadata(TEST_METADATA)
     keymapper = Id2bKeymapper(metadata)
@@ -126,6 +116,13 @@ def test_updatekeys_avb_key_paths_match_release_signing_expectation(
             f"release.sh's own AVB signing invocation would look for "
             f"{path!r}, which updatekeys.sh never created"
         )
+    certificates = sorted((updatekeys_tree / "keys").rglob("*.x509.pem"))
+    assert certificates
+    for certificate in certificates:
+        subject = run(
+            ["openssl", "x509", "-noout", "-subject", "-in", certificate],
+        ).stdout
+        assert "CN=_KEY_LABEL_" in subject
 
 
 def test_full_updatekeys_with_legacy_keymapper(
@@ -174,24 +171,6 @@ def test_full_updatekeys_with_legacy_keymapper(
     assert (keys / "com.android.adbd.avbpubkey").read_bytes() == (
         expected_payload.read_bytes()
     )
-
-
-def test_updatekeys_writes_the_subject_as_given(
-    updatekeys_tree: Path,
-) -> None:
-    result = run_updatekeys(
-        updatekeys_tree,
-        subject="/O=Calyx Institute/CN=_KEY_LABEL_",
-    )
-
-    assert result.returncode == 0, result.stderr
-    certificates = sorted((updatekeys_tree / "keys").rglob("*.x509.pem"))
-    assert certificates
-    for certificate in certificates:
-        subject = run(
-            ["openssl", "x509", "-noout", "-subject", "-in", certificate],
-        ).stdout
-        assert "CN=_KEY_LABEL_" in subject
 
 
 def test_updatekeys_refuses_a_key_whose_pem_exists(
