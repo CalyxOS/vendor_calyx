@@ -13,7 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable, MutableMapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -29,12 +29,10 @@ from .sign_planning import (
     SigningPlan,
     SignPair,
     find_prev_signed_device_builds,
-    gather_device_builds_to_sign,
-    gather_latest_device_builds,
+    gather_device_builds,
     gather_signable_devices,
     parse_build_numbers,
     partition_by_key_availability,
-    sorted_build_numbers,
 )
 
 _DEVICES_BRIDGE = r"""
@@ -114,8 +112,6 @@ class SignState:
     device_to_preexisting_build: dict[str, int] = field(
         default_factory=dict[str, int],
     )
-    prev_builds_sorted: tuple[int, ...] = ()
-    next_builds_sorted: tuple[int, ...] = ()
     devices_without_loaded_keys: tuple[str, ...] = ()
     plan: SigningPlan | None = None
     no_incremental: bool = False
@@ -123,6 +119,12 @@ class SignState:
 
 def _parse_build_numbers(value: str) -> tuple[int, ...]:
     return tuple(parse_build_numbers(value.split()))
+
+
+def _join_builds(device_to_build: Mapping[str, int]) -> str:
+    return " ".join(
+        str(build) for build in sorted(set(device_to_build.values()))
+    )
 
 
 class SignOrchestrator:
@@ -300,8 +302,7 @@ class SignOrchestrator:
             if prev_build_number
             else None
         )
-        rollback_raw = self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE")
-        rollback = rollback_raw or None
+        rollback = bool(self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE"))
 
         def target_files_exists(
             archive_dir: str,
@@ -327,7 +328,6 @@ class SignOrchestrator:
         self.state.device_to_preexisting_build = dict(
             result.device_to_preexisting_build,
         )
-        self.state.prev_builds_sorted = result.prev_builds_sorted
 
     def _setup_log_dir(self) -> None:
         if not self.environment.get("PKCS11_VENDOR"):
@@ -354,24 +354,18 @@ class SignOrchestrator:
             self.metadata.all_devices,
         )
 
-    def _update_next_builds(self) -> None:
-        self.state.next_builds_sorted = sorted_build_numbers(
-            self.state.device_to_next_build,
-        )
-
     def _gather_latest_device_builds(self) -> None:
-        self.state.device_to_next_build = gather_latest_device_builds(
+        self.state.device_to_next_build = gather_device_builds(
             self.state.target_files,
         )
-        self._update_next_builds()
 
     def _deduce_build_number(self) -> str:
-        return " ".join(str(build) for build in self.state.next_builds_sorted)
+        return _join_builds(self.state.device_to_next_build)
 
     def _deduce_prev_build_number(self) -> str:
         self._gather_device_builds_to_sign()
         self._find_prev_signed_device_builds()
-        return " ".join(str(build) for build in self.state.prev_builds_sorted)
+        return _join_builds(self.state.device_to_prev_build)
 
     def _prompt_missing_variables(self) -> None:
         try:
@@ -437,11 +431,10 @@ class SignOrchestrator:
 
     def _gather_device_builds_to_sign(self) -> None:
         build_numbers = _parse_build_numbers(self.environment["BUILD_NUMBER"])
-        self.state.device_to_next_build = gather_device_builds_to_sign(
+        self.state.device_to_next_build = gather_device_builds(
             self.state.target_files,
             build_numbers,
         )
-        self._update_next_builds()
 
     def _maybe_ask_about_prev_signed_device_builds(self) -> None:
         if self.state.no_incremental:
@@ -471,7 +464,7 @@ class SignOrchestrator:
         print()
         print("Found the following previous builds:")
         any_found = False
-        for build in self.state.prev_builds_sorted:
+        for build in sorted(set(self.state.device_to_prev_build.values())):
             if str(build) == self.environment["BUILD_NUMBER"]:
                 continue
             any_found = True
@@ -693,8 +686,7 @@ class SignOrchestrator:
             with_loaded, without_loaded = tuple(ordered), ()
         self.state.devices_without_loaded_keys = without_loaded
 
-        rollback_raw = self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE")
-        rollback = rollback_raw or None
+        rollback = bool(self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE"))
         self.state.plan = partition_by_key_availability(
             with_loaded,
             without_loaded,
