@@ -30,7 +30,6 @@ from .keymap import (
 )
 from .metadata import SigningMetadata
 from .release_arguments import (
-    GetKey,
     ReleaseArguments,
     UnsupportedRollbackDeviceError,
     build_release_arguments,
@@ -255,33 +254,6 @@ def generate_sunpkcs11_config(environment: MutableMapping[str, str]) -> str:
     if extra:
         text += extra + "\n"
     return text
-
-
-def make_release_get_key(
-    keymapper: Keymapper,
-    environment: MutableMapping[str, str],
-    *,
-    device: str,
-) -> GetKey:
-    """
-    Build a key resolver over the release's keymapper, with KEY_SUFFIX
-    defaulting to .pem only when unset.
-
-    Args:
-        keymapper: The keymapper the release loaded.
-        environment: Process environment to read KEY_DIR and KEY_SUFFIX
-            from.
-        device: Device being released.
-
-    Returns:
-        A callable taking key_type and key_name, see make_get_key().
-    """
-    return make_get_key(
-        keymapper,
-        device=device,
-        key_dir=keymapper.key_dir(environment),
-        key_suffix=environment.get("KEY_SUFFIX", ".pem"),
-    )
 
 
 def read_words(value: str) -> list[str]:
@@ -895,7 +867,6 @@ class ReleaseOrchestrator(SigningSession):
                         *self.args.releasetools,
                         "-o",
                         *release_args.signing_args,
-                        *release_args.avb_arguments,
                         str(target_files),
                         str(signed_target_files),
                     ],
@@ -973,7 +944,6 @@ class ReleaseOrchestrator(SigningSession):
                     "--otatest",
                     "-o",
                     *release_args.signing_args,
-                    *release_args.avb_arguments,
                     str(target_files),
                     str(otatest_target_files),
                 ],
@@ -1015,7 +985,7 @@ class ReleaseOrchestrator(SigningSession):
         rollback: str | None,
     ) -> ReleaseArguments:
         avb_algorithm = avb_algorithm_for(self.environment, self.keymapper)
-        get_key = make_release_get_key(
+        get_key = make_get_key(
             self.keymapper,
             self.environment,
             device=self.device,
@@ -1192,7 +1162,7 @@ class DeltaOrchestrator(SigningSession):
         self.ota_key = ""
 
     def _resolve_keys(self, keymapper: Keymapper) -> None:
-        self.ota_key = make_release_get_key(
+        self.ota_key = make_get_key(
             keymapper,
             self.environment,
             device=self.device,
