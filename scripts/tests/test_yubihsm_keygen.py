@@ -143,7 +143,7 @@ def _assert_files_match_the_device(root: Path, yubihsm: Connector) -> None:
 def _audit_comments(root: Path, yubihsm: Connector) -> list[str]:
     (log,) = (root / "logs").rglob("*-keygen.log")
     return [
-        _normalize(re.sub(r"^# \S+ \S+ ", "# ", line), root, yubihsm)
+        _normalize(re.sub(r"^# \S+ ", "# ", line), root, yubihsm)
         for line in log.read_text().splitlines()
         if line.startswith("#")
     ]

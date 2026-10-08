@@ -666,14 +666,6 @@ def delete_object(
     _run_write_with_session(config, operation, ERROR.OBJECT_NOT_FOUND)
 
 
-def _object_type_name(object_type: OBJECT) -> str:
-    from yubihsm.defs import OBJECT
-
-    return {OBJECT.ASYMMETRIC_KEY: "asymmetric-key", OBJECT.OPAQUE: "opaque"}[
-        object_type
-    ]
-
-
 _PKCS11_ALGORITHM_NAMES = {
     "RSA:2048": "RSA_2048",
     "RSA:3072": "RSA_3072",
@@ -847,8 +839,8 @@ def limit_ondemand_objects(
         key_dir: Directory on-demand object backups live in.
         ondemand_domains: Domain(s) on-demand objects live in.
         after_delete: Called after every delete, successful or not, with
-            a "Command: ... Result: N" line describing it.
-        dry_run: Print each delete as a yubihsm-shell command instead of
+            an "Operation: ... Result: N" line describing it.
+        dry_run: Print each delete's "Operation:" line instead of
             deleting it, so that nothing is freed.
 
     Returns:
@@ -861,6 +853,8 @@ def limit_ondemand_objects(
             connector-level failure, or if eviction could not free
             enough space.
     """
+    from yubihsm.defs import OBJECT
+
     objects = list_restorable_objects(config, ondemand_domains)
     last_id: int | None = None
     for obj in objects:
@@ -871,17 +865,17 @@ def limit_ondemand_objects(
         if not should_make_space and last_id != obj.id:
             return
 
+        object_type_name = (
+            "asymmetric-key"
+            if obj.object_type == OBJECT.ASYMMETRIC_KEY
+            else "opaque"
+        )
         command = (
-            f"Command: delete-object --object-id {obj.id:#06x} "
-            f"--object-type {_object_type_name(obj.object_type)}"
+            f"Operation: delete-object --object-id {obj.id:#06x} "
+            f"--object-type {object_type_name}"
         )
         if dry_run:
-            print(
-                "yubihsm -a delete-object --object-id "
-                f"{obj.id:#06x} --object-type "
-                f"{_object_type_name(obj.object_type)}\n",
-                file=sys.stderr,
-            )
+            print(command, file=sys.stderr)
             last_id = obj.id
             continue
         try:
