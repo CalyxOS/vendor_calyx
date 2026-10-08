@@ -54,12 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     key_path = Path(key_file)
     key_name = key_name_from_path(key_path, os.environ)
     reference = KeyReference(key_name, key_name)
-    require_matching_public_key(
-        signer,
-        reference,
-        key_path,
-        os.environ.get("OPENSSL_BIN", "openssl"),
-    )
+    require_matching_public_key(signer, reference, key_path)
     data = sys.stdin.buffer.read()
     digest_info, _ = avb_input_digest(algorithm, data)
     signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
@@ -67,7 +62,6 @@ def main(argv: list[str] | None = None) -> int:
         key_path,
         digest_info,
         signature,
-        os.environ.get("OPENSSL_BIN", "openssl"),
     )
     sys.stdout.buffer.write(signature)
     return 0
