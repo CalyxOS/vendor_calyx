@@ -1,7 +1,7 @@
 {
   "audit": [
-    "# ensure_key_is_available Result: 0",
-    "# restore_all_keys_and_certs Result: 0"
+    "# Function: ensure_key_is_available Result: 0",
+    "# Function: restore_all_keys_and_certs Result: 0"
   ],
   "files": {},
   "keys": [
