@@ -5,7 +5,8 @@
 #
 
 """
-Sign OTA payload digests through the backend-neutral Python PKCS#11 layer.
+Sign OTA payload digests through the release's SigningServer, or else
+through the backend-neutral Python PKCS#11 layer.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from signing.key_consistency import (
     require_signature_from_public_key,
 )
 from signing.models import KeyReference, SignRequest
+from signing.yubihsm_session_service import sign_digest_through_server
 
 
 def write_signature_atomically(output: Path, signature: bytes) -> None:
@@ -130,17 +132,28 @@ def main(argv: list[str] | None = None) -> int:
     verify_signature = os.environ.get("DEBUG_PAYLOAD_SIGNER") or "y"
     if verify_signature not in {"y", "n"}:
         raise ValueError("DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'")
-    signer = pkcs11_signer_from_environment()
     digest = args.input_file.read_bytes()
-    key_name = key_name_from_path(args.key_file, os.environ)
-    reference = KeyReference(key_name, key_name)
-    public_key = public_key_file(args.key_file)
-    require_matching_public_key(signer, reference, public_key)
     if len(digest) != 32:
         raise ValueError("payload SHA-256 digest must be exactly 32 bytes")
+    public_key = public_key_file(args.key_file)
+    key_name = key_name_from_path(args.key_file, os.environ)
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
-    signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
-    if verify_signature == "y":
+    signature = None
+    socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
+    if socket_path:
+        signature = sign_digest_through_server(
+            Path(socket_path),
+            key_name,
+            digest,
+        )
+    verify = True
+    if signature is None:
+        signer = pkcs11_signer_from_environment()
+        reference = KeyReference(key_name, key_name)
+        require_matching_public_key(signer, reference, public_key)
+        signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
+        verify = verify_signature == "y"
+    if verify:
         require_signature_from_public_key(public_key, digest_info, signature)
     write_signature_atomically(args.output_file, signature)
     return 0

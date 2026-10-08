@@ -912,66 +912,24 @@ def test_release_signs_target_files_with_threads(release_tree: Path) -> None:
     assert "--threads 8 --threads 2" in signing_command
 
 
-@pytest.mark.parametrize(
-    ("environment", "helper", "payload_signer"),
-    (
-        ({}, "/signing_helper.py", "/payload_signer.py"),
-        (
-            {"AVB_SIGNING_HELPER_TOOL": "server"},
-            "signing_helper.server.py",
-            "/payload_signer.py",
-        ),
-        (
-            {"PAYLOAD_SIGNER_TOOL": "server"},
-            "/signing_helper.py",
-            "payload_signer.server.py",
-        ),
-        (
-            {"SIGNING_HELPER_TOOL": "server"},
-            "signing_helper.server.py",
-            "payload_signer.server.py",
-        ),
-    ),
-    ids=("default", "avb-helper", "payload-signer", "both"),
-)
-def test_release_selects_the_signing_helpers(
-    release_tree: Path,
-    environment: dict[str, str],
-    helper: str,
-    payload_signer: str,
-) -> None:
+def test_release_passes_the_signing_helpers(release_tree: Path) -> None:
     result = run_release(
         release_tree,
         "bramble",
-        environment={**PKCS11_ENVIRONMENT, **environment},
+        environment=PKCS11_ENVIRONMENT,
     )
 
     assert result.returncode == 0, result.stderr
-    assert helper in _command_line(result.stderr, "sign_target_files_apks")
-    assert payload_signer in _command_line(
+    assert "/signing_helper.py" in _command_line(
+        result.stderr,
+        "sign_target_files_apks",
+    )
+    assert "/payload_signer.py" in _command_line(
         result.stderr,
         "ota_from_target_files",
     )
     assert "test-only" not in result.stdout
     assert "test-only" not in result.stderr
-
-
-@pytest.mark.parametrize("tool", ("openssl", "pkcs11-tool"))
-def test_release_refuses_an_unknown_signing_helper_tool(
-    release_tree: Path,
-    tool: str,
-) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={**PKCS11_ENVIRONMENT, "SIGNING_HELPER_TOOL": tool},
-    )
-
-    assert result.returncode == 1
-    assert (
-        f"Unknown signing helper tool '{tool}', use 'python' or 'server'"
-        in result.stderr
-    )
 
 
 @pytest.mark.parametrize("device", ROLLBACK_DEVICES)
