@@ -185,18 +185,6 @@ def test_yubihsm_keygen_generates_every_key(
     }
     assert outcome == json.loads(KEYGEN_FIXTURE.read_text())
     _assert_files_match_the_device(root, yubihsm)
-
-
-@pytest.mark.aosp
-def test_yubihsm_keygen_skips_backed_up_keys(
-    tmp_path: Path,
-    aosp_top: Path,
-    yubihsm: Connector,
-) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
-    root = tmp_path / "tree"
-    environment = _keygen_tree(root, yubihsm, avbtool)
-    first = run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
     backup = next(root.rglob("*-asymmetric-key.yhw"))
     evicted = int(backup.name.split("-")[0], 16)
     del yubihsm.device.objects[(evicted, OBJECT.ASYMMETRIC_KEY)]
@@ -205,7 +193,6 @@ def test_yubihsm_keygen_skips_backed_up_keys(
 
     rerun = run([KEYGEN_SH, root / "keys"], cwd=root, env=environment)
 
-    assert first.returncode == 0
     assert "No keys generated during the process." in rerun.stdout
     assert "No certs generated during the process." in rerun.stdout
     assert _objects(yubihsm, OBJECT.ASYMMETRIC_KEY) == generated
