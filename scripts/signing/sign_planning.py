@@ -63,13 +63,11 @@ class IncrementalTriple:
 class PrevBuildResult:
     """
     The previous builds find_prev_signed_device_builds() picks for each
-    device, the devices whose next build is already signed, and the
-    distinct previous builds in order.
+    device, and the devices whose next build is already signed.
     """
 
     device_to_prev_build: Mapping[str, int]
     device_to_preexisting_build: Mapping[str, int]
-    prev_builds_sorted: tuple[int, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,73 +99,33 @@ def gather_signable_devices(
     return tuple(sorted(set(devices) & set(all_devices)))
 
 
-def _parse_target_files(
+def gather_device_builds(
     target_files: Sequence[str],
-) -> list[tuple[str, int]]:
-    parsed: list[tuple[str, int]] = []
-    for file in target_files:
-        match = _TARGET_FILES_RE.match(file)
-        if match:
-            parsed.append(
-                (match.group("device"), int(match.group("build"))),
-            )
-    return parsed
-
-
-def gather_latest_device_builds(
-    target_files: Sequence[str],
+    build_numbers: Sequence[int] | None = None,
 ) -> dict[str, int]:
     """
-    Pick the numerically highest build per device, ignoring BUILD_NUMBER.
+    Pick the numerically highest build per device.
 
     Args:
         target_files: calyx_<device>-target_files-<build>.zip filenames.
-
-    Returns:
-        Highest build number found per device.
-    """
-    result: dict[str, int] = {}
-    for device, build in _parse_target_files(target_files):
-        if device not in result or build > result[device]:
-            result[device] = build
-    return result
-
-
-def gather_device_builds_to_sign(
-    target_files: Sequence[str],
-    build_numbers: Sequence[int],
-) -> dict[str, int]:
-    """
-    Pick the highest matching build per device, restricted to build_numbers.
-
-    Args:
-        target_files: calyx_<device>-target_files-<build>.zip filenames.
-        build_numbers: Build numbers the user selected.
+        build_numbers: If given, restricts the builds to these build
+            numbers.
 
     Returns:
         Highest matching build number found per device.
     """
-    allowed = set(build_numbers)
     result: dict[str, int] = {}
-    for device, build in _parse_target_files(target_files):
-        if build not in allowed:
+    for file in target_files:
+        match = _TARGET_FILES_RE.match(file)
+        if not match:
+            continue
+        device = match.group("device")
+        build = int(match.group("build"))
+        if build_numbers is not None and build not in build_numbers:
             continue
         if device not in result or build > result[device]:
             result[device] = build
     return result
-
-
-def sorted_build_numbers(device_to_build: Mapping[str, int]) -> tuple[int, ...]:
-    """
-    Return the distinct build numbers in a device-to-build mapping, sorted.
-
-    Args:
-        device_to_build: Per-device build numbers.
-
-    Returns:
-        Distinct build numbers, ascending.
-    """
-    return tuple(sorted(set(device_to_build.values())))
 
 
 def find_prev_signed_device_builds(
@@ -176,7 +134,7 @@ def find_prev_signed_device_builds(
     device_to_next_build: Mapping[str, int],
     build_numbers: Sequence[int] = (),
     prev_build_numbers: Sequence[int] | None = None,
-    avb_rollback_index_override: str | None = None,
+    avb_rollback_index_override: bool = False,
     target_files_exists: Callable[[str, str, int], bool],
 ) -> PrevBuildResult:
     """
@@ -194,15 +152,16 @@ def find_prev_signed_device_builds(
             means BUILD_NUMBER is not yet known (skips this detection).
         prev_build_numbers: If given, restricts prior-build candidates to
             these build numbers, so that an empty sequence selects none.
-        avb_rollback_index_override: Rollback index in effect, if any,
-            which shifts the expected preexisting-build match by one.
+        avb_rollback_index_override: Whether a rollback index override
+            is in effect, which shifts the expected preexisting-build match
+            by one.
         target_files_exists: Predicate telling whether
             archive/<archive_dir>/<device>-target_files-<build>.zip is a
             file, called as (archive_dir, device, build).
 
     Returns:
-        The device_to_prev_build, device_to_preexisting_build and
-        prev_builds_sorted bookkeeping.
+        The device_to_prev_build and device_to_preexisting_build
+        bookkeeping.
     """
     device_to_preexisting_build: dict[str, int] = {}
     candidates: dict[str, list[int]] = {}
@@ -214,16 +173,15 @@ def find_prev_signed_device_builds(
         device = match.group("device")
         build = int(match.group("build"))
 
-        if build_numbers:
-            for build_number in build_numbers:
-                expected_build = (
-                    build_number
-                    if avb_rollback_index_override is None
-                    else build_number + 1
-                )
-                if build == expected_build:
-                    device_to_preexisting_build[device] = build_number
-                    break
+        for build_number in build_numbers:
+            expected_build = (
+                build_number + 1
+                if avb_rollback_index_override
+                else build_number
+            )
+            if build == expected_build:
+                device_to_preexisting_build[device] = build_number
+                break
 
         if prev_build_numbers is not None and build not in prev_build_numbers:
             continue
@@ -241,7 +199,6 @@ def find_prev_signed_device_builds(
     return PrevBuildResult(
         device_to_prev_build=device_to_prev_build,
         device_to_preexisting_build=device_to_preexisting_build,
-        prev_builds_sorted=sorted_build_numbers(device_to_prev_build),
     )
 
 
@@ -252,7 +209,7 @@ def partition_by_key_availability(
     device_to_next_build: Mapping[str, int],
     device_to_prev_build: Mapping[str, int],
     device_to_preexisting_build: Mapping[str, int],
-    avb_rollback_index_override: str | None = None,
+    avb_rollback_index_override: bool = False,
 ) -> SigningPlan:
     """
     Build the four bucketed sign/incremental work-item lists.
@@ -267,8 +224,8 @@ def partition_by_key_availability(
             any (from find_prev_signed_device_builds()).
         device_to_preexisting_build: Devices already signed under the
             requested build, which are not signed again.
-        avb_rollback_index_override: Rollback index in effect, if any,
-            which bumps the signing target build by one.
+        avb_rollback_index_override: Whether a rollback index override
+            is in effect, which bumps the signing target build by one.
 
     Returns:
         The four bucketed work-item lists.
@@ -283,9 +240,7 @@ def partition_by_key_availability(
         for device in devices:
             next_build = device_to_next_build[device]
             next_target = (
-                next_build + 1
-                if avb_rollback_index_override is not None
-                else next_build
+                next_build + 1 if avb_rollback_index_override else next_build
             )
             if next_build != preexisting_builds.get(device):
                 sign_pairs.append(SignPair(device, next_build, next_target))
