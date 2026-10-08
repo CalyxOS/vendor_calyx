@@ -21,7 +21,6 @@ from collections.abc import Mapping
 from pathlib import Path
 
 MANIFEST_FILENAME = "manifest.tsv"
-MANIFEST_HEADER = "filename\tsha256sum\tfilesize\tlink"
 TIMESTAMP = datetime.datetime(2010, 1, 1, tzinfo=datetime.UTC).timestamp()
 START_SCRIPT = """#!/bin/bash
 our_path=$(cd "$(dirname "$0")";pwd -P)
@@ -37,15 +36,10 @@ class PackageError(Exception):
         self.code = code
 
 
-def _fields(line: str) -> list[str]:
-    """Split a manifest line on tabs, dropping empty fields."""
-    return [field for field in line.split("\t") if field]
-
-
 def _manifest_entries(path: Path) -> list[list[str]]:
     entries: list[list[str]] = []
     for index, line in enumerate(path.read_text().splitlines()):
-        fields = _fields(line)
+        fields = [field for field in line.split("\t") if field]
         if index == 0 and fields[:1] == ["filename"]:
             continue
         entries.append(fields)
@@ -77,16 +71,15 @@ def _download(destination: Path, link: str, file_size: str) -> None:
         raise PackageError(code=code if code > 0 else 128 - code)
 
 
-def prepare_manifest_and_files(
+def prepare_files(
     output_directory: Path,
     script_dir: Path,
     source_directory: str,
     manifest_file: Path,
-) -> None:
+) -> list[str]:
     """
     Download or copy every file the manifest lists into the output
-    directory, and write the output directory's manifest with every
-    file's SHA-256 and size.
+    directory, and check each one against the SHA-256 its row gives.
 
     Args:
         output_directory: Directory to fill.
@@ -96,12 +89,16 @@ def prepare_manifest_and_files(
             copied from.
         manifest_file: Manifest listing the files.
 
+    Returns:
+        The files whose SHA-256 differs from their row's, in manifest
+        order.
+
     Raises:
         PackageError: If a file escapes the output directory, a local
             file is missing or a download fails.
     """
     output_directory = Path(os.path.abspath(output_directory))
-    new_manifest_lines = [MANIFEST_HEADER]
+    mismatched: list[str] = []
     for fields in _manifest_entries(manifest_file):
         filename, sha256sum, file_size, link = (fields + ["", "", "", ""])[:4]
         destination = Path(f"{output_directory}/{filename}")
@@ -111,16 +108,9 @@ def prepare_manifest_and_files(
         destination.parent.mkdir(parents=True, exist_ok=True)
 
         if link:
-            if destination.exists() and _sha256(destination) != sha256sum:
-                sys.stderr.write(
-                    f"{destination} does not match expected sha256sum. "
-                    "Deleting and re-downloading...",
-                )
-                destination.unlink()
-            if not destination.exists():
-                print(f"Downloading {destination}...")
-                sys.stdout.flush()
-                _download(destination, link, file_size)
+            print(f"Downloading {destination}...")
+            sys.stdout.flush()
+            _download(destination, link, file_size)
         else:
             generated = filename == "start.sh"
             source = Path(f"{source_directory}/{filename}")
@@ -138,17 +128,8 @@ def prepare_manifest_and_files(
                 ):
                     print(line, file=sys.stderr)
                 raise PackageError
-            if generated:
-                file_size = str(destination.stat().st_size)
-            else:
-                file_size = str(source.stat().st_size)
+            if not generated:
                 shutil.copy2(source, destination)
-            if sha256sum and _sha256(destination) != sha256sum:
-                print(
-                    f"{destination} does not match expected sha256sum and no "
-                    "link provided!",
-                    file=sys.stderr,
-                )
         if (
             filename.endswith(".py")
             or filename.endswith("calyx-shamir-split")
@@ -159,57 +140,16 @@ def prepare_manifest_and_files(
             _reset(destination, 0o644)
         _reset(destination.parent, 0o755)
         if not sha256sum:
-            sha256sum = _sha256(destination)
-        new_manifest_lines.append(
-            f"{filename}\t{sha256sum}\t{file_size}\t{link}",
-        )
-    manifest = output_directory / MANIFEST_FILENAME
-    manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text("".join(f"{line}\n" for line in new_manifest_lines))
-
-
-def verify_files(manifest_path: Path, check_directory: Path) -> bool:
-    """
-    Check the files a manifest lists, printing those that fail.
-
-    Args:
-        manifest_path: Manifest listing the files and their SHA-256.
-        check_directory: Directory holding the files.
-
-    Returns:
-        True if every file is present and matches.
-    """
-    failed: list[str] = []
-    mismatched: list[str] = []
-    for fields in _manifest_entries(manifest_path):
-        filename = fields[0]
-        expected = fields[1] if len(fields) > 1 else ""
-        try:
-            actual = _sha256(check_directory / filename)
-        except OSError:
-            failed.append(filename)
             continue
-        if actual != expected:
+        if _sha256(destination) != sha256sum:
+            if not link:
+                print(
+                    f"{destination} does not match expected sha256sum and no "
+                    "link provided!",
+                    file=sys.stderr,
+                )
             mismatched.append(filename)
-    if not failed and not mismatched:
-        print("All files verified successfully.")
-        return True
-    print(file=sys.stderr)
-    if failed:
-        print(
-            "The following files were missing or sha256sum failed to run:",
-            file=sys.stderr,
-        )
-        for filename in failed:
-            print(f"  {filename}", file=sys.stderr)
-    if mismatched:
-        print(
-            "The following files FAILED sha256sum verification:",
-            file=sys.stderr,
-        )
-        for filename in mismatched:
-            print(f"  {filename}", file=sys.stderr)
-    return False
+    return mismatched
 
 
 def _zip(tmp_dir: Path, zip_file: Path) -> None:
@@ -276,7 +216,7 @@ def prepare_package(
         start = output_directory / "start.sh"
         start.write_text(START_SCRIPT)
         _reset(start, 0o755)
-        prepare_manifest_and_files(
+        mismatched = prepare_files(
             output_directory,
             script_dir,
             source_directory,
@@ -285,10 +225,16 @@ def prepare_package(
                 or script_dir / MANIFEST_FILENAME,
             ),
         )
-        manifest = output_directory / MANIFEST_FILENAME
-        if not verify_files(manifest, output_directory):
+        if mismatched:
+            print(file=sys.stderr)
+            print(
+                "The following files FAILED sha256sum verification:",
+                file=sys.stderr,
+            )
+            for filename in mismatched:
+                print(f"  {filename}", file=sys.stderr)
             return 1
-        manifest.unlink()
+        print("All files verified successfully.")
         (output_directory / "vendor/calyx/scripts/hsm_provisioning").rename(
             output_directory / "scripts",
         )
