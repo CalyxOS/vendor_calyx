@@ -934,13 +934,22 @@ class YubiHsmKeygenDriver(KeygenDriver):
         output = self.unique_key_out_dir / f"{key_id}-asymmetric-key.yhw"
         if not self._dry_run():
             self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
-        wrap_id = environment["YUBIHSM_WRAP_KEY_ID"]
+        self.back_up_wrapped_key(key_id, output)
+        self._copy_to_other_dirs(output)
+
+    def back_up_wrapped_key(self, key_id: str, output: Path) -> None:
+        """
+        Write a key wrapped under YUBIHSM_WRAP_KEY_ID to output, and
+        record the export in the audit log, or under DRY_RUN=y print the
+        record instead.
+
+        Args:
+            key_id: The key's ID, e.g. "0x2000".
+            output: The backup file.
+        """
 
         def export() -> None:
-            wrapped = export_wrapped_key(
-                sign_environment.yubihsm_config_from_environment(environment),
-                key_id,
-            )
+            wrapped = export_wrapped_key(self._config(), key_id)
             write_file_atomically(output, base64.b64encode(wrapped))
 
         self.logged(
@@ -948,7 +957,7 @@ class YubiHsmKeygenDriver(KeygenDriver):
                 "export-wrapped-key",
                 *self._connection_arguments(),
                 "--wrap-id",
-                wrap_id,
+                self.environment["YUBIHSM_WRAP_KEY_ID"],
                 "--key-id",
                 key_id,
                 "--output",
@@ -956,7 +965,6 @@ class YubiHsmKeygenDriver(KeygenDriver):
             ],
             export,
         )
-        self._copy_to_other_dirs(output)
 
     def _write_stored_certificate(self, key_id: str, certificate: Path) -> bool:
         """
