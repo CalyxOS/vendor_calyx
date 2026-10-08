@@ -32,7 +32,6 @@ from .pkcs11 import (
     initialize_pkcs11_token,
     is_any_pkcs11_token_initialized,
 )
-from .release_execution import render_release_tool
 from .sign_orchestration import load_devices_file
 from .vendor_yubihsm import (
     YubiHsmConfig,
@@ -694,8 +693,6 @@ class YubiHsmKeygenDriver(KeygenDriver):
             self.environment["YUBIHSM_CONNECTOR"],
             "--authkey",
             self.environment["YUBIHSM_AUTHKEY"],
-            "--password-env",
-            "YUBIHSM_PASSWORD",
         ]
 
     def derived_public_key_written(self, path: Path) -> None:
@@ -728,16 +725,12 @@ class YubiHsmKeygenDriver(KeygenDriver):
         operation: Callable[[], object],
     ) -> None:
         """
-        Run one device operation and record it in the audit log under the
-        `python3 -m signing` command line that performs it, or under
-        DRY_RUN=y print that command line instead.
+        Run one device operation and record it in the audit log, named
+        with its arguments and followed by its result, or under DRY_RUN=y
+        print the record instead.
         """
         if self._dry_run():
-            print(
-                render_release_tool(["python3", "-m", "signing", *command]),
-                end="",
-                file=sys.stderr,
-            )
+            print(f"Operation: {' '.join(command)}", file=sys.stderr)
             return
         error: BaseException | None = None
         try:
@@ -745,7 +738,7 @@ class YubiHsmKeygenDriver(KeygenDriver):
         except Exception as caught:
             error = caught
         self._record(
-            f"Command: python3 -m signing {' '.join(command)} "
+            f"Operation: {' '.join(command)} "
             f"Result: {0 if error is None else 1}",
             failed=error is not None,
         )

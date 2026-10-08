@@ -74,7 +74,7 @@ def _audit_comments(keep: Path, yubihsm: Connector) -> list[str]:
     for log in sorted((keep / "logs").rglob("*.log")):
         for line in log.read_text().splitlines():
             if line.startswith("#"):
-                comment = re.sub(r"^# \S+ \S+ ", "# ", line)
+                comment = re.sub(r"^# \S+ ", "# ", line)
                 comments.append(
                     comment.replace(str(keep), "<keep>").replace(
                         yubihsm.url,
