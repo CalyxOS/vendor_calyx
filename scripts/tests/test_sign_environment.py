@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import base64
-import datetime
 import fcntl
 import sys
 import threading
@@ -15,8 +14,7 @@ from pathlib import Path
 import pytest
 from conftest import stub
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
 from signing import sign_environment
 from signing.keymap import StaticKeymapper
 from signing.sign_environment import (
@@ -34,23 +32,11 @@ from signing.vendor_yubihsm_connector import (
     YubiHsmConnectorConfig,
 )
 from yubihsm.defs import COMMAND, OBJECT
-from yubihsm_emulator import Connector, EmulatedYubiHsm
-
-
-def _self_signed_certificate() -> x509.Certificate:
-    key = ec.generate_private_key(ec.SECP256R1())
-    subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, "test")])
-    now = datetime.datetime.now(datetime.UTC)
-    return (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(subject)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now)
-        .not_valid_after(now + datetime.timedelta(days=1))
-        .sign(key, hashes.SHA256())
-    )
+from yubihsm_emulator import (
+    Connector,
+    EmulatedYubiHsm,
+    self_signed_certificate,
+)
 
 
 @pytest.mark.parametrize("vendor", ("yubihsm", "softhsm"))
@@ -500,7 +486,7 @@ def _back_up_vbmeta_key(
     (key_dir / "0x2000-asymmetric-key.yhw").write_bytes(
         base64.b64encode(wrapped),
     )
-    certificate = _self_signed_certificate()
+    certificate = self_signed_certificate()
     (key_dir / "0x2000.x509.pem").write_bytes(
         certificate.public_bytes(serialization.Encoding.PEM),
     )

@@ -8,13 +8,18 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-import stat
 import subprocess
 import zipfile
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, TEST_METADATA, parameter_id, run
+from conftest import (
+    SCRIPTS_DIR,
+    TEST_METADATA,
+    install_executable,
+    parameter_id,
+    run,
+)
 from test_release_orchestration import (
     DRY_RUN_FIXTURES,
     normalize_command_line,
@@ -55,12 +60,11 @@ def _write_target_files_zip(path: Path) -> None:
 def _install_fake_ota_tool(root: Path) -> None:
     tool_directory = root / "bin"
     tool_directory.mkdir(exist_ok=True)
-    tool = tool_directory / "ota_from_target_files"
-    tool.write_text(
+    install_executable(
+        tool_directory / "ota_from_target_files",
         '#!/bin/sh\neval "out=\\${$#}"\n'
         'printf %s "incremental-ota-bytes" > "$out"\n',
     )
-    tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
 
 
 @pytest.fixture
@@ -135,11 +139,10 @@ def test_generate_delta_creates_incremental_and_checksum(
 
 
 def test_generate_delta_stops_when_ota_tool_fails(delta_tree: Path) -> None:
-    tool_directory = delta_tree / "bin"
-    tool_directory.mkdir()
-    tool = tool_directory / "ota_from_target_files"
-    tool.write_text("#!/bin/sh\nexit 23\n")
-    tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
+    install_executable(
+        delta_tree / "bin" / "ota_from_target_files",
+        "#!/bin/sh\nexit 23\n",
+    )
 
     result = run_generate_delta(delta_tree, dry_run=False)
 
@@ -154,10 +157,10 @@ def test_generate_delta_removes_its_temporaries(
     fails: bool,
 ) -> None:
     if fails:
-        tool = delta_tree / "bin" / "ota_from_target_files"
-        tool.parent.mkdir()
-        tool.write_text("#!/bin/sh\nexit 23\n")
-        tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
+        install_executable(
+            delta_tree / "bin" / "ota_from_target_files",
+            "#!/bin/sh\nexit 23\n",
+        )
     else:
         _install_fake_ota_tool(delta_tree)
     tmpdir = delta_tree / "tmp"
@@ -184,9 +187,7 @@ def test_generate_delta_checksums_without_sha256sum(
     _install_fake_ota_tool(delta_tree)
     stubs = delta_tree / "stubs"
     stubs.mkdir()
-    stub = stubs / "sha256sum"
-    stub.write_text("#!/bin/sh\nexit 127\n")
-    stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    install_executable(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
     result = run_generate_delta(
         delta_tree,
         dry_run=False,

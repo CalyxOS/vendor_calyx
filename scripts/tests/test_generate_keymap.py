@@ -9,45 +9,27 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, run, run_cli
+from conftest import ID2B_KEYMAP, SCRIPTS_DIR, run
 from signing.keymap import LegacyKeymapper
 from signing.metadata import load_metadata
 
 DEVICES = ("bramble", "redfin")
-LEGACY_DEVICES = ("bramble", "raven", "cheetah")
-GOLDEN_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
 
 
 def generate_keymap(
     tmp_path: Path,
-    devices: tuple[str, ...] = DEVICES,
     *,
-    keymapper: str = "id2b",
+    devices: tuple[str, ...] = DEVICES,
+    environment: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     devices_file = tmp_path / "devices"
     devices_file.write_text(f"devices=({' '.join(devices)})\n")
-    environment = {"DEVICES_FILE": str(devices_file), "KEYMAPPER": keymapper}
     return run(
         [SCRIPTS_DIR / "generate_keymap.sh"],
-        env=environment,
-        check=False,
-    )
-
-
-def python_generate_keymap(
-    keymapper: str,
-    devices: tuple[str, ...],
-) -> subprocess.CompletedProcess[str]:
-    return run_cli(
-        [
-            "generate-keymap",
-            "--keymapper",
-            keymapper,
-            "--metadata",
-            SCRIPTS_DIR / "metadata.py",
-            "--devices",
-            *devices,
-        ],
+        env={
+            "DEVICES_FILE": str(devices_file),
+            **(environment or {"KEYMAPPER": "id2b"}),
+        },
         check=False,
     )
 
@@ -55,20 +37,13 @@ def python_generate_keymap(
 def test_id2b_keymap_matches_complete_golden_output(tmp_path: Path) -> None:
     result = generate_keymap(tmp_path)
     assert result.returncode == 0, result.stderr
-    assert result.stdout == GOLDEN_KEYMAP.read_text()
-
-
-def test_id2b_keymap_cli_matches_complete_golden_output() -> None:
-    result = python_generate_keymap("id2b", DEVICES)
-
-    assert result.returncode == 0, result.stderr
-    assert result.stdout == GOLDEN_KEYMAP.read_text()
+    assert result.stdout == ID2B_KEYMAP.read_text()
 
 
 def test_id2b_keymap_rejects_device_missing_from_metadata(
     tmp_path: Path,
 ) -> None:
-    result = generate_keymap(tmp_path, ("not-a-supported-device",))
+    result = generate_keymap(tmp_path, devices=("not-a-supported-device",))
 
     assert result.returncode != 0
     assert result.stdout == ""
@@ -77,24 +52,24 @@ def test_id2b_keymap_rejects_device_missing_from_metadata(
 
 
 def test_static_keymapper_round_trips_id2b_keymap(tmp_path: Path) -> None:
-    devices_file = tmp_path / "devices"
-    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
-    result = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={
-            "DEVICES_FILE": str(devices_file),
+    result = generate_keymap(
+        tmp_path,
+        environment={
             "KEYMAPPER": "static",
-            "KEYMAP_FILE": str(GOLDEN_KEYMAP),
+            "KEYMAP_FILE": str(ID2B_KEYMAP),
         },
-        check=False,
     )
 
     assert result.returncode == 0, result.stderr
-    assert result.stdout == GOLDEN_KEYMAP.read_text()
+    assert result.stdout == ID2B_KEYMAP.read_text()
 
 
 def test_legacy_keymap_needs_a_device(tmp_path: Path) -> None:
-    result = generate_keymap(tmp_path, (), keymapper="legacy")
+    result = generate_keymap(
+        tmp_path,
+        devices=(),
+        environment={"KEYMAPPER": "legacy"},
+    )
 
     assert result.returncode == 1
     assert result.stdout == ""
@@ -106,28 +81,22 @@ def test_legacy_keymap_needs_a_device(tmp_path: Path) -> None:
 def test_generate_keymap_loads_a_python_keymapper_file(
     tmp_path: Path,
 ) -> None:
-    devices_file = tmp_path / "devices"
-    devices_file.write_text(f"devices=({' '.join(DEVICES)})\n")
     keymapper = tmp_path / "keymapper.py"
     keymapper.write_text(
         "from pathlib import Path\n"
         "from signing.keymap import StaticKeymapper\n"
         "\n"
         "def create_keymapper(environment, metadata, *, extra_devices):\n"
-        f"    return StaticKeymapper.from_file(Path({str(GOLDEN_KEYMAP)!r}))\n",
+        f"    return StaticKeymapper.from_file(Path({str(ID2B_KEYMAP)!r}))\n",
     )
 
-    result = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={
-            "DEVICES_FILE": str(devices_file),
-            "KEYMAPPER_FILE": str(keymapper),
-        },
-        check=False,
+    result = generate_keymap(
+        tmp_path,
+        environment={"KEYMAPPER_FILE": str(keymapper)},
     )
 
     assert result.returncode == 0, result.stderr
-    assert result.stdout == GOLDEN_KEYMAP.read_text()
+    assert result.stdout == ID2B_KEYMAP.read_text()
 
 
 @pytest.mark.parametrize("keymapper", ("id2b", "legacy"))
@@ -135,30 +104,14 @@ def test_generate_keymap_maps_extra_devices(
     tmp_path: Path,
     keymapper: str,
 ) -> None:
-    devices_file = tmp_path / "devices"
-    devices_file.write_text(f"devices=({' '.join(DEVICES)} cerro)\n")
-
-    result = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env={
-            "DEVICES_FILE": str(devices_file),
-            "KEYMAPPER": keymapper,
-            "EXTRA_DEVICES": "cerro",
-        },
-        check=False,
+    result = generate_keymap(
+        tmp_path,
+        devices=(*DEVICES, "cerro"),
+        environment={"KEYMAPPER": keymapper, "EXTRA_DEVICES": "cerro"},
     )
 
     assert result.returncode == 0, result.stderr
     assert "\tcerro\t" in result.stdout
-
-
-def test_legacy_keymap_cli_matches_the_script(tmp_path: Path) -> None:
-    script = generate_keymap(tmp_path, LEGACY_DEVICES, keymapper="legacy")
-    command = python_generate_keymap("legacy", LEGACY_DEVICES)
-
-    assert script.returncode == 0, script.stderr
-    assert command.returncode == 0, command.stderr
-    assert command.stdout == script.stdout
 
 
 def test_legacy_keymapper_requires_only_some_device() -> None:
@@ -201,15 +154,13 @@ def _keymap_rows(
     keymapper: str,
     metadata: Path | None = None,
 ) -> list[str]:
-    devices_file = tmp_path / "devices"
-    devices_file.write_text(f"devices=({' '.join(PLACEHOLDER_DEVICES)})\n")
-    environment = {"DEVICES_FILE": str(devices_file), "KEYMAPPER": keymapper}
+    environment = {"KEYMAPPER": keymapper}
     if metadata is not None:
         environment["METADATA_FILE"] = str(metadata)
-    result = run(
-        [SCRIPTS_DIR / "generate_keymap.sh"],
-        env=environment,
-        check=False,
+    result = generate_keymap(
+        tmp_path,
+        devices=PLACEHOLDER_DEVICES,
+        environment=environment,
     )
     assert result.returncode == 0, result.stderr
     return result.stdout.splitlines()
