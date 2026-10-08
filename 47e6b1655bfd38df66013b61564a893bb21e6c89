@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3fd98165_7e7c8562",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-10-08T12:39:07Z",
+      "side": 1,
+      "message": "Worked for generating incrementals from existing signed full builds",
+      "revId": "47e6b1655bfd38df66013b61564a893bb21e6c89",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
