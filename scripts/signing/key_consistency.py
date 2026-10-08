@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from cryptography import x509
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.asymmetric.types import PublicKeyTypes
@@ -21,7 +21,12 @@ from .pkcs11 import Pkcs11Backend
 
 
 def _load_public_key(public_key: Path) -> PublicKeyTypes:
-    return serialization.load_pem_public_key(public_key.read_bytes())
+    try:
+        return serialization.load_pem_public_key(public_key.read_bytes())
+    except (UnsupportedAlgorithm, ValueError) as error:
+        raise ValueError(
+            f"{public_key} holds no usable PEM public key ({error})",
+        ) from error
 
 
 def require_matching_public_key(
