@@ -53,7 +53,6 @@ class YubiHsmConfig:
     connector_url: str
     auth_key: str
     password: str = field(repr=False)
-    attestation_id: str = "0"
     wrap_id: str = "0x0010"
 
 
@@ -1405,11 +1404,10 @@ def restore_all_keys_and_certs(
 def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:
     """
     Return a certificate attesting a key's on-device origin, signed by
-    the config's attestation key.
+    the device attestation key 0.
 
     Args:
-        config: Connector URL, authentication key, password, and
-            attestation key.
+        config: Connector URL, authentication key, and password.
         key_id: The key's ID, e.g. "0x2000".
 
     Returns:
@@ -1425,10 +1423,9 @@ def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:
     from yubihsm.objects import AsymmetricKey
 
     object_id = int(key_id, 16)
-    attesting_key_id = int(config.attestation_id, 16)
 
     def operation(session: AuthSession) -> bytes:
-        certificate = AsymmetricKey(session, object_id).attest(attesting_key_id)
+        certificate = AsymmetricKey(session, object_id).attest(0)
         return certificate.public_bytes(Encoding.PEM)
 
     return _run_with_session(lambda: connect_yubihsm_session(config), operation)

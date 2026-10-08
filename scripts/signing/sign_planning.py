@@ -78,14 +78,11 @@ class SignPair:
 class IncrementalTriple:
     """
     One device/old_build/new_build incremental OTA to generate.
-
-    new_build is None for a device with prior-build history but no build
-    selected to sign this run.
     """
 
     device: str
     old_build: int
-    new_build: int | None
+    new_build: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -315,16 +312,14 @@ def partition_by_key_availability(
         sign_pairs: list[SignPair] = []
         incrementals: list[IncrementalTriple] = []
         for device in devices:
-            next_build = device_to_next_build.get(device)
-            if next_build is not None:
-                next_target = (
-                    next_build + 1
-                    if avb_rollback_index_override is not None
-                    else next_build
-                )
-                preexisting_build = preexisting_builds.get(device, "")
-                if str(next_build) != str(preexisting_build):
-                    sign_pairs.append(SignPair(device, next_build, next_target))
+            next_build = device_to_next_build[device]
+            next_target = (
+                next_build + 1
+                if avb_rollback_index_override is not None
+                else next_build
+            )
+            if str(next_build) != str(preexisting_builds.get(device, "")):
+                sign_pairs.append(SignPair(device, next_build, next_target))
             prev_build = device_to_prev_build.get(device)
             if prev_build is not None:
                 incrementals.append(

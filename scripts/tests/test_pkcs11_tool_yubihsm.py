@@ -6,11 +6,11 @@
 from __future__ import annotations
 
 import shutil
-import stat
 import subprocess
 from pathlib import Path
 
 import pytest
+from conftest import install_executable
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
@@ -30,12 +30,11 @@ YUBIHSM_MODULES = (
 
 @pytest.fixture
 def recording_tool(tmp_path: Path) -> Path:
-    tool = tmp_path / "pkcs11-tool"
-    tool.write_text(
+    tool = install_executable(
+        tmp_path / "pkcs11-tool",
         '#!/bin/sh\nprintf "LD_PRELOAD=%s\\n" "${LD_PRELOAD:-}"\n'
         'printf "%s\\n" "$@"\nexit 3\n',
     )
-    tool.chmod(tool.stat().st_mode | stat.S_IXUSR)
     return tool
 
 

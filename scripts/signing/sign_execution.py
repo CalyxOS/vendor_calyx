@@ -440,7 +440,7 @@ def sign_builds(
 
 
 def generate_incrementals(
-    triples: Sequence[tuple[str, int, int | None]],
+    triples: Sequence[tuple[str, int, int]],
     *,
     generate_delta_script: Path,
     jobs: int,
@@ -452,9 +452,7 @@ def generate_incrementals(
 
     Args:
         triples: (device, old_build, new_build) work items, matching
-            sign_planning.IncrementalTriple. new_build is None for a
-            device with no build selected to sign this run, and is then
-            passed to generate_delta.sh as an empty argument.
+            sign_planning.IncrementalTriple.
         generate_delta_script: Path to generate_delta.sh.
         jobs: Maximum concurrent generate_delta.sh invocations
             (NUM_INCREMENTAL_JOBS).
@@ -477,7 +475,7 @@ def generate_incrementals(
     }
     print()
     tags = [
-        f"{device},{old_build},{'' if new_build is None else new_build}"
+        f"{device},{old_build},{new_build}"
         for device, old_build, new_build in triples
     ]
     print("Generating incremental updates for:", " ".join(tags), flush=True)
@@ -488,12 +486,11 @@ def generate_incrementals(
                 str(generate_delta_script),
                 device,
                 str(old_build),
-                "" if new_build is None else str(new_build),
+                str(new_build),
             ),
             env={
                 **base_env,
-                "BUILD_NUMBER": f"{new_build if new_build is not None else ''}"
-                f"_{old_build}",
+                "BUILD_NUMBER": f"{new_build}_{old_build}",
             },
             tag=tag,
         )
