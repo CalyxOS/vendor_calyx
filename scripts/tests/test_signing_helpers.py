@@ -214,3 +214,29 @@ def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
             ],
         )
     assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "contents",
+    (b"not a key\n", b"\x30\x82\x01\x22"),
+    ids=("text", "der"),
+)
+def test_python_avb_helper_names_a_key_file_it_cannot_load(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    contents: bytes,
+) -> None:
+    helper = load_helper(PYTHON_SIGNING_HELPER)
+    public_key = tmp_path / "rsa-2048.pub.pem"
+    public_key.write_bytes(contents)
+    data = avb_input(hashlib.sha256(b"vbmeta").digest())
+    monkeypatch.setattr(
+        helper,
+        "pkcs11_signer_from_environment",
+        stub(SimpleNamespace(sign=stub(bytes(256)))),
+    )
+    monkeypatch.setattr(helper, "require_matching_public_key", stub(None))
+    monkeypatch.setattr(helper.sys, "stdin", io.TextIOWrapper(io.BytesIO(data)))
+
+    with pytest.raises(ValueError, match="holds no usable PEM public key"):
+        helper.main(["SHA256_RSA2048", str(public_key)])
