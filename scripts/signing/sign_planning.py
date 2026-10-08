@@ -11,33 +11,9 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Self
 
 
-class BuildNumber(int):
-    """
-    A build number that orders numerically and prints as it was written,
-    so that a file name built from it names the file it came from.
-    """
-
-    text: str
-
-    def __new__(cls, text: str) -> Self:
-        number = super().__new__(cls, int(text))
-        number.text = text
-        return number
-
-    def __str__(self) -> str:
-        return self.text
-
-    def __repr__(self) -> str:
-        return f"BuildNumber({self.text!r})"
-
-    def __format__(self, format_spec: str) -> str:
-        return self.text if not format_spec else super().__format__(format_spec)
-
-
-def parse_build_numbers(tokens: Sequence[str]) -> list[BuildNumber]:
+def parse_build_numbers(tokens: Sequence[str]) -> list[int]:
     """
     Read the words of BUILD_NUMBER or PREV_BUILD_NUMBER.
 
@@ -51,9 +27,7 @@ def parse_build_numbers(tokens: Sequence[str]) -> list[BuildNumber]:
         The build numbers among them, in order.
     """
     return [
-        BuildNumber(token)
-        for token in tokens
-        if token.isascii() and token.isdigit()
+        int(token) for token in tokens if token.isascii() and token.isdigit()
     ]
 
 
@@ -135,7 +109,7 @@ def _parse_target_files(
         match = _TARGET_FILES_RE.match(file)
         if match:
             parsed.append(
-                (match.group("device"), BuildNumber(match.group("build"))),
+                (match.group("device"), int(match.group("build"))),
             )
     return parsed
 
@@ -173,10 +147,10 @@ def gather_device_builds_to_sign(
     Returns:
         Highest matching build number found per device.
     """
-    allowed = {str(build) for build in build_numbers}
+    allowed = set(build_numbers)
     result: dict[str, int] = {}
     for device, build in _parse_target_files(target_files):
-        if str(build) not in allowed:
+        if build not in allowed:
             continue
         if device not in result or build > result[device]:
             result[device] = build
@@ -193,10 +167,7 @@ def sorted_build_numbers(device_to_build: Mapping[str, int]) -> tuple[int, ...]:
     Returns:
         Distinct build numbers, ascending.
     """
-    by_text = {str(build): build for build in device_to_build.values()}
-    return tuple(
-        sorted(by_text.values(), key=lambda build: (build, str(build))),
-    )
+    return tuple(sorted(set(device_to_build.values())))
 
 
 def find_prev_signed_device_builds(
@@ -241,7 +212,7 @@ def find_prev_signed_device_builds(
         if not match:
             continue
         device = match.group("device")
-        build = BuildNumber(match.group("build"))
+        build = int(match.group("build"))
 
         if build_numbers:
             for build_number in build_numbers:
@@ -250,13 +221,11 @@ def find_prev_signed_device_builds(
                     if avb_rollback_index_override is None
                     else build_number + 1
                 )
-                if str(build) == str(expected_build):
+                if build == expected_build:
                     device_to_preexisting_build[device] = build_number
                     break
 
-        if prev_build_numbers is not None and str(build) not in {
-            str(prev_build) for prev_build in prev_build_numbers
-        }:
+        if prev_build_numbers is not None and build not in prev_build_numbers:
             continue
         if not target_files_exists(archive_dir, device, build):
             continue
@@ -318,7 +287,7 @@ def partition_by_key_availability(
                 if avb_rollback_index_override is not None
                 else next_build
             )
-            if str(next_build) != str(preexisting_builds.get(device, "")):
+            if next_build != preexisting_builds.get(device):
                 sign_pairs.append(SignPair(device, next_build, next_target))
             prev_build = device_to_prev_build.get(device)
             if prev_build is not None:
