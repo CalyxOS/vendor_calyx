@@ -48,8 +48,14 @@ _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
 
 _CLEAR_FACTORY_VARIABLES = "device/common/clear-factory-images-variables.sh"
 
+# generate-factory-images-common.sh extracts the signed target-files with
+# Info-ZIP unzip. Its distro-patched zip-bomb check reads a 32-bit data
+# descriptor after an entry past 4 GiB as 64-bit and refuses soong_zip
+# archives that large, as AOSP notes where it sets the same variable for the
+# build (build/soong/ui/build/config.go).
 _FACTORY_IMAGE_SCRIPT = """
 set -uo pipefail
+export UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
 out_dir=$1 common_script=$2 clear_script=$3
 shift 3
 source "$clear_script"

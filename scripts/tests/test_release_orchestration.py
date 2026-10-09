@@ -436,6 +436,31 @@ def test_release_sets_the_device_family_for_the_factory_image_script(
     )
 
 
+def test_release_runs_the_factory_image_script_without_zip_bomb_detection(
+    release_tree: Path,
+) -> None:
+    (
+        release_tree / "device/common/generate-factory-images-common.sh"
+    ).write_text(
+        'printf "%s" "$UNZIP_DISABLE_ZIPBOMB_DETECTION" > zipbomb-detection\n'
+        'cat "$DEVICE-img-$BUILD.zip" > "$DEVICE-$VERSION-factory-fake.zip"\n',
+    )
+    write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"OTA_ONLY": "", "ANDROID_BUILD_TOP": ""},
+        dry_run=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    out_dir = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
+    assert (out_dir / "zipbomb-detection").read_text() == "TRUE"
+
+
 @pytest.mark.parametrize(
     ("environment", "expected"),
     (
