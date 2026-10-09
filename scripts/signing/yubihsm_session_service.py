@@ -25,6 +25,7 @@ from .vendor_yubihsm import (
     AuditLogNotAcknowledged,
     YubiHsmConfig,
     connect_yubihsm_session,
+    count_unacknowledged_audit_entries,
     save_audit_log,
 )
 
@@ -144,6 +145,7 @@ class YubiHsmSessionService:
             return {"status": "unavailable"}
         try:
             save_audit_log(
+                lambda: count_unacknowledged_audit_entries(self._config),
                 lambda: self.with_session(
                     lambda session: session.get_log_entries().entries,
                 ),
