@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 _DIGEST_HASHES: dict[int, Callable[[], hashes.HashAlgorithm]] = {
+    20: hashes.SHA1,
     32: hashes.SHA256,
     48: hashes.SHA384,
     64: hashes.SHA512,
@@ -170,7 +171,7 @@ def sign_digest_through_server(
         socket_path: The server's Unix socket.
         key_name: The key's name, a hexadecimal YubiHSM object ID with or
             without "0x".
-        digest: SHA-256, SHA-384 or SHA-512 digest to sign.
+        digest: SHA-1, SHA-256, SHA-384 or SHA-512 digest to sign.
 
     Returns:
         The signature, or None if key_name is not an object ID or the
