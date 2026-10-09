@@ -1296,6 +1296,7 @@ def extract_and_save_audit_log(
 
     try:
         save_audit_log(
+            lambda: count_unacknowledged_audit_entries(config),
             lambda: run(lambda session: session.get_log_entries().entries),
             lambda number: run(lambda session: session.set_log_index(number)),
             log_file,
@@ -1306,7 +1307,33 @@ def extract_and_save_audit_log(
             sessions.pop().close()
 
 
+def count_unacknowledged_audit_entries(config: YubiHsmConfig) -> int:
+    """
+    Return how many audit log entries the device holds unacknowledged,
+    from GET_DEVICE_INFO, which needs no authenticated session.
+
+    Args:
+        config: Connector URL.
+
+    Returns:
+        The number of entries not yet acknowledged with SET_LOG_INDEX.
+
+    Raises:
+        RuntimeError: If a managed connector fails to restart after a
+            connector-level failure.
+        yubihsm.exceptions.YubiHsmError: If the SDK connection or
+            command fails.
+    """
+    from yubihsm.core import YubiHsm
+
+    return _run_with_session(
+        lambda: YubiHsm.connect(config.connector_url),
+        lambda hsm: int(hsm.get_device_info().log_used),
+    )
+
+
 def save_audit_log(
+    pending: Callable[[], int],
     read: Callable[[], Sequence[LogEntry]],
     acknowledge: Callable[[int], None],
     log_file: Path,
@@ -1319,9 +1346,11 @@ def save_audit_log(
     A comment line is always written, and only entries appended to the log
     file are acknowledged to the device. An entry whose line log_file holds
     already, left on the device by an acknowledgement that failed, is not
-    written again, and the file is synced before the acknowledgement.
+    written again, and the file is synced before the acknowledgement. read
+    is not called when pending reports no entries.
 
     Args:
+        pending: Returns how many entries the device holds unacknowledged.
         read: Returns every entry the device retains, oldest first.
         acknowledge: Marks entries up to and including a number as saved.
         log_file: Path to append the comment line and entries to.
@@ -1333,7 +1362,9 @@ def save_audit_log(
             does not take the acknowledgement.
     """
     clean_comment = comment.replace("\n", "").replace("\r", "")
-    entries_read = tuple(read())
+    # Reading an empty log on a new session right after SET_LOG_INDEX can
+    # make the YubiHSM 2 reboot.
+    entries_read = tuple(read()) if pending() else ()
 
     log_file.parent.mkdir(parents=True, exist_ok=True)
     written = _recent_log_lines(log_file)
