@@ -22,6 +22,11 @@ def main():
     # connect to the YubiHSM via the connector
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
     hsm = YubiHsm.connect(connector_url)
+    # Reading an empty log on a new session right after SET_LOG_INDEX can make
+    # the YubiHSM 2 reboot, so leave the log unread when it holds no entries.
+    if hsm.get_device_info().log_used == 0:
+        save_logs([], args.log_file, args.comment, args.verbose)
+        return
     # establish session
     auth_key = int(os.getenv("YUBIHSM_AUTHKEY", "0x0001"), 16)
     password = os.getenv("YUBIHSM_PASSWORD", "password")
@@ -33,12 +38,18 @@ def main():
 
 
 def extract_and_save_logs(session, log_file, comment, verbose=False):
-    log_data = session.get_log_entries()
+    entries = session.get_log_entries().entries
+    save_logs(entries, log_file, comment, verbose)
+    if len(entries) > 0:
+        session.set_log_index(entries[-1].number)
+
+
+def save_logs(entries, log_file, comment, verbose=False):
     if comment is None:
         c = ""
     else:
         c = comment.replace('\n', '').replace('\r', '')
-    if len(log_data.entries) <= 0 and c == "":
+    if len(entries) <= 0 and c == "":
         print("No logs to extract and no comment to write.")
         return
     # Ensure directory for log file exists
@@ -49,14 +60,11 @@ def extract_and_save_logs(session, log_file, comment, verbose=False):
         file.write(comment_line + "\n")
         if verbose:
             print(comment_line)
-        for entry in log_data.entries:
+        for entry in entries:
             entry_str = f"{entry.number:>{5}} cmd: {entry.command:#0{4}x} len: {entry.length:>{5}} sKey: {entry.session_key:#0{6}x} tKey: {entry.target_key:#0{6}x} 2Key: {entry.second_key:#0{6}x} res: {entry.result:#0{4}x} tick: {entry.tick:>{10}} hash: {entry.digest.hex()}"
             file.write(entry_str + "\n")
             if verbose:
                 print(entry_str)
-    if len(log_data.entries) > 0:
-        last_entry = log_data.entries[-1].number
-        session.set_log_index(last_entry)
 
 
 if __name__ == "__main__":
