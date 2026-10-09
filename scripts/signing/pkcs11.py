@@ -27,6 +27,7 @@ _HEX_ID = re.compile(r"(?:0x)?([0-9a-fA-F]+)")
 _ANNOTATED_ID = re.compile(r".*\(0x([0-9a-fA-F:]+)\)$")
 _SIGNING_MECHANISMS = {
     "rsa-pkcs": "RSA-PKCS",
+    "sha1-rsa-pkcs": "SHA1-RSA-PKCS",
     "sha256-rsa-pkcs": "SHA256-RSA-PKCS",
     "sha384-rsa-pkcs": "SHA384-RSA-PKCS",
     "sha512-rsa-pkcs": "SHA512-RSA-PKCS",
