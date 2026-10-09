@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "cf3297e2_795dae18",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-09T14:49:16Z",
+      "side": 1,
+      "message": "LGTM, thanks!",
+      "revId": "f6b5d51f6cbcf76e22fe54e3d0384dbc8214d56d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "a8c9cf70_ca0ff7e4",
+        "filename": "scripts/pkcs11/vendor.yubihsm.audit.logs.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-09T14:49:16Z",
+      "side": 1,
+      "message": "I wonder if we need to save empty logs. Why did you decide to save it?",
+      "revId": "f6b5d51f6cbcf76e22fe54e3d0384dbc8214d56d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
