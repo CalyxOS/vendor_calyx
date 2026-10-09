@@ -31,7 +31,7 @@ from signing.models import KeyReference, SignRequest
 from signing.yubihsm_session_service import sign_digest_through_server
 
 _MECHANISMS = frozenset(
-    {"sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
+    {"sha1-rsa-pkcs", "sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
 )
 
 
