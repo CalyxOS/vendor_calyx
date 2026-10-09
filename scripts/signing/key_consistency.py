@@ -102,7 +102,8 @@ def require_signature_from_public_key(
         )
 
 
-_HASHES: dict[str, type[hashes.SHA256 | hashes.SHA384 | hashes.SHA512]] = {
+_HASHES: dict[str, type[hashes.HashAlgorithm]] = {
+    "sha1": hashes.SHA1,
     "sha256": hashes.SHA256,
     "sha384": hashes.SHA384,
     "sha512": hashes.SHA512,
@@ -123,7 +124,7 @@ def require_signature_from_certificate(
         certificate: PEM certificate the signed artifact will carry.
         data: The signed data, before hashing.
         signature: Raw RSA signature.
-        hash_name: "sha256", "sha384" or "sha512".
+        hash_name: "sha1", "sha256", "sha384" or "sha512".
 
     Returns:
         None.
