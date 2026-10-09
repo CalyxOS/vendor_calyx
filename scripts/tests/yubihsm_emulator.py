@@ -57,15 +57,14 @@ _RSA_ALGORITHMS = {
     3072: ALGORITHM.RSA_3072,
     4096: ALGORITHM.RSA_4096,
 }
-_DIGEST_HASHES: dict[
-    int,
-    type[hashes.SHA256 | hashes.SHA384 | hashes.SHA512],
-] = {
+_DIGEST_HASHES: dict[int, type[hashes.HashAlgorithm]] = {
+    20: hashes.SHA1,
     32: hashes.SHA256,
     48: hashes.SHA384,
     64: hashes.SHA512,
 }
 _DIGEST_INFO_PREFIXES = {
+    bytes.fromhex("3021300906052b0e03021a05000414"): 20,
     bytes.fromhex("3031300d060960864801650304020105000420"): 32,
     bytes.fromhex("3041300d060960864801650304020205000430"): 48,
     bytes.fromhex("3051300d060960864801650304020305000440"): 64,
