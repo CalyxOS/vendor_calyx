@@ -73,6 +73,7 @@ def _softhsm_key_dir(directory: Path, public_key: Path) -> str:
 @pytest.mark.parametrize(
     ("mechanism", "algorithm"),
     (
+        ("sha1-rsa-pkcs", hashes.SHA1()),
         ("sha256-rsa-pkcs", hashes.SHA256()),
         ("sha384-rsa-pkcs", hashes.SHA384()),
         ("sha512-rsa-pkcs", hashes.SHA512()),
@@ -146,6 +147,7 @@ class _SignHandler:
 @pytest.mark.parametrize(
     ("mechanism", "algorithm"),
     (
+        ("sha1-rsa-pkcs", hashes.SHA1()),
         ("sha256-rsa-pkcs", hashes.SHA256()),
         ("sha384-rsa-pkcs", hashes.SHA384()),
         ("sha512-rsa-pkcs", hashes.SHA512()),
