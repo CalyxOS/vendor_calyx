@@ -33,6 +33,24 @@
       "message": "I wonder if we need to save empty logs. Why did you decide to save it?",
       "revId": "f6b5d51f6cbcf76e22fe54e3d0384dbc8214d56d",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "31bbb3ad_6a3915d0",
+        "filename": "scripts/pkcs11/vendor.yubihsm.audit.logs.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-10-09T14:51:36Z",
+      "side": 1,
+      "message": "It preserves behavior. Empty logs add a comment line.",
+      "parentUuid": "a8c9cf70_ca0ff7e4",
+      "revId": "f6b5d51f6cbcf76e22fe54e3d0384dbc8214d56d",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
