@@ -163,6 +163,27 @@ def test_extract_audit_log_keeps_the_session_open(
     assert " first\n" in text and " second\n" in text
 
 
+def test_extract_audit_log_leaves_an_empty_log_unread(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    yubihsm.device.log_index = yubihsm.device.log[-1][0]
+    log_path = tmp_path / "audit.log"
+    service = _service(yubihsm, log_path)
+
+    response = service.handle(
+        {
+            "op": "yubihsm_extract_audit_log",
+            "log_path": str(log_path),
+            "comment": "empty",
+        },
+    )
+
+    assert response == {"status": "ok"}
+    assert yubihsm.device.sessions_opened == 0
+    assert log_path.read_text().endswith(" empty\n")
+
+
 @pytest.mark.parametrize(("failures", "acknowledged"), ((1, True), (2, False)))
 def test_extract_audit_log_retry_writes_the_entries_once(
     yubihsm: Connector,
