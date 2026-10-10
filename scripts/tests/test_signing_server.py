@@ -163,11 +163,42 @@ def test_extract_audit_log_keeps_the_session_open(
     assert " first\n" in text and " second\n" in text
 
 
+def test_extract_audit_log_counts_entries_on_the_open_connection(
+    monkeypatch: pytest.MonkeyPatch,
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    from yubihsm.core import YubiHsm
+
+    yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
+    yubihsm.device.audit(COMMAND.SIGN_PKCS1)
+    log_path = tmp_path / "audit.log"
+    service = _service(yubihsm, log_path)
+    service.handle(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
+
+    def refuse(url: str | None = None) -> YubiHsm:
+        raise AssertionError("the service connected again")
+
+    monkeypatch.setattr(YubiHsm, "connect", staticmethod(refuse))
+    response = service.handle(
+        {
+            "op": "yubihsm_extract_audit_log",
+            "log_path": str(log_path),
+            "comment": "signed",
+        },
+    )
+
+    assert response == {"status": "ok"}
+    assert "tKey: 0x2000" in log_path.read_text()
+    assert yubihsm.device.unread_log() == []
+
+
 def test_extract_audit_log_leaves_an_empty_log_unread(
     yubihsm: Connector,
     tmp_path: Path,
 ) -> None:
     yubihsm.device.log_index = yubihsm.device.log[-1][0]
+    yubihsm.device.fail_next(COMMAND.GET_LOG_ENTRIES, times=2)
     log_path = tmp_path / "audit.log"
     service = _service(yubihsm, log_path)
 
@@ -180,7 +211,7 @@ def test_extract_audit_log_leaves_an_empty_log_unread(
     )
 
     assert response == {"status": "ok"}
-    assert yubihsm.device.sessions_opened == 0
+    assert len(yubihsm.device.failures[COMMAND.GET_LOG_ENTRIES]) == 2
     assert log_path.read_text().endswith(" empty\n")
 
 
