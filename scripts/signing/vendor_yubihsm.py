@@ -29,7 +29,7 @@ from .vendor_yubihsm_connector import (
 )
 
 if TYPE_CHECKING:
-    from yubihsm.core import AuthSession, DeviceInfo, LogEntry
+    from yubihsm.core import AuthSession, DeviceInfo, LogEntry, YubiHsm
     from yubihsm.defs import ALGORITHM, CAPABILITY, OBJECT
 
 
@@ -1186,6 +1186,26 @@ def import_wrapped_key(
     _run_write_with_session(config, operation, ERROR.OBJECT_EXISTS)
 
 
+def connect_yubihsm(config: YubiHsmConfig) -> tuple[YubiHsm, AuthSession]:
+    """
+    Connect to a YubiHSM and open a python-yubihsm session on it.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+
+    Returns:
+        The connected device and an open, derived-credential session.
+    """
+    from yubihsm.core import YubiHsm
+
+    hsm = YubiHsm.connect(config.connector_url)
+    session = hsm.create_session_derived(
+        int(config.auth_key, 16),
+        config.password,
+    )
+    return hsm, session
+
+
 def connect_yubihsm_session(config: YubiHsmConfig) -> AuthSession:
     """
     Open a python-yubihsm session, for any device capability.
@@ -1196,10 +1216,7 @@ def connect_yubihsm_session(config: YubiHsmConfig) -> AuthSession:
     Returns:
         An open, derived-credential python-yubihsm session.
     """
-    from yubihsm.core import YubiHsm
-
-    hsm = YubiHsm.connect(config.connector_url)
-    return hsm.create_session_derived(int(config.auth_key, 16), config.password)
+    return connect_yubihsm(config)[1]
 
 
 def format_audit_log_entry(entry: LogEntry) -> str:
@@ -1307,10 +1324,30 @@ def extract_and_save_audit_log(
             sessions.pop().close()
 
 
+def unacknowledged_audit_entries(hsm: YubiHsm) -> int:
+    """
+    Return how many audit log entries a device holds unacknowledged, from
+    the first page of GET_DEVICE_INFO, which needs no session.
+
+    Args:
+        hsm: The connected device.
+
+    Returns:
+        The number of entries not yet acknowledged with SET_LOG_INDEX.
+
+    Raises:
+        yubihsm.exceptions.YubiHsmError: If the command fails.
+    """
+    from yubihsm.core import DeviceInfo
+    from yubihsm.defs import COMMAND
+
+    return int(DeviceInfo.parse(hsm.send_cmd(COMMAND.DEVICE_INFO)).log_used)
+
+
 def count_unacknowledged_audit_entries(config: YubiHsmConfig) -> int:
     """
     Return how many audit log entries the device holds unacknowledged,
-    from GET_DEVICE_INFO, which needs no authenticated session.
+    over a new connection and without an authenticated session.
 
     Args:
         config: Connector URL.
@@ -1328,7 +1365,7 @@ def count_unacknowledged_audit_entries(config: YubiHsmConfig) -> int:
 
     return _run_with_session(
         lambda: YubiHsm.connect(config.connector_url),
-        lambda hsm: int(hsm.get_device_info().log_used),
+        unacknowledged_audit_entries,
     )
 
 
