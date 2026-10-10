@@ -24,13 +24,13 @@ from .signing_server import Message, request
 from .vendor_yubihsm import (
     AuditLogNotAcknowledged,
     YubiHsmConfig,
-    connect_yubihsm_session,
-    count_unacknowledged_audit_entries,
+    connect_yubihsm,
     save_audit_log,
+    unacknowledged_audit_entries,
 )
 
 if TYPE_CHECKING:
-    from yubihsm.core import AuthSession
+    from yubihsm.core import AuthSession, YubiHsm
 
 T = TypeVar("T")
 
@@ -66,6 +66,7 @@ class YubiHsmSessionService:
         """
         self._config = config
         self._audit_log_path = audit_log_path
+        self._hsm: YubiHsm | None = None
         self._session: AuthSession | None = None
         self._public_keys: dict[int, rsa.RSAPublicKey] = {}
         self._lock = threading.RLock()
@@ -80,6 +81,7 @@ class YubiHsmSessionService:
         locked = self._lock.acquire(timeout=_CLOSE_TIMEOUT)
         try:
             session, self._session = self._session, None
+            self._hsm = None
             if session is not None:
                 try:
                     session.close()
@@ -92,7 +94,7 @@ class YubiHsmSessionService:
     def with_session(self, operation: Callable[[AuthSession], T]) -> T:
         for attempt in (1, 2):
             if self._session is None:
-                self._session = connect_yubihsm_session(self._config)
+                self._hsm, self._session = connect_yubihsm(self._config)
             try:
                 return operation(self._session)
             except Exception:
@@ -100,6 +102,13 @@ class YubiHsmSessionService:
                 if attempt == 2:
                     raise
         raise AssertionError("unreachable")
+
+    def _unacknowledged_entries(self) -> int:
+        def operation(_: AuthSession) -> int:
+            assert self._hsm is not None
+            return unacknowledged_audit_entries(self._hsm)
+
+        return self.with_session(operation)
 
     def _sign(self, request: Message) -> Message:
         from yubihsm.objects import AsymmetricKey
@@ -145,7 +154,7 @@ class YubiHsmSessionService:
             return {"status": "unavailable"}
         try:
             save_audit_log(
-                lambda: count_unacknowledged_audit_entries(self._config),
+                self._unacknowledged_entries,
                 lambda: self.with_session(
                     lambda session: session.get_log_entries().entries,
                 ),
