@@ -885,6 +885,8 @@ class YubiHsmVendor(Vendor):
         for device, key_ids in key_ids_by_device.items():
             if not key_ids:
                 raise RuntimeError(f"The keymapper has no keys for {device}")
+        if environment.get("DRY_RUN") == "y":
+            return (), tuple(devices)
         loaded = get_loaded_key_ids(config)
         with_loaded_keys: list[str] = []
         without_loaded_keys: list[str] = []
