@@ -175,6 +175,43 @@ def _command_line(stderr: str, tool: str) -> str:
     return next(line for line in stderr.splitlines() if f"/bin/{tool}" in line)
 
 
+def test_release_announces_each_step_before_running_it(
+    release_tree: Path,
+) -> None:
+    result = subprocess.run(
+        [
+            SCRIPTS_DIR / "release.sh",
+            "bramble",
+            f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+        ],
+        cwd=release_tree,
+        env={
+            **os.environ,
+            "TMPDIR": str(release_tree),
+            "BUILD_NUMBER": BUILD_NUMBER,
+            "KEYMAPPER": "id2b",
+            "OTA_ONLY": "y",
+            "DRY_RUN": "y",
+        },
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+
+    lines = result.stdout.splitlines()
+    assert lines.index("Creating signed targetfiles zip") < next(
+        index
+        for index, line in enumerate(lines)
+        if "/bin/sign_target_files_apks" in line
+    ), result.stdout
+    assert lines.index("Creating OTA update zip") < next(
+        index
+        for index, line in enumerate(lines)
+        if "/bin/ota_from_target_files" in line
+    ), result.stdout
+
+
 def test_release_runs_the_release_tools(release_tree: Path) -> None:
     write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
