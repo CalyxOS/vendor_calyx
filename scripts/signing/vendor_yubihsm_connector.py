@@ -22,14 +22,15 @@ def _process_is_alive(pid: int) -> bool:
     """
     Return whether a process with a given PID currently exists.
 
-    A child of the calling process is reaped first, since ``kill(pid, 0)``
-    reports an unreaped zombie as alive.
+    A child of the calling process is reaped first, and an exited process
+    another process has not reaped yet counts as gone, since
+    ``kill(pid, 0)`` reports such a zombie as alive.
 
     Args:
         pid: Process ID to probe.
 
     Returns:
-        Whether the process exists.
+        Whether the process exists and has not exited.
     """
     try:
         os.waitpid(pid, os.WNOHANG)
@@ -41,7 +42,11 @@ def _process_is_alive(pid: int) -> bool:
         return False
     except PermissionError:
         return True
-    return True
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+    except OSError:
+        return True
+    return stat.rpartition(")")[2].split()[:1] != ["Z"]
 
 
 @dataclass(frozen=True, slots=True)
