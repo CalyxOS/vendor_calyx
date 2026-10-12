@@ -343,7 +343,15 @@ def run_command(
                 if pid_file and any(
                     marker in stderr for marker in _CONNECTOR_FAILURE_MARKERS
                 ):
-                    restart_connector()
+                    try:
+                        restart_connector()
+                    except (OSError, RuntimeError) as error:
+                        print(
+                            "Warning: could not restart the YubiHSM "
+                            f"connector ({error}).",
+                            file=sys.stderr,
+                        )
+                        break
                     result = _run_wrapped_command(cmd, args)
                     stdout, stderr = result.stdout, result.stderr
                     err = result.returncode
