@@ -1104,6 +1104,56 @@ def test_python_release_cleans_up_when_terminated(
     assert not list(tmpdir.glob("signing.*"))
 
 
+@pytest.mark.parametrize("second", ("SIGTERM", "SIGINT", "between"))
+def test_python_release_finishes_its_cleanup_after_a_second_signal(
+    tmp_path: Path,
+    second: str,
+) -> None:
+    cleaned = tmp_path / "cleaned"
+    script = """
+import contextlib, os, signal, sys
+from pathlib import Path
+from signing import release_orchestration
+from signing.release_execution import Transcript
+from signing.release_orchestration import ReleaseOrchestrator
+exit_on_signals = release_orchestration.exit_on_signals
+@contextlib.contextmanager
+def signal_after_exit_on_signals():
+    try:
+        with exit_on_signals():
+            yield
+    finally:
+        os.kill(os.getpid(), signal.SIGTERM)
+if sys.argv[2] == "between":
+    release_orchestration.exit_on_signals = signal_after_exit_on_signals
+release = ReleaseOrchestrator.__new__(ReleaseOrchestrator)
+release.transcript = Transcript()
+def cleanup():
+    if sys.argv[2] != "between":
+        os.kill(os.getpid(), getattr(signal, sys.argv[2]))
+    Path(sys.argv[1]).write_text("cleaned")
+def steps():
+    release._resources.callback(cleanup)
+    os.kill(os.getpid(), signal.SIGTERM)
+release._run_steps = steps
+sys.exit(release.run())
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script, cleaned, second],
+        env={**os.environ, "PYTHONPATH": str(SCRIPTS_DIR)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert result.returncode == (130 if second == "SIGINT" else -15)
+    assert "Traceback" not in result.stderr
+    assert cleaned.read_text() == "cleaned"
+
+
 def test_release_requires_yubihsm_credentials(release_tree: Path) -> None:
     result = run_release(
         release_tree,

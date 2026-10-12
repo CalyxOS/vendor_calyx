@@ -21,7 +21,11 @@ from . import sign_environment
 from .confirmation import ask_variable, confirm
 from .keymap import Keymapper, load_keymapper
 from .metadata import SigningMetadata
-from .release_execution import exit_on_signals, render_release_tool
+from .release_execution import (
+    defer_signals,
+    exit_on_signals,
+    render_release_tool,
+)
 from .sign_execution import generate_incrementals as _run_generate_incrementals
 from .sign_execution import sign_builds as _run_sign_builds
 from .sign_planning import (
@@ -218,17 +222,22 @@ class SignOrchestrator:
             0 on success, or the exit code of the step that aborted.
         """
         try:
-            with exit_on_signals():
+            with defer_signals():
                 try:
-                    self._run_steps()
-                except SignAbort as abort:
-                    return abort.code
-                except SignDone:
-                    return 0
-                except KeyboardInterrupt:
-                    return 130
-        finally:
-            self.cleanup()
+                    with exit_on_signals():
+                        try:
+                            self._run_steps()
+                        except SignAbort as abort:
+                            return abort.code
+                        except SignDone:
+                            return 0
+                        except KeyboardInterrupt:
+                            return 130
+                finally:
+                    with defer_signals(interrupt=True):
+                        self.cleanup()
+        except KeyboardInterrupt:
+            return 130
         return 0
 
     def _run_steps(self) -> None:
