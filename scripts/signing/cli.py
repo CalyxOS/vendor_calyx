@@ -367,6 +367,9 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(line_buffering=True)
     script_argv: list[str] = []
     if argv[:1] in (
         ["release-orchestrate"],
