@@ -115,6 +115,12 @@ class KeygenDriver(abc.ABC):
     def cert_exists(self, mapped_value: str) -> bool:
         """Return whether the certificate a keymapper value names exists."""
 
+    def complete_existing_key(self, mapped_value: str) -> None:
+        """
+        Finish what generating an existing key left undone. Does nothing by
+        default.
+        """
+
     @abc.abstractmethod
     def generate_keypair(
         self,
@@ -289,6 +295,7 @@ def generate_keys(
                     any_key = True
                 else:
                     print(f"{message}: key already exists", flush=True)
+                    driver.complete_existing_key(mapped)
                     already_generated[mapped] = "before this run"
                 if not cert_exists:
                     if key_exists:
@@ -892,6 +899,27 @@ class YubiHsmKeygenDriver(KeygenDriver):
     def _key_is_loaded(self, key_id: str) -> bool:
         return int(key_id, 16) in get_loaded_key_ids(self._config())
 
+    def complete_existing_key(self, mapped_value: str) -> None:
+        """
+        Back up a key the device holds without a wrapped copy, as left by a
+        run that failed after generating it.
+        """
+        if (self.key_out_dir / f"{mapped_value}-asymmetric-key.yhw").exists():
+            return
+        print(f"# VALUE: {mapped_value}: backing up the loaded key", flush=True)
+        self._back_up(mapped_value)
+
+    def _back_up(self, key_id: str) -> None:
+        """
+        Back a key up wrapped into the device's output directory and copy
+        the backup into the other output directories.
+        """
+        output = self.unique_key_out_dir / f"{key_id}-asymmetric-key.yhw"
+        if not self._dry_run():
+            self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
+        self.back_up_wrapped_key(key_id, output)
+        self._copy_to_other_dirs(output)
+
     def cert_exists(self, mapped_value: str) -> bool:
         return (self.key_out_dir / f"{mapped_value}.x509.pem").exists()
 
@@ -931,11 +959,7 @@ class YubiHsmKeygenDriver(KeygenDriver):
                 algorithm=algorithm,
             ),
         )
-        output = self.unique_key_out_dir / f"{key_id}-asymmetric-key.yhw"
-        if not self._dry_run():
-            self.unique_key_out_dir.mkdir(parents=True, exist_ok=True)
-        self.back_up_wrapped_key(key_id, output)
-        self._copy_to_other_dirs(output)
+        self._back_up(key_id)
 
     def back_up_wrapped_key(self, key_id: str, output: Path) -> None:
         """
