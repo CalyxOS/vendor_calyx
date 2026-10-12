@@ -16,7 +16,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
@@ -685,7 +684,6 @@ class YubiHsmKeygenDriver(KeygenDriver):
         key_out_dir: Path,
     ) -> None:
         super().__init__(environment, key_out_dir)
-        self.temp_dir: Path | None = None
         self.unique_key_out_dir = key_out_dir
         self.hsm_key_out_dir = key_out_dir
 
@@ -776,8 +774,8 @@ class YubiHsmKeygenDriver(KeygenDriver):
 
     def initialize_pre_metadata(self) -> None:
         """
-        Read YUBIHSM_PASSWORD_FILE, ask for a missing YUBIHSM_PASSWORD,
-        create the temporary directory and default the other credentials.
+        Read YUBIHSM_PASSWORD_FILE, ask for a missing YUBIHSM_PASSWORD and
+        default the other credentials.
         """
         environment = self.environment
         sign_environment.read_yubihsm_password_file(environment)
@@ -792,7 +790,6 @@ class YubiHsmKeygenDriver(KeygenDriver):
         if environment.get("GENERATE_USING_PKCS11") == "y":
             print("GENERATE_USING_PKCS11=y is not supported.", file=sys.stderr)
             raise KeygenError("GENERATE_USING_PKCS11=y is not supported")
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="keygen-", dir="/dev/shm"))
         if not environment.get("YUBIHSM_AUTHKEY"):
             environment["YUBIHSM_AUTHKEY"] = "1"
             print("YUBIHSM_AUTHKEY not specified. Using 1.", file=sys.stderr)
@@ -1093,25 +1090,10 @@ class YubiHsmKeygenDriver(KeygenDriver):
 
     def cleanup(self) -> bool:
         """
-        Remove the temporary directory and upload a non-empty audit log,
-        and return whether the upload succeeded.
+        Upload a non-empty audit log, and return whether the upload
+        succeeded.
         """
         environment = self.environment
-        if self.temp_dir is not None:
-            if environment.get("CLEANUP_ON_EXIT", "y") == "n":
-                print(
-                    f"Temp files retained at {self.temp_dir}.",
-                    file=sys.stderr,
-                )
-            else:
-                if not environment.get("CLEANUP_ON_EXIT"):
-                    print(
-                        "\nNote: You can retain temp files and imported "
-                        "keys/certs for inspection by setting "
-                        "CLEANUP_ON_EXIT=n\n",
-                        file=sys.stderr,
-                    )
-                shutil.rmtree(self.temp_dir, ignore_errors=True)
         audit_log = environment.get("AUDIT_LOG_PATH")
         if (
             audit_log
