@@ -223,7 +223,7 @@ def partition_by_key_availability(
         device_to_prev_build: Each device's prior build to diff against, if
             any (from find_prev_signed_device_builds()).
         device_to_preexisting_build: Devices already signed under the
-            requested build. Only devices with loaded keys skip re-signing.
+            requested build, which are not signed again.
         avb_rollback_index_override: Whether a rollback index override
             is in effect, which bumps the signing target build by one.
 
@@ -257,7 +257,7 @@ def partition_by_key_availability(
     )
     sign_without, incremental_without = build_pairs(
         devices_without_loaded_keys,
-        {},
+        device_to_preexisting_build,
     )
     return SigningPlan(
         sign_pairs_with_loaded_keys=sign_with,

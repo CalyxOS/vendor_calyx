@@ -152,7 +152,7 @@ def test_gather_builds_of_no_build_numbers_or_target_files_is_empty() -> None:
     ((False, 2026081500), (True, 2026081501)),
     ids=("no-rollback", "rollback"),
 )
-def test_partition_skips_a_preexisting_build_only_with_loaded_keys(
+def test_partition_skips_a_preexisting_build_with_or_without_keys(
     avb_rollback_index_override: bool,
     target: int,
 ) -> None:
@@ -175,9 +175,7 @@ def test_partition_skips_a_preexisting_build_only_with_loaded_keys(
     assert plan.sign_pairs_with_loaded_keys == (
         SignPair("bramble", 2026081500, target),
     )
-    assert plan.sign_pairs_without_loaded_keys == (
-        SignPair("redfin", 2026081500, target),
-    )
+    assert plan.sign_pairs_without_loaded_keys == ()
     assert plan.incremental_triples_with_loaded_keys == (
         IncrementalTriple("bramble", 2026081400, 2026081500),
     )
