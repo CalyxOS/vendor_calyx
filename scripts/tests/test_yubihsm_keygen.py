@@ -201,6 +201,40 @@ def test_yubihsm_keygen_generates_every_key(
     ]
 
 
+@pytest.mark.aosp
+def test_yubihsm_keygen_backs_up_a_key_a_failed_run_left_unexported(
+    tmp_path: Path,
+    aosp_top: Path,
+    yubihsm: Connector,
+) -> None:
+    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
+    root = tmp_path / "tree"
+    environment = _keygen_tree(root, yubihsm, avbtool)
+    yubihsm.device.fail_next(COMMAND.EXPORT_WRAPPED)
+
+    failed = run(
+        [KEYGEN_SH, root / "keys"],
+        cwd=root,
+        env=environment,
+        check=False,
+    )
+    assert failed.returncode != 0
+    (generated,) = _objects(yubihsm, OBJECT.ASYMMETRIC_KEY)
+    unexported = generated.split()[0]
+
+    rerun = run(
+        [KEYGEN_SH, root / "keys"],
+        cwd=root,
+        env=environment,
+        check=False,
+    )
+
+    assert rerun.returncode == 0, rerun.stderr
+    assert f"{unexported}: backing up the loaded key" in rerun.stdout
+    assert (root / "keys" / f"{unexported}-asymmetric-key.yhw").is_file()
+    _assert_files_match_the_device(root, yubihsm)
+
+
 def test_python_yubihsm_keygen_refuses_generate_using_pkcs11_first(
     tmp_path: Path,
     yubihsm: Connector,
