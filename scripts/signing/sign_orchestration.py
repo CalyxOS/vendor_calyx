@@ -693,10 +693,8 @@ class SignOrchestrator:
                 ) from error
         else:
             with_loaded, without_loaded = tuple(ordered), ()
-        self.state.devices_without_loaded_keys = without_loaded
-
         rollback = bool(self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE"))
-        self.state.plan = partition_by_key_availability(
+        plan = partition_by_key_availability(
             with_loaded,
             without_loaded,
             device_to_next_build=self.state.device_to_next_build,
@@ -704,6 +702,16 @@ class SignOrchestrator:
             device_to_preexisting_build=self.state.device_to_preexisting_build,
             avb_rollback_index_override=rollback,
         )
+        work = [pair.device for pair in plan.sign_pairs_without_loaded_keys]
+        if not self.state.no_incremental:
+            work += [
+                triple.device
+                for triple in plan.incremental_triples_without_loaded_keys
+            ]
+        self.state.devices_without_loaded_keys = tuple(
+            device for device in without_loaded if device in work
+        )
+        self.state.plan = plan
 
     def _steps(self) -> list[tuple[str, list[str], Callable[[], None]]]:
         """
