@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import errno
 import functools
 import os
 import selectors
@@ -27,9 +28,12 @@ from pathlib import Path
 from types import FrameType
 from typing import Any
 
+from .release_execution import defer_signals
+
 _SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 _PR_SET_PDEATHSIG = 1
 _OUTPUT_LIMIT = 64 * 1024 * 1024
+_STDOUT_GONE = (errno.EPIPE, errno.EIO, errno.EBADF, errno.ENXIO)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,10 +112,13 @@ class _FanOut:
         self.max_jobs = max_jobs
         self.on_success = on_success
         self.failed = 0
+        self.signals: list[int] = []
+        self.error: BaseException | None = None
+        self.stopping = False
         self.running: set[_RunningJob] = set()
         self.output = bytearray()
         self.dropping = False
-        self.stdout = 1
+        self.stdout: int | None = None
         self.private_stdout: int | None = None
         self.shared_stdout = False
         self.waiting_for_stdout = False
@@ -151,27 +158,35 @@ class _FanOut:
             with _signals_blocked():
                 for signum, previous in previous_handlers.items():
                     signal.signal(signum, previous)
+                self.signals += [
+                    signum for signum in self.read_notes() if signum in _SIGNALS
+                ]
             self.selector.close()
             os.close(self.notes)
             os.close(self.note_writer)
             if self.private_stdout is not None:
                 os.close(self.private_stdout)
+        if self.error is not None:
+            raise self.error
+        if self.signals:
+            raise SystemExit(128 + self.signals[0])
         return self.failed
 
     def loop(self) -> None:
-        try:
-            while True:
+        while True:
+            try:
                 self.take_notes()
                 if self.queue and len(self.running) < self.max_jobs:
                     self.start(self.queue.popleft())
                     continue
-                if not self.running and not self.output:
+                if not self.running and not (self.output and not self.stopping):
                     return
                 for key, _ in self.selector.select(timeout=1):
                     key.data()
-        except BaseException:
-            self.signal_jobs(signal.SIGTERM)
-            raise
+            except BaseException as error:
+                if self.error is None:
+                    self.error = error
+                self.stop(kill=True)
 
     def note(self, signum: int, frame: FrameType | None) -> None:
         # A job runs this as well between fork and exec.
@@ -188,14 +203,27 @@ class _FanOut:
 
     def take_notes(self) -> None:
         """
-        Collect the jobs that exited, and end the fan-out on a SIGINT,
+        Collect the jobs that exited, and stop the jobs on a SIGINT,
         SIGTERM or SIGHUP.
         """
         for signum in self.read_notes():
             if signum in _SIGNALS:
-                raise SystemExit(128 + signum)
+                self.signals.append(signum)
+                self.stop(kill=signum != signal.SIGHUP)
         for running in list(self.running):
             self.finish(running)
+
+    def stop(self, *, kill: bool) -> None:
+        """
+        Start no further job, and send the running jobs SIGTERM the first
+        time and SIGKILL on a later call with kill set.
+        """
+        self.queue.clear()
+        if not self.stopping:
+            self.stopping = True
+            self.signal_jobs(signal.SIGTERM)
+        elif kill:
+            self.signal_jobs(signal.SIGKILL)
 
     def signal_jobs(self, signum: int) -> None:
         for running in self.running:
@@ -210,9 +238,13 @@ class _FanOut:
         be done, as for a terminal or pipe of another user, or for a
         socket, set a blocking stdout non-blocking only around each write.
         """
-        sys.stdout.flush()
-        self.stdout = sys.stdout.fileno()
-        mode = os.fstat(self.stdout).st_mode
+        try:
+            sys.stdout.flush()
+            stdout = sys.stdout.fileno()
+            mode = os.fstat(stdout).st_mode
+        except (AttributeError, OSError, ValueError):
+            return
+        self.stdout = stdout
         if stat.S_ISFIFO(mode) or stat.S_ISCHR(mode):
             with contextlib.suppress(OSError):
                 self.private_stdout = os.open(
@@ -223,7 +255,7 @@ class _FanOut:
         self.shared_stdout = (
             self.private_stdout is None
             and not stat.S_ISREG(mode)
-            and os.get_blocking(self.stdout)
+            and os.get_blocking(stdout)
         )
 
     def write(self, data: bytes) -> None:
@@ -231,8 +263,11 @@ class _FanOut:
         Queue job output for stdout and write what stdout takes without
         blocking, so that a stdout that is not read holds up neither the
         jobs nor the handling of signals. Drop the output past
-        _OUTPUT_LIMIT queued bytes.
+        _OUTPUT_LIMIT queued bytes, and once stdout is gone, as when the
+        terminal hangs up or a pipe reader exits.
         """
+        if self.stdout is None:
+            return
         if len(self.output) + len(data) > _OUTPUT_LIMIT:
             if not self.dropping:
                 self.dropping = True
@@ -244,15 +279,23 @@ class _FanOut:
 
     def write_output(self) -> None:
         stdout = self.stdout
-        if self.shared_stdout:
-            os.set_blocking(stdout, False)
+        if stdout is None:
+            return
         try:
-            with contextlib.suppress(BlockingIOError):
+            if self.shared_stdout:
+                os.set_blocking(stdout, False)
+            try:
                 while self.output:
                     del self.output[: os.write(stdout, self.output)]
-        finally:
-            if self.shared_stdout:
-                os.set_blocking(stdout, True)
+            finally:
+                if self.shared_stdout:
+                    os.set_blocking(stdout, True)
+        except BlockingIOError:
+            pass
+        except OSError as error:
+            if error.errno in _STDOUT_GONE:
+                self.stdout = None
+            self.output.clear()
         waiting = bool(self.output)
         if waiting != self.waiting_for_stdout:
             if waiting:
@@ -335,11 +378,14 @@ def _run_fan_out(
     whose on_success returns a message counts as failed, and the message
     is written as a line of the job's output.
 
-    Each job runs in a process group of its own. A SIGINT, SIGTERM or
-    SIGHUP sends every running job's group SIGTERM and ends the fan-out
-    with SystemExit(128 + signal number). An exception sends them SIGTERM
-    as well and is raised. Output that stdout has not taken yet is written
-    before the fan-out ends otherwise.
+    Each job runs in a process group of its own. The first SIGINT, SIGTERM
+    or SIGHUP sends every running job's group SIGTERM, starts no further
+    job and ends the fan-out with SystemExit(128 + signal number) once the
+    running jobs are done. A later SIGINT or SIGTERM sends them SIGKILL,
+    and a later SIGHUP, which a hangup delivers twice, changes nothing. An
+    exception stops the jobs the same way and is raised once they are
+    done. Output that stdout has not taken yet is written before the
+    fan-out ends, unless it ends on a signal or an exception.
 
     A signal the process ignores stays ignored, and the jobs inherit an
     ignored SIGINT or SIGHUP but get the default SIGTERM. A job gets
@@ -383,26 +429,6 @@ def sign_builds(
     ]
     print("Signing release for:", " ".join(tags), flush=True)
 
-    tmpdir = Path(
-        tempfile.mkdtemp(prefix="sign_tmp.", dir=str(original_tmpdir)),
-    )
-    base_env = {
-        **(os.environ if environment is None else environment),
-        "TMPDIR": str(tmpdir),
-        "ENSURE_KEY_IS_AVAILABLE": "n",
-    }
-    work_jobs = [
-        Job(
-            argv=(
-                str(release_script),
-                device,
-                f"calyx_{device}-target_files-{build}.zip",
-            ),
-            env={**base_env, "BUILD_NUMBER": str(build)},
-            tag=tag,
-        )
-        for (device, build, _target_build), tag in zip(pairs, tags, strict=True)
-    ]
     outputs = {
         tag: Path("out") / f"release-{device}-{target_build}"
         for (device, _build, target_build), tag in zip(pairs, tags, strict=True)
@@ -422,10 +448,35 @@ def sign_builds(
             return str(error)
         return None
 
+    tmpdir = Path(
+        tempfile.mkdtemp(prefix="sign_tmp.", dir=str(original_tmpdir)),
+    )
     try:
+        base_env = {
+            **(os.environ if environment is None else environment),
+            "TMPDIR": str(tmpdir),
+            "ENSURE_KEY_IS_AVAILABLE": "n",
+        }
+        work_jobs = [
+            Job(
+                argv=(
+                    str(release_script),
+                    device,
+                    f"calyx_{device}-target_files-{build}.zip",
+                ),
+                env={**base_env, "BUILD_NUMBER": str(build)},
+                tag=tag,
+            )
+            for (device, build, _target_build), tag in zip(
+                pairs,
+                tags,
+                strict=True,
+            )
+        ]
         failed = _run_fan_out(work_jobs, max_jobs=jobs, on_success=archive)
     finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        with defer_signals(interrupt=True):
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     if failed:
         print(file=sys.stderr)
@@ -465,14 +516,6 @@ def generate_incrementals(
         0 if every incremental generated successfully, 1 otherwise, never
         a per-job or aggregate failure count.
     """
-    tmpdir = Path(
-        tempfile.mkdtemp(prefix="incremental_tmp.", dir=str(original_tmpdir)),
-    )
-    base_env = {
-        **(os.environ if environment is None else environment),
-        "TMPDIR": str(tmpdir),
-        "ENSURE_KEY_IS_AVAILABLE": "n",
-    }
     print()
     tags = [
         f"{device},{old_build},{new_build}"
@@ -480,30 +523,39 @@ def generate_incrementals(
     ]
     print("Generating incremental updates for:", " ".join(tags), flush=True)
 
-    work_jobs = [
-        Job(
-            argv=(
-                str(generate_delta_script),
-                device,
-                str(old_build),
-                str(new_build),
-            ),
-            env={
-                **base_env,
-                "BUILD_NUMBER": f"{new_build}_{old_build}",
-            },
-            tag=tag,
-        )
-        for (device, old_build, new_build), tag in zip(
-            triples,
-            tags,
-            strict=True,
-        )
-    ]
+    tmpdir = Path(
+        tempfile.mkdtemp(prefix="incremental_tmp.", dir=str(original_tmpdir)),
+    )
     try:
+        base_env = {
+            **(os.environ if environment is None else environment),
+            "TMPDIR": str(tmpdir),
+            "ENSURE_KEY_IS_AVAILABLE": "n",
+        }
+        work_jobs = [
+            Job(
+                argv=(
+                    str(generate_delta_script),
+                    device,
+                    str(old_build),
+                    str(new_build),
+                ),
+                env={
+                    **base_env,
+                    "BUILD_NUMBER": f"{new_build}_{old_build}",
+                },
+                tag=tag,
+            )
+            for (device, old_build, new_build), tag in zip(
+                triples,
+                tags,
+                strict=True,
+            )
+        ]
         failed = _run_fan_out(work_jobs, max_jobs=jobs)
     finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        with defer_signals(interrupt=True):
+            shutil.rmtree(tmpdir, ignore_errors=True)
     if failed:
         print(file=sys.stderr)
         print(
