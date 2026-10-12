@@ -10,6 +10,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,6 @@ from conftest import (
     default_signal_dispositions,
     install_executable,
     process_alive,
-    run,
     wait_until,
 )
 
@@ -135,7 +135,7 @@ def run_sign_builds(
     archive_dir.mkdir(exist_ok=True)
     original_tmpdir = root / "tmp"
     original_tmpdir.mkdir(exist_ok=True)
-    return run(
+    return subprocess.run(
         [
             sys.executable,
             "-c",
@@ -147,8 +147,16 @@ def run_sign_builds(
             *pairs,
         ],
         cwd=root,
-        env={"PYTHONPATH": str(SCRIPTS_DIR), **(environment or {})},
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            **(environment or {}),
+        },
+        capture_output=True,
+        text=True,
+        timeout=60,
         check=check,
+        preexec_fn=default_signal_dispositions,
     )
 
 
@@ -165,7 +173,7 @@ def run_generate_incrementals(
     install_executable(generate_delta_script, generate_delta_tool)
     original_tmpdir = root / "tmp"
     original_tmpdir.mkdir(exist_ok=True)
-    return run(
+    return subprocess.run(
         [
             sys.executable,
             "-c",
@@ -176,8 +184,16 @@ def run_generate_incrementals(
             *triples,
         ],
         cwd=root,
-        env={"PYTHONPATH": str(SCRIPTS_DIR), **(environment or {})},
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            **(environment or {}),
+        },
+        capture_output=True,
+        text=True,
+        timeout=60,
         check=check,
+        preexec_fn=default_signal_dispositions,
     )
 
 
@@ -516,7 +532,7 @@ wait "$cli" || status=$?
 echo "caller survived, cli exited $status"
 """
 
-    result = subprocess.run(
+    result, _ = _run_in_session(
         [
             "bash",
             "-c",
@@ -533,11 +549,6 @@ echo "caller survived, cli exited $status"
             "CHILD_PIDFILE": str(pidfile),
             "SIGN_BUILDS": SIGN_BUILDS,
         },
-        capture_output=True,
-        text=True,
-        timeout=30,
-        start_new_session=True,
-        preexec_fn=default_signal_dispositions,
     )
 
     assert "caller survived, cli exited 143" in result.stdout, result.stderr
@@ -579,7 +590,7 @@ wait "$cli" || status=$?
 echo "cli exited $status"
 """
 
-    result = subprocess.run(
+    result, _ = _run_in_session(
         [
             "bash",
             "-c",
@@ -596,11 +607,6 @@ echo "cli exited $status"
             "STARTED": str(tmp_path / "started"),
             "SIGN_BUILDS": SIGN_BUILDS,
         },
-        capture_output=True,
-        text=True,
-        timeout=30,
-        start_new_session=True,
-        preexec_fn=default_signal_dispositions,
     )
 
     assert "cli exited 0" in result.stdout, result.stderr
@@ -609,6 +615,92 @@ echo "cli exited $status"
         "release-oriole-100",
         "release-redfin-100",
     ]
+
+
+def test_sign_builds_removes_its_tmpdir_through_an_interrupt(
+    tmp_path: Path,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        '#!/bin/sh\nmkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    script = """
+import os, shutil, signal, sys
+from pathlib import Path
+from signing import sign_execution
+remove = shutil.rmtree
+def interrupted(path, *args, **kwargs):
+    if Path(path).name.startswith("sign_tmp."):
+        os.kill(os.getpid(), signal.SIGINT)
+    remove(path, *args, **kwargs)
+shutil.rmtree = interrupted
+try:
+    sign_execution.sign_builds(
+        [("bramble", 100, 100)],
+        release_script=Path(sys.argv[1]),
+        archive_dir=Path("archive"),
+        jobs=1,
+        original_tmpdir=Path("tmp"),
+    )
+except KeyboardInterrupt:
+    print("interrupted")
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script, release_script],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(SCRIPTS_DIR)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert "interrupted" in result.stdout, result.stderr
+    assert list((tmp_path / "tmp").iterdir()) == []
+
+
+def test_sign_builds_hands_its_jobs_an_ignored_hangup(tmp_path: Path) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        'grep SigIgn /proc/$$/status > "$IGNORED.$1"\n'
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    archive_dir = tmp_path / "archive"
+    archive_dir.mkdir()
+    original_tmpdir = tmp_path / "tmp"
+    original_tmpdir.mkdir()
+
+    result, _ = _run_in_session(
+        [
+            "bash",
+            "-c",
+            'trap \'\' HUP\nexec python3 -c "$SIGN_BUILDS" "$@"',
+            "bash",
+            str(release_script),
+            str(archive_dir),
+            str(original_tmpdir),
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "IGNORED": str(tmp_path / "ignored"),
+            "SIGN_BUILDS": SIGN_BUILDS,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    ignored = (tmp_path / "ignored.bramble").read_text().split()[1]
+    assert int(ignored, 16) & 1 << (signal.SIGHUP - 1)
 
 
 def test_exit_on_signals_leaves_an_ignored_signal_ignored() -> None:
@@ -641,3 +733,686 @@ def test_generate_incrementals_writes_deltas_and_aggregates_failures(
     assert delta.read_text() == "delta-bramble-100-200"
     assert not (tmp_path / "incrementals" / "redfin-150-200.bin").exists()
     assert list((tmp_path / "tmp").iterdir()) == []
+
+
+def test_sign_builds_waits_for_its_jobs_after_its_output_breaks(
+    tmp_path: Path,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        "echo first\n"
+        "sleep 0.5\n"
+        "echo second\n"
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+
+    with subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
+            str(release_script),
+            "archive",
+            "tmp",
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(SCRIPTS_DIR)},
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    ) as cli:
+        assert cli.stdout is not None
+        assert cli.stderr is not None
+        cli.stdout.readline()
+        cli.stdout.readline()
+        cli.stdout.close()
+        try:
+            status = cli.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            subprocess.run(["pkill", "-KILL", "-s", str(cli.pid)], check=False)
+            raise
+        stderr = cli.stderr.read()
+
+    assert status == 0, stderr
+    assert (tmp_path / "archive" / "release-bramble-100").is_dir()
+
+
+SIGNALLED_JOB = f"""#!{sys.executable}
+import os, signal, sys, time
+device = sys.argv[1]
+def note(signum, frame):
+    with open(os.environ["TERMED"] + "." + device, "a") as termed:
+        termed.write("term\\n")
+signal.signal(signal.SIGTERM, note)
+with open(os.environ["STARTED"] + "." + device, "w") as started:
+    started.write("started\\n")
+for _ in range(int(os.environ["TENTHS"])):
+    time.sleep(0.1)
+os.makedirs(
+    "out/release-" + device + "-" + os.environ["BUILD_NUMBER"],
+    exist_ok=True,
+)
+with open(os.environ["FINISHED"] + "." + device, "w") as finished:
+    finished.write("finished\\n")
+"""
+
+SHELL_SIGNALLED_JOB = """#!/bin/sh
+trap 'echo term >> "$TERMED.$1"' TERM
+echo started > "$STARTED.$1"
+i=0
+while [ "$i" -lt "$TENTHS" ]; do sleep 0.1; i=$((i + 1)); done
+mkdir -p "out/release-$1-$BUILD_NUMBER"
+echo finished > "$FINISHED.$1"
+"""
+
+SIGNALLING_CALLER = r"""
+send() {
+  case "$1" in
+    group-*) kill -"$(echo "${1#group-}" | tr a-z A-Z)" -- "-$cli" ;;
+    *) kill -"$(echo "$1" | tr a-z A-Z)" "$cli" ;;
+  esac
+}
+wait_for() {
+  for device in bramble redfin; do
+    while [ ! -s "$1.$device" ]; do sleep 0.05; done
+  done
+}
+set -m
+if [ -n "$IGNORED" ]; then
+  trap '' "$IGNORED"
+fi
+python3 -c "$SIGN_BUILDS" "$1" "$2" "$3" 2 bramble,100,100 redfin,100,100 \
+  2> "$CLI_STDERR" &
+cli=$!
+wait_for "$STARTED"
+send "$FIRST"
+if [ -n "$SECOND" ]; then
+  wait_for "$TERMED"
+  send "$SECOND"
+fi
+code=0
+wait "$cli" || code=$?
+echo "cli exited $code"
+cat "$CLI_STDERR" >&2
+if [ "$FIRST" = group-kill ]; then
+  wait_for "$FINISHED"
+fi
+"""
+
+
+def _run_in_session(
+    args: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+    timeout: float = 60,
+) -> tuple[subprocess.CompletedProcess[str], int]:
+    """
+    Run args in a session of its own, and kill every process of that
+    session when it times out.
+
+    Returns:
+        The result and the session ID.
+    """
+    with subprocess.Popen(
+        args,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    ) as process:
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            subprocess.run(
+                ["pkill", "-KILL", "-s", str(process.pid)],
+                check=False,
+            )
+            raise
+    result = subprocess.CompletedProcess(
+        args,
+        process.returncode,
+        stdout,
+        stderr,
+    )
+    return result, process.pid
+
+
+def _run_signalling_caller(
+    tmp_path: Path,
+    environment: dict[str, str],
+    job: str = SIGNALLED_JOB,
+    timeout: float = 60,
+) -> tuple[subprocess.CompletedProcess[str], int]:
+    """
+    Run SIGNALLING_CALLER through _run_in_session() against a stand-in
+    for release.sh.
+
+    Returns:
+        The caller's result and its session ID.
+    """
+    release_script = tmp_path / "release.sh"
+    install_executable(release_script, job)
+    archive_dir = tmp_path / "archive"
+    archive_dir.mkdir()
+    original_tmpdir = tmp_path / "tmp"
+    original_tmpdir.mkdir()
+    args = [
+        "bash",
+        "-c",
+        SIGNALLING_CALLER,
+        "bash",
+        str(release_script),
+        str(archive_dir),
+        str(original_tmpdir),
+    ]
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(SCRIPTS_DIR),
+        "STARTED": str(tmp_path / "started"),
+        "TERMED": str(tmp_path / "termed"),
+        "FINISHED": str(tmp_path / "finished"),
+        "CLI_STDERR": str(tmp_path / "cli-stderr"),
+        "SIGN_BUILDS": SIGN_BUILDS,
+        **environment,
+    }
+    return _run_in_session(args, cwd=tmp_path, env=env, timeout=timeout)
+
+
+@pytest.mark.parametrize(
+    ("ignored", "first", "second", "killed", "status"),
+    (
+        ("", "group-int", "", False, 130),
+        ("", "group-int", "group-int", True, 130),
+        ("", "int", "int", True, 130),
+        ("", "term", "term", True, 143),
+        ("", "hup", "hup", False, 129),
+        ("", "hup", "int", True, 129),
+        ("", "group-hup", "", False, 129),
+        ("", "group-hup", "group-hup", False, 129),
+        ("", "group-term", "group-int", True, 143),
+        ("TERM", "int", "", False, 130),
+        ("TERM", "int", "int", True, 130),
+    ),
+)
+def test_sign_builds_stops_its_jobs_on_signals(
+    tmp_path: Path,
+    ignored: str,
+    first: str,
+    second: str,
+    killed: bool,
+    status: int,
+) -> None:
+    result, _ = _run_signalling_caller(
+        tmp_path,
+        {"IGNORED": ignored, "FIRST": first, "SECOND": second, "TENTHS": "80"},
+    )
+
+    assert f"cli exited {status}" in result.stdout, result.stderr
+    for device in ("bramble", "redfin"):
+        termed = (tmp_path / f"termed.{device}").read_text()
+        assert termed == "term\n", device
+        assert (tmp_path / f"finished.{device}").exists() is not killed
+
+
+def _live_in_session(session: int) -> bool:
+    """Return whether a process of the session is alive, zombies aside."""
+    states = subprocess.run(
+        ["ps", "-o", "stat=", "-s", str(session)],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.split()
+    return any(not state.startswith("Z") for state in states)
+
+
+def test_sign_builds_stops_a_shell_job_when_sigterm_is_ignored(
+    tmp_path: Path,
+) -> None:
+    result, _ = _run_signalling_caller(
+        tmp_path,
+        {"IGNORED": "TERM", "FIRST": "int", "SECOND": "", "TENTHS": "30"},
+        SHELL_SIGNALLED_JOB,
+    )
+
+    assert "cli exited 130" in result.stdout, result.stderr
+    for device in ("bramble", "redfin"):
+        assert (tmp_path / f"termed.{device}").exists(), device
+        assert (tmp_path / f"finished.{device}").exists(), device
+
+
+def test_sign_builds_starts_no_job_after_a_signal(tmp_path: Path) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        "trap 'exit 1' TERM\n"
+        'echo started > "$STARTED.$1"\n'
+        "i=0\n"
+        'while [ "$i" -lt 300 ]; do sleep 0.1; i=$((i + 1)); done\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    caller = r"""
+set -m
+python3 -c "$SIGN_BUILDS" "$1" archive tmp 1 bramble,100,100 redfin,100,100 &
+cli=$!
+while [ ! -s "$STARTED.bramble" ]; do sleep 0.05; done
+kill -TERM "$cli"
+status=0
+wait "$cli" || status=$?
+echo "cli exited $status"
+"""
+
+    result, _ = _run_in_session(
+        ["bash", "-c", caller, "bash", str(release_script)],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "STARTED": str(tmp_path / "started"),
+            "SIGN_BUILDS": SIGN_BUILDS,
+        },
+    )
+
+    assert "cli exited 143" in result.stdout, result.stderr
+    assert not (tmp_path / "started.redfin").exists()
+
+
+def test_sign_builds_stops_its_jobs_on_an_error(tmp_path: Path) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        'if [ "$1" = redfin ]; then\n'
+        "  trap 'head -c 300000 /dev/zero | tr \\\\0 x; "
+        'echo; echo cleaned > "$CLEANED"; exit 1\' TERM\n'
+        '  echo started > "$STARTED"\n'
+        "  i=0\n"
+        '  while [ "$i" -lt 300 ]; do sleep 0.1; i=$((i + 1)); done\n'
+        "fi\n"
+        'while [ ! -s "$STARTED" ]; do sleep 0.05; done\n'
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    script = (
+        """
+import shutil
+def broken_move(*args, **kwargs):
+    raise RuntimeError("archive bug")
+shutil.move = broken_move
+"""
+        + SIGN_BUILDS
+    )
+
+    result, _ = _run_in_session(
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(release_script),
+            "archive",
+            "tmp",
+            "2",
+            "bramble,100,100",
+            "redfin,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "STARTED": str(tmp_path / "started"),
+            "CLEANED": str(tmp_path / "cleaned"),
+        },
+    )
+
+    assert "RuntimeError: archive bug" in result.stderr, result.stderr
+    assert (tmp_path / "cleaned").read_text() == "cleaned\n"
+
+
+@pytest.mark.parametrize("private", (True, False), ids=("private", "shared"))
+def test_sign_builds_stops_its_jobs_while_stdout_is_not_read(
+    tmp_path: Path,
+    private: bool,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        "trap 'echo term > \"$TERMED\"; exit 1' TERM\n"
+        "head -c 200000 /dev/zero | tr '\\0' x\n"
+        "echo\n"
+        'echo started > "$STARTED"\n'
+        "i=0\n"
+        'while [ "$i" -lt 300 ]; do sleep 0.1; i=$((i + 1)); done\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    script = (
+        SIGN_BUILDS
+        if private
+        else (
+            "import os\n"
+            "_open = os.open\n"
+            "def no_proc(path, *args, **kwargs):\n"
+            "    if str(path).startswith('/proc/self/fd/'):\n"
+            "        raise PermissionError(13, 'Permission denied', path)\n"
+            "    return _open(path, *args, **kwargs)\n"
+            "os.open = no_proc\n" + SIGN_BUILDS
+        )
+    )
+
+    with subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(release_script),
+            "archive",
+            "tmp",
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "STARTED": str(tmp_path / "started"),
+            "TERMED": str(tmp_path / "termed"),
+        },
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    ) as cli:
+        try:
+            deadline = time.monotonic() + 30
+            while not (tmp_path / "started").exists():
+                assert time.monotonic() < deadline, "the job never started"
+                time.sleep(0.05)
+            cli.send_signal(signal.SIGTERM)
+            status = cli.wait(timeout=30)
+        finally:
+            subprocess.run(["pkill", "-KILL", "-s", str(cli.pid)], check=False)
+
+    assert status == 128 + signal.SIGTERM
+    assert (tmp_path / "termed").read_text() == "term\n"
+
+
+def test_sign_builds_leaves_a_shared_stdout_blocking(tmp_path: Path) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        "head -c 200000 /dev/zero | tr '\\0' x\n"
+        "echo\n"
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n'
+        'echo finished > "$FINISHED"\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    read_end, write_end = os.pipe()
+
+    with subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
+            str(release_script),
+            "archive",
+            "tmp",
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "FINISHED": str(tmp_path / "finished"),
+        },
+        stdout=write_end,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    ) as cli:
+        try:
+            deadline = time.monotonic() + 30
+            while not (tmp_path / "finished").exists():
+                assert time.monotonic() < deadline, "the job never finished"
+                time.sleep(0.05)
+            blocking = os.get_blocking(write_end)
+            os.close(write_end)
+            with os.fdopen(read_end, "rb") as output:
+                output.read()
+            cli.wait(timeout=30)
+        finally:
+            subprocess.run(["pkill", "-KILL", "-s", str(cli.pid)], check=False)
+
+    assert blocking
+    assert cli.returncode == 0
+
+
+def test_sign_builds_drops_output_past_the_limit_while_stdout_lags(
+    tmp_path: Path,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        "head -c 200000 /dev/zero | tr '\\0' x\n"
+        "echo\n"
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n'
+        'echo finished > "$FINISHED"\n',
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+    script = (
+        "from signing import sign_execution\n"
+        "sign_execution._OUTPUT_LIMIT = 1000\n" + SIGN_BUILDS
+    )
+
+    with subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(release_script),
+            "archive",
+            "tmp",
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "FINISHED": str(tmp_path / "finished"),
+        },
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        preexec_fn=default_signal_dispositions,
+    ) as cli:
+        try:
+            deadline = time.monotonic() + 30
+            while not (tmp_path / "finished").exists():
+                assert time.monotonic() < deadline, "the job never finished"
+                time.sleep(0.05)
+            stdout, _ = cli.communicate(timeout=30)
+        finally:
+            subprocess.run(["pkill", "-KILL", "-s", str(cli.pid)], check=False)
+
+    assert cli.returncode == 0
+    assert b"[job output dropped while stdout lags]\n" in stdout
+    assert len(stdout) < 200000
+    assert (tmp_path / "archive" / "release-bramble-100").is_dir()
+
+
+def test_sign_builds_reports_a_failed_move_below_a_path_that_is_not_utf8(
+    tmp_path: Path,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        'if [ "$1" = redfin ]; then sleep 1; fi\n'
+        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
+    )
+    archive = os.fsencode(tmp_path) + b"/archive-\xff"
+    os.makedirs(archive + b"/release-bramble-100")
+    (tmp_path / "tmp").mkdir()
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            SIGN_BUILDS,
+            str(release_script),
+            archive,
+            "tmp",
+            "2",
+            "bramble,100,100",
+            "redfin,100,100",
+        ],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(SCRIPTS_DIR)},
+        capture_output=True,
+        timeout=60,
+        check=False,
+        preexec_fn=default_signal_dispositions,
+    )
+
+    assert result.returncode == 1, result.stderr
+    assert b"bramble,100,100\tDestination path" in result.stdout
+    assert os.path.isdir(archive + b"/release-redfin-100")
+
+
+def test_sign_builds_runs_with_stdout_closed(tmp_path: Path) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(release_script, FAKE_RELEASE_TOOL + "echo done\n")
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "tmp").mkdir()
+
+    result, _ = _run_in_session(
+        [
+            "bash",
+            "-c",
+            'exec python3 -c "$SIGN_BUILDS" "$@" >&-',
+            "bash",
+            str(release_script),
+            "archive",
+            "tmp",
+            "1",
+            "bramble,100,100",
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "SIGN_BUILDS": SIGN_BUILDS,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "archive" / "release-bramble-100").is_dir()
+
+
+def test_sign_builds_stops_its_jobs_when_the_orchestrator_dies(
+    tmp_path: Path,
+) -> None:
+    result, session = _run_signalling_caller(
+        tmp_path,
+        {
+            "IGNORED": "",
+            "FIRST": "group-kill",
+            "SECOND": "",
+            "TENTHS": "20",
+        },
+        timeout=20,
+    )
+
+    assert "cli exited 137" in result.stdout, result.stderr
+    for device in ("bramble", "redfin"):
+        assert (tmp_path / f"termed.{device}").exists(), device
+        assert (tmp_path / f"finished.{device}").exists(), device
+    deadline = time.monotonic() + 10
+    while _live_in_session(session):
+        assert time.monotonic() < deadline, "a job outlived the orchestrator"
+        time.sleep(0.1)
+
+
+@pytest.mark.parametrize("target", ("process", "group", "interrupt"))
+def test_sign_builds_sigterm_waits_for_the_jobs_to_finish(
+    tmp_path: Path,
+    target: str,
+) -> None:
+    release_script = tmp_path / "release.sh"
+    install_executable(
+        release_script,
+        "#!/bin/sh\n"
+        'case "$1" in bramble) delay=0 ;; redfin) delay=1 ;; '
+        "*) delay=2 ;; esac\n"
+        "trap 'sleep $delay; echo finished > \"$FINISHED.$1\"; exit 1' TERM\n"
+        'echo started > "$STARTED.$1"\n'
+        "i=0\n"
+        'while [ "$i" -lt 300 ]; do sleep 0.1; i=$((i + 1)); done\n',
+    )
+    archive_dir = tmp_path / "archive"
+    archive_dir.mkdir()
+    original_tmpdir = tmp_path / "tmp"
+    original_tmpdir.mkdir()
+    devices = ("bramble", "redfin", "oriole")
+    caller = r"""
+set -m
+python3 -c "$SIGN_BUILDS" "$1" "$2" "$3" 3 \
+  bramble,100,100 redfin,100,100 oriole,100,100 &
+cli=$!
+for device in bramble redfin oriole; do
+  while [ ! -s "$STARTED.$device" ]; do sleep 0.05; done
+done
+case "$TARGET" in
+  group) kill -TERM -- "-$cli" ;;
+  interrupt) kill -INT "$cli" ;;
+  *) kill -TERM "$cli" ;;
+esac
+status=0
+wait "$cli" || status=$?
+echo "cli exited $status"
+"""
+
+    result, _ = _run_in_session(
+        [
+            "bash",
+            "-c",
+            caller,
+            "bash",
+            str(release_script),
+            str(archive_dir),
+            str(original_tmpdir),
+        ],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(SCRIPTS_DIR),
+            "STARTED": str(tmp_path / "started"),
+            "FINISHED": str(tmp_path / "finished"),
+            "TARGET": target,
+            "SIGN_BUILDS": SIGN_BUILDS,
+        },
+    )
+
+    expected = 130 if target == "interrupt" else 143
+    assert f"cli exited {expected}" in result.stdout, result.stderr
+    for device in devices:
+        assert (tmp_path / f"finished.{device}").read_text() == "finished\n"
