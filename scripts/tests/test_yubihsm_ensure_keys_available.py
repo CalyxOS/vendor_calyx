@@ -679,13 +679,36 @@ def test_split_devices_partitions_by_key_availability(
     )
 
     with_loaded, without_loaded = YubiHsmVendor().split_devices_by_loaded_keys(
-        _vendor_environment(yubihsm, tmp_path),
+        {**_vendor_environment(yubihsm, tmp_path), "DRY_RUN": ""},
         StaticKeymapper.from_file(keymap_file),
         ["bramble", "uncertified", "certified-only", "missing"],
     )
 
     assert with_loaded == ("bramble", "uncertified")
     assert without_loaded == ("certified-only", "missing")
+
+
+def test_split_devices_plans_a_dry_run_without_the_hsm(
+    yubihsm: Connector,
+    tmp_path: Path,
+) -> None:
+    yubihsm.plug(None)
+    keymap_file = tmp_path / "keymap.tsv"
+    _write_keymap(
+        keymap_file,
+        [
+            ("0x1000", "bramble", "avb", "vbmeta"),
+            ("0x1001", "redfin", "avb", "vbmeta"),
+        ],
+    )
+
+    split = YubiHsmVendor().split_devices_by_loaded_keys(
+        _vendor_environment(yubihsm, tmp_path),
+        StaticKeymapper.from_file(keymap_file),
+        ["bramble", "redfin"],
+    )
+
+    assert split == ((), ("bramble", "redfin"))
 
 
 def test_split_devices_rejects_a_device_without_keymap_rows(
