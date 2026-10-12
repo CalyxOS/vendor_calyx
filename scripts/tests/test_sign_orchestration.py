@@ -417,6 +417,66 @@ def test_sign_orchestrate_asks_for_no_previous_build_for_a_rollback_build(
     assert (output / "output.bin").read_text() == "unset"
 
 
+@pytest.mark.parametrize(
+    ("first", "second"),
+    (
+        ("steps", "SIGTERM"),
+        ("steps", "SIGINT"),
+        ("between", ""),
+    ),
+)
+def test_sign_orchestrate_finishes_its_cleanup_after_a_second_signal(
+    tmp_path: Path,
+    first: str,
+    second: str,
+) -> None:
+    cleaned = tmp_path / "cleaned"
+
+    result = run(
+        [
+            sys.executable,
+            "-c",
+            "import contextlib, os, signal, sys\n"
+            "from pathlib import Path\n"
+            "from signing import sign_orchestration\n"
+            "from signing.sign_orchestration import SignOrchestrator\n"
+            "first, second = sys.argv[2:]\n"
+            "exit_on_signals = sign_orchestration.exit_on_signals\n"
+            "@contextlib.contextmanager\n"
+            "def signal_after_exit_on_signals():\n"
+            "    try:\n"
+            "        with exit_on_signals():\n"
+            "            yield\n"
+            "    finally:\n"
+            "        os.kill(os.getpid(), signal.SIGTERM)\n"
+            "if first == 'between':\n"
+            "    sign_orchestration.exit_on_signals = (\n"
+            "        signal_after_exit_on_signals\n"
+            "    )\n"
+            "orchestrator = SignOrchestrator.__new__(SignOrchestrator)\n"
+            "def steps():\n"
+            "    if first == 'steps':\n"
+            "        os.kill(os.getpid(), signal.SIGTERM)\n"
+            "def cleanup():\n"
+            "    if second:\n"
+            "        os.kill(os.getpid(), getattr(signal, second))\n"
+            "    Path(sys.argv[1]).write_text('cleaned')\n"
+            "orchestrator._run_steps = steps\n"
+            "orchestrator.cleanup = cleanup\n"
+            "sys.exit(orchestrator.run())\n",
+            cleaned,
+            first,
+            second,
+        ],
+        env={"PYTHONPATH": str(SCRIPTS_DIR)},
+        check=False,
+    )
+
+    assert result.returncode == (130 if second == "SIGINT" else -15)
+    assert "Traceback" not in result.stderr
+    assert cleaned.read_text() == "cleaned"
+
+
 def test_sign_orchestrate_exits_cleanly_with_nothing_to_sign(
     sign_tree: Path,
 ) -> None:

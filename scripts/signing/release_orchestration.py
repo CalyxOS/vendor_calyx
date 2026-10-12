@@ -37,6 +37,7 @@ from .release_arguments import (
 )
 from .release_execution import (
     Transcript,
+    defer_signals,
     exit_on_signals,
     format_sha256sum,
     render_release_tool,
@@ -426,10 +427,31 @@ class SigningSession:
         raise NotImplementedError
 
     def run(self) -> int:
-        with exit_on_signals():
+        """
+        Run the steps, then release what they acquired with SIGTERM and
+        SIGHUP held back, and SIGINT as well, so that a repeated signal
+        cannot cut the cleanup short.
+
+        Returns:
+            0 on success, or the exit status of the failure.
+        """
+        with defer_signals():
             try:
-                with contextlib.ExitStack() as self._resources:
-                    self._run_steps()
+                self._resources = contextlib.ExitStack()
+                try:
+                    with exit_on_signals():
+                        self._run_steps()
+                except BaseException as error:
+                    with defer_signals(interrupt=True):
+                        if not self._resources.__exit__(
+                            type(error),
+                            error,
+                            error.__traceback__,
+                        ):
+                            raise
+                else:
+                    with defer_signals(interrupt=True):
+                        self._resources.__exit__(None, None, None)
             except ReleaseUsageError as error:
                 print(
                     f"error: {error}, please try again",
