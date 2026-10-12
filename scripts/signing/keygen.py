@@ -799,12 +799,6 @@ class YubiHsmKeygenDriver(KeygenDriver):
                 "from YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.",
                 file=sys.stderr,
             )
-        print(
-            "Using additional YUBIHSM_KEY_CAPABILITIES: "
-            f"{environment.get('YUBIHSM_KEY_CAPABILITIES') or '(none)'}.",
-            file=sys.stderr,
-        )
-        environment.setdefault("YUBIHSM_KEY_CAPABILITIES", "")
 
     def initialize_post_metadata(self) -> None:
         """
@@ -813,6 +807,11 @@ class YubiHsmKeygenDriver(KeygenDriver):
         on-demand objects.
         """
         environment = self.environment
+        print(
+            "Using additional YUBIHSM_KEY_CAPABILITIES: "
+            f"{environment['YUBIHSM_KEY_CAPABILITIES']}.",
+            file=sys.stderr,
+        )
         identity = get_device_identity(self._config())
         name = identity.name
         self.unique_key_out_dir = Path(
