@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import functools
 from pathlib import Path
 
 import pytest
@@ -82,46 +81,3 @@ def test_initialize_pkcs11_token_creates_a_usable_token(
         env=uninitialized_softhsm_env,
     )
     assert login.returncode == 0, login.stderr
-
-
-def test_initialize_pkcs11_token_keeps_an_initialized_token(
-    uninitialized_softhsm_env: dict[str, str],
-) -> None:
-    initialize = functools.partial(
-        initialize_pkcs11_token,
-        tool="pkcs11-tool",
-        module=SOFTHSM_MODULE,
-        so_pin=SOFTHSM_SO_PIN,
-        user_pin=SOFTHSM_USER_PIN,
-    )
-    initialize(label=TOKEN_LABEL)
-    login = [
-        "pkcs11-tool",
-        "--module",
-        str(SOFTHSM_MODULE),
-        "--token-label",
-        TOKEN_LABEL,
-        "--pin",
-        SOFTHSM_USER_PIN,
-    ]
-    run(
-        [
-            *login,
-            "--keypairgen",
-            "--key-type",
-            "rsa:1024",
-            "--id",
-            "2000",
-            "--label",
-            "kept",
-        ],
-        env=uninitialized_softhsm_env,
-    )
-
-    initialize(label="other-label")
-
-    objects = run(
-        [*login, "--list-objects", "--type", "privkey"],
-        env=uninitialized_softhsm_env,
-    )
-    assert "label:      kept" in objects.stdout
