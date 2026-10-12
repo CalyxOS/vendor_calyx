@@ -635,8 +635,7 @@ def initialize_pkcs11_token(
     user_pin: str,
 ) -> None:
     """
-    Initialize a blank PKCS#11 token and set its user PIN, unless a
-    token is already initialized behind this module.
+    Initialize a blank PKCS#11 token and set its user PIN.
 
     ``--init-token`` assigns a label and security-officer PIN to an
     uninitialized slot, then ``--init-pin`` (authenticated with that
@@ -658,9 +657,6 @@ def initialize_pkcs11_token(
         RuntimeError: If the token does not report as initialized
             immediately after ``--init-token`` succeeds.
     """
-    if is_any_pkcs11_token_initialized(tool=tool, module=module):
-        return
-
     environment = os.environ.copy()
     environment["PKCS11_BACKEND_SO_PIN"] = so_pin
     environment["PKCS11_BACKEND_PIN"] = user_pin
