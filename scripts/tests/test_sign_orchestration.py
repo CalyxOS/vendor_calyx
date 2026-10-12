@@ -748,6 +748,60 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     }
 
 
+def test_sign_orchestrate_leaves_a_signed_device_without_keys_alone(
+    sign_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    for name in ("bramble", "redfin"):
+        _write_target_files(sign_tree, name, BUILD_NUMBER)
+    _archive_previous_build(sign_tree, "redfin", BUILD_NUMBER)
+    signed = _archive_manifest(sign_tree)
+    keymap_file = sign_tree / "keymap.tsv"
+    keymap_file.write_text(
+        "ID\tDevice\tKey Type\tKey\n"
+        "0x2000\tbramble\tavb\tvbmeta\n"
+        "0x2100\tredfin\tavb\tvbmeta\n",
+    )
+    device = yubihsm.device
+    device.put_authentication_key(0x0001, "secret")
+    device.put_wrap_key(0x0010)
+    device.put_asymmetric_key(0x2000)
+    device.put_certificate(0x2000, self_signed_certificate())
+    key_dir = sign_tree / "keys"
+    key_dir.mkdir()
+    install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
+
+    result = run_sign_orchestrate(
+        sign_tree,
+        devices=("bramble", "redfin"),
+        environment={
+            "SIGN_ASSUME_YES": "y",
+            "PKCS11_VENDOR": "yubihsm",
+            "PKCS11_MODULE": "/dev/null",
+            "PKCS11_VENDOR_INITIALIZED": "y",
+            "PKCS11_VENDOR_INITIALIZED_INTERACTIVE": "y",
+            "KEYMAP_FILE": str(keymap_file),
+            "KEY_DIR": str(key_dir),
+            "YUBIHSM_EXPORTABLE_DOMAIN": "1",
+            "YUBIHSM_ONDEMAND_DOMAIN": "3",
+            "YUBIHSM_AUTHKEY": "0x0001",
+            "YUBIHSM_PASSWORD": "secret",
+            "SKIP_LOG_UPLOAD": "true",
+            "YUBIHSM_CONNECTOR": yubihsm.url,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    manifest = _archive_manifest(sign_tree)
+    assert {
+        name: data for name, data in manifest.items() if "redfin" in name
+    } == signed
+    assert f"release-bramble-{BUILD_NUMBER}/output.bin" in manifest
+    assert COMMAND.IMPORT_WRAPPED not in [
+        command for command, _ in device.history
+    ]
+
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     (
