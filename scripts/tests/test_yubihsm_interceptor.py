@@ -297,6 +297,37 @@ echo "signed on try $count"
             pass
 
 
+def test_extracts_the_audit_log_when_the_connector_restart_fails(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    make_script(
+        bin_dir / "avbtool",
+        'echo "Connector operation failed: simulated" >&2\nexit 1\n',
+    )
+
+    result = run(
+        [INTERCEPTOR, "add_hash_footer", "--signing_helper", "x"],
+        env=_audit_environment(
+            tmp_path,
+            bin_dir,
+            "avbtool",
+            yubihsm,
+            YUBIHSM_CONNECTOR_PIDFILE=str(tmp_path / "connector.pid"),
+            YUBIHSM_CONNECTOR_BIN=str(tmp_path / "missing-connector"),
+        ),
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "could not restart the YubiHSM connector" in result.stderr
+    assert "Traceback" not in result.stderr
+    comment, *_ = (tmp_path / "audit.log").read_text().splitlines()
+    assert comment.endswith("# Result: 1")
+
+
 def test_holds_lockfile_while_the_command_runs(tmp_path: Path) -> None:
     lockfile = tmp_path / "yubihsm.lock"
     make_script(
