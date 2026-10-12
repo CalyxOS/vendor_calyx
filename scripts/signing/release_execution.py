@@ -47,21 +47,27 @@ def exit_on_signals() -> Generator[None, None, None]:
 
 
 @contextlib.contextmanager
-def defer_signals() -> Generator[None, None, None]:
+def defer_signals(*, interrupt: bool = False) -> Generator[None, None, None]:
     """
     Hold a SIGTERM or SIGHUP back until the with block ends, and deliver it
     to the handlers in place before the block then, so that a command the
     block runs finishes its own work first. A signal the process ignores
     stays ignored.
+
+    Args:
+        interrupt: Hold a SIGINT back as well.
     """
     received: list[int] = []
 
     def record(signum: int, frame: FrameType | None) -> None:
         received.append(signum)
 
+    signums = [signal.SIGTERM, signal.SIGHUP]
+    if interrupt:
+        signums.append(signal.SIGINT)
     previous_handlers = {
         signum: signal.signal(signum, record)
-        for signum in (signal.SIGTERM, signal.SIGHUP)
+        for signum in signums
         if signal.getsignal(signum) != signal.SIG_IGN
     }
     try:
