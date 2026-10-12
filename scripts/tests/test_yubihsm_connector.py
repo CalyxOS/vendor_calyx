@@ -8,6 +8,7 @@ from __future__ import annotations
 import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -189,6 +190,36 @@ def test_stop_kills_a_connector_outside_its_own_process_group(
 
     process.wait(timeout=5)
     assert not pid_file.exists()
+
+
+def test_stop_finishes_on_a_connector_another_process_has_not_reaped(
+    tmp_path: Path,
+) -> None:
+    pid_file = tmp_path / "connector.pid"
+    owner = subprocess.Popen(
+        [
+            "python3",
+            "-c",
+            "import subprocess, time\n"
+            "print(subprocess.Popen(['sleep', '300']).pid, flush=True)\n"
+            "time.sleep(300)\n",
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert owner.stdout is not None
+        pid_file.write_text(owner.stdout.readline())
+        connector = YubiHsmConnector(config(Path("sleep"), pid_file))
+        started = time.monotonic()
+
+        connector.stop()
+
+        assert time.monotonic() - started < 5
+        assert not pid_file.exists()
+    finally:
+        owner.kill()
+        owner.wait()
 
 
 def test_usb_connector_is_never_managed(tmp_path: Path) -> None:
