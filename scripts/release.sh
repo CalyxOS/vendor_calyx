@@ -155,9 +155,9 @@ if [ "${SKIP_SIGNING:-}" = y ]; then
   fi
   echo "Skipping signing and OTA generation, creating factory image from unsigned target files"
   if [ -e "$SIGNED_TARGET_FILES" ]; then
-    rm $SIGNED_TARGET_FILES
+    $maybe_dry_run rm "$SIGNED_TARGET_FILES"
   fi
-  cp $TARGET_FILES $SIGNED_TARGET_FILES
+  $maybe_dry_run cp "$TARGET_FILES" "$SIGNED_TARGET_FILES"
 else
   # Get AVB arguments from keymapper.
   avb_arguments=()
