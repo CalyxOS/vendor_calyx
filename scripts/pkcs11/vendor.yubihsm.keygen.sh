@@ -262,6 +262,14 @@ copy_exported_file_to_other_dirs() {
   cp --update=none "$source" "$key_out_dir/$rel_source" || return $?
 }
 
+copy_derived_public_key() {
+  local source=$1
+  local rel_source
+  rel_source=$(realpath --relative-to="$key_out_dir" "$source") || return $?
+  mkdir -p "$(dirname "$hsm_key_out_dir/$rel_source")" || return $?
+  cp --update=none "$source" "$hsm_key_out_dir/$rel_source" || return $?
+}
+
 save_yubihsm_deviceinfo() {
   [ "${DRY_RUN:-}" != "y" ] || return 0
   # Save the deviceinfo for the HSM so that its association with the folders' keys is clear.

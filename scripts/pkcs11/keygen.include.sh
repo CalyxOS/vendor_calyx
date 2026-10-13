@@ -237,6 +237,9 @@ generate_keys() {
             || return $?
           _any_cert_generated=y
         fi
+        if [ "$cert_exists" = "y" ]; then
+          export_missing_public_keys "$mapped_value" "$key_type" || return $?
+        fi
         if [ "$key_exists" = "n" ] || [ "$cert_exists" = "n" ]; then
           anything_generated=1
           already_generated[$mapped_value]="just now"
@@ -511,6 +514,39 @@ generate_cert_pkcs11() {
   fi
   rm -f "$tmpfile"
   return $err
+}
+
+export_missing_public_keys() {
+  local key_label=$1
+  local key_type=$2
+  [ "${DRY_RUN:-}" != "y" ] || return 0
+  case "$key_type" in
+    avb|apex_payload|apex_container) ;;
+    *) return 0 ;;
+  esac
+  local dstdir
+  dstdir="$key_out_dir/$(dirname "$key_label")"
+  local name
+  name=$(basename "$key_label")
+  [ -e "$dstdir/$name.x509.pem" ] || return 0
+  if [ ! -e "$dstdir/$name.pem" ]; then
+    "$OPENSSL_BIN" x509 -pubkey -noout -in "$dstdir/$name.x509.pem" \
+      -out "$dstdir/$name.pem" || return $?
+    copy_derived_public_key "$dstdir/$name.pem" || return $?
+  fi
+  if [ "$key_type" = "avb" ] || [ "$key_type" = "apex_payload" ]; then
+    if [ ! -e "$dstdir/$name.avbpubkey" ]; then
+      "$AVBTOOL_BIN" extract_public_key \
+        --key "$dstdir/$name.pem" \
+        --output "$dstdir/$name.avbpubkey" \
+        || return $?
+      copy_derived_public_key "$dstdir/$name.avbpubkey" || return $?
+    fi
+  fi
+}
+
+copy_derived_public_key() {
+  return 0
 }
 
 _does_key_or_cert_exist_yn_pkcs11() {
