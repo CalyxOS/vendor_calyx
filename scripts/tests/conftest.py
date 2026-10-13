@@ -371,6 +371,12 @@ def assert_certificate_of(
         assert loaded.subject.rfc4514_string() == subject
 
 
+@pytest.fixture
+def small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point METADATA_FILE at the test metadata."""
+    monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+
+
 def install_executable(path: Path, text: str) -> Path:
     """
     Write text to path, creating its directory, and make it executable.
