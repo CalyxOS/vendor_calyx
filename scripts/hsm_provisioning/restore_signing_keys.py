@@ -18,9 +18,11 @@ from yubihsm.defs import CAPABILITY, ERROR
 from yubihsm.objects import WrapKey
 
 from audit import extract_and_save_logs
+import setup
 from setup import print_and_get_info, audit_log_file, ADMIN_AUTHKEY_ID, WRAP_KEY_ID
 
 KEEP_PATH = os.getenv("KEEP_PATH", os.path.join(pathlib.Path.home(), "CalyxBackupHSM"))
+setup.KEEP_PATH = KEEP_PATH
 
 #
 # TODO this is just a quick dummy script to demonstrate feasibility

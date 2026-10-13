@@ -7,9 +7,11 @@ import os
 import pathlib
 import sys
 
+import setup
 from setup import create_auth_password, create_auth_key, provision_hsm, provision_wrap_key
 
 KEEP_PATH = os.getenv("KEEP_PATH", os.path.join(pathlib.Path.home(), "CalyxBackupHSM"))
+setup.KEEP_PATH = KEEP_PATH
 
 
 #
