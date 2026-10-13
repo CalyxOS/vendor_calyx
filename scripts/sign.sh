@@ -121,6 +121,75 @@ finish() {
   echo "Done signing and/or generating incrementals for: $BUILD_NUMBER"
 }
 
+# Each job records its shell, which leads the job's process group, so that a
+# second signal can kill the group even after --termseq has ended the shell.
+declare -ga parallel_job_prefix=('echo $$ >> "$TMPDIR/parallel_job_groups"' '&&')
+
+kill_parallel_job_groups() {
+  local groups=$TMPDIR/parallel_job_groups
+  [ -f "$groups" ] || return 0
+  local session group
+  session=$(ps -o sid= -p $$) || return 0
+  while read -r group; do
+    # Only a group still in sign.sh's session, not one whose ID was reused.
+    if pgrep -s "${session// /}" -g "$group" >/dev/null; then
+      kill -KILL -- "-$group" 2>/dev/null || true
+    fi
+  done < "$groups"
+}
+
+forward_parallel_signal() {
+  parallel_signal=$1
+  parallel_signals=$((parallel_signals + 1))
+  if [ -z "$parallel_pid" ]; then
+    return 0
+  fi
+  if [ "$parallel_signals" -eq 1 ]; then
+    kill -TERM "$parallel_pid" 2>/dev/null || true
+  else
+    kill_parallel_job_groups
+  fi
+}
+
+run_parallel() {
+  # In the background, so that a signal sent to sign.sh alone reaches parallel,
+  # and with a long first --termseq wait, so that the jobs finish their own
+  # cleanup before sign.sh runs its own. A second signal kills the jobs.
+  local status= result sleeper
+  parallel_signal=
+  parallel_signals=0
+  parallel_pid=
+  trap 'forward_parallel_signal INT' INT
+  trap 'forward_parallel_signal TERM' TERM
+  trap 'forward_parallel_signal HUP' HUP
+  PARALLEL_SHELL=/bin/bash parallel --termseq TERM,3600000,KILL,25 "$@" &
+  parallel_pid=$!
+  while [ -z "$status" ]; do
+    if [ -z "$parallel_signal" ]; then
+      wait "$parallel_pid"
+      result=$?
+      if ! kill -0 "$parallel_pid" 2>/dev/null; then
+        status=$result
+      fi
+      continue
+    fi
+    # parallel ignores a TERM that arrives while it starts up.
+    kill -TERM "$parallel_pid" 2>/dev/null || true
+    # In the background, as a trap waits for a foreground command to end,
+    # so that two signals within a second run the trap twice.
+    sleep 1 &
+    sleeper=$!
+    wait "$sleeper" || kill "$sleeper" 2>/dev/null || true
+    if ! kill -0 "$parallel_pid" 2>/dev/null; then
+      wait "$parallel_pid"
+      status=$?
+    fi
+  done
+  trap - INT TERM HUP
+  parallel_pid=
+  return "$status"
+}
+
 sign_builds() {
   # Sign
   local err=
@@ -130,7 +199,8 @@ sign_builds() {
   TMPDIR=$(mktemp -d -p "${ORIGINAL_TMPDIR:-/dev/shm}" sign_tmp.XXXXXXXX) || return $?
   # We already make sure keys are available in advance, so no need to try and load per process.
   export ENSURE_KEY_IS_AVAILABLE=n
-  parallel -j "$NUM_SIGN_JOBS" --colsep ',' --tag --line-buffer \
+  run_parallel -j "$NUM_SIGN_JOBS" --colsep ',' --tag --line-buffer \
+    "${parallel_job_prefix[@]}" \
     "BUILD_NUMBER={2}" "$sign_scriptpath/release.sh" "{1}" \
       "calyx_{1}-target_files-{2}.zip" \
     "&&" rm -rf "archive/.release-{1}-{3}.partial" \
@@ -138,14 +208,14 @@ sign_builds() {
     "&&" mv -T "archive/.release-{1}-{3}.partial" "archive/release-{1}-{3}" \
     ::: "$@" || err=$?
 
-  if [ -n "$err" ]; then
+  if [ -n "$err" ] && [ -z "$parallel_signal" ]; then
     echo >&2
     echo "Signing failed for $err devices." >&2
     echo "You can run this script again to sign the devices that failed." >&2
   fi
 
   rm -rf "$TMPDIR" || return $?
-  [ -z "$err" ] || return 1
+  [ -z "$err$parallel_signal" ] || return 1
 }
 
 generate_incrementals() {
@@ -158,18 +228,19 @@ generate_incrementals() {
   echo
   echo "Generating incremental updates for: $*"
 
-  parallel -j "$NUM_INCREMENTAL_JOBS" --colsep ',' --tag --line-buffer \
+  run_parallel -j "$NUM_INCREMENTAL_JOBS" --colsep ',' --tag --line-buffer \
+    "${parallel_job_prefix[@]}" \
     "BUILD_NUMBER={3}_{2}" "$sign_scriptpath/generate_delta.sh" "{1}" "{2}" "{3}" \
     ::: "$@" || err=$?
 
-  if [ -n "$err" ]; then
+  if [ -n "$err" ] && [ -z "$parallel_signal" ]; then
     echo >&2
     echo "Generating incrementals failed for $err devices." >&2
     echo "You can run this script again to generate incrementals for the devices that failed." >&2
   fi
 
   rm -rf "$TMPDIR" || return $?
-  [ -z "$err" ] || return 1
+  [ -z "$err$parallel_signal" ] || return 1
 }
 
 initialize() {
@@ -592,6 +663,10 @@ try() {
 }
 
 err=0
+parallel_signal=
 main "$@" || err=$?
 sign_cleanup || true
+if [ -n "$parallel_signal" ]; then
+  kill -s "$parallel_signal" $$
+fi
 exit $err
