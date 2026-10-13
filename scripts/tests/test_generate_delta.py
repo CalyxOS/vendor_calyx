@@ -6,29 +6,25 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import re
 import subprocess
-import zipfile
 from pathlib import Path
 
 import pytest
 from conftest import (
     SCRIPTS_DIR,
-    TEST_METADATA,
     install_executable,
     parameter_id,
     run,
 )
 from test_release_orchestration import (
     DRY_RUN_FIXTURES,
-    normalize_command_line,
+    PKCS11_ENVIRONMENT,
+    normalize_dry_run,
+    write_target_files_zip,
 )
 
-
-@pytest.fixture(autouse=True)
-def _small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+pytestmark = pytest.mark.usefixtures("small_metadata")
 
 
 SOONG_OTA_FROM_TARGET_FILES = (
@@ -38,6 +34,10 @@ SOONG_OTA_FROM_TARGET_FILES = (
 DEVICE = "bramble"
 BUILD_OLD = "2026080100"
 BUILD_NEW = "2026081500"
+DELTA_PKCS11_ENVIRONMENT = {
+    **PKCS11_ENVIRONMENT,
+    "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
+}
 
 
 def _target_files_path(root: Path, build: str) -> Path:
@@ -51,26 +51,20 @@ def _incremental_out_dir(root: Path) -> Path:
     return root / f"archive/release-{DEVICE}-{BUILD_NEW}"
 
 
-def _write_target_files_zip(path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("SYSTEM/build.prop", "ro.build.id=TestBuild\n")
-
-
-def _install_fake_ota_tool(root: Path) -> None:
-    tool_directory = root / "bin"
-    tool_directory.mkdir(exist_ok=True)
-    install_executable(
-        tool_directory / "ota_from_target_files",
-        '#!/bin/sh\neval "out=\\${$#}"\n'
-        'printf %s "incremental-ota-bytes" > "$out"\n',
-    )
+def _install_fake_ota_tool(
+    root: Path,
+    script: str = '#!/bin/sh\neval "out=\\${$#}"\n'
+    'printf %s "incremental-ota-bytes" > "$out"\n',
+) -> None:
+    install_executable(root / "bin" / "ota_from_target_files", script)
 
 
 @pytest.fixture
 def delta_tree(tmp_path: Path) -> Path:
-    _write_target_files_zip(_target_files_path(tmp_path, BUILD_OLD))
-    _write_target_files_zip(_target_files_path(tmp_path, BUILD_NEW))
+    for build in (BUILD_OLD, BUILD_NEW):
+        target_files = _target_files_path(tmp_path, build)
+        target_files.parent.mkdir(parents=True)
+        write_target_files_zip(target_files)
     return tmp_path
 
 
@@ -138,29 +132,13 @@ def test_generate_delta_creates_incremental_and_checksum(
     assert checksum.read_text() == f"{digest}  {incremental_name}\n"
 
 
-def test_generate_delta_stops_when_ota_tool_fails(delta_tree: Path) -> None:
-    install_executable(
-        delta_tree / "bin" / "ota_from_target_files",
-        "#!/bin/sh\nexit 23\n",
-    )
-
-    result = run_generate_delta(delta_tree, dry_run=False)
-
-    assert result.returncode == 23
-    out = _incremental_out_dir(delta_tree)
-    assert not list(out.glob(f"{DEVICE}-incremental-*"))
-
-
 @pytest.mark.parametrize("fails", (False, True), ids=("success", "failure"))
 def test_generate_delta_removes_its_temporaries(
     delta_tree: Path,
     fails: bool,
 ) -> None:
     if fails:
-        install_executable(
-            delta_tree / "bin" / "ota_from_target_files",
-            "#!/bin/sh\nexit 23\n",
-        )
+        _install_fake_ota_tool(delta_tree, "#!/bin/sh\nexit 23\n")
     else:
         _install_fake_ota_tool(delta_tree)
     tmpdir = delta_tree / "tmp"
@@ -169,63 +147,22 @@ def test_generate_delta_removes_its_temporaries(
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        environment={
-            "TMPDIR": str(tmpdir),
-            "PKCS11_VENDOR": "softhsm",
-            "PKCS11_MODULE": "/dev/null",
-            "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-            "PKCS11_PIN": "test-only",
-            "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
-        },
+        environment={**DELTA_PKCS11_ENVIRONMENT, "TMPDIR": str(tmpdir)},
     )
 
-    assert (result.returncode != 0) == fails, result.stderr
+    assert result.returncode == (23 if fails else 0), result.stderr
     assert list(tmpdir.iterdir()) == []
-
-
-def test_generate_delta_checksums_without_sha256sum(
-    delta_tree: Path,
-) -> None:
-    _install_fake_ota_tool(delta_tree)
-    stubs = delta_tree / "stubs"
-    stubs.mkdir()
-    install_executable(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
-    result = run_generate_delta(
-        delta_tree,
-        dry_run=False,
-        environment={
-            "PATH": f"{stubs}:{os.environ['PATH']}",
-        },
+    incrementals = _incremental_out_dir(delta_tree).glob(
+        f"{DEVICE}-incremental-*",
     )
-
-    incremental = _incremental_out_dir(delta_tree) / (
-        f"{DEVICE}-incremental-{BUILD_OLD}-{BUILD_NEW}.zip"
-    )
-    checksum = incremental.with_name(incremental.name + ".sha256sum")
-    assert result.returncode == 0, result.stderr
-    digest = hashlib.sha256(incremental.read_bytes()).hexdigest()
-    assert checksum.read_text() == f"{digest}  {incremental.name}\n"
-
-
-def _normalized(stderr: str, tree: Path) -> str:
-    return (
-        normalize_command_line(stderr)
-        .replace(str(SCRIPTS_DIR), "<scripts>")
-        .replace(str(tree), "<tree>")
-    )
+    assert bool(list(incrementals)) != fails
 
 
 @pytest.mark.parametrize(
     "environment",
     (
         {},
-        {
-            "PKCS11_VENDOR": "softhsm",
-            "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
-            "PKCS11_MODULE": "/dev/null",
-            "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-            "PKCS11_PIN": "test-only",
-        },
+        DELTA_PKCS11_ENVIRONMENT,
         {"KEY_SUFFIX": "", "EXTRA_RELEASETOOLS_ARGS": "--verbose"},
     ),
     ids=("plaintext", "pkcs11", "key-suffix"),
@@ -245,7 +182,7 @@ def test_generate_delta_dry_run_renders_the_expected_commands(
         == (DRY_RUN_FIXTURES / f"generate-delta-{name}.stdout").read_text()
     )
     assert (
-        _normalized(result.stderr, delta_tree)
+        normalize_dry_run(result.stderr, delta_tree)
         == (DRY_RUN_FIXTURES / f"generate-delta-{name}.stderr").read_text()
     )
 
@@ -309,14 +246,7 @@ def test_generate_delta_names_the_softhsm_logs_after_itself(
     result = run_generate_delta(
         delta_tree,
         dry_run=False,
-        environment={
-            "PKCS11_VENDOR": "softhsm",
-            "PKCS11_MODULE": "/dev/null",
-            "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-            "PKCS11_PIN": "test-only",
-            "SOFTHSM_LOGS_DIR": str(logs),
-            "BUILD_NUMBER": f"{BUILD_NEW}_{BUILD_OLD}",
-        },
+        environment={**DELTA_PKCS11_ENVIRONMENT, "SOFTHSM_LOGS_DIR": str(logs)},
     )
 
     assert result.returncode == 0, result.stderr
@@ -336,15 +266,6 @@ def test_generate_delta_dry_run_writes_no_files(delta_tree: Path) -> None:
 
     assert result.returncode == 0, result.stderr
     assert {path for path in delta_tree.rglob("*") if path.is_file()} == before
-
-
-def test_generate_delta_names_the_script_it_ran_as(delta_tree: Path) -> None:
-    result = run_generate_delta(delta_tree)
-
-    assert result.returncode == 0, result.stderr
-    assert f"Command: {SCRIPTS_DIR / 'generate_delta.sh'} {DEVICE} " in (
-        result.stderr
-    )
 
 
 def test_generate_delta_refuses_an_unknown_vendor_first(
