@@ -86,7 +86,7 @@ initialize_post_metadata() {
   extract_attestation_key || return $?
   save_yubihsm_deviceinfo || return $?
   save_keymap || return $?
-  limit_ondemand_objects || return $?
+  limit_keygen_ondemand_objects || return $?
 }
 
 generate_keypair() {
@@ -136,7 +136,7 @@ generate_cert() {
     generate_cert_pkcs11 "$@" || return $?
     # Generating the cert happens after the keypair, so this is our chance to limit the
     # on-demand key object.
-    limit_ondemand_objects || return $?
+    limit_keygen_ondemand_objects || return $?
 
     # And we can go ahead and extract logs, too.
     extract_logs || return $?
@@ -207,7 +207,7 @@ generate_cert() {
 
   # Generating the cert happens after the keypair, so this is our chance to limit the
   # on-demand key object.
-  limit_ondemand_objects || return $?
+  limit_keygen_ondemand_objects || return $?
 
   # And we can go ahead and extract logs, too.
   # Or actually, no need, since now we do that as part of yubihsm.
@@ -268,6 +268,10 @@ copy_derived_public_key() {
   rel_source=$(realpath --relative-to="$key_out_dir" "$source") || return $?
   mkdir -p "$(dirname "$hsm_key_out_dir/$rel_source")" || return $?
   cp --update=none "$source" "$hsm_key_out_dir/$rel_source" || return $?
+}
+
+limit_keygen_ondemand_objects() {
+  KEY_DIR=${key_out_dir%/}/ limit_ondemand_objects || return $?
 }
 
 save_yubihsm_deviceinfo() {
