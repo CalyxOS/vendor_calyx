@@ -192,8 +192,8 @@ get_key_name() {
   local key=$1
   if [ -n "${KEY_DIR:-}" ]; then
     key=${key#$KEY_DIR*}
-    key=${key%.pem}
   fi
+  key=${key%.pem}
   printf "%s\n" "$key"
 }
 
