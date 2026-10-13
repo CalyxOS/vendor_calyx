@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import zipfile
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
@@ -19,7 +18,6 @@ from typing import Any
 import pytest
 from conftest import (
     SCRIPTS_DIR,
-    TEST_METADATA,
     aosp_jar_command,
     install_executable,
     run,
@@ -33,12 +31,10 @@ from test_release_orchestration import (
     BUILD_NUMBER,
     PKCS11_ENVIRONMENT,
     make_release_tree,
+    write_target_files_zip,
 )
 
-
-@pytest.fixture(autouse=True)
-def _small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+pytestmark = pytest.mark.usefixtures("small_metadata")
 
 
 INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
@@ -425,16 +421,9 @@ def _release_tree(root: Path) -> Path:
         root / "bin" / "sign_target_files_apks",
         RECORDING_SIGN_TARGET_FILES,
     )
-    with zipfile.ZipFile(
+    write_target_files_zip(
         root / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
-        "w",
-    ) as archive:
-        archive.writestr("SYSTEM/build.prop", "ro.build.id=TestBuild\n")
-        archive.writestr(
-            "OTA/android-info.txt",
-            "require version-bootloader=test-bootloader\n"
-            "require version-baseband=test-radio\n",
-        )
+    )
     return root
 
 
