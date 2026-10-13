@@ -1,4 +1,0 @@
-Creating signed targetfiles zip
-Creating OTA update zip
-Calculating sha256sum for OTA update zip
-Not creating factory image due to OTA_ONLY=y

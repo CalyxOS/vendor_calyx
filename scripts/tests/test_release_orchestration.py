@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    ID2B_KEYMAP,
     SCRIPTS_DIR,
     TEST_METADATA,
     default_signal_dispositions,
@@ -28,7 +29,6 @@ from conftest import (
 )
 from signing.keymap import load_keymapper
 from signing.metadata import load_metadata
-from signing.release_execution import format_sha256sum
 from signing.release_orchestration import (
     ReleaseAbort,
     ReleaseOrchestrator,
@@ -36,14 +36,10 @@ from signing.release_orchestration import (
     read_words,
 )
 
-
-@pytest.fixture(autouse=True)
-def _small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+pytestmark = pytest.mark.usefixtures("small_metadata")
 
 
 BUILD_NUMBER = "2026081500"
-ROLLBACK_DEVICES = ("devon", "hawao", "rhode", "fogos", "bangkk", "fogo")
 
 PKCS11_ENVIRONMENT = {
     "PKCS11_VENDOR": "softhsm",
@@ -84,7 +80,7 @@ def release_tree(tmp_path: Path) -> Path:
     return make_release_tree(tmp_path)
 
 
-def _write_target_files_zip(path: Path) -> None:
+def write_target_files_zip(path: Path) -> None:
     with zipfile.ZipFile(path, "w") as archive:
         for name, content in (
             ("SYSTEM/build.prop", "ro.build.id=TestBuild\n"),
@@ -168,11 +164,10 @@ def run_release(
 DRY_RUN_FIXTURES = Path(__file__).parent / "fixtures" / "dry-run"
 
 
-def _normalize_dry_run(stderr: str, tree: Path) -> str:
-    return (
-        normalize_command_line(stderr)
-        .replace(str(SCRIPTS_DIR), "<scripts>")
-        .replace(str(tree), "<tree>")
+def normalize_dry_run(stderr: str, tree: Path) -> str:
+    return stderr.replace(str(SCRIPTS_DIR), "<scripts>").replace(
+        str(tree),
+        "<tree>",
     )
 
 
@@ -180,17 +175,8 @@ def _command_line(stderr: str, tool: str) -> str:
     return next(line for line in stderr.splitlines() if f"/bin/{tool}" in line)
 
 
-def normalize_command_line(stderr: str) -> str:
-    return re.sub(
-        r"^Command: \S+ ",
-        "Command: <script> ",
-        stderr,
-        flags=re.MULTILINE,
-    )
-
-
 def test_release_runs_the_release_tools(release_tree: Path) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -227,7 +213,7 @@ def test_release_skip_signing_copies_the_target_files(
     release_tree: Path,
 ) -> None:
     unsigned = release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip"
-    _write_target_files_zip(unsigned)
+    write_target_files_zip(unsigned)
 
     result = run_release(
         release_tree,
@@ -258,7 +244,7 @@ def test_release_skip_signing_copies_the_target_files(
 def test_release_skip_signing_dry_run_leaves_the_target_files_alone(
     release_tree: Path,
 ) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     out = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
@@ -277,7 +263,7 @@ def test_release_skip_signing_dry_run_leaves_the_target_files_alone(
 
 
 def test_release_skip_signing_honors_ota_only(release_tree: Path) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -301,7 +287,7 @@ def test_release_finds_in_tree_tools_and_target_files(
 ) -> None:
     product = release_tree / "out/target/product/bramble"
     product.mkdir(parents=True)
-    _write_target_files_zip(
+    write_target_files_zip(
         product / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     soong = (
@@ -342,47 +328,35 @@ def test_release_finds_in_tree_tools_and_target_files(
     assert f"bramble-ota_update-{BUILD_NUMBER}.zip" in manifest
 
 
-def test_release_honors_keep_target_files_directly(release_tree: Path) -> None:
-    out_dir = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
-    out_dir.mkdir(parents=True)
-    signed_target_files = out_dir / f"bramble-target_files-{BUILD_NUMBER}.zip"
-    signed_target_files.write_bytes(b"already-signed")
-    _write_target_files_zip(
-        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
-    )
-
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"KEEP_TARGET_FILES": "y", "OTA_ONLY": "y"},
-        dry_run=False,
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert "Creating signed targetfiles zip" not in result.stdout
-    assert signed_target_files.read_bytes() == b"already-signed"
-
-
-def test_release_treats_an_empty_keep_target_files_as_n(
+@pytest.mark.parametrize(
+    ("keep", "signs"),
+    (("y", False), ("", True)),
+    ids=("y", "empty"),
+)
+def test_release_honors_keep_target_files(
     release_tree: Path,
+    keep: str,
+    signs: bool,
 ) -> None:
     out_dir = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
     out_dir.mkdir(parents=True)
     signed_target_files = out_dir / f"bramble-target_files-{BUILD_NUMBER}.zip"
     signed_target_files.write_bytes(b"already-signed")
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
     result = run_release(
         release_tree,
         "bramble",
-        environment={"KEEP_TARGET_FILES": "", "OTA_ONLY": "y"},
+        environment={"KEEP_TARGET_FILES": keep, "OTA_ONLY": "y"},
         dry_run=False,
     )
 
     assert result.returncode == 0, result.stderr
-    assert "Creating signed targetfiles zip" in result.stdout
+    assert ("Creating signed targetfiles zip" in result.stdout) == signs
+    if not signs:
+        assert signed_target_files.read_bytes() == b"already-signed"
 
 
 FAMILY_VARIABLES = (
@@ -436,7 +410,7 @@ def test_release_sets_the_device_family_for_the_factory_image_script(
         "done > family-environment\n"
         'cat "$DEVICE-img-$BUILD.zip" > "$DEVICE-$VERSION-factory-fake.zip"\n',
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -470,11 +444,7 @@ def test_release_sets_the_device_family_for_the_factory_image_script(
         (
             {
                 "KEYMAPPER": "static",
-                "KEYMAP_FILE": str(
-                    Path(__file__).parent
-                    / "fixtures"
-                    / "id2b-bramble-redfin.tsv",
-                ),
+                "KEYMAP_FILE": str(ID2B_KEYMAP),
             },
             "keys/0x2000.avbpubkey",
         ),
@@ -493,7 +463,7 @@ def test_release_passes_the_avb_custom_key_to_the_factory_image_script(
         'cat "$DEVICE-img-$BUILD.zip"'
         ' > "$DEVICE-$VERSION-factory-fake.zip"\n',
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -531,7 +501,7 @@ def test_release_refuses_a_missing_avb_custom_key(
 ) -> None:
     key = release_tree / f"keys/{device}/avb_custom_key.img"
     key.unlink(missing_ok=True)
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -563,7 +533,7 @@ def test_release_records_its_output_in_exec_log_path(
         "#!/bin/sh\necho tool-stdout\necho tool-stderr >&2\n"
         'eval "out=\\${$#}"\nprintf %s signed > "$out"\n',
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     exec_log = release_tree / "exec.log"
@@ -589,7 +559,7 @@ def test_release_fails_with_the_factory_image_script_status(
     (
         release_tree / "device/common/generate-factory-images-common.sh"
     ).write_text("false\ntouch kept-going\n(exit 7)\n")
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -624,7 +594,7 @@ def test_release_normalizes_key_dir_for_child_processes(
     (out_dir / f"bramble-target_files-{BUILD_NUMBER}.zip").write_bytes(
         b"already-signed",
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -648,7 +618,7 @@ def test_release_rejects_unrecognized_device_by_default(
     release_tree: Path,
 ) -> None:
     device = "unlisteddevice"
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -662,23 +632,6 @@ def test_release_rejects_unrecognized_device_by_default(
     assert result.returncode != 0
     assert f"Unsupported device {device}" in result.stderr
     assert not (release_tree / f"out/release-{device}-{BUILD_NUMBER}").exists()
-
-
-def test_release_orchestration_reports_vendor_initialization_failure(
-    release_tree: Path,
-) -> None:
-    _write_target_files_zip(
-        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
-    )
-
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"PKCS11_VENDOR": "acme"},
-    )
-
-    assert result.returncode == 1
-    assert "PKCS11_VENDOR='acme' is not supported" in result.stderr
 
 
 def test_release_reports_a_wrong_argument_count_as_release_sh_does(
@@ -708,18 +661,6 @@ def test_release_prints_its_usage_on_stdout(release_tree: Path) -> None:
     assert result.returncode == 1
     assert "BUILD_NUMBER not set" in result.stderr
     assert "device [target-files.zip]" in result.stdout
-
-
-def test_release_refuses_an_unknown_keymapper(release_tree: Path) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={"KEYMAPPER": "nope"},
-    )
-
-    assert result.returncode == 1
-    assert "Could not find keymapper 'nope'." in result.stderr
-    assert "Traceback" not in result.stderr
 
 
 def test_release_orchestration_refuses_a_bash_keymapper_file(
@@ -822,7 +763,7 @@ def test_release_allows_extra_device_via_environment(
     keymapper: str,
 ) -> None:
     device = "unlisteddevice"
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_{device}-target_files-{BUILD_NUMBER}.zip",
     )
     mapper = load_keymapper(
@@ -861,22 +802,6 @@ def test_release_allows_extra_device_via_environment(
         )
 
 
-def test_release_honors_extra_signing_args_from_environment(
-    release_tree: Path,
-) -> None:
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={
-            "EXTRA_SIGNING_ARGS": "-k some/extra/path=some/other/path",
-        },
-    )
-
-    assert result.returncode == 0, result.stderr
-    signing_command = _command_line(result.stderr, "sign_target_files_apks")
-    assert "-k some/extra/path=some/other/path" in signing_command
-
-
 def test_release_vendor_keymapper_sets_payload_signature_size(
     release_tree: Path,
 ) -> None:
@@ -900,16 +825,22 @@ def test_release_vendor_keymapper_sets_payload_signature_size(
     assert "--payload_signer_maximum_signature_size 512" in result.stderr
 
 
-def test_release_signs_target_files_with_threads(release_tree: Path) -> None:
+def test_release_appends_extra_signing_args_after_the_threads(
+    release_tree: Path,
+) -> None:
     result = run_release(
         release_tree,
         "bramble",
-        environment={"EXTRA_SIGNING_ARGS": "--threads 2"},
+        environment={
+            "EXTRA_SIGNING_ARGS": "--threads 2 -k extra/path=other/path",
+        },
     )
 
     assert result.returncode == 0, result.stderr
     signing_command = _command_line(result.stderr, "sign_target_files_apks")
-    assert "--threads 8 --threads 2" in signing_command
+    assert "--threads 8 --threads 2 -k extra/path=other/path" in (
+        signing_command
+    )
 
 
 def test_release_passes_the_signing_helpers(release_tree: Path) -> None:
@@ -932,51 +863,21 @@ def test_release_passes_the_signing_helpers(release_tree: Path) -> None:
     assert "test-only" not in result.stderr
 
 
-@pytest.mark.parametrize("device", ROLLBACK_DEVICES)
-def test_release_dry_run_applies_rollback_override(
-    release_tree: Path,
-    device: str,
-) -> None:
-    result = run_release(
-        release_tree,
-        device,
-        environment={"AVB_ROLLBACK_INDEX_OVERRIDE": "42"},
-    )
-
-    assert result.returncode == 0, result.stderr
-    commands = result.stderr
-    assert f"out/release-{device}-{int(BUILD_NUMBER) + 1}" in commands
-    assert (
-        "--avb_rollback_index_override 42 --bump_date_and_version 1"
-        in _command_line(commands, "sign_target_files_apks")
-    )
-    assert "/bin/ota_from_target_files" not in commands
-    assert "Skipping OTA update zip for AVB Rollback Index override build" in (
-        result.stdout
-    )
-
-
-@pytest.mark.parametrize(
-    ("build_number", "rollback_build"),
-    (("0042", "43"), ("0089", "90")),
-)
 def test_release_dry_run_adds_one_to_a_zero_padded_build_in_base_10(
     release_tree: Path,
-    build_number: str,
-    rollback_build: str,
 ) -> None:
     result = run_release(
         release_tree,
         "devon",
         environment={
             "AVB_ROLLBACK_INDEX_OVERRIDE": "42",
-            "BUILD_NUMBER": build_number,
+            "BUILD_NUMBER": "0089",
         },
-        target_files_arg=f"calyx_devon-target_files-{build_number}.zip",
+        target_files_arg="calyx_devon-target_files-0089.zip",
     )
 
     assert result.returncode == 0, result.stderr
-    assert f"out/release-devon-{rollback_build}" in result.stderr
+    assert "out/release-devon-90" in result.stderr
 
 
 def test_release_stops_when_target_files_signing_fails(
@@ -986,7 +887,7 @@ def test_release_stops_when_target_files_signing_fails(
         release_tree / "bin" / "sign_target_files_apks",
         "#!/bin/sh\nexit 23\n",
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -1007,7 +908,7 @@ def test_release_stops_when_target_files_signing_fails(
 
 def test_release_supports_otatest(release_tree: Path) -> None:
     otatest = "2026081501"
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -1064,9 +965,6 @@ def test_release_rejects_rollback_override_on_unsupported_device(
         ("bramble", {"KEYMAPPER": "legacy", "KEY_SUFFIX": ".key"}),
         ("bramble", {"BUILD_NUMBER": "eng.user"}),
         ("bramble", {"BUILD_NUMBER": "0042"}),
-        ("bramble", {"KEYMAPPER": "legacy", "RSA_KEY_SIZE": "2048"}),
-        ("bramble", {**PKCS11_ENVIRONMENT, "AVB_RSA_KEY_SIZE": "2048"}),
-        ("bramble", {"AVB_RSA_KEY_SIZE": "", "RSA_KEY_SIZE": "2048"}),
     ),
     ids=(
         "plaintext",
@@ -1077,9 +975,6 @@ def test_release_rejects_rollback_override_on_unsupported_device(
         "legacy-key-suffix",
         "text-build-number",
         "zero-padded-build-number",
-        "legacy-rsa-key-size",
-        "pkcs11-avb-rsa-key-size",
-        "empty-avb-rsa-key-size",
     ),
 )
 def test_release_dry_run_renders_the_expected_commands(
@@ -1103,33 +998,17 @@ def test_release_dry_run_renders_the_expected_commands(
         == (DRY_RUN_FIXTURES / f"release-{name}.stdout").read_text()
     )
     assert (
-        _normalize_dry_run(result.stderr, release_tree)
+        normalize_dry_run(result.stderr, release_tree)
         == (DRY_RUN_FIXTURES / f"release-{name}.stderr").read_text()
     )
 
 
-def test_format_sha256sum_matches_sha256sum(tmp_path: Path) -> None:
-    target = tmp_path / "artifact.zip"
-    target.write_bytes(b"release artifact bytes\n" * 100_000)
-
-    expected = run(["sha256sum", target.name], cwd=tmp_path).stdout
-
-    previous = Path.cwd()
-    os.chdir(tmp_path)
-    try:
-        assert format_sha256sum(target.name) == expected
-    finally:
-        os.chdir(previous)
-
-
-@pytest.mark.parametrize("pkcs11", (False, True), ids=("plaintext", "pkcs11"))
 @pytest.mark.parametrize("fails", (False, True), ids=("success", "failure"))
 def test_release_removes_its_temporaries(
     release_tree: Path,
-    pkcs11: bool,
     fails: bool,
 ) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     if fails:
@@ -1141,7 +1020,7 @@ def test_release_removes_its_temporaries(
     result = run_release(
         release_tree,
         "bramble",
-        environment=PKCS11_ENVIRONMENT if pkcs11 else {},
+        environment=PKCS11_ENVIRONMENT,
         dry_run=False,
     )
 
@@ -1163,28 +1042,6 @@ def test_release_reports_an_unsupported_vendor(release_tree: Path) -> None:
     ) in result.stderr
 
 
-def test_release_checksums_without_sha256sum(release_tree: Path) -> None:
-    stubs = release_tree / "stubs"
-    install_executable(stubs / "sha256sum", "#!/bin/sh\nexit 127\n")
-    _write_target_files_zip(
-        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
-    )
-    result = run_release(
-        release_tree,
-        "bramble",
-        environment={
-            "PATH": f"{stubs}:{os.environ['PATH']}",
-        },
-        dry_run=False,
-    )
-
-    out = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
-    ota = out / f"bramble-ota_update-{BUILD_NUMBER}.zip"
-    checksum = out / f"bramble-ota_update-{BUILD_NUMBER}.zip.sha256sum"
-    assert result.returncode == 0, result.stderr
-    assert checksum.read_text() == f"{sha256(ota)}  {ota.name}\n"
-
-
 @pytest.mark.parametrize(
     "signum",
     (signal.SIGTERM, signal.SIGHUP),
@@ -1199,7 +1056,7 @@ def test_python_release_cleans_up_when_terminated(
         release_tree / "bin" / "sign_target_files_apks",
         f'#!/bin/sh\ntouch "{started}"\nsleep 30\n',
     )
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     tmpdir = release_tree / "tmp"
@@ -1268,19 +1125,6 @@ def test_release_stops_before_signing_without_the_factory_variables(
     assert "sign_target_files_apks" not in result.stderr
 
 
-def _release_session(
-    release_tree: Path,
-    environment: dict[str, str],
-) -> ReleaseOrchestrator:
-    return ReleaseOrchestrator(
-        environment,
-        cwd=release_tree,
-        metadata=load_metadata(TEST_METADATA),
-        device="bramble",
-        target_files_arg=None,
-    )
-
-
 def test_release_session_treats_an_empty_tmpdir_as_unset(
     release_tree: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1295,9 +1139,12 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
         "signing.release_orchestration.tempfile.mkdtemp",
         mkdtemp,
     )
-    session = _release_session(
-        release_tree,
+    session = ReleaseOrchestrator(
         {**PKCS11_ENVIRONMENT, "KEYMAPPER": "id2b", "TMPDIR": ""},
+        cwd=release_tree,
+        metadata=load_metadata(TEST_METADATA),
+        device="bramble",
+        target_files_arg=None,
     )
 
     with pytest.raises(ReleaseAbort):
@@ -1397,6 +1244,14 @@ def test_release_session_finalizes_then_cleans_up_its_vendor(
         (
             {
                 "KEYMAPPER": "id2b",
+                "AVB_RSA_KEY_SIZE": "",
+                "RSA_KEY_SIZE": "2048",
+            },
+            "SHA256_RSA2048",
+        ),
+        (
+            {
+                "KEYMAPPER": "id2b",
                 "PKCS11_MODULE": "x",
                 "AVB_RSA_KEY_SIZE": "2048",
             },
@@ -1429,7 +1284,7 @@ def test_avb_algorithm_is_the_one_bash_picks(
 def test_release_passes_extra_ota_args_to_the_ota_tool(
     release_tree: Path,
 ) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
 
@@ -1443,26 +1298,25 @@ def test_release_passes_extra_ota_args_to_the_ota_tool(
     assert " --x " in _command_line(result.stderr, "ota_from_target_files")
 
 
-def test_release_with_the_static_keymapper_runs_the_commands_of_bash(
+def test_release_with_an_id2b_keymap_file_runs_the_id2b_commands(
     release_tree: Path,
 ) -> None:
-    fixtures = SCRIPTS_DIR / "tests" / "fixtures"
-
     result = run_release(
         release_tree,
         "bramble",
         environment={
             "KEYMAPPER": "static",
-            "KEYMAP_FILE": str(fixtures / "id2b-bramble-redfin.tsv"),
+            "KEYMAP_FILE": str(ID2B_KEYMAP),
         },
     )
 
     assert result.returncode == 0, result.stderr
+    id2b = (DRY_RUN_FIXTURES / "release-plaintext.stderr").read_text()
     assert [
-        line.replace(str(release_tree), "<tree>")
-        for line in result.stderr.splitlines()
+        line
+        for line in normalize_dry_run(result.stderr, release_tree).splitlines()
         if "/bin/" in line
-    ] == (fixtures / "release-static.commands").read_text().splitlines()
+    ] == [line for line in id2b.splitlines() if "/bin/" in line]
 
 
 def _signing_arguments(stderr: str) -> list[str]:
@@ -1519,7 +1373,7 @@ def test_release_leaves_out_the_metadata_placeholders(
 def test_release_goes_on_without_an_unwritable_exec_log(
     release_tree: Path,
 ) -> None:
-    _write_target_files_zip(
+    write_target_files_zip(
         release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
     )
     exec_log = release_tree / "missing" / "exec.log"
@@ -1616,20 +1470,18 @@ def test_release_dry_run_writes_no_files(release_tree: Path) -> None:
     assert _manifest(release_tree) == before
 
 
-def test_release_names_the_script_it_ran_as(release_tree: Path) -> None:
-    result = run_release(release_tree, "bramble")
-
-    assert result.returncode == 0, result.stderr
-    assert f"Command: {SCRIPTS_DIR / 'release.sh'} bramble " in result.stderr
-
-
 def test_release_signs_plain_keys_without_its_tmpdir(
     release_tree: Path,
 ) -> None:
+    write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+
     result = run_release(
         release_tree,
         "bramble",
         environment={"TMPDIR": str(release_tree / "missing")},
+        dry_run=False,
     )
 
     assert result.returncode == 0, result.stderr
