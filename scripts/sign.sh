@@ -67,9 +67,10 @@ main() {
   try gather_signable_devices_from_metadata || return $?
   try gather_latest_device_builds || return $?
   try prompt_missing_variables || return $?
-  # Again, as now we want to limit it to PREV_BUILD_NUMBER.
-  try find_prev_signed_device_builds || return $?
   try gather_device_builds_to_sign || return $?
+  # Again, as now we want to limit it to PREV_BUILD_NUMBER and to builds
+  # older than the ones to sign.
+  try find_prev_signed_device_builds || return $?
   try maybe_ask_about_prev_signed_device_builds || return $?
   try load_keymapper_and_maybe_pkcs11 || return $?
   try maybe_handle_already_existing_builds || return $?
@@ -548,6 +549,7 @@ deduce_build_number() {
 
 deduce_prev_build_number() {
   # Again, so that it factors in our chosen BUILD_NUMBER.
+  gather_device_builds_to_sign || return $?
   find_prev_signed_device_builds || return $?
   printf "%s\n" "${prev_builds_sorted[*]}"
 }
