@@ -11,6 +11,7 @@ import pathlib
 import sys
 
 import cryptography.x509
+import setup
 import yubihsm.exceptions
 from audit import extract_and_save_logs
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -29,6 +30,7 @@ KEEP_PATH = os.getenv(
     "KEEP_PATH",
     os.path.join(pathlib.Path.home(), "CalyxBackupHSM"),
 )
+setup.KEEP_PATH = KEEP_PATH
 
 #
 # TODO this is just a quick dummy script to demonstrate feasibility
