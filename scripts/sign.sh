@@ -44,13 +44,15 @@ prompt_missing_variables() {
   local deduced
   deduced=$(deduce_build_number) || return $?
   ask_variable BUILD_NUMBER "$deduced" n y || return $?
-  deduced=$(deduce_prev_build_number) || return $?
-  ask_variable PREV_BUILD_NUMBER "$deduced" n n || return $?
-  if [ -z "${PREV_BUILD_NUMBER:-}" ]; then
-    no_incremental=y
-  fi
   if [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
     echo "Build number overriden to $((10#$BUILD_NUMBER + 1)) for AVB Rollback Index override build"
+    no_incremental=y
+  else
+    deduced=$(deduce_prev_build_number) || return $?
+    ask_variable PREV_BUILD_NUMBER "$deduced" n n || return $?
+    if [ -z "${PREV_BUILD_NUMBER:-}" ]; then
+      no_incremental=y
+    fi
   fi
   ask_variable NUM_SIGN_JOBS "3" n y || return $?
   ask_variable NUM_INCREMENTAL_JOBS "3" n y || return $?
