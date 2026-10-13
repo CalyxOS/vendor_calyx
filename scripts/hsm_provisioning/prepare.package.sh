@@ -137,16 +137,16 @@ prepare_manifest_and_files() {
         echo "(otatools-keys.zip is built with: m otatools-keys-package)" >&2
         return 1
       fi
-      if [ -n "$sha256sum" ] && [ "$(sha256sum "$dest_file" | cut -d' ' -f1)" != "$sha256sum" ];
-      then
-        printf "%s does not match expected sha256sum and no link provided!" \
-          "$dest_file" >&2
-      fi
       if [ "$we_generated" != "y" ]; then
         file_size=$(stat -c%s "$source_file") || return $?
         cp -p "$source_file" "$dest_file" || return $?
       else
         file_size=$(stat -c%s "$dest_file") || return $?
+      fi
+      if [ -n "$sha256sum" ] && [ "$(sha256sum "$dest_file" | cut -d' ' -f1)" != "$sha256sum" ];
+      then
+        printf "%s does not match expected sha256sum and no link provided!\n" \
+          "$dest_file" >&2
       fi
     fi
     # reset timestamp of dest_file
