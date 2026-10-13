@@ -97,6 +97,8 @@ def save_logs(
             file.write(entry_str + "\n")
             if verbose:
                 print(entry_str)
+        file.flush()
+        os.fsync(file.fileno())
 
 
 if __name__ == "__main__":
