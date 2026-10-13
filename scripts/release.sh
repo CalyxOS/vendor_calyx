@@ -121,6 +121,13 @@ else
   error "Unsupported device $DEVICE"
 fi
 
+if [ -z "${OTA_ONLY:-}" ] || [ -n "${AVB_ROLLBACK_INDEX_OVERRIDE:-}" ]; then
+  if [ -z "${SKIP_AVB_CUSTOM_KEY:-}" ] && [ -n "${AVB_CUSTOM_KEY:-}" ] \
+      && [ ! -f "$AVB_CUSTOM_KEY" ]; then
+    error "AVB custom key $AVB_CUSTOM_KEY does not exist"
+  fi
+fi
+
 else  # DRY_RUN
 
 VERSION=version_placeholder
