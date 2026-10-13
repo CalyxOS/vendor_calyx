@@ -132,7 +132,9 @@ sign_builds() {
   parallel -j "$NUM_SIGN_JOBS" --colsep ',' --tag --line-buffer \
     "BUILD_NUMBER={2}" "$sign_scriptpath/release.sh" "{1}" \
       "calyx_{1}-target_files-{2}.zip" \
-    "&&" mv "out/release-{1}-{3}" archive/. \
+    "&&" rm -rf "archive/.release-{1}-{3}.partial" \
+    "&&" mv -T "out/release-{1}-{3}" "archive/.release-{1}-{3}.partial" \
+    "&&" mv -T "archive/.release-{1}-{3}.partial" "archive/release-{1}-{3}" \
     ::: "$@" || err=$?
 
   if [ -n "$err" ]; then
