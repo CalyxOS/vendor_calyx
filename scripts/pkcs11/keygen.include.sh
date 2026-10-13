@@ -202,6 +202,11 @@ generate_keys() {
         key_exists=$(DEVICE=$device does_key_exist_yn "$mapped_value") || return $?
         local cert_exists
         cert_exists=$(DEVICE=$device does_cert_exist_yn "$mapped_value") || return $?
+        if [ "$key_exists" = "n" ] && [ "$cert_exists" = "y" ]; then
+          printf "%s\n" "$msg: certificate exists without its key" >&2
+          echo "Restore the key from a backup, or delete its certificate." >&2
+          return 1
+        fi
         local key_id
         local key_algorithm=
         if [ "${FIND_KEYS_BY_ID:-}" = "y" ]; then
