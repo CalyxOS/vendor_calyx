@@ -64,6 +64,7 @@ if [[ -n ${AVB_ROLLBACK_INDEX_OVERRIDE:-} ]]; then
 fi
 
 if [[ -z ${2:-} ]] ; then
+  RELEASETOOLS_PATH="$(pwd -P)"
   RELEASETOOLS_BINARY_PATH=out/soong/.intermediates/build/make/tools/releasetools
   TARGET_FILES=out/target/product/$DEVICE/calyx_$PRODUCT-target_files-$BUILD.zip
   OUTPUT_PATH=out/release
