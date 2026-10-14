@@ -146,6 +146,10 @@ PRODUCT_PACKAGES += \
     fastbootd
 endif
 
+# Freeform window management
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.software.freeform_window_management.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/android.software.freeform_window_management.xml
+
 # SystemUI plugins
 PRODUCT_PACKAGES += \
     QuickAccessWallet
