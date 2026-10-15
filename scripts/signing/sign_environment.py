@@ -42,45 +42,6 @@ from .vendor_yubihsm_connector import (
 _DEFAULT_AUTH_KEY = "0x0001"
 _DEFAULT_WRAP_KEY_ID = "0x0010"
 
-_YUBIHSM_PKCS11_CONF_TEMPLATE = """\
-# This is a sample configuration file for the YubiHSM PKCS#11 module
-# Uncomment the various options as needed
-
-# URL of the connector to use. This can be a comma-separated list
-connector = {connector_url}
-
-# Enables general debug output in the module
-#
-# debug
-
-# Enables function tracing (ingress/egress) debug output in the module
-#
-# dinout
-
-# Enables libyubihsm debug output in the module
-#
-# libdebug
-
-# Redirects the debug output to a specific file. The file is created
-# if it does not exist. The content is appended
-#
-# debug-file = /tmp/yubihsm_pkcs11_debug
-
-# CA certificate to use for HTTPS validation. Point this variable to
-# a file containing one or more certificates to use when verifying
-# a peer. Currently not supported on Windows
-#
-# cacert = /tmp/cacert.pem
-
-# Proxy server to use for the connector
-# Currently not supported on Windows
-#
-# proxy = http://proxyserver.local.com:8080
-
-# Timeout in seconds to use for the initial connection to the connector
-# timeout = 5
-"""
-
 
 class UnsupportedVendorError(RuntimeError):
     """Raised for a PKCS11_VENDOR this module cannot initialize."""
@@ -132,8 +93,9 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
         UnsupportedVendorError: If PKCS11_VENDOR is set to anything
             other than "yubihsm"/"softhsm", PKCS11_VENDOR_FILE is set, or
             PKCS11_MODULE is set without PKCS11_VENDOR.
-        RuntimeError: If PKCS11_MODULE is unset and no module for the
-            vendor exists at any of its search paths.
+        RuntimeError: If PKCS11_MODULE is unset and the vendor signs
+            through a PKCS#11 module that exists at none of its search
+            paths.
     """
     if environment.get("PKCS11_VENDOR_FILE"):
         raise UnsupportedVendorError(
@@ -156,7 +118,7 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
                 "to yubihsm or softhsm",
             ) from error
         vendor.apply_source_exports(environment)
-        if not environment.get("PKCS11_MODULE"):
+        if vendor.pkcs11_module_paths and not environment.get("PKCS11_MODULE"):
             module = vendor.find_pkcs11_module()
             if module is None:
                 raise RuntimeError(
@@ -602,11 +564,6 @@ class YubiHsmVendor(Vendor):
     """The YubiHSM vendor."""
 
     name = "yubihsm"
-    display_name = "YubiHSM"
-    pkcs11_module_paths = _module_paths(
-        ("/x86_64-linux-gnu", "/aarch64-linux-gnu", "64", ""),
-        "yubihsm_pkcs11.so",
-    )
 
     def apply_source_exports(
         self,
@@ -681,11 +638,6 @@ class YubiHsmVendor(Vendor):
         ]
         if missing:
             raise RuntimeError(f"{' and '.join(missing)} not set")
-        auth_key = environment["YUBIHSM_AUTHKEY"]
-        password = environment["YUBIHSM_PASSWORD"]
-        environment["PKCS11_PIN"] = (
-            auth_key.removeprefix("0x").rjust(4, "0") + password
-        )
 
         environment["SIGNING_COMMAND_INTERCEPTOR"] = str(
             Path(__file__).resolve().parents[1]
@@ -702,19 +654,6 @@ class YubiHsmVendor(Vendor):
                 )
                 Path(yubihsm_tmpdir).chmod(0o700)
                 environment["YUBIHSM_TMPDIR"] = yubihsm_tmpdir
-
-            pkcs11_conf = environment.get("YUBIHSM_PKCS11_CONF")
-            if not pkcs11_conf:
-                pkcs11_conf = str(Path(yubihsm_tmpdir) / "yubihsm_pkcs11.conf")
-                Path(pkcs11_conf).write_text(
-                    _YUBIHSM_PKCS11_CONF_TEMPLATE.format(
-                        connector_url=environment.get(
-                            "YUBIHSM_CONNECTOR",
-                            DEFAULT_CONNECTOR_URL,
-                        ),
-                    ),
-                )
-                environment["YUBIHSM_PKCS11_CONF"] = pkcs11_conf
 
             if environment.get("NEVER_START_YUBIHSM_CONNECTOR") != "y":
                 pid_file = Path(yubihsm_tmpdir) / "yubihsm_connector.pid"
