@@ -13,22 +13,22 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 
-def parse_build_numbers(tokens: Sequence[str]) -> list[int]:
+def parse_build_numbers(value: str) -> tuple[int, ...]:
     """
-    Read the words of BUILD_NUMBER or PREV_BUILD_NUMBER.
+    Read the blank-separated words of BUILD_NUMBER or PREV_BUILD_NUMBER.
 
     A word that is not a decimal number names no target-files package, so
     it selects nothing.
 
     Args:
-        tokens: The words, in order.
+        value: The variable's value.
 
     Returns:
-        The build numbers among them, in order.
+        The build numbers among its words, in order.
     """
-    return [
-        int(token) for token in tokens if token.isascii() and token.isdigit()
-    ]
+    return tuple(
+        int(word) for word in value.split() if word.isascii() and word.isdigit()
+    )
 
 
 _TARGET_FILES_RE = re.compile(
