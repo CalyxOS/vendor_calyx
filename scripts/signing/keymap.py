@@ -432,12 +432,6 @@ class LegacyKeymapper(_BaseKeymapper):
         del suffix
         return self.key_value(key_type, key_name, device, suffix=key_suffix)
 
-    def key_id_is_per_device(self, key_id: str) -> bool:
-        """
-        Treat every key ID as per-device.
-        """
-        return True
-
     def device_key_ids(self, device: str) -> frozenset[str]:
         """
         Refuse, as legacy keys are paths rather than key IDs.
