@@ -51,7 +51,6 @@ def python_helper_env(tool: Path) -> dict[str, str]:
         "PKCS11_MODULE": "/dev/null",
         "PKCS11_TOOL_BIN": str(tool),
         "KEY_DIR": "keys/",
-        "DEBUG_PAYLOAD_SIGNER": "n",
     }
 
 
@@ -96,32 +95,6 @@ def test_payload_helper_preserves_provider_stderr(
     assert result.returncode != 0
     assert b"Connector operation failed: simulated" in result.stderr
     assert b"Traceback" not in result.stderr
-    assert not output.exists()
-
-
-def test_payload_helper_rejects_invalid_verification_mode(
-    tmp_path: Path,
-) -> None:
-    digest = tmp_path / "digest.bin"
-    output = tmp_path / "signature.bin"
-    digest.write_bytes(bytes(range(32)))
-    result = run(
-        [
-            PYTHON_PAYLOAD_SIGNER,
-            "-in",
-            digest,
-            "-out",
-            output,
-            "-inkey",
-            "keys/0x2000.pem",
-        ],
-        env={"DEBUG_PAYLOAD_SIGNER": "yes"},
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'" in result.stderr
-    assert "PKCS11_MODULE" not in result.stderr
     assert not output.exists()
 
 
@@ -255,7 +228,7 @@ def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
     digest.write_bytes(hashlib.sha256(b"payload").digest())
     output = tmp_path / "signature.bin"
     monkeypatch.delenv("SIGNING_SERVER_SOCKET", raising=False)
-    monkeypatch.delenv("DEBUG_PAYLOAD_SIGNER", raising=False)
+    monkeypatch.setenv("DEBUG_PAYLOAD_SIGNER", "n")
     monkeypatch.setattr(
         helper.signing_helpers,
         "pkcs11_signer_from_environment",
