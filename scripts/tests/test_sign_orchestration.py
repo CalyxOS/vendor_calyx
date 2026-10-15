@@ -23,8 +23,8 @@ from conftest import (
     file_tree,
     install_executable,
     run,
+    shipped_metadata,
 )
-from signing.metadata import load_metadata
 from signing.release_execution import Abort
 from signing.sign_environment import YubiHsmVendor
 from signing.sign_orchestration import (
@@ -840,7 +840,7 @@ def _orchestrator(
         environment,
         cwd=tmp_path,
         devices_file=tmp_path / "devices",
-        metadata=load_metadata(SCRIPTS_DIR / "metadata.py"),
+        metadata=shipped_metadata(),
         release_script=tmp_path / "release.sh",
         generate_delta_script=tmp_path / "generate_delta.sh",
     )
