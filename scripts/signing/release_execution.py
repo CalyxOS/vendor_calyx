@@ -23,6 +23,14 @@ from types import FrameType
 from typing import BinaryIO
 
 
+class Abort(Exception):
+    """Raised to end a run early with the exit status to return."""
+
+    def __init__(self, code: int) -> None:
+        super().__init__(f"aborted with exit status {code}")
+        self.code = code
+
+
 @contextlib.contextmanager
 def exit_on_signals() -> Generator[None, None, None]:
     """
