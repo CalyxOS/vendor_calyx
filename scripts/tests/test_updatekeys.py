@@ -10,23 +10,14 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import (
-    FIXTURES_DIR,
-    REPO_ROOT,
-    SCRIPTS_DIR,
-    TEST_METADATA,
-    run,
-    sha256,
-)
+from conftest import FIXTURES_DIR, SCRIPTS_DIR, TEST_METADATA, run, sha256
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
 from signing.release_arguments import build_release_arguments, make_get_key
 
-pytestmark = [pytest.mark.aosp, pytest.mark.usefixtures("aosp_top")]
+pytestmark = pytest.mark.aosp
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys integration test"
 LABEL_SUBJECT = "/O=Calyx Institute/CN=_KEY_LABEL_"
-AOSP_TOP = REPO_ROOT.parents[1]
-AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 MODES_FIXTURE = FIXTURES_DIR / "updatekeys-modes.json"
 LEGACY_METADATA = """KEYS_AVB = ("vbmeta", "vbmeta_system")
 KEYS_OTHER = ()
@@ -55,6 +46,7 @@ def updatekeys_tree(tmp_path: Path) -> Path:
 
 def run_updatekeys(
     root: Path,
+    avbtool: Path,
     *,
     keymapper: str = "id2b",
     metadata: Path = TEST_METADATA,
@@ -66,18 +58,22 @@ def run_updatekeys(
         env={
             "KEYMAPPER": keymapper,
             "METADATA_FILE": str(metadata),
-            "AVBTOOL_BIN": str(AVBTOOL),
+            "AVBTOOL_BIN": str(avbtool),
         },
         check=False,
     )
 
 
-def assert_avb_public_key_matches(root: Path, key_name: str) -> None:
+def assert_avb_public_key_matches(
+    root: Path,
+    avbtool: Path,
+    key_name: str,
+) -> None:
     stored_public_key = root / "keys" / f"{key_name}.avbpubkey"
     extracted_public_key = root / "keys" / f"{key_name}.expected.avbpubkey"
     run(
         [
-            AVBTOOL,
+            avbtool,
             "extract_public_key",
             "--key",
             root / "keys" / f"{key_name}.pem",
@@ -88,8 +84,11 @@ def assert_avb_public_key_matches(root: Path, key_name: str) -> None:
     assert stored_public_key.read_bytes() == extracted_public_key.read_bytes()
 
 
-def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
-    first = run_updatekeys(updatekeys_tree, subject=LABEL_SUBJECT)
+def test_updatekeys_is_idempotent(
+    updatekeys_tree: Path,
+    avbtool: Path,
+) -> None:
+    first = run_updatekeys(updatekeys_tree, avbtool, subject=LABEL_SUBJECT)
     assert first.returncode == 0, first.stderr
     keys = updatekeys_tree / "keys"
     before = {
@@ -97,14 +96,14 @@ def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
     }
     assert sorted(before) == sorted(json.loads(MODES_FIXTURE.read_text()))
 
-    second = run_updatekeys(updatekeys_tree, subject=LABEL_SUBJECT)
+    second = run_updatekeys(updatekeys_tree, avbtool, subject=LABEL_SUBJECT)
     assert second.returncode == 0, second.stderr
     after = {
         path.name: sha256(path) for path in keys.iterdir() if path.is_file()
     }
     assert after == before
-    assert_avb_public_key_matches(updatekeys_tree, "0x2000")
-    assert_avb_public_key_matches(updatekeys_tree, "0x1300")
+    assert_avb_public_key_matches(updatekeys_tree, avbtool, "0x2000")
+    assert_avb_public_key_matches(updatekeys_tree, avbtool, "0x1300")
 
     metadata = load_metadata(TEST_METADATA)
     keymapper = Id2bKeymapper(metadata)
@@ -133,12 +132,14 @@ def test_updatekeys_is_idempotent(updatekeys_tree: Path) -> None:
 
 def test_full_updatekeys_with_legacy_keymapper(
     updatekeys_tree: Path,
+    avbtool: Path,
 ) -> None:
     metadata = updatekeys_tree / "metadata.py"
     metadata.write_text(LEGACY_METADATA)
 
     result = run_updatekeys(
         updatekeys_tree,
+        avbtool,
         keymapper="legacy",
         metadata=metadata,
     )
@@ -153,7 +154,7 @@ def test_full_updatekeys_with_legacy_keymapper(
     expected_payload = keys / "expected-payload.avbpubkey"
     run(
         [
-            AVBTOOL,
+            avbtool,
             "extract_public_key",
             "--key",
             keys / "avb.pem",
@@ -163,7 +164,7 @@ def test_full_updatekeys_with_legacy_keymapper(
     )
     run(
         [
-            AVBTOOL,
+            avbtool,
             "extract_public_key",
             "--key",
             keys / "com.android.adbd.pem",
@@ -181,6 +182,7 @@ def test_full_updatekeys_with_legacy_keymapper(
 
 def test_updatekeys_refuses_a_key_whose_pem_exists(
     updatekeys_tree: Path,
+    avbtool: Path,
 ) -> None:
     metadata = updatekeys_tree / "metadata.py"
     metadata.write_text(LEGACY_METADATA)
@@ -189,6 +191,7 @@ def test_updatekeys_refuses_a_key_whose_pem_exists(
 
     result = run_updatekeys(
         updatekeys_tree,
+        avbtool,
         keymapper="legacy",
         metadata=metadata,
     )
