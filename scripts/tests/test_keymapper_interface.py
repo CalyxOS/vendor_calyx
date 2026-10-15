@@ -202,6 +202,17 @@ def test_legacy_keymapper_assigns_no_key_ids() -> None:
         keymapper.key_id_is_per_device("0x1100")
 
 
+def test_legacy_keymapper_overrides_a_preset_key_dir() -> None:
+    keymapper = load_keymapper(
+        {"KEYMAPPER": "legacy"},
+        load_metadata(SCRIPTS_DIR / "metadata.py"),
+    )
+    environment = {"KEY_DIR": "custom/"}
+
+    assert keymapper.key_dir(environment) == "keys/"
+    assert environment["KEY_DIR"] == "keys/"
+
+
 def test_keymapper_file_whose_create_keymapper_fails_is_named(
     tmp_path: Path,
 ) -> None:
