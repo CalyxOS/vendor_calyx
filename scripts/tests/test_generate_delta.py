@@ -290,5 +290,6 @@ def test_generate_delta_refuses_an_unmapped_device_first(
     )
 
     assert result.returncode == 1
-    assert "failed to prepare for signing" in result.stderr
+    assert "nosuch" in result.stderr
+    assert "Usage:" not in result.stdout
     assert "Command:" not in result.stderr
