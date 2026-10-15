@@ -13,9 +13,12 @@ import threading
 from pathlib import Path
 
 import pytest
-from conftest import back_up_yubihsm_key, stub
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
+from conftest import (
+    YUBIHSM_WRAP_ID,
+    back_up_yubihsm_key,
+    back_up_yubihsm_key_and_certificate,
+    stub,
+)
 from signing import sign_environment
 from signing.keymap import StaticKeymapper
 from signing.sign_environment import (
@@ -34,7 +37,6 @@ from yubihsm.defs import COMMAND, OBJECT
 from yubihsm_emulator import (
     Connector,
     EmulatedYubiHsm,
-    self_signed_certificate,
 )
 
 
@@ -388,7 +390,7 @@ def test_softhsm_module_paths_keep_their_search_order() -> None:
 @pytest.fixture
 def release_environment(tmp_path: Path, yubihsm: Connector) -> dict[str, str]:
     yubihsm.device.put_authentication_key(0x0001, "secret")
-    yubihsm.device.put_wrap_key(0x0010)
+    yubihsm.device.put_wrap_key(YUBIHSM_WRAP_ID)
     keymap_file = tmp_path / "keymap.tsv"
     keymap_file.write_text(
         "ID\tDevice\tKey Type\tKey\n0x2000\tbramble\tavb\tvbmeta\n",
@@ -406,25 +408,6 @@ def release_environment(tmp_path: Path, yubihsm: Connector) -> dict[str, str]:
         "KEYMAP_FILE": str(keymap_file),
         "KEY_DIR": str(tmp_path / "keys"),
     }
-
-
-def _back_up_vbmeta_key(
-    device: EmulatedYubiHsm,
-    key_dir: Path,
-    *,
-    loaded: bool,
-) -> x509.Certificate:
-    device.put_asymmetric_key(0x2000)
-    back_up_yubihsm_key(device, key_dir, 0x2000)
-    certificate = self_signed_certificate()
-    (key_dir / "0x2000.x509.pem").write_bytes(
-        certificate.public_bytes(serialization.Encoding.PEM),
-    )
-    if loaded:
-        device.put_certificate(0x2000, certificate)
-    else:
-        del device.objects[(0x2000, OBJECT.ASYMMETRIC_KEY)]
-    return certificate
 
 
 def _object_changes(device: EmulatedYubiHsm) -> list[COMMAND]:
@@ -488,7 +471,12 @@ def test_initialize_yubihsm_release_loads_missing_vbmeta_key(
     yubihsm: Connector,
     release_environment: dict[str, str],
 ) -> None:
-    _back_up_vbmeta_key(yubihsm.device, tmp_path / "keys", loaded=False)
+    back_up_yubihsm_key_and_certificate(
+        yubihsm.device,
+        tmp_path / "keys",
+        0x2000,
+        loaded=False,
+    )
 
     _initialize_release(
         release_environment,
@@ -506,7 +494,12 @@ def test_initialize_yubihsm_release_is_a_noop_when_already_loaded(
     yubihsm: Connector,
     release_environment: dict[str, str],
 ) -> None:
-    _back_up_vbmeta_key(yubihsm.device, tmp_path / "keys", loaded=True)
+    back_up_yubihsm_key_and_certificate(
+        yubihsm.device,
+        tmp_path / "keys",
+        0x2000,
+        loaded=True,
+    )
 
     _initialize_release(
         release_environment,
@@ -543,7 +536,12 @@ def test_initialize_yubihsm_release_skips_ensure_key_when_disabled(
     yubihsm: Connector,
     release_environment: dict[str, str],
 ) -> None:
-    _back_up_vbmeta_key(yubihsm.device, tmp_path / "keys", loaded=False)
+    back_up_yubihsm_key_and_certificate(
+        yubihsm.device,
+        tmp_path / "keys",
+        0x2000,
+        loaded=False,
+    )
     release_environment["ENSURE_KEY_IS_AVAILABLE"] = "n"
 
     _initialize_release(
