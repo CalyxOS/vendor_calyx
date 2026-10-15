@@ -132,22 +132,15 @@ def main(argv: list[str] | None = None) -> int:
     public_key = public_key_file(args.key_file)
     key_name = signing_helpers.key_name_from_path(args.key_file, os.environ)
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
-    verify = True
 
     def pkcs11_sign() -> bytes:
-        nonlocal verify
-        verify_signature = os.environ.get("DEBUG_PAYLOAD_SIGNER") or "y"
-        if verify_signature not in {"y", "n"}:
-            raise ValueError("DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'")
         signer = signing_helpers.pkcs11_signer_from_environment()
         reference = KeyReference(key_name, key_name)
         require_matching_public_key(signer, reference, public_key)
-        verify = verify_signature == "y"
         return signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
 
     signature = signing_helpers.sign(key_name, digest, pkcs11_sign)
-    if verify:
-        require_signature_from_public_key(public_key, digest_info, signature)
+    require_signature_from_public_key(public_key, digest_info, signature)
     write_signature_atomically(args.output_file, signature)
     return 0
 
