@@ -240,7 +240,7 @@ During setup, different keys get created each having their own password:
   * audit password: read only key only for auditing
   * admin password: hsm admin stuff
 
-YubiHSM domains are used to mark keys exportable (domain #2) and on demand keys (domain #3).
+YubiHSM domains are used to mark on demand keys (domain #2) and exportable keys (domain #3).
 Domains are not exclusive, can belong to both sets. 
 Any key that is generated on the device that is marked non-exportable,
 cannot get backed up.
@@ -348,15 +348,6 @@ but apksigner has been a viable alternative.
 However, there was an alignment issue
 that we could only fix [with a custom patch](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41359).
 
-### Closing signing sessions with `apksigner`
-
-The `apksigner` tool which is heavily used doesn't close the Yubi HSM sessions on its own
-leading to errors and requires waiting for sessions to time out.
-[A patch](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41550)
-makes it log out of `SunPKCS11` on exit,
-but release and app signing do not load `SunPKCS11` at all
-(see [KMS-based APK signing](#kms-based-apk-signing)).
-
 ### Batch mode for `apksigner` for improved performance
 
 [This change](https://review.calyxos.org/c/CalyxOS/platform_tools_apksig/+/41551)
@@ -373,9 +364,9 @@ which reads the attributes of every key on the token first, took 8.3 seconds,
 and loading a `SunPKCS11` KeyStore against a network connector took 22 seconds,
 against 1.3 seconds for a signature over an open session.
 
-A YubiHSM release therefore runs a signing server (`scripts/signing/signing_server.py`)
-until it finishes.
-The server holds one authenticated YubiHSM session and the batch `apksigner` process,
+A YubiHSM release and `sign-app.sh` therefore run a signing server (`scripts/signing/signing_server.py`)
+until they finish.
+The server holds one authenticated YubiHSM session and, for a release, the batch `apksigner` process,
 on the Unix socket named by `SIGNING_SERVER_SOCKET`.
 The server makes the AVB signatures of `pkcs11/signing_helper.py`,
 the OTA payload signatures and the OTA package's whole-file signature
