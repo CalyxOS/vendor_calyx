@@ -61,7 +61,7 @@ set -uo pipefail
 export UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
 out_dir=$1 common_script=$2 clear_script=$3
 shift 3
-source "$clear_script"
+source "$clear_script" || exit
 for assignment in "$@"; do
   export "$assignment"
 done
@@ -691,22 +691,13 @@ class ReleaseOrchestrator(SigningSession):
             raise ReleaseUsageError(
                 "BUILD_NUMBER not set, did you source envsetup.sh ?",
             )
-        sourced = subprocess.run(
-            [
-                "bash",
-                "-c",
-                'set -euo pipefail; source "$1"',
-                "release.sh",
-                _CLEAR_FACTORY_VARIABLES,
-            ],
-            cwd=self.cwd,
-            check=False,
-        )
-        if sourced.returncode != 0:
-            raise Abort(sourced.returncode)
-
         rollback_raw = self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE")
         rollback = rollback_raw or None
+        factory_image = not self.environment.get("OTA_ONLY") or (
+            rollback is not None
+        )
+        if factory_image:
+            self._check_factory_variables()
         build = self.environment["BUILD_NUMBER"]
         if rollback is not None:
             if not is_build_number(build):
@@ -756,7 +747,7 @@ class ReleaseOrchestrator(SigningSession):
             )
             avb_custom_key = self._avb_custom_key()
             if (
-                (not self.environment.get("OTA_ONLY") or rollback is not None)
+                factory_image
                 and not factory_env.get("SKIP_AVB_CUSTOM_KEY")
                 and avb_custom_key is not None
                 and not avb_custom_key.is_file()
@@ -866,6 +857,27 @@ class ReleaseOrchestrator(SigningSession):
 
             print("Calculating sha256sum for OTA test update zip")
             self._write_checksum(out_dir, otatest_ota_zip.name)
+
+    def _check_factory_variables(self) -> None:
+        """
+        Stop the release unless the factory image variables can be sourced.
+
+        Raises:
+            Abort: If sourcing them fails, with bash's status.
+        """
+        sourced = subprocess.run(
+            [
+                "bash",
+                "-c",
+                'set -euo pipefail; source "$1"',
+                "release.sh",
+                _CLEAR_FACTORY_VARIABLES,
+            ],
+            cwd=self.cwd,
+            check=False,
+        )
+        if sourced.returncode != 0:
+            raise Abort(sourced.returncode)
 
     def _sign_target_files(
         self,

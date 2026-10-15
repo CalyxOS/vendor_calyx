@@ -1206,16 +1206,43 @@ def test_release_requires_yubihsm_credentials(release_tree: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("dry_run", (True, False), ids=("dry-run", "release"))
 def test_release_stops_before_signing_without_the_factory_variables(
     release_tree: Path,
+    dry_run: bool,
 ) -> None:
     (release_tree / "device/common/clear-factory-images-variables.sh").unlink()
+    write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
 
-    result = run_release(release_tree, "bramble")
+    result = run_release(
+        release_tree,
+        "bramble",
+        environment={"OTA_ONLY": "", "ANDROID_BUILD_TOP": ""},
+        dry_run=dry_run,
+    )
 
     assert result.returncode == 1
     assert "clear-factory-images-variables.sh" in result.stderr
     assert "sign_target_files_apks" not in result.stderr
+    assert not (release_tree / f"out/release-bramble-{BUILD_NUMBER}").exists()
+
+
+def test_ota_only_release_needs_no_factory_variables(
+    release_tree: Path,
+) -> None:
+    (release_tree / "device/common/clear-factory-images-variables.sh").unlink()
+    write_target_files_zip(
+        release_tree / f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
+    )
+
+    result = run_release(release_tree, "bramble", dry_run=False)
+
+    assert result.returncode == 0, result.stderr
+    out = release_tree / f"out/release-bramble-{BUILD_NUMBER}"
+    assert (out / f"bramble-target_files-{BUILD_NUMBER}.zip").is_file()
+    assert "Not creating factory image due to OTA_ONLY=y" in result.stdout
 
 
 def test_release_session_treats_an_empty_tmpdir_as_unset(
