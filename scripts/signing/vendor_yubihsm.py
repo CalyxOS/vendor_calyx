@@ -25,9 +25,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
 from .vendor_yubihsm_connector import (
-    DEFAULT_CONNECTOR_URL,
     YubiHsmConnector,
-    YubiHsmConnectorConfig,
+    connector_config_from_environment,
 )
 
 if TYPE_CHECKING:
@@ -85,22 +84,16 @@ def restart_connector() -> None:
     connector to the user. The caller sets YUBIHSM_CONNECTOR_PIDFILE.
 
     Raises:
-        RuntimeError: If the existing connector cannot be stopped before
-            restarting it, or the new one exits or does not listen.
+        RuntimeError: If no connector binary is found, the existing
+            connector cannot be stopped before restarting it, or the new
+            one exits or does not listen.
         OSError: If the connector binary cannot be executed.
     """
     if os.environ.get("NEVER_START_YUBIHSM_CONNECTOR") == "y":
         return
     pid_file = os.environ["YUBIHSM_CONNECTOR_PIDFILE"]
     connector = YubiHsmConnector(
-        YubiHsmConnectorConfig(
-            connector_url=os.environ.get(
-                "YUBIHSM_CONNECTOR",
-                DEFAULT_CONNECTOR_URL,
-            ),
-            pid_file=Path(pid_file),
-            binary=os.environ.get("YUBIHSM_CONNECTOR_BIN", "yubihsm-connector"),
-        ),
+        connector_config_from_environment(os.environ, Path(pid_file)),
     )
     connector.restart()
     connector.wait_until_listening()
