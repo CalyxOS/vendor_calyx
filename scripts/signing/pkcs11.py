@@ -25,13 +25,10 @@ from .models import (
 
 _HEX_ID = re.compile(r"(?:0x)?([0-9a-fA-F]+)")
 _ANNOTATED_ID = re.compile(r".*\(0x([0-9a-fA-F:]+)\)$")
-_SIGNING_MECHANISMS = {
-    "rsa-pkcs": "RSA-PKCS",
-    "sha1-rsa-pkcs": "SHA1-RSA-PKCS",
-    "sha256-rsa-pkcs": "SHA256-RSA-PKCS",
-    "sha384-rsa-pkcs": "SHA384-RSA-PKCS",
-    "sha512-rsa-pkcs": "SHA512-RSA-PKCS",
-}
+MESSAGE_SIGNING_MECHANISMS = frozenset(
+    {"sha1-rsa-pkcs", "sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
+)
+_SIGNING_MECHANISMS = MESSAGE_SIGNING_MECHANISMS | {"rsa-pkcs"}
 
 
 def preload_module(environment: dict[str, str], module: Path) -> None:
@@ -195,16 +192,15 @@ class Pkcs11Backend:
             subprocess.CalledProcessError: If signing fails, including when
                 no private key matches the reference.
         """
-        try:
-            mechanism = _SIGNING_MECHANISMS[request.mechanism.lower()]
-        except KeyError as error:
+        mechanism = request.mechanism.lower()
+        if mechanism not in _SIGNING_MECHANISMS:
             raise ValueError(
                 f"unsupported PKCS#11 signing mechanism: {request.mechanism}",
-            ) from error
+            )
         return self.run(
             "--sign",
             "--mechanism",
-            mechanism,
+            mechanism.upper(),
             "--id",
             self._object_id(request.key),
             input_data=request.data,
