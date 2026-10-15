@@ -13,11 +13,14 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    FIXTURES_DIR,
     KEYGEN_METADATA,
+    PKCS11_DIR,
     SCRIPTS_DIR,
     YUBIHSM_SDK,
     YUBIHSM_WRAP_ID,
     assert_same_public_key,
+    file_tree,
     install_executable,
     run,
 )
@@ -28,8 +31,8 @@ from signing.metadata import load_metadata
 from yubihsm.defs import COMMAND, OBJECT
 from yubihsm_emulator import Connector
 
-KEYGEN_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.keygen.sh"
-KEYGEN_FIXTURE = Path(__file__).parent / "fixtures" / "yubihsm-keygen.json"
+KEYGEN_SH = PKCS11_DIR / "vendor.yubihsm.keygen.sh"
+KEYGEN_FIXTURE = FIXTURES_DIR / "yubihsm-keygen.json"
 
 
 def _keygen_tree(
@@ -81,14 +84,6 @@ def _objects(yubihsm: Connector, object_type: OBJECT) -> list[str]:
 def _normalize(text: str, root: Path, yubihsm: Connector) -> str:
     text = re.sub(r"\d{4}-\d\d-\d\d_[\d-]+", "<date>", text)
     return text.replace(str(root), "<root>").replace(yubihsm.url, "<connector>")
-
-
-def _tree(directory: Path) -> dict[str, bytes]:
-    return {
-        str(path.relative_to(directory)): path.read_bytes()
-        for path in sorted(directory.rglob("*"))
-        if path.is_file()
-    }
 
 
 def _assert_files_match_the_device(root: Path, yubihsm: Connector) -> None:
@@ -158,7 +153,7 @@ def test_yubihsm_keygen_generates_every_key(
     assert result.returncode == 0, result.stderr
     assert "Key generation finished successfully." in result.stdout
     outcome = {
-        "keys": sorted(_tree(root / "keys")),
+        "keys": sorted(file_tree(root / "keys")),
         "generated": _objects(yubihsm, OBJECT.ASYMMETRIC_KEY),
         "imported": _objects(yubihsm, OBJECT.OPAQUE),
         "audit": _audit_comments(root, yubihsm),
@@ -294,7 +289,7 @@ def test_yubihsm_keygen_previews_its_device_writes_under_dry_run(
         COMMAND.PUT_OPAQUE,
         COMMAND.DELETE_OBJECT,
     } & {command for command, _ in yubihsm.device.history}
-    assert _tree(root / "keys") == {}
+    assert file_tree(root / "keys") == {}
     generated = [
         line.split("--key-id ")[1].split()[0]
         for line in result.stderr.splitlines()
