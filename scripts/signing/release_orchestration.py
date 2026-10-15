@@ -337,8 +337,12 @@ def prepare_signing_args(
             "--apksigner_kms_type",
             "calyx",
         ]
-        args.ota += ["--payload_signer", payload_signer_tool]
-        args.ota += ["--signapk_external_signer", payload_signer_tool]
+        args.ota += [
+            "--payload_signer",
+            payload_signer_tool,
+            "--signapk_external_signer",
+            payload_signer_tool,
+        ]
         environment["CALYX_APKSIGNER_SIGNING_HELPER"] = str(
             _PKCS11_DIR / "apksigner_signing_helper.py",
         )
