@@ -1117,17 +1117,9 @@ class DeltaOrchestrator(SigningSession):
                 file=sys.stderr,
             )
             raise Abort(1)
-        try:
-            self.prepare_signing(
-                command_argv=[
-                    self.program,
-                    self.device,
-                    self.old,
-                    self.new,
-                ],
-            )
-        except Abort as abort:
-            raise ReleaseUsageError("failed to prepare for signing") from abort
+        self.prepare_signing(
+            command_argv=[self.program, self.device, self.old, self.new],
+        )
 
         old_dir = f"archive/release-{self.device}-{self.old}"
         new_dir = f"archive/release-{self.device}-{self.new}"
