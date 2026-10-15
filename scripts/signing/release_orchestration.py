@@ -43,7 +43,7 @@ from .release_execution import (
     render_release_tool,
     run_release_tool,
 )
-from .signing_server import Handler, SigningServer
+from .signing_server import SigningServer
 
 _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
 
@@ -587,18 +587,19 @@ class SigningSession:
                 else None
             ),
         )
-        handlers: dict[str, Handler] = {
-            "yubihsm_sign_pkcs1": session_service,
-            "yubihsm_extract_audit_log": session_service,
-        }
-        if self.environment.get("NEVER_START_APKSIGNER_BATCH") != "y":
-            handlers["apksigner"] = ApksignerBatch(
-                cwd=self.cwd,
-                env=self.environment,
-            )
         assert self.tmpdir is not None
         socket_path = self.tmpdir / "signing-server.sock"
-        server = SigningServer(socket_path, handlers)
+        server = SigningServer(socket_path)
+        server.add_service(
+            {
+                "yubihsm_sign_pkcs1": session_service.sign,
+                "yubihsm_extract_audit_log": session_service.extract_audit_log,
+            },
+            session_service.close,
+        )
+        if self.environment.get("NEVER_START_APKSIGNER_BATCH") != "y":
+            batch = ApksignerBatch(cwd=self.cwd, env=self.environment)
+            server.add_service({"apksigner": batch.handle}, batch.close)
         try:
             self._resources.enter_context(server)
         except OSError as error:
