@@ -87,6 +87,7 @@ printf '%s' "delta-$device-$old-$new" > "incrementals/$device-$old-$new.bin"
 
 
 SIGN_BUILDS = """
+import os
 import sys
 from pathlib import Path
 from signing.sign_execution import sign_builds
@@ -101,10 +102,12 @@ raise SystemExit(sign_builds(
     archive_dir=Path(archive),
     jobs=int(jobs),
     original_tmpdir=Path(tmpdir),
+    environment=os.environ,
 ))
 """
 
 GENERATE_INCREMENTALS = """
+import os
 import sys
 from pathlib import Path
 from signing.sign_execution import generate_incrementals
@@ -118,6 +121,7 @@ raise SystemExit(generate_incrementals(
     generate_delta_script=Path(script),
     jobs=int(jobs),
     original_tmpdir=Path(tmpdir),
+    environment=os.environ,
 ))
 """
 
@@ -378,6 +382,7 @@ def test_sign_builds_leaves_no_partial_release_in_the_archive(
         archive_dir=Path("archive"),
         jobs=1,
         original_tmpdir=tmp_path / "tmp",
+        environment=os.environ,
     )
 
     assert status == 1
@@ -649,6 +654,7 @@ try:
         archive_dir=Path("archive"),
         jobs=1,
         original_tmpdir=Path("tmp"),
+        environment=os.environ,
     )
 except KeyboardInterrupt:
     print("interrupted")
