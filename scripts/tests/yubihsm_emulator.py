@@ -242,6 +242,18 @@ class EmulatedYubiHsm:
     def get(self, object_id: int, object_type: OBJECT) -> StoredObject | None:
         return self.objects.get((object_id, object_type))
 
+    def key_objects(self) -> set[tuple[int, OBJECT]]:
+        """Return the ID and type of every asymmetric key and opaque."""
+        return {
+            key
+            for key in self.objects
+            if key[1] in (OBJECT.ASYMMETRIC_KEY, OBJECT.OPAQUE)
+        }
+
+    def private_key(self, object_id: int) -> rsa.RSAPrivateKey:
+        """Return the asymmetric key object_id holds."""
+        return _load_key(self.objects[(object_id, OBJECT.ASYMMETRIC_KEY)].data)
+
     def fail_next(
         self,
         command: COMMAND,
@@ -329,6 +341,16 @@ class EmulatedYubiHsm:
             ),
         )
         return key
+
+    def put_key_and_certificate(
+        self,
+        object_id: int,
+        *,
+        domains: int = 0xFFFF,
+    ) -> None:
+        """Put a key and its attestation certificate under object_id."""
+        self.put_asymmetric_key(object_id, domains=domains)
+        self.put_certificate(object_id, self.attest(object_id), domains=domains)
 
     def put_certificate(
         self,
