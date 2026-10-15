@@ -17,22 +17,21 @@ from typing import Any
 
 import pytest
 from conftest import (
+    BUILD_NUMBER,
+    PKCS11_ENVIRONMENT,
     SCRIPTS_DIR,
     aosp_jar_command,
     install_executable,
+    make_release_tree,
     run,
+    run_release,
+    write_target_files_zip,
 )
 from signing.apksigner_batch import (
     ApksignerBatch,
     run_in_batch,
 )
 from signing.signing_server import SigningServer
-from test_release_orchestration import (
-    BUILD_NUMBER,
-    PKCS11_ENVIRONMENT,
-    make_release_tree,
-    write_target_files_zip,
-)
 
 pytestmark = pytest.mark.usefixtures("small_metadata")
 
@@ -442,19 +441,11 @@ def _release(
     tmpdir: Path,
     environment: dict[str, str],
 ) -> tuple[subprocess.CompletedProcess[str], dict[str, Any] | None]:
-    tree = _release_tree(tmp_path / "release")
     record = tmp_path / "release-record.json"
-    result = run(
-        [
-            SCRIPTS_DIR / "release.sh",
-            "bramble",
-            f"calyx_bramble-target_files-{BUILD_NUMBER}.zip",
-        ],
-        cwd=tree,
-        env={
-            "BUILD_NUMBER": BUILD_NUMBER,
-            "KEYMAPPER": "id2b",
-            "OTA_ONLY": "y",
+    result = run_release(
+        _release_tree(tmp_path / "release"),
+        "bramble",
+        environment={
             "PYTHONPATH": str(SCRIPTS_DIR),
             "RELEASE_RECORD": str(record),
             "TMPDIR": str(tmpdir),
@@ -463,7 +454,7 @@ def _release(
             "YUBIHSM_PASSWORD": "test-only",
             **environment,
         },
-        check=False,
+        dry_run=False,
     )
     recorded = json.loads(record.read_text()) if record.exists() else None
     return result, recorded
