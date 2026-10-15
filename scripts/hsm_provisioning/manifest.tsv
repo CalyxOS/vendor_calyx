@@ -1,5 +1,4 @@
 filename	sha256sum	filesize	link
-start.sh
 vendor/calyx/scripts/hsm_provisioning/audit.py
 vendor/calyx/scripts/hsm_provisioning/provision.py
 vendor/calyx/scripts/hsm_provisioning/setup.py
