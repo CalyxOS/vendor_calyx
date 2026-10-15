@@ -19,12 +19,10 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from signing.vendor_yubihsm import (
-    YubiHsmConfig,
     attest_key,
-    connect_yubihsm_session,
     extract_and_save_audit_log,
 )
-from yubihsm.core import AuthSession
+from yubihsm.core import AuthSession, YubiHsm
 from yubihsm.defs import COMMAND, OBJECT
 from yubihsm.exceptions import YubiHsmConnectionError, YubiHsmDeviceError
 from yubihsm.objects import AsymmetricKey, YhsmObject
@@ -205,17 +203,19 @@ def test_audit_log_extraction_reopens_its_shared_session_on_retry(
     yubihsm.plug(device)
     _plug_on_restart(yubihsm, device, monkeypatch, tmp_path)
 
-    def connect_then_unplug(hsm_config: YubiHsmConfig) -> AuthSession:
-        session = connect_yubihsm_session(hsm_config)
+    create_session = YubiHsm.create_session_derived
+
+    def create_then_unplug(
+        hsm: YubiHsm,
+        auth_key_id: int,
+        password: str,
+    ) -> AuthSession:
+        session = create_session(hsm, auth_key_id, password)
         if device.sessions_opened == 1:
             yubihsm.plug(None)
         return session
 
-    monkeypatch.setattr(
-        vendor_yubihsm,
-        "connect_yubihsm_session",
-        connect_then_unplug,
-    )
+    monkeypatch.setattr(YubiHsm, "create_session_derived", create_then_unplug)
     log_file = tmp_path / "audit.log"
     extract_and_save_audit_log(
         yubihsm_config(yubihsm),
