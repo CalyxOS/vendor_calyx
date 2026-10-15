@@ -10,7 +10,7 @@ set -uo pipefail
 export UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
 out_dir=$1 common_script=$2 clear_script=$3
 shift 3
-source "$clear_script"
+source "$clear_script" || exit
 for assignment in "$@"; do
   export "$assignment"
 done
