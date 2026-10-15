@@ -586,6 +586,9 @@ class SigningSession:
         The server holds one YubiHSM session for signatures and audit-log
         extraction and, unless NEVER_START_APKSIGNER_BATCH=y, one
         "apksigner batch" process.
+
+        Raises:
+            RuntimeError: If the server cannot start.
         """
         interceptor = self.environment.get("SIGNING_COMMAND_INTERCEPTOR", "")
         if (
@@ -612,11 +615,9 @@ class SigningSession:
         try:
             self._resources.enter_context(server)
         except OSError as error:
-            print(
-                f"Warning: not starting the signing server ({error}).",
-                file=sys.stderr,
-            )
-            return
+            raise RuntimeError(
+                f"cannot start the signing server ({error})",
+            ) from error
         self.environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
 
     def _invoke(self, argv: list[str]) -> int:
