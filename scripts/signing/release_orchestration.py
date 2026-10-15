@@ -405,6 +405,7 @@ class SigningSession:
         *,
         cwd: Path,
         metadata: SigningMetadata,
+        program: str,
         device: str,
         signing_args: list[str],
     ) -> None:
@@ -420,7 +421,7 @@ class SigningSession:
             signing=signing_args,
             ota=read_words(environment.get("EXTRA_OTA_ARGS", "")),
         )
-        self.program = f"{self.command}.sh"
+        self.program = program
         self.extra_devices = environment.get("EXTRA_DEVICES", "").split()
         self.tmpdir: Path | None = None
         self.vendor_release_initialized = False
@@ -668,6 +669,7 @@ class ReleaseOrchestrator(SigningSession):
         *,
         cwd: Path,
         metadata: SigningMetadata,
+        program: str,
         device: str,
         target_files_arg: str | None,
     ) -> None:
@@ -675,6 +677,7 @@ class ReleaseOrchestrator(SigningSession):
             environment,
             cwd=cwd,
             metadata=metadata,
+            program=program,
             device=device,
             signing_args=[
                 "--threads",
@@ -1072,6 +1075,7 @@ class DeltaOrchestrator(SigningSession):
         *,
         cwd: Path,
         metadata: SigningMetadata,
+        program: str,
         device: str,
         old: str,
         new: str,
@@ -1080,6 +1084,7 @@ class DeltaOrchestrator(SigningSession):
             environment,
             cwd=cwd,
             metadata=metadata,
+            program=program,
             device=device,
             signing_args=[],
         )
