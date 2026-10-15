@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Run the AOSP release tools of a release and checksum their outputs.
+Run the AOSP release tools of a release, checksum their outputs and
+copy the output of a release into a log, and end a signing run early,
+on a SIGTERM or SIGHUP through exit_on_signals() or with Abort, or
+hold the signals back through defer_signals().
 """
 
 from __future__ import annotations
