@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
-from collections.abc import Generator, Mapping, MutableMapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -346,17 +346,6 @@ def prepare_signing_args(
         ]
 
 
-@contextlib.contextmanager
-def _pushd(path: Path) -> Generator[None, None, None]:
-    """Run the body with path as the working directory."""
-    previous = Path.cwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(previous)
-
-
 _SOONG_RELEASETOOLS = Path(
     "out/soong/.intermediates/build/make/tools/releasetools",
 )
@@ -617,9 +606,9 @@ class SigningSession:
         """
         if self.dry_run:
             return
-        with _pushd(out_dir):
-            text = format_sha256sum(filename)
-        (out_dir / f"{filename}.sha256sum").write_text(text)
+        (out_dir / f"{filename}.sha256sum").write_text(
+            format_sha256sum(out_dir, filename),
+        )
 
 
 class ReleaseOrchestrator(SigningSession):

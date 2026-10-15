@@ -121,23 +121,23 @@ def run_release_tool(argv: Sequence[str]) -> int:
         return 127
 
 
-def format_sha256sum(path: str) -> str:
+def format_sha256sum(directory: Path, name: str) -> str:
     """
     Render one file's checksum in sha256sum(1)'s own output format.
 
     Args:
-        path: Filename to hash and print exactly as given, as `sha256sum`
-            prints its argument rather than a resolved path.
+        directory: Directory holding the file.
+        name: Name of the file in directory, printed as given.
 
     Returns:
-        "<hex digest><two spaces><path>\\n", matching a `sha256sum`
-        invocation run against the same file from the same directory.
+        "<hex digest><two spaces><name>\\n", matching a `sha256sum name`
+        invocation run in directory.
     """
     digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
+    with (directory / name).open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
-    return f"{digest.hexdigest()}  {path}\n"
+    return f"{digest.hexdigest()}  {name}\n"
 
 
 _TRANSCRIPT_STOP_TIMEOUT = 10.0
