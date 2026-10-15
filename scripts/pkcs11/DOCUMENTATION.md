@@ -384,7 +384,8 @@ and the APK signatures of `pkcs11/apksigner_signing_helper.py`,
 and extracts the audit log after each signing command.
 
 Each helper checks the server's signature against the key's public key or certificate on disk.
-When the server is not running or cannot sign, each helper signs through PKCS#11 on its own.
+When the server is not running or cannot sign, a YubiHSM signature fails.
+A SoftHSM release runs no server, and its helpers sign through PKCS#11.
 
 ### KMS-based APK signing
 
