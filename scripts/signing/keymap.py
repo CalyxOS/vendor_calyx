@@ -585,6 +585,7 @@ class Id2bKeymapper(_BaseKeymapper):
         metadata: SigningMetadata,
         *,
         extra_devices: Sequence[str] = (),
+        config: Id2bConfig = Id2bConfig(),
     ):
         """
         Create a mapper for a set of metadata.
@@ -596,6 +597,7 @@ class Id2bKeymapper(_BaseKeymapper):
                 EXTRA_DEVICES. A device already in all_devices
                 keeps its index. The appended key IDs depend on the order of
                 extra_devices.
+            config: ID ranges and consolidation strategies.
 
         Returns:
             None.
@@ -604,7 +606,7 @@ class Id2bKeymapper(_BaseKeymapper):
             ValueError: If the mapping configuration is invalid.
         """
         self.metadata = metadata
-        self.config = Id2bConfig()
+        self.config = config
         self._indices = {
             name: {value: index for index, value in enumerate(values) if value}
             for name, values in metadata.arrays.items()
@@ -621,19 +623,35 @@ class Id2bKeymapper(_BaseKeymapper):
 
     def _validate_config(self) -> None:
         """
-        Reject ID-range exhaustion and unsupported consolidation strategies.
+        Reject ID-range exhaustion, a device prefix range that does not fit
+        one byte or overlaps a key type prefix, and unsupported
+        consolidation strategies.
 
         Returns:
             None.
 
         Raises:
-            ValueError: If an ID range is exhausted or a strategy is
-                unsupported.
+            ValueError: If an ID range is exhausted, out of one byte or
+                overlapping, or a strategy is unsupported.
         """
-        device_count = self._all_devices_count
-        available = (
-            self.config.device_prefix_end - self.config.device_prefix_start + 1
+        start = self.config.device_prefix_start
+        end = self.config.device_prefix_end
+        if end > 0xFF:
+            raise ValueError(
+                f"device prefix end 0x{end:02x} does not fit one byte",
+            )
+        overlapping = sorted(
+            key_type
+            for key_type, prefix in self.config.key_type_to_prefix.items()
+            if start <= prefix <= end
         )
+        if overlapping:
+            raise ValueError(
+                f"device prefix range 0x{start:02x}-0x{end:02x} overlaps the "
+                f"prefix of key types {', '.join(overlapping)}",
+            )
+        device_count = self._all_devices_count
+        available = end - start + 1
         if device_count > available:
             raise ValueError(
                 "all_devices exceeds the configured two-byte ID range",
