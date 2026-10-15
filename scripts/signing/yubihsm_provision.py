@@ -287,7 +287,7 @@ class ProvisionWizard:
         if code:
             raise StepFailed(code)
 
-    def export_wrapped_key(self, key_id: str) -> None:
+    def back_up_key(self, key_id: str) -> None:
         """
         Export a key wrapped into its backup file under key_dir, and record
         the export in the audit log, or under DRY_RUN=y print the record
@@ -322,7 +322,7 @@ class ProvisionWizard:
             if obj.object_type == OBJECT.ASYMMETRIC_KEY
         ]
         for key in keys:
-            self.export_wrapped_key(f"0x{key.id:04x}")
+            self.back_up_key(f"0x{key.id:04x}")
 
     def _check_exports(self) -> None:
         if not any(Path(self.key_dir).glob("*.yhw")):
