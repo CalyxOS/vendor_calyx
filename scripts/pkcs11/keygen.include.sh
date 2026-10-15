@@ -490,27 +490,7 @@ generate_cert_pkcs11() {
     local name=$(basename "$key_label")
     mkdir -p "$dstdir" || return $?
     cp "$tmpfile" "$dstdir/$name.x509.pem" || return $?
-    case "$key_type" in
-      avb|apex_payload|apex_container)
-        if [ -e "$dstdir/$name.pem" ]; then
-          echo "Public key file already exists: $dstdir/$name.pem" >&2
-        else
-          # Output public key and avbpubkey for APEX payload or AVB keys.
-          # Also do this for core keys, since APEX might use them.
-          "$OPENSSL_BIN" x509 -pubkey -noout -in "$tmpfile" -out "$dstdir/$name.pem" || return $?
-        fi
-        if [ "$key_type" = "avb" ] || [ "$key_type" = "apex_payload" ]; then
-          if [ -e "$dstdir/$name.avbpubkey" ]; then
-            echo "avbpubkey file already exists: $dstdir/$name.avbpubkey" >&2
-          else
-            "$AVBTOOL_BIN" extract_public_key \
-              --key "$dstdir/$name.pem" \
-              --output "$dstdir/$name.avbpubkey" \
-              || return $?
-          fi
-        fi
-        ;;
-    esac
+    export_missing_public_keys "$key_label" "$key_type" || return $?
   fi
   rm -f "$tmpfile"
   return $err
