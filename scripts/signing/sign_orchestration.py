@@ -26,7 +26,6 @@ from .release_execution import (
     Abort,
     defer_signals,
     exit_on_signals,
-    render_release_tool,
 )
 from .sign_execution import generate_incrementals as _run_generate_incrementals
 from .sign_execution import sign_builds as _run_sign_builds
@@ -99,7 +98,8 @@ def _reported_step_error(message: str) -> SignStepError:
 
 class SignDone(Exception):
     """
-    Raised for the "nothing left to do" early exit, which returns 0.
+    Raised to end the run early with exit status 0, when there is nothing
+    left to do or a dry run has shown its plan.
     """
 
 
@@ -775,18 +775,20 @@ class SignOrchestrator:
         print("Here's the plan:")
         self._render_plan(plan)
         print()
+        if self.dry_run:
+            raise SignDone()
         if not confirm("Ready?", assume_yes=self.assume_yes):
             raise SignStepError("declined final confirmation")
 
     def _upload_logs(self) -> None:
         """
-        Upload new audit logs with the log repository's upload.py.
+        Upload new audit logs with the log repository's upload.py, unless
+        DRY_RUN=y.
 
         Raises:
             SignStepError: If the upload fails.
         """
         if self.dry_run:
-            self._show("upload_logs")
             return
         if self.environment.get("SKIP_LOG_UPLOAD") == "true":
             return
@@ -825,31 +827,17 @@ class SignOrchestrator:
             pass
 
     def _ensure_keys(self) -> None:
-        devices = self.state.devices_without_loaded_keys
-        if self.dry_run:
-            self._show("ensure_all_keys_available_for_devices", *devices)
-        else:
-            self.try_(
-                "ensure_all_keys_available_for_devices",
-                self._ensure_all_keys_available_for_devices,
-            )
+        self.try_(
+            "ensure_all_keys_available_for_devices",
+            self._ensure_all_keys_available_for_devices,
+        )
         self._upload_logs_retry_best_effort()
 
     @property
     def dry_run(self) -> bool:
         return self.environment.get("DRY_RUN") == "y"
 
-    def _show(self, *argv: str) -> None:
-        """Print one step as a quoted command line and a blank line."""
-        sys.stderr.write(render_release_tool(argv))
-
     def _sign_builds(self, pairs: Sequence[SignPair]) -> None:
-        if self.dry_run:
-            self._show(
-                "sign_builds",
-                *(pair.tag for pair in pairs),
-            )
-            return
         code = _run_sign_builds(
             pairs,
             release_script=self.release_script,
@@ -865,12 +853,6 @@ class SignOrchestrator:
         self,
         triples: Sequence[IncrementalTriple],
     ) -> None:
-        if self.dry_run:
-            self._show(
-                "generate_incrementals",
-                *(triple.tag for triple in triples),
-            )
-            return
         code = _run_generate_incrementals(
             triples,
             generate_delta_script=self.generate_delta_script,
