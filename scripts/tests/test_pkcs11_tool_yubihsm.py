@@ -14,12 +14,10 @@ from conftest import install_executable
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
-from signing.avb_signing import (
-    SHA256_DIGEST_INFO_PREFIX,
-    pkcs11_signer_from_environment,
-)
+from signing.avb_signing import SHA256_DIGEST_INFO_PREFIX
 from signing.models import KeyReference, SignRequest
 from signing.pkcs11 import Pkcs11Backend, Pkcs11Config
+from signing.signing_helpers import pkcs11_signer_from_environment
 from yubihsm_emulator import Connector
 
 YUBIHSM_MODULES = (
