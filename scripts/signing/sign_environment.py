@@ -741,9 +741,6 @@ class YubiHsmVendor(Vendor):
                     "Did you clone the audit log git repository already?",
                 )
             environment["YUBIHSM_LOGS_DIR"] = str(logs_dir)
-        else:
-            environment["YUBIHSM_TMPDIR"] = ""
-            environment["YUBIHSM_LOCKFILE"] = ""
 
     def initialize_release(
         self,
