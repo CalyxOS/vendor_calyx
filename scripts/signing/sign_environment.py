@@ -22,7 +22,7 @@ from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 
 from .confirmation import ask_variable, confirm
-from .keymap import Keymapper, normalize_key_dir
+from .keymap import Keymapper
 from .vendor_yubihsm import (
     YubiHsmConfig,
     audit_logged,
@@ -116,7 +116,7 @@ def key_id_is_ondemand(keymapper: Keymapper) -> Callable[[int], bool]:
 def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
     """
     Pick the vendor PKCS11_VENDOR names, and set the variables the vendor
-    and the keymapper define.
+    defines.
 
     Args:
         environment: Process environment to read PKCS11_VENDOR from,
@@ -161,11 +161,6 @@ def load_vendor(environment: MutableMapping[str, str]) -> Vendor | None:
                     "module, or set PKCS11_MODULE to its path.",
                 )
             environment["PKCS11_MODULE"] = module
-    if not environment.get("KEYMAPPER_FILE"):
-        if (environment.get("KEYMAPPER") or "legacy") == "legacy":
-            environment["KEY_DIR"] = "keys/"
-        else:
-            normalize_key_dir(environment)
     return vendor
 
 
