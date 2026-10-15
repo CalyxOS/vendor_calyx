@@ -37,6 +37,7 @@ from .sign_planning import (
     find_prev_signed_device_builds,
     gather_device_builds,
     gather_signable_devices,
+    is_build_number,
     parse_build_numbers,
     partition_by_key_availability,
 )
@@ -398,7 +399,7 @@ class SignOrchestrator:
         if rollback:
             self.state.no_incremental = True
             first = self.environment["BUILD_NUMBER"].split()[0]
-            if not (first.isascii() and first.isdigit()):
+            if not is_build_number(first):
                 raise _reported_step_error(
                     f"BUILD_NUMBER {first} is not a number",
                 )
