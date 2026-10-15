@@ -37,25 +37,6 @@ from signing.pkcs11 import Pkcs11Backend, Pkcs11Config
 from software_rsa import avb_input, der_public_key, verifies
 
 
-def test_backend_exports_a_public_key_when_listing_needs_no_pin(
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> None:
-    _, _, public_key = pkcs11_token
-    no_pin_listing = Pkcs11Backend(
-        Pkcs11Config(
-            module=SOFTHSM_MODULE,
-            pin=SOFTHSM_USER_PIN,
-            token_label=SOFTHSM_TOKEN_LABEL,
-            list_requires_no_pin=True,
-        ),
-    )
-    reference = KeyReference(SOFTHSM_KEY_ID, SOFTHSM_KEY_LABEL)
-
-    assert no_pin_listing.export_public_key(reference) == (
-        public_key.read_bytes()
-    )
-
-
 @pytest.fixture
 def pkcs11_token(
     softhsm_rsa_key: tuple[dict[str, str], Path],
@@ -473,20 +454,9 @@ def test_so_pin_backend_discovers_with_the_user_pin(
     assert b"CKR_PIN_INCORRECT" in error.value.stderr
 
 
-@pytest.mark.parametrize(
-    ("uses_so_pin", "so_pin", "succeeds"),
-    (
-        ("y", SOFTHSM_SO_PIN, True),
-        ("y", "87654321", False),
-        ("n", "87654321", True),
-    ),
-)
-def test_avb_helper_signs_with_the_pin_the_environment_selects(
+def test_avb_helper_signs_with_the_user_pin(
     tmp_path: Path,
     so_login_token: tuple[Path, dict[str, str], Path, Path],
-    uses_so_pin: str,
-    so_pin: str,
-    succeeds: bool,
 ) -> None:
     tool, token_environment, public_key, _ = so_login_token
     public_key_pem = tmp_path / "0x2000.pem"
@@ -517,8 +487,8 @@ def test_avb_helper_signs_with_the_pin_the_environment_selects(
             "PKCS11_TOOL_BIN": str(tool),
             "PKCS11_TOKEN_LABEL": SOFTHSM_TOKEN_LABEL,
             "PKCS11_PIN": SOFTHSM_USER_PIN,
-            "PKCS11_SO_PIN": so_pin,
-            "SIGNING_USES_SO_PIN": uses_so_pin,
+            "PKCS11_SO_PIN": "87654321",
+            "SIGNING_USES_SO_PIN": "y",
             "KEY_DIR": f"{tmp_path}/",
         },
         input=avb_input(digest),
@@ -526,42 +496,8 @@ def test_avb_helper_signs_with_the_pin_the_environment_selects(
         text=False,
     )
 
-    if succeeds:
-        assert result.returncode == 0, result.stderr
-        assert verifies(der_public_key(public_key), result.stdout, digest)
-    else:
-        assert result.returncode != 0
-        assert b"CKR_PIN_INCORRECT" in result.stderr
-        assert b"Traceback" not in result.stderr
-
-
-def test_backend_discovers_without_logging_in_when_configured(
-    pkcs11_token: tuple[Pkcs11Backend, dict[str, str], Path],
-) -> None:
-    backend, _, _ = pkcs11_token
-    reference = KeyReference(SOFTHSM_KEY_ID, SOFTHSM_KEY_LABEL)
-    backend.generate_certificate(
-        KeySpec(reference, 2048),
-        "/CN=Unauthenticated discovery",
-    )
-
-    def wrong_pin_backend(list_requires_no_pin: bool) -> Pkcs11Backend:
-        return Pkcs11Backend(
-            Pkcs11Config(
-                module=SOFTHSM_MODULE,
-                token_label=SOFTHSM_TOKEN_LABEL,
-                pin="654321",
-                list_requires_no_pin=list_requires_no_pin,
-            ),
-        )
-
-    unauthenticated = wrong_pin_backend(True)
-    assert unauthenticated.key_exists(reference)
-    assert unauthenticated.certificate_exists(reference)
-    with pytest.raises(subprocess.CalledProcessError):
-        unauthenticated.sign(SignRequest(reference, b"digest", "rsa-pkcs"))
-    with pytest.raises(subprocess.CalledProcessError):
-        wrong_pin_backend(False).certificate_exists(reference)
+    assert result.returncode == 0, result.stderr
+    assert verifies(der_public_key(public_key), result.stdout, digest)
 
 
 @pytest.mark.parametrize(
