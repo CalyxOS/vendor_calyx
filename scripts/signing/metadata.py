@@ -83,16 +83,38 @@ class SigningMetadata:
             raise ValueError("key_type_to_array does not cover key_types")
 
 
-def default_metadata_path() -> Path:
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+
+
+def default_metadata_path(
+    environment: Mapping[str, str] = os.environ,
+) -> Path:
     """
     Return the metadata module METADATA_FILE names, or scripts/metadata.py.
+
+    Args:
+        environment: Environment to read METADATA_FILE from.
 
     Returns:
         Path of the metadata module to load.
     """
+    return Path(environment.get("METADATA_FILE") or SCRIPTS_DIR / "metadata.py")
+
+
+def default_devices_path(environment: Mapping[str, str] = os.environ) -> Path:
+    """
+    Return the devices file DEVICES_FILE names, or calyx/scripts/vars/devices
+    of the source tree.
+
+    Args:
+        environment: Environment to read DEVICES_FILE from.
+
+    Returns:
+        Path of the devices file to load.
+    """
     return Path(
-        os.environ.get("METADATA_FILE")
-        or Path(__file__).resolve().parents[1] / "metadata.py",
+        environment.get("DEVICES_FILE")
+        or (SCRIPTS_DIR / "../../../calyx/scripts/vars/devices").resolve(),
     )
 
 
