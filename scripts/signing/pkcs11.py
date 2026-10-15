@@ -31,26 +31,6 @@ MESSAGE_SIGNING_MECHANISMS = frozenset(
 _SIGNING_MECHANISMS = MESSAGE_SIGNING_MECHANISMS | {"rsa-pkcs"}
 
 
-def preload_module(environment: dict[str, str], module: Path) -> None:
-    """
-    Preload a PKCS#11 module into pkcs11-tool, so that the module's getopt
-    state binds to pkcs11-tool's instead of the private copy loading it
-    with RTLD_DEEPBIND gives it. See "pkcs11-tool and the YubiHSM PKCS#11
-    module" in DOCUMENTATION.md.
-
-    Args:
-        environment: Subprocess environment to mutate in place.
-        module: PKCS#11 provider module path.
-
-    Returns:
-        None.
-    """
-    preload = environment.get("LD_PRELOAD")
-    environment["LD_PRELOAD"] = (
-        f"{module}:{preload}" if preload else str(module)
-    )
-
-
 @dataclass(frozen=True, slots=True)
 class Pkcs11Config:
     """
@@ -70,7 +50,6 @@ class Pkcs11Config:
     certificate_days: int = DEFAULT_CERTIFICATE_DAYS
     use_so_pin: bool = False
     list_requires_no_pin: bool = False
-    preload_module: bool = False
 
     def __post_init__(self) -> None:
         """
@@ -580,9 +559,6 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             subprocess.CalledProcessError: If ``pkcs11-tool`` exits
                 unsuccessfully.
         """
-        environment = self._environment()
-        if self.config.preload_module:
-            preload_module(environment, self.config.module)
         return subprocess.run(
             [
                 self.config.tool,
@@ -592,7 +568,7 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             input=input_data,
             check=True,
             capture_output=True,
-            env=environment,
+            env=self._environment(),
         )
 
 
