@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from conftest import (
     PKCS11_ENGINE,
-    SCRIPTS_DIR,
+    SIGNING_HELPER,
     SOFTHSM_KEY_ID,
     SOFTHSM_KEY_LABEL,
     SOFTHSM_MODULE,
@@ -477,7 +477,7 @@ def test_avb_helper_signs_with_the_user_pin(
 
     result = run(
         [
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            SIGNING_HELPER,
             "SHA256_RSA2048",
             public_key_pem,
         ],

@@ -12,7 +12,12 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, SOFTHSM_KEY_ID, run, yubihsm_config
+from conftest import (
+    APKSIGNER_SIGNING_HELPER,
+    SOFTHSM_KEY_ID,
+    run,
+    yubihsm_config,
+)
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -21,8 +26,6 @@ from signing.signing_server import Message, SigningServer
 from signing.yubihsm_session_service import YubiHsmSessionService
 from software_rsa import der_public_key, rsa_key, verifies
 from yubihsm_emulator import Connector
-
-HELPER = SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py"
 
 
 @contextlib.contextmanager
@@ -90,7 +93,7 @@ def test_apksigner_signing_helper_signs_raw_data(
     data = b"apksigner signable content, unhashed" * 100
 
     result = run(
-        [HELPER, mechanism, KEY_ID],
+        [APKSIGNER_SIGNING_HELPER, mechanism, KEY_ID],
         env={
             **environment,
             "KEY_DIR": _softhsm_key_dir(tmp_path / "keys", public_key),
@@ -115,7 +118,7 @@ def test_apksigner_signing_helper_rejects_unsupported_mechanism(
     environment, _ = softhsm_rsa_key
 
     result = run(
-        [HELPER, "rsa-pkcs", KEY_ID],
+        [APKSIGNER_SIGNING_HELPER, "rsa-pkcs", KEY_ID],
         env=environment,
         input=b"data",
         check=False,
@@ -127,7 +130,7 @@ def test_apksigner_signing_helper_rejects_unsupported_mechanism(
 
 def test_apksigner_signing_helper_rejects_extra_arguments() -> None:
     result = run(
-        [HELPER, "sha256-rsa-pkcs", KEY_ID, "unexpected"],
+        [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", KEY_ID, "unexpected"],
         env={"PKCS11_MODULE": "/dev/null"},
         check=False,
     )
@@ -172,7 +175,7 @@ def test_apksigner_signing_helper_signs_with_the_server_key(
 
     with _signing_server(tmp_path / "s.sock", yubihsm) as server:
         result = run(
-            [HELPER, mechanism, "0x1100"],
+            [APKSIGNER_SIGNING_HELPER, mechanism, "0x1100"],
             env={
                 "SIGNING_SERVER_SOCKET": str(server.socket_path),
                 "KEY_DIR": f"{key_dir}/",
@@ -199,7 +202,7 @@ def test_apksigner_signing_helper_falls_back_when_the_server_cannot_sign(
 
     with server:
         result = run(
-            [HELPER, "sha256-rsa-pkcs", KEY_ID],
+            [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", KEY_ID],
             env={
                 **environment,
                 "SIGNING_SERVER_SOCKET": str(server.socket_path),
@@ -228,7 +231,7 @@ def test_apksigner_signing_helper_reads_an_empty_key_dir_as_the_cwd(
 
     with _signing_server(tmp_path / "s.sock", yubihsm) as server:
         result = run(
-            [HELPER, "sha256-rsa-pkcs", "0x1100"],
+            [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", "0x1100"],
             cwd=tmp_path,
             env={
                 "SIGNING_SERVER_SOCKET": str(server.socket_path),
@@ -250,7 +253,7 @@ def test_apksigner_signing_helper_refuses_a_certificate_of_another_key(
     key_dir = _certificate(tmp_path / "keys", KEY_ID, rsa_key("b").public_key())
 
     result = run(
-        [HELPER, "sha256-rsa-pkcs", KEY_ID],
+        [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", KEY_ID],
         env={**environment, "KEY_DIR": f"{key_dir}/"},
         input=b"apksigner signable content",
         check=False,
@@ -269,7 +272,7 @@ def test_apksigner_signing_helper_refuses_to_sign_without_the_certificate(
     environment, _ = softhsm_rsa_key
 
     result = run(
-        [HELPER, "sha256-rsa-pkcs", KEY_ID],
+        [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", KEY_ID],
         env={
             **environment,
             "KEY_DIR": f"{tmp_path / 'keys'}/",

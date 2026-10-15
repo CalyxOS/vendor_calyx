@@ -15,7 +15,13 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, install_executable, yubihsm_config
+from conftest import (
+    PAYLOAD_SIGNER,
+    SIGNING_HELPER,
+    YUBIHSM_INTERCEPTOR,
+    install_executable,
+    yubihsm_config,
+)
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from signing import signing_server
@@ -24,8 +30,6 @@ from signing.yubihsm_session_service import YubiHsmSessionService
 from software_rsa import avb_input, der_public_key, rsa_key, verifies
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector, EmulatedYubiHsm
-
-HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.py"
 
 
 class _Handler:
@@ -254,10 +258,6 @@ def test_extract_audit_log_retry_writes_the_entries_once(
         assert "could not acknowledge" in response["unacknowledged"]
 
 
-PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
-INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
-
-
 def _avb_input(message: bytes) -> tuple[bytes, bytes]:
     digest = hashlib.sha256(message).digest()
     return avb_input(digest), digest
@@ -320,7 +320,7 @@ def test_helper_checks_the_server_signature_against_its_key(
     key_file = _public_key_file(tmp_path / "keys", "0x2100", key_name)
 
     result = subprocess.run(
-        [HELPER, "SHA256_RSA2048", key_file],
+        [SIGNING_HELPER, "SHA256_RSA2048", key_file],
         env={
             **_without_signing_variables(),
             "SIGNING_SERVER_SOCKET": str(server.socket_path),
@@ -370,7 +370,7 @@ def test_helper_falls_back_to_pkcs11_without_a_server(
     data, digest = _avb_input(b"image")
 
     result = subprocess.run(
-        [HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        [SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
         cwd=tmp_path,
         env=environment,
         input=data,
@@ -399,7 +399,7 @@ def test_interceptor_appends_the_audit_log_through_the_server(
     audit_log = tmp_path / "audit.log"
 
     result = subprocess.run(
-        [INTERCEPTOR, "add_hash_footer", "--signing_helper", "helper"],
+        [YUBIHSM_INTERCEPTOR, "add_hash_footer", "--signing_helper", "helper"],
         env={
             **_without_signing_variables(),
             "PATH": f"{bin_dir}:{os.environ['PATH']}",

@@ -10,7 +10,14 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import REPO_ROOT, SCRIPTS_DIR, TEST_METADATA, run, sha256
+from conftest import (
+    FIXTURES_DIR,
+    REPO_ROOT,
+    SCRIPTS_DIR,
+    TEST_METADATA,
+    run,
+    sha256,
+)
 from signing.keymap import Id2bKeymapper
 from signing.metadata import load_metadata
 from signing.release_arguments import build_release_arguments, make_get_key
@@ -20,7 +27,7 @@ SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys integration test"
 LABEL_SUBJECT = "/O=Calyx Institute/CN=_KEY_LABEL_"
 AOSP_TOP = REPO_ROOT.parents[1]
 AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
-MODES_FIXTURE = Path(__file__).parent / "fixtures" / "updatekeys-modes.json"
+MODES_FIXTURE = FIXTURES_DIR / "updatekeys-modes.json"
 LEGACY_METADATA = """KEYS_AVB = ("vbmeta", "vbmeta_system")
 KEYS_OTHER = ()
 KEYS_CORE = ("build/make/target/product/security/testkey",)
