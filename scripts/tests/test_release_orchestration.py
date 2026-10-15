@@ -1241,7 +1241,7 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
     )
 
     with pytest.raises(Abort):
-        session.prepare_for_signing_full(command_argv=[])
+        session.prepare_signing(command_argv=[])
 
     assert parents == ["/dev/shm"]
 
@@ -1304,7 +1304,7 @@ def test_release_session_finalizes_then_cleans_up_its_vendor(
     )
 
     def run_steps() -> None:
-        session.prepare_for_signing_full(command_argv=[])
+        session.prepare_signing(command_argv=[])
         assert environment["PKCS11_VENDOR_INITIALIZED_RELEASE"] == "y"
 
     monkeypatch.setattr(session, "_run_steps", run_steps)
