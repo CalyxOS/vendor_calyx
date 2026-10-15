@@ -152,17 +152,14 @@ def install_tree(
     if keymapper_config:
         keymapper_file = str(root / "keymapper.id2b.configured.py")
         Path(keymapper_file).write_text(
-            "import dataclasses\n"
-            "from signing.keymap import Id2bKeymapper\n"
+            "from signing.keymap import Id2bConfig, Id2bKeymapper\n"
             "\n"
             "def create_keymapper(environment, metadata, *, extra_devices):\n"
-            "    mapper = Id2bKeymapper(\n"
-            "        metadata, extra_devices=extra_devices\n"
-            "    )\n"
-            "    mapper.config = dataclasses.replace(\n"
-            f"        mapper.config, **{keymapper_config!r}\n"
-            "    )\n"
-            "    return mapper\n",
+            "    return Id2bKeymapper(\n"
+            "        metadata,\n"
+            "        extra_devices=extra_devices,\n"
+            f"        config=Id2bConfig(**{keymapper_config!r}),\n"
+            "    )\n",
         )
     return Tree(root, keymapper_file)
 

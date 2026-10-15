@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from conftest import ID2B_KEYMAP, SCRIPTS_DIR
 from signing.keymap import (
+    Id2bConfig,
     Id2bKeymapper,
     Keymapper,
     LegacyKeymapper,
@@ -214,6 +215,35 @@ def test_keymapper_file_whose_create_keymapper_fails_is_named(
             {"KEYMAPPER_FILE": str(plugin)},
             load_metadata(SCRIPTS_DIR / "metadata.py"),
         )
+
+
+@pytest.mark.parametrize(
+    ("config", "message"),
+    (
+        (Id2bConfig(avb_consolidation="some"), "invalid AVB consolidation"),
+        (Id2bConfig(apex_consolidation="some"), "invalid APEX consolidation"),
+        (Id2bConfig(device_prefix_end=0x20), "exceeds the configured"),
+        (
+            Id2bConfig(device_prefix_start=0x16),
+            "0x16-0xfe overlaps the prefix of key types repo",
+        ),
+        (
+            Id2bConfig(device_prefix_start=0x00),
+            "overlaps the prefix of key types apex_apk, apex_container, "
+            "apex_payload, app, avb, core, repo",
+        ),
+        (Id2bConfig(device_prefix_end=0x100), "0x100 does not fit one byte"),
+    ),
+    ids=("avb", "apex", "range", "overlap", "overlap-all", "byte"),
+)
+def test_id2b_keymapper_validates_the_config_it_is_given(
+    config: Id2bConfig,
+    message: str,
+) -> None:
+    metadata = load_metadata(SCRIPTS_DIR / "metadata.py")
+
+    with pytest.raises(ValueError, match=message):
+        Id2bKeymapper(metadata, config=config)
 
 
 ANSWERS = json.loads(
