@@ -94,8 +94,9 @@ def prepare_files(
         order.
 
     Raises:
-        PackageError: If a file escapes the output directory, a local
-            file is missing or a download fails.
+        PackageError: If a file escapes the output directory, the
+            manifest lists start.sh, a local file is missing or a download
+            fails.
     """
     output_directory = Path(os.path.abspath(output_directory))
     mismatched: list[str] = []
@@ -105,6 +106,13 @@ def prepare_files(
         if not os.path.normpath(destination).startswith(f"{output_directory}/"):
             print(f"Unacceptable path traversal in {filename}", file=sys.stderr)
             raise PackageError
+        if os.path.normpath(destination) == f"{output_directory}/start.sh":
+            print(
+                f"start.sh is generated and must not be listed in "
+                f"{manifest_file}.",
+                file=sys.stderr,
+            )
+            raise PackageError
         destination.parent.mkdir(parents=True, exist_ok=True)
 
         if link:
@@ -112,9 +120,8 @@ def prepare_files(
             sys.stdout.flush()
             _download(destination, link, file_size)
         else:
-            generated = filename == "start.sh"
             source = Path(f"{source_directory}/{filename}")
-            if not generated and not source.exists():
+            if not source.exists():
                 print(f"Cannot find {filename}.", file=sys.stderr)
                 for line in (
                     "Run this script from a lunch'd Android build "
@@ -128,13 +135,8 @@ def prepare_files(
                 ):
                     print(line, file=sys.stderr)
                 raise PackageError
-            if not generated:
-                shutil.copy2(source, destination)
-        if (
-            filename.endswith(".py")
-            or filename.endswith("calyx-shamir-split")
-            or filename == "start.sh"
-        ):
+            shutil.copy2(source, destination)
+        if filename.endswith((".py", "calyx-shamir-split")):
             _reset(destination, 0o755)
         else:
             _reset(destination, 0o644)
