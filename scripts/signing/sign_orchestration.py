@@ -23,6 +23,7 @@ from .confirmation import ask_variable, confirm
 from .keymap import Keymapper, load_keymapper
 from .metadata import SigningMetadata
 from .release_execution import (
+    Abort,
     defer_signals,
     exit_on_signals,
     render_release_tool,
@@ -93,14 +94,6 @@ class SignStepError(Exception):
 def _reported_step_error(message: str) -> SignStepError:
     print(f"\n{message}", file=sys.stderr)
     return SignStepError(message)
-
-
-class SignAbort(Exception):
-    """Raised to unwind run() early with the exit code to return."""
-
-    def __init__(self, code: int) -> None:
-        super().__init__(f"sign orchestration aborted (code {code})")
-        self.code = code
 
 
 class SignDone(Exception):
@@ -188,7 +181,7 @@ class SignOrchestrator:
             What step() returns.
 
         Raises:
-            SignAbort: If the step fails and is not retried.
+            Abort: If the step fails and is not retried.
         """
         while True:
             try:
@@ -200,7 +193,7 @@ class SignOrchestrator:
                         "SIGN_ASSUME_YES=y is set, not retrying.",
                         file=sys.stderr,
                     )
-                    raise SignAbort(error.code) from error
+                    raise Abort(error.code) from error
                 if not confirm(
                     f"{description} failed (code {error.code}). Try again?",
                     assume_yes=False,
@@ -210,7 +203,7 @@ class SignOrchestrator:
                         "Giving up...",
                         file=sys.stderr,
                     )
-                    raise SignAbort(error.code) from error
+                    raise Abort(error.code) from error
 
     def run(self) -> int:
         """
@@ -225,7 +218,7 @@ class SignOrchestrator:
                     with exit_on_signals():
                         try:
                             self._run_steps()
-                        except SignAbort as abort:
+                        except Abort as abort:
                             return abort.code
                         except SignDone:
                             return 0
@@ -820,7 +813,7 @@ class SignOrchestrator:
         """
         try:
             self.try_("upload_logs", self._upload_logs)
-        except SignAbort:
+        except Abort:
             pass
 
     def _ensure_keys(self) -> None:
@@ -858,7 +851,7 @@ class SignOrchestrator:
             environment=self.environment,
         )
         if code != 0:
-            raise SignAbort(code)
+            raise Abort(code)
 
     def _generate_incrementals(
         self,
@@ -878,7 +871,7 @@ class SignOrchestrator:
             environment=self.environment,
         )
         if code != 0:
-            raise SignAbort(code)
+            raise Abort(code)
 
     def keymapper(self) -> Keymapper:
         """Load the keymapper once and apply its KEY_DIR export."""
