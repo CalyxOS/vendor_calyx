@@ -20,7 +20,7 @@ from typing import TypeVar
 
 from . import sign_environment
 from .confirmation import ask_variable, confirm
-from .keymap import Keymapper, load_keymapper
+from .keymap import Keymapper, apply_keymapper_exports, load_keymapper
 from .metadata import SigningMetadata
 from .release_execution import (
     Abort,
@@ -875,10 +875,10 @@ class SignOrchestrator:
             raise Abort(code)
 
     def keymapper(self) -> Keymapper:
-        """Load the keymapper once and apply its KEY_DIR export."""
+        """Load the keymapper once and apply its exports."""
         if self._loaded_keymapper is None:
             keymapper = load_keymapper(self.environment, self.metadata)
-            keymapper.key_dir(self.environment)
+            apply_keymapper_exports(self.environment, keymapper)
             self._loaded_keymapper = keymapper
         return self._loaded_keymapper
 
