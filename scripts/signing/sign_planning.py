@@ -47,6 +47,11 @@ class SignPair:
     build: int
     target_build: int
 
+    @property
+    def tag(self) -> str:
+        """The "device,build,target_build" text naming the pair."""
+        return f"{self.device},{self.build},{self.target_build}"
+
 
 @dataclass(frozen=True, slots=True)
 class IncrementalTriple:
@@ -57,6 +62,11 @@ class IncrementalTriple:
     device: str
     old_build: int
     new_build: int
+
+    @property
+    def tag(self) -> str:
+        """The "device,old_build,new_build" text naming the incremental."""
+        return f"{self.device},{self.old_build},{self.new_build}"
 
 
 @dataclass(frozen=True, slots=True)
