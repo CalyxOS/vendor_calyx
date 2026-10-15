@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
+DEFAULT_CONNECTOR_URL = "http://127.0.0.1:12345"
+
 
 def _process_is_alive(pid: int) -> bool:
     """
