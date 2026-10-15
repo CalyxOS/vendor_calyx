@@ -425,9 +425,9 @@ is_object_available_on_disk() {
         echo "Unsupported opaque algorithm '$algo'" >&2
         return 1
       fi
-      [ -f "$KEY_DIR$id.x509.pem" ] && [ -s "$KEY_DIR$id.x509.pem" ] || return 1
-      [ "$(sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q}' "$KEY_DIR$id.x509.pem")" \
-        = "-----BEGIN CERTIFICATE-----" ] || return 1 ;;
+      [ -f "$KEY_DIR$id.x509.pem" ] \
+        && openssl x509 -noout -in "$KEY_DIR$id.x509.pem" 2>/dev/null \
+        || return 1 ;;
     *)
       echo "Unsupported type '$type'" >&2
       return 1 ;;
