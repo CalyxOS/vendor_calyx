@@ -209,7 +209,7 @@ def test_yubihsm_keygen_backs_up_a_key_a_failed_run_left_unexported(
     _assert_files_match_the_device(root, yubihsm)
 
 
-def test_python_yubihsm_keygen_refuses_generate_using_pkcs11_first(
+def test_yubihsm_keygen_refuses_generate_using_pkcs11(
     tmp_path: Path,
     yubihsm: Connector,
 ) -> None:

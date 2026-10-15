@@ -34,8 +34,8 @@ def failing_pkcs11_tool(tmp_path: Path) -> Path:
     )
 
 
-def python_helper_env(tool: Path) -> dict[str, str]:
-    """Configure Python helpers to invoke one test PKCS#11 tool."""
+def helper_environment(tool: Path) -> dict[str, str]:
+    """Configure the signing helpers to invoke one test PKCS#11 tool."""
     return {
         "PKCS11_MODULE": "/dev/null",
         "PKCS11_TOOL_BIN": str(tool),
@@ -48,7 +48,7 @@ def test_avb_helper_preserves_provider_stderr(
 ) -> None:
     result = run(
         [SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
-        env=python_helper_env(failing_pkcs11_tool),
+        env=helper_environment(failing_pkcs11_tool),
         input=avb_input(bytes(range(32))),
         check=False,
         text=False,
@@ -76,7 +76,7 @@ def test_payload_helper_preserves_provider_stderr(
             "-inkey",
             "keys/0x2000.pem",
         ],
-        env=python_helper_env(failing_pkcs11_tool),
+        env=helper_environment(failing_pkcs11_tool),
         check=False,
         text=False,
     )
@@ -141,7 +141,7 @@ def test_yubihsm_helper_fails_without_the_signing_server(
     assert not called.exists()
 
 
-def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
+def test_avb_helper_refuses_a_signature_that_does_not_verify(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -199,7 +199,7 @@ def test_payload_helper_rejects_invalid_digest_size(
     assert not output.exists()
 
 
-def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
+def test_payload_signer_refuses_a_signature_that_does_not_verify(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -244,7 +244,7 @@ def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
     (b"not a key\n", b"\x30\x82\x01\x22"),
     ids=("text", "der"),
 )
-def test_python_avb_helper_names_a_key_file_it_cannot_load(
+def test_avb_helper_names_a_key_file_it_cannot_load(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     contents: bytes,
