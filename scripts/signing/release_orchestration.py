@@ -130,6 +130,31 @@ def avb_algorithm_for(
     return f"SHA256_RSA{size}"
 
 
+def _read_target_files_entry(target_files: Path, name: str) -> str:
+    """
+    Read one text entry of a target-files zip.
+
+    Args:
+        target_files: The target-files zip.
+        name: The entry, such as "SYSTEM/build.prop".
+
+    Returns:
+        The entry's text.
+
+    Raises:
+        Abort: If the zip or the entry cannot be read.
+    """
+    try:
+        with zipfile.ZipFile(target_files) as archive:
+            return archive.read(name).decode()
+    except (OSError, KeyError, zipfile.BadZipFile) as error:
+        print(
+            f"error: cannot read {name} from {target_files} ({error})",
+            file=sys.stderr,
+        )
+        raise Abort(1) from error
+
+
 def _extract_android_info_field(target_files: Path, field: str) -> str:
     """
     Read the second "="-separated field of each OTA/android-info.txt line
@@ -145,16 +170,7 @@ def _extract_android_info_field(target_files: Path, field: str) -> str:
     Raises:
         Abort: If the zip or its android-info.txt cannot be read.
     """
-    try:
-        with zipfile.ZipFile(target_files) as archive:
-            text = archive.read("OTA/android-info.txt").decode()
-    except (OSError, KeyError, zipfile.BadZipFile) as error:
-        print(
-            f"error: cannot read OTA/android-info.txt from {target_files} "
-            f"({error})",
-            file=sys.stderr,
-        )
-        raise Abort(1) from error
+    text = _read_target_files_entry(target_files, "OTA/android-info.txt")
     return "\n".join(
         line.split("=")[1] if "=" in line else line
         for line in text.splitlines()
@@ -907,16 +923,7 @@ class ReleaseOrchestrator(SigningSession):
             raise Abort(1) from error
 
     def _extract_build_id(self, target_files: Path) -> str:
-        try:
-            with zipfile.ZipFile(target_files) as archive:
-                text = archive.read("SYSTEM/build.prop").decode()
-        except (OSError, KeyError, zipfile.BadZipFile) as error:
-            print(
-                f"error: cannot read SYSTEM/build.prop from {target_files} "
-                f"({error})",
-                file=sys.stderr,
-            )
-            raise Abort(1) from error
+        text = _read_target_files_entry(target_files, "SYSTEM/build.prop")
         for line in text.splitlines():
             name, sep, value = line.partition("=")
             if sep and name == "ro.build.id":
