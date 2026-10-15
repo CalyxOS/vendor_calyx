@@ -394,7 +394,7 @@ def test_extra_device_gets_its_own_avb_key(tmp_path: Path) -> None:
     )
 
 
-def test_updatekeys_gives_its_files_the_modes_of_the_bash_run(
+def test_updatekeys_gives_its_files_the_recorded_modes(
     tmp_path: Path,
 ) -> None:
     expected = json.loads(
