@@ -66,12 +66,6 @@ KEY_TYPE_TO_ARRAY = {
     "repo": "keys_repo",
 }
 
-MAPPED_KEY_TYPES = (
-    "core",
-    "apex_apk",
-    "app",
-)
-
 ALL_DEVICES = (
     "bramble",
     "redfin",

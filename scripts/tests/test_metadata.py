@@ -102,7 +102,6 @@ KEYS_APEX_APK = ()
 KEYS_APP = ()
 KEYS_REPO = ()
 KEY_TYPES = ("avb",)
-MAPPED_KEY_TYPES = ()
 ALL_DEVICES = {devices}
 KEY_TYPE_TO_ARRAY = {{"avb": "keys_avb"}}
 """
