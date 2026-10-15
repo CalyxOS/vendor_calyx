@@ -375,8 +375,11 @@ _SOONG_RELEASETOOLS = Path(
 def _releasetools_binary(directory: Path, tool: str) -> str:
     """
     Return the tool directly under directory, or else the first match of
-    <tool>/*/<tool> under it (Soong's per-host-tag layout), or else an
-    empty command after printing an error.
+    <tool>/*/<tool> under it (Soong's per-host-tag layout).
+
+    Raises:
+        Abort: With exit status 1, after printing an error, if neither
+            is an executable file.
     """
     direct = directory / tool
     candidates = [direct, *sorted(direct.glob(f"*/{tool}"))]
@@ -387,7 +390,7 @@ def _releasetools_binary(directory: Path, tool: str) -> str:
         f"error: couldn't find releasetools binary '{tool}' under {directory}",
         file=sys.stderr,
     )
-    return ""
+    raise Abort(1)
 
 
 class SigningSession:
@@ -1117,8 +1120,6 @@ class DeltaOrchestrator(SigningSession):
                 _SOONG_RELEASETOOLS,
                 "ota_from_target_files",
             )
-            if not ota_from_target_files:
-                raise Abort(1)
         else:
             ota_from_target_files = "./bin/ota_from_target_files"
             self.args.releasetools += ["-p", "."]
