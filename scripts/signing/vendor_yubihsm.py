@@ -1223,9 +1223,6 @@ def format_audit_log_entry(entry: LogEntry) -> str:
     """
     Render one audit log entry in the on-disk log-file format.
 
-    The layout is the one ``vendor.yubihsm.audit.logs.py`` writes, so
-    both append to the same log files.
-
     Args:
         entry: Audit log entry to render.
 
