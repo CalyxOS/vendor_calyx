@@ -3,16 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Adapter between avbtool's signing-helper protocol and signing backends.
+Take apart the signing input avbtool hands its signing helper.
 """
 
 from __future__ import annotations
-
-import os
-from collections.abc import Mapping
-from pathlib import Path
-
-from .pkcs11 import Pkcs11Backend, Pkcs11Config
 
 SHA256_DIGEST_INFO_PREFIX = bytes.fromhex(
     "3031300d060960864801650304020105000420",
@@ -28,25 +22,6 @@ _AVB_ALGORITHMS = {
     "SHA512_RSA4096": (512, 429, _SHA512_DIGEST_INFO_PREFIX, 64),
     "SHA512_RSA8192": (1024, 941, _SHA512_DIGEST_INFO_PREFIX, 64),
 }
-
-
-def key_name_from_path(key_path: Path, environment: Mapping[str, str]) -> str:
-    """
-    Derive the legacy PKCS#11 key name from an avbtool key path.
-
-    Args:
-        key_path: Public-key path supplied to avbtool through ``--key``.
-        environment: Variables containing the optional ``KEY_DIR`` prefix.
-
-    Returns:
-        Key name with the configured directory prefix and ``.pem`` suffix
-        removed.
-    """
-    rendered = str(key_path)
-    key_directory = environment.get("KEY_DIR")
-    if key_directory and rendered.startswith(key_directory):
-        rendered = rendered[len(key_directory) :]
-    return rendered.removesuffix(".pem")
 
 
 def avb_input_digest(algorithm: str, data: bytes) -> tuple[bytes, bytes]:
@@ -88,35 +63,3 @@ def avb_input_digest(algorithm: str, data: bytes) -> tuple[bytes, bytes]:
     if len(digest_info) != len(digest_info_prefix) + digest_size:
         raise ValueError("AVB signing input has an invalid digest length")
     return digest_info, digest_info[len(digest_info_prefix) :]
-
-
-def pkcs11_signer_from_environment() -> Pkcs11Backend:
-    """
-    Construct the generic PKCS#11 signer from the process environment.
-
-    Returns:
-        Configured generic PKCS#11 signing backend.
-
-    Raises:
-        KeyError: If ``PKCS11_MODULE`` is absent.
-    """
-    values = os.environ
-    use_so_pin = values.get("SIGNING_USES_SO_PIN", "n") == "y"
-    pin_variable = "PKCS11_SO_PIN" if use_so_pin else "PKCS11_PIN"
-    return Pkcs11Backend(
-        Pkcs11Config(
-            module=Path(values["PKCS11_MODULE"]),
-            pin=values.get(pin_variable) or None,
-            discovery_pin=(values.get("PKCS11_PIN") or None)
-            if use_so_pin
-            else None,
-            token_label=values.get("PKCS11_TOKEN_LABEL"),
-            slot=values.get("PKCS11_SLOT"),
-            tool=values.get("PKCS11_TOOL_BIN", "pkcs11-tool"),
-            use_so_pin=use_so_pin,
-            list_requires_no_pin=(
-                values.get("LIST_REQUIRES_NO_PIN", "n") == "y"
-            ),
-            preload_module=values.get("PKCS11_VENDOR") == "yubihsm",
-        ),
-    )
