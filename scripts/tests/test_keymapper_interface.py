@@ -190,15 +190,16 @@ def test_keymapper_file_prints_its_keymap(tmp_path: Path) -> None:
     assert keymapper.to_tsv(("bramble", "redfin")) == ID2B_KEYMAP.read_text()
 
 
-def test_legacy_keymapper_has_no_device_key_ids() -> None:
+def test_legacy_keymapper_assigns_no_key_ids() -> None:
     keymapper = load_keymapper(
         {"KEYMAPPER": "legacy"},
         load_metadata(SCRIPTS_DIR / "metadata.py"),
     )
 
-    assert keymapper.key_id_is_per_device("0x1100")
     with pytest.raises(ValueError, match="does not assign key IDs"):
         keymapper.device_key_ids("bramble")
+    with pytest.raises(ValueError, match="does not assign key IDs"):
+        keymapper.key_id_is_per_device("0x1100")
 
 
 def test_keymapper_file_whose_create_keymapper_fails_is_named(
