@@ -20,7 +20,6 @@ from signing.keymap import StaticKeymapper
 from signing.sign_environment import (
     SoftHsmVendor,
     UnsupportedVendorError,
-    Vendor,
     YubiHsmVendor,
     load_vendor,
     maybe_initialize_vendor,
@@ -231,22 +230,11 @@ def yubihsm_vendor_tree(
     }
 
 
-@pytest.mark.parametrize(
-    ("authkey", "password", "pin"),
-    (("0x0001", "secret", "0001secret"), ("0x12345", "", "12345")),
-)
-def test_maybe_initialize_vendor_sets_pkcs11_pin(
+def test_maybe_initialize_vendor_sets_the_yubihsm_interceptor(
     tmp_path: Path,
     yubihsm_vendor_tree: dict[str, str],
-    authkey: str,
-    password: str,
-    pin: str,
 ) -> None:
-    environment = {
-        **yubihsm_vendor_tree,
-        "YUBIHSM_AUTHKEY": authkey,
-        "YUBIHSM_PASSWORD": password,
-    }
+    environment = dict(yubihsm_vendor_tree)
 
     maybe_initialize_vendor(
         environment,
@@ -254,10 +242,17 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
         tmpdir=tmp_path,
     )
 
-    assert environment["PKCS11_PIN"] == pin
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
     assert environment["SIGNING_COMMAND_INTERCEPTOR"].endswith(
         "vendor.yubihsm.interceptor.py",
+    )
+    assert "PKCS11_PIN" not in environment
+    assert "PKCS11_MODULE" not in environment
+    assert (
+        sorted(
+            path.name for path in Path(environment["YUBIHSM_TMPDIR"]).iterdir()
+        )
+        == []
     )
 
 
@@ -281,7 +276,6 @@ def test_maybe_initialize_vendor_reads_the_password_file(
     )
 
     assert environment["YUBIHSM_PASSWORD"] == "hunter2"
-    assert environment["PKCS11_PIN"] == "0001hunter2"
 
 
 def test_maybe_initialize_vendor_rejects_empty_upload_script(
@@ -329,25 +323,6 @@ def test_maybe_initialize_vendor_dry_run_skips_full_setup(
     assert list(tmpdir.iterdir()) == []
 
 
-def test_maybe_initialize_vendor_generates_pkcs11_conf(
-    tmp_path: Path,
-    yubihsm_vendor_tree: dict[str, str],
-) -> None:
-    environment = {
-        **yubihsm_vendor_tree,
-        "YUBIHSM_CONNECTOR": "http://127.0.0.1:9999",
-    }
-
-    maybe_initialize_vendor(
-        environment,
-        load_vendor(environment),
-        tmpdir=tmp_path,
-    )
-
-    conf_text = Path(environment["YUBIHSM_PKCS11_CONF"]).read_text()
-    assert "connector = http://127.0.0.1:9999" in conf_text
-
-
 def test_maybe_initialize_vendor_requires_logs_dir(
     tmp_path: Path,
     yubihsm_vendor_tree: dict[str, str],
@@ -368,7 +343,7 @@ def test_maybe_initialize_vendor_is_idempotent(tmp_path: Path) -> None:
         "PKCS11_VENDOR_INITIALIZED": "y",
     }
     maybe_initialize_vendor(environment, YubiHsmVendor(), tmpdir=tmp_path)
-    assert "PKCS11_PIN" not in environment
+    assert "SIGNING_COMMAND_INTERCEPTOR" not in environment
 
 
 def test_maybe_initialize_vendor_softhsm_is_a_noop(tmp_path: Path) -> None:
@@ -379,11 +354,11 @@ def test_maybe_initialize_vendor_softhsm_is_a_noop(tmp_path: Path) -> None:
         tmpdir=tmp_path,
     )
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
-    assert "PKCS11_PIN" not in environment
+    assert "SIGNING_COMMAND_INTERCEPTOR" not in environment
 
 
 def test_load_vendor_applies_the_yubihsm_include_exports() -> None:
-    environment = {"PKCS11_VENDOR": "yubihsm", "PKCS11_MODULE": "/m.so"}
+    environment = {"PKCS11_VENDOR": "yubihsm"}
 
     assert isinstance(load_vendor(environment), YubiHsmVendor)
     assert environment["KEYMAPPER"] == "static"
@@ -392,55 +367,21 @@ def test_load_vendor_applies_the_yubihsm_include_exports() -> None:
     assert environment["KEYMAP_FILE"].endswith("pkcs11/keymap.tsv")
 
 
-@pytest.mark.parametrize(
-    ("kind", "expected"),
-    (
-        (
-            SoftHsmVendor,
-            (
-                "/usr/local/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
-                "/usr/local/lib/x86_64-linux-gnu/libsofthsm2.so",
-                "/usr/local/lib64/pkcs11/libsofthsm2.so",
-                "/usr/local/lib64/libsofthsm2.so",
-                "/usr/local/lib/pkcs11/libsofthsm2.so",
-                "/usr/local/lib/libsofthsm2.so",
-                "/usr/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
-                "/usr/lib/x86_64-linux-gnu/libsofthsm2.so",
-                "/usr/lib64/pkcs11/libsofthsm2.so",
-                "/usr/lib64/libsofthsm2.so",
-                "/usr/lib/pkcs11/libsofthsm2.so",
-                "/usr/lib/libsofthsm2.so",
-            ),
-        ),
-        (
-            YubiHsmVendor,
-            (
-                "/usr/local/lib/x86_64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
-                "/usr/local/lib/x86_64-linux-gnu/yubihsm_pkcs11.so",
-                "/usr/local/lib/aarch64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
-                "/usr/local/lib/aarch64-linux-gnu/yubihsm_pkcs11.so",
-                "/usr/local/lib64/pkcs11/yubihsm_pkcs11.so",
-                "/usr/local/lib64/yubihsm_pkcs11.so",
-                "/usr/local/lib/pkcs11/yubihsm_pkcs11.so",
-                "/usr/local/lib/yubihsm_pkcs11.so",
-                "/usr/lib/x86_64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
-                "/usr/lib/x86_64-linux-gnu/yubihsm_pkcs11.so",
-                "/usr/lib/aarch64-linux-gnu/pkcs11/yubihsm_pkcs11.so",
-                "/usr/lib/aarch64-linux-gnu/yubihsm_pkcs11.so",
-                "/usr/lib64/pkcs11/yubihsm_pkcs11.so",
-                "/usr/lib64/yubihsm_pkcs11.so",
-                "/usr/lib/pkcs11/yubihsm_pkcs11.so",
-                "/usr/lib/yubihsm_pkcs11.so",
-            ),
-        ),
-    ),
-    ids=("softhsm", "yubihsm"),
-)
-def test_pkcs11_module_paths_keep_their_search_order(
-    kind: type[Vendor],
-    expected: tuple[str, ...],
-) -> None:
-    assert kind.pkcs11_module_paths == expected
+def test_softhsm_module_paths_keep_their_search_order() -> None:
+    assert SoftHsmVendor.pkcs11_module_paths == (
+        "/usr/local/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
+        "/usr/local/lib/x86_64-linux-gnu/libsofthsm2.so",
+        "/usr/local/lib64/pkcs11/libsofthsm2.so",
+        "/usr/local/lib64/libsofthsm2.so",
+        "/usr/local/lib/pkcs11/libsofthsm2.so",
+        "/usr/local/lib/libsofthsm2.so",
+        "/usr/lib/x86_64-linux-gnu/pkcs11/libsofthsm2.so",
+        "/usr/lib/x86_64-linux-gnu/libsofthsm2.so",
+        "/usr/lib64/pkcs11/libsofthsm2.so",
+        "/usr/lib64/libsofthsm2.so",
+        "/usr/lib/pkcs11/libsofthsm2.so",
+        "/usr/lib/libsofthsm2.so",
+    )
 
 
 @pytest.fixture
@@ -741,28 +682,26 @@ def test_load_vendor_defaults_empty_variables(
     name: str,
     default: str,
 ) -> None:
-    environment = {"PKCS11_VENDOR": vendor, "PKCS11_MODULE": "/m.so", name: ""}
+    environment = {"PKCS11_VENDOR": vendor, name: ""}
 
     load_vendor(environment)
 
     assert environment[name] == default
 
 
-@pytest.mark.parametrize("vendor", ["yubihsm", "softhsm"])
 def test_load_vendor_finds_pkcs11_module(
-    vendor: str,
     fake_pkcs11_modules: dict[str, Path],
 ) -> None:
-    environment = {"PKCS11_VENDOR": vendor}
+    environment = {"PKCS11_VENDOR": "softhsm"}
 
     load_vendor(environment)
 
-    assert environment["PKCS11_MODULE"] == str(fake_pkcs11_modules[vendor])
+    assert environment["PKCS11_MODULE"] == str(fake_pkcs11_modules["softhsm"])
 
 
 def test_load_vendor_keeps_configured_pkcs11_module() -> None:
     environment = {
-        "PKCS11_VENDOR": "yubihsm",
+        "PKCS11_VENDOR": "softhsm",
         "PKCS11_MODULE": "/opt/custom.so",
     }
 
@@ -774,10 +713,18 @@ def test_load_vendor_keeps_configured_pkcs11_module() -> None:
 def test_load_vendor_requires_pkcs11_module(
     fake_pkcs11_modules: dict[str, Path],
 ) -> None:
-    fake_pkcs11_modules["yubihsm"].unlink()
+    fake_pkcs11_modules["softhsm"].unlink()
 
-    with pytest.raises(RuntimeError, match="YubiHSM PKCS#11 module"):
-        load_vendor({"PKCS11_VENDOR": "yubihsm"})
+    with pytest.raises(RuntimeError, match="SoftHSM PKCS#11 module"):
+        load_vendor({"PKCS11_VENDOR": "softhsm"})
+
+
+def test_load_vendor_needs_no_pkcs11_module_for_the_yubihsm() -> None:
+    environment = {"PKCS11_VENDOR": "yubihsm"}
+
+    load_vendor(environment)
+
+    assert "PKCS11_MODULE" not in environment
 
 
 def test_load_vendor_returns_none_without_a_vendor() -> None:
