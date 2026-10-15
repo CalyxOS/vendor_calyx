@@ -36,6 +36,8 @@ from yubihsm_emulator import (
 )
 
 if TYPE_CHECKING:
+    from signing.metadata import SigningMetadata
+    from signing.signing_server import Message
     from signing.vendor_yubihsm import YubiHsmConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -220,6 +222,24 @@ SOFTHSM_USER_PIN = "123456"
 SOFTHSM_KEY_ID = "0x2000"
 SOFTHSM_KEY_LABEL = "test-key"
 YUBIHSM_WRAP_ID = 0x0010
+
+
+def fake_curl(action: str) -> str:
+    """
+    Return a curl stand-in that reads -o into out and the URL into link,
+    then runs the shell command action.
+    """
+    return (
+        "#!/bin/sh\n"
+        "while [ $# -gt 0 ]; do\n"
+        '  case "$1" in\n'
+        "    -o) out=$2; shift 2 ;;\n"
+        "    -L) shift ;;\n"
+        "    *) link=$1; shift ;;\n"
+        "  esac\n"
+        "done\n"
+        f"{action}\n"
+    )
 
 
 def prepare_ceremony_package(
@@ -408,6 +428,13 @@ def assert_certificate_of(
 def small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     """Point METADATA_FILE at the test metadata."""
     monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
+
+
+def shipped_metadata() -> SigningMetadata:
+    """Load the metadata the scripts ship with."""
+    from signing.metadata import load_metadata
+
+    return load_metadata(SCRIPTS_DIR / "metadata.py")
 
 
 def file_tree(directory: Path) -> dict[str, bytes]:
@@ -686,6 +713,27 @@ def metadata_with_placeholders(
         text = text.replace(entry, '    "",\n')
     path.write_text(text)
     return path
+
+
+class RecordingHandler:
+    """
+    A signing server handler that records each request and answers with
+    response, or raises it if it is an exception.
+    """
+
+    def __init__(self, response: Message | Exception) -> None:
+        self.response = response
+        self.requests: list[Message] = []
+        self.closed = 0
+
+    def handle(self, request: Message) -> Message:
+        self.requests.append(request)
+        if isinstance(self.response, Exception):
+            raise self.response
+        return self.response
+
+    def close(self) -> None:
+        self.closed += 1
 
 
 def _find_module_at(module: Path) -> Callable[[object], str | None]:

@@ -15,10 +15,10 @@ from conftest import (
     SCRIPTS_DIR,
     metadata_with_placeholders,
     run,
+    shipped_metadata,
 )
 from signing import cli, metadata
 from signing.keymap import LegacyKeymapper
-from signing.metadata import load_metadata
 
 DEVICES = ("bramble", "redfin")
 
@@ -128,7 +128,7 @@ def test_generate_keymap_maps_extra_devices(
 
 
 def test_legacy_keymapper_requires_only_some_device() -> None:
-    keymapper = LegacyKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    keymapper = LegacyKeymapper(shipped_metadata())
 
     assert (
         keymapper.key_value("other", "ota", "notadevice")
