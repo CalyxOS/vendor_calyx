@@ -23,7 +23,12 @@ from . import sign_environment
 from .confirmation import ask_variable
 from .files import write_file_atomically
 from .keymap import Keymapper, load_keymapper
-from .metadata import SigningMetadata, load_metadata
+from .metadata import (
+    SigningMetadata,
+    default_devices_path,
+    default_metadata_path,
+    load_metadata,
+)
 from .models import KeyReference, KeySpec
 from .pkcs11 import (
     Pkcs11Backend,
@@ -45,7 +50,6 @@ from .vendor_yubihsm import (
     limit_ondemand_objects,
 )
 
-SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_TOKEN_LABEL = "androsign"
 DEFAULT_SUBJECT_TEMPLATE = (
     "/C=US/ST=New York/L=Rochester/O=Android/OU=Android/CN=_KEY_LABEL_"
@@ -1191,13 +1195,10 @@ def keygen_main(
         return 1
     try:
         driver.initialize_pre_metadata()
-        if not environment.get("METADATA_FILE"):
-            environment["METADATA_FILE"] = str(SCRIPTS_DIR / "metadata.py")
-        metadata_file = Path(environment["METADATA_FILE"])
-        devices_file = environment.get("DEVICES_FILE") or str(
-            (SCRIPTS_DIR / "../../../calyx/scripts/vars/devices").resolve(),
-        )
-        environment["DEVICES_FILE"] = devices_file
+        metadata_file = default_metadata_path(environment)
+        environment["METADATA_FILE"] = str(metadata_file)
+        devices_file = default_devices_path(environment)
+        environment["DEVICES_FILE"] = str(devices_file)
         missing = False
         if not metadata_file.exists():
             print(
@@ -1208,7 +1209,7 @@ def keygen_main(
                 file=sys.stderr,
             )
             missing = True
-        if not Path(devices_file).exists():
+        if not devices_file.exists():
             print(
                 "ERROR: Please set DEVICES_FILE to the path of a file that "
                 "includes a list of\n"
@@ -1221,7 +1222,7 @@ def keygen_main(
         if missing:
             return 1
         metadata = load_metadata(metadata_file)
-        devices = load_devices_file(Path(devices_file))
+        devices = load_devices_file(devices_file)
         print(f"Loaded devices from {devices_file}")
         print(f"Loaded metadata from {metadata_file}")
         vendor = sign_environment.load_vendor(environment)
