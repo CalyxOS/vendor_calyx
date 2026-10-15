@@ -273,7 +273,8 @@ class SignOrchestrator:
         )
         self.try_("final_confirmation", lambda: self._final_confirmation(plan))
 
-        self._do_or_show(plan)
+        for _, _, run in self._steps(plan):
+            run()
 
         self._finish()
 
@@ -821,14 +822,6 @@ class SignOrchestrator:
             self.try_("upload_logs", self._upload_logs)
         except SignAbort:
             pass
-
-    def _do_or_show(self, plan: SigningPlan) -> None:
-        """
-        Run the planned steps, or under DRY_RUN=y print each of them to
-        stderr instead.
-        """
-        for _, _, run in self._steps(plan):
-            run()
 
     def _ensure_keys(self) -> None:
         devices = self.state.devices_without_loaded_keys
