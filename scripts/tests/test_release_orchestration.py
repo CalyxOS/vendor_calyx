@@ -1236,6 +1236,7 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
         {**PKCS11_ENVIRONMENT, "KEYMAPPER": "id2b", "TMPDIR": ""},
         cwd=release_tree,
         metadata=load_metadata(TEST_METADATA),
+        program="release.sh",
         device="bramble",
         target_files_arg=None,
     )
@@ -1299,6 +1300,7 @@ def test_release_session_finalizes_then_cleans_up_its_vendor(
         environment,
         cwd=release_tree,
         metadata=load_metadata(TEST_METADATA),
+        program="release.sh",
         device="bramble",
         target_files_arg=None,
     )
