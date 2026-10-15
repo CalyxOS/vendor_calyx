@@ -1206,6 +1206,21 @@ def test_release_requires_yubihsm_credentials(release_tree: Path) -> None:
     )
 
 
+def test_release_dry_run_stops_without_a_release_tool(
+    release_tree: Path,
+) -> None:
+    (release_tree / "bin" / "sign_target_files_apks").unlink()
+
+    result = run_release(release_tree, "bramble")
+
+    assert result.returncode == 1
+    assert (
+        "error: couldn't find releasetools binary 'sign_target_files_apks' "
+        f"under {release_tree / 'bin'}\n"
+    ) in result.stderr
+    assert "ota_from_target_files" not in result.stderr
+
+
 @pytest.mark.parametrize("dry_run", (True, False), ids=("dry-run", "release"))
 def test_release_stops_before_signing_without_the_factory_variables(
     release_tree: Path,
