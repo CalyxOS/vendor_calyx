@@ -15,7 +15,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from .metadata import default_devices_path
+from .metadata import SCRIPTS_DIR, default_devices_path
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,12 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
     sign_orchestrate_parser.add_argument(
         "--release-script",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "release.sh",
+        default=SCRIPTS_DIR / "release.sh",
     )
     sign_orchestrate_parser.add_argument(
         "--generate-delta-script",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "generate_delta.sh",
+        default=SCRIPTS_DIR / "generate_delta.sh",
     )
 
     subparsers.add_parser("release-orchestrate", add_help=False)
@@ -65,7 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     prepare_ceremony_package.add_argument(
         "--script-dir",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "hsm_provisioning",
+        default=SCRIPTS_DIR / "hsm_provisioning",
     )
 
     subparsers.add_parser("sign-app", add_help=False)
