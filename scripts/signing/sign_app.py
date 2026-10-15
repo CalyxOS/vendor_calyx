@@ -70,8 +70,8 @@ def sign_app(
     key_dir = f"{key_dir.removesuffix('/')}/"
     environment["KEY_DIR"] = key_dir
     environment["PKCS11_VENDOR"] = "yubihsm"
-    vendor = sign_environment.YubiHsmVendor()
-    sign_environment.load_vendor(environment)
+    vendor = sign_environment.load_vendor(environment)
+    assert vendor is not None
     key_id = StaticKeymapper.from_file(
         Path(environment["KEYMAP_FILE"]),
     ).key_id("app", app)
