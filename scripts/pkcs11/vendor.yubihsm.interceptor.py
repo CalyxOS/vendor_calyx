@@ -15,11 +15,11 @@ in the SIGNING_COMMAND environment variable.
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import threading
 import time
-import unicodedata
 from io import BufferedReader
 from pathlib import Path
 from typing import BinaryIO
@@ -48,62 +48,6 @@ _CONNECTOR_FAILURE_MARKERS = (
     b"Unable to find a suitable connector",
 )
 _SESSION_EXHAUSTION_MARKERS = (b"All sessions are allocated", b"SESSION_COUNT")
-
-
-_PRINTF_Q_ESCAPED = frozenset(" !\"$&'()*,;<>?[\\]^`{|}")
-_ANSI_C_ESCAPES = {
-    "\a": "\\a",
-    "\b": "\\b",
-    "\t": "\\t",
-    "\n": "\\n",
-    "\v": "\\v",
-    "\f": "\\f",
-    "\r": "\\r",
-    "\x1b": "\\E",
-    "\\": "\\\\",
-    "'": "\\'",
-}
-_ANSI_C_QUOTED_CATEGORIES = frozenset(("Cc", "Cn", "Cs", "Zl", "Zp"))
-
-
-def _needs_ansi_c_quoting(character: str) -> bool:
-    return unicodedata.category(character) in _ANSI_C_QUOTED_CATEGORIES
-
-
-def _ansi_c_escape(character: str) -> str:
-    if character in _ANSI_C_ESCAPES:
-        return _ANSI_C_ESCAPES[character]
-    if _needs_ansi_c_quoting(character):
-        return "".join(
-            f"\\{byte:03o}"
-            for byte in character.encode("utf-8", "surrogateescape")
-        )
-    return character
-
-
-def printf_q(argument: str) -> str:
-    """
-    Quote an argument for a shell, escaping special characters with
-    backslashes and writing control characters in $'...' form.
-
-    Args:
-        argument: Command-line argument.
-
-    Returns:
-        The quoted argument.
-    """
-    if not argument:
-        return "''"
-    if any(_needs_ansi_c_quoting(c) for c in argument):
-        return "$'" + "".join(map(_ansi_c_escape, argument)) + "'"
-    return "".join(
-        f"\\{c}"
-        if c in _PRINTF_Q_ESCAPED
-        or (c == "#" and index == 0)
-        or (c == "~" and (index == 0 or argument[index - 1] in "=:"))
-        else c
-        for index, c in enumerate(argument)
-    )
 
 
 def classify_avbtool(args: list[str]) -> bool:
@@ -377,8 +321,7 @@ def run_command(
     log_err = 0
     if is_signing_command and need_log_export:
         for log_try in range(1, _NUM_TRIES + 1):
-            prepend_line = "".join(f" {printf_q(a)}" for a in [cmd, *args])
-            prepend_line += f" # Result: {err}"
+            prepend_line = f" {shlex.join([cmd, *args])} # Result: {err}"
             if try_number > 1:
                 prepend_line += f" Try: {try_number}"
             if log_try > 1:

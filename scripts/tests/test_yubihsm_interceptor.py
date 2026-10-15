@@ -420,34 +420,56 @@ def test_signing_cache_failures_fall_back_to_running_the_command(
     assert ran.exists()
 
 
-@pytest.mark.parametrize(
-    "argument",
-    (
-        "",
-        "plain-0x2000.pem",
-        "a b",
-        "it's",
-        "~home",
-        "a~b",
-        "#tag",
-        "a,b=c",
-        "$HOME",
-        "line\nbreak",
-        "tab\there",
-        "\x1b\x01\x7f",
-        "é",
-        "a=~b",
-        "--out=~/x",
-        "x:~",
-        "\x85",
-        "\u2028",
-    ),
-)
-def test_audit_comment_quotes_as_printf_q(argument: str) -> None:
-    interceptor = _load_interceptor()
-    bash = run(["bash", "-c", 'printf "%q" "$1"', "printf-q", argument])
+def test_audit_comment_quotes_the_command_for_a_shell(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    make_script(bin_dir / "avbtool", "exit 0\n")
+    args = ["add_hash_footer", "--signing_helper", "a b", "it's", "$HOME", ""]
 
-    assert interceptor.printf_q(argument) == bash.stdout
+    result = run(
+        [INTERCEPTOR, *args],
+        env=_audit_environment(tmp_path, bin_dir, "avbtool", yubihsm),
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    comment, *_ = (tmp_path / "audit.log").read_text().splitlines()
+    assert comment.endswith(
+        " avbtool add_hash_footer --signing_helper 'a b' 'it'\"'\"'s' "
+        "'$HOME' '' # Result: 0",
+    )
+
+
+def test_audit_comment_keeps_a_multiline_argument_on_one_line(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    make_script(bin_dir / "avbtool", "exit 0\n")
+
+    result = run(
+        [
+            INTERCEPTOR,
+            "add_hash_footer",
+            "--signing_helper",
+            "one\ntwo",
+            "three\rfour",
+        ],
+        env=_audit_environment(tmp_path, bin_dir, "avbtool", yubihsm),
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    lines = (tmp_path / "audit.log").read_text().split("\n")
+    assert lines[0].endswith(
+        " avbtool add_hash_footer --signing_helper 'onetwo' 'threefour' "
+        "# Result: 0",
+    )
+    assert not any("\r" in line or line.startswith("two") for line in lines)
 
 
 @pytest.mark.parametrize(
