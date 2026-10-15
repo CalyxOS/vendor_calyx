@@ -188,7 +188,7 @@ def updatekeys_main(
         key_path, subject = arguments
         scripts = Path(program).parent.resolve()
         top = f"{scripts}/../../.."
-        metadata = load_metadata(default_metadata_path())
+        metadata = load_metadata(default_metadata_path(environment))
         device = Path(key_path).name
         environment["KEY_DIR"] = f"{Path(key_path).parent}/"
         avbtool = environment.get("AVBTOOL_BIN") or f"{top}/bin/avbtool"
@@ -263,7 +263,7 @@ def updatecommonkeys_main(
         if len(arguments) != 2:
             raise _error("incorrect number of arguments", usage)
         key_dir, subject = arguments
-        metadata = load_metadata(default_metadata_path())
+        metadata = load_metadata(default_metadata_path(environment))
         keymapper = _load_script_keymapper(environment, metadata)
         for tool in ("openssl", "keytool"):
             if shutil.which(tool) is None:
