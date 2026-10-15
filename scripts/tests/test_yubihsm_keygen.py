@@ -136,10 +136,9 @@ def _audit_comments(root: Path, yubihsm: Connector) -> list[str]:
 @pytest.mark.aosp
 def test_yubihsm_keygen_generates_every_key(
     tmp_path: Path,
-    aosp_top: Path,
+    avbtool: Path,
     yubihsm: Connector,
 ) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
     root = tmp_path / "tree"
     environment = _keygen_tree(root, yubihsm, avbtool)
 
@@ -180,10 +179,9 @@ def test_yubihsm_keygen_generates_every_key(
 @pytest.mark.aosp
 def test_yubihsm_keygen_backs_up_a_key_a_failed_run_left_unexported(
     tmp_path: Path,
-    aosp_top: Path,
+    avbtool: Path,
     yubihsm: Connector,
 ) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
     root = tmp_path / "tree"
     environment = _keygen_tree(root, yubihsm, avbtool)
     yubihsm.device.fail_next(COMMAND.EXPORT_WRAPPED)
@@ -236,10 +234,9 @@ def test_python_yubihsm_keygen_refuses_generate_using_pkcs11_first(
 @pytest.mark.aosp
 def test_yubihsm_keygen_sizes_only_avb_and_apex_payload_keys(
     tmp_path: Path,
-    aosp_top: Path,
+    avbtool: Path,
     yubihsm: Connector,
 ) -> None:
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
     root = tmp_path / "tree"
     environment = {
         **_keygen_tree(root, yubihsm, avbtool),
