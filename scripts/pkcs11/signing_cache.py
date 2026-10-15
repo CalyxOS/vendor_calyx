@@ -12,14 +12,11 @@ import os
 import shutil
 import sys
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import NoReturn
 
 apksigner_parser = argparse.ArgumentParser(allow_abbrev=False)
 apksigner_parser.add_argument("--out", nargs=2)
-
-use_log = False
 
 
 def main() -> None:
@@ -59,11 +56,11 @@ def from_cache(args: list[str]) -> NoReturn:
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
     out_file = Path(signing_obj.out_file).name
     if (cache_dir / key).is_file():
-        log(cache_dir, f"Cache hit for {key} copying to {out_file}")
+        print(f"Cache hit for {key} copying to {out_file}")
         link_or_copy(cache_dir / key, Path(signing_obj.out_file))
         sys.exit(0)
 
-    log(cache_dir, f"Cache miss for {key} {out_file}")
+    print(f"Cache miss for {key} {out_file}")
     sys.exit(1)
 
 
@@ -79,12 +76,12 @@ def to_cache(args: list[str]) -> None:
 
     cache_dir = Path(os.environ.get("YUBIHSM_SIGNING_CACHE", ""))
     if (cache_dir / key).is_file():
-        log(cache_dir, f"WARNING: {key} was in cache, but we had a miss before")
+        print(f"WARNING: {key} was in cache, but we had a miss before")
     else:
         link_or_copy(Path(signing_obj.out_file), cache_dir / key)
         in_file = Path(signing_obj.in_file).name
         out_file = Path(signing_obj.out_file).name
-        log(cache_dir, f"Saving {key} from {out_file} for {in_file}")
+        print(f"Saving {key} from {out_file} for {in_file}")
 
 
 def apksigner_get_apks(arg_str: list[str]) -> SigningObj:
@@ -123,14 +120,6 @@ def link_or_copy(src: Path, dst: Path) -> None:
         os.link(src, dst)
     except OSError:
         shutil.copy2(src, dst)
-
-
-def log(cache_dir: Path, msg: str) -> None:
-    if use_log:
-        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        with (cache_dir / "signing_cache.log").open("a") as f:
-            f.write(f"{time} {msg}\n")
-    print(msg)
 
 
 @dataclass
