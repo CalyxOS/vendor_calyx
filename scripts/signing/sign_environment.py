@@ -25,6 +25,7 @@ from .confirmation import ask_variable, confirm
 from .keymap import Keymapper, normalize_key_dir
 from .vendor_yubihsm import (
     YubiHsmConfig,
+    audit_logged,
     ensure_keys_are_available,
     extract_and_save_audit_log,
     get_device_identity,
@@ -796,9 +797,12 @@ class YubiHsmVendor(Vendor):
                 )
 
                 if (environment.get("ENSURE_KEY_IS_AVAILABLE") or "y") == "y":
-                    result = 1
                     is_ondemand = key_id_is_ondemand(keymapper)
-                    try:
+                    with audit_logged(
+                        config,
+                        audit_log_path,
+                        "Function: ensure_key_is_available",
+                    ):
                         ensure_keys_are_available(
                             config,
                             Path(environment.get("KEY_DIR", "keys/")),
@@ -807,14 +811,6 @@ class YubiHsmVendor(Vendor):
                             lookup_domains=environment[
                                 "YUBIHSM_ONDEMAND_DOMAIN"
                             ],
-                        )
-                        result = 0
-                    finally:
-                        extract_and_save_audit_log(
-                            config,
-                            audit_log_path,
-                            comment=f"Function: ensure_key_is_available "
-                            f"Result: {result}",
                         )
             except YubiHsmError as error:
                 raise RuntimeError(f"YubiHSM failure: {error}") from error
