@@ -318,3 +318,33 @@ def test_wizard_load_keys_dry_run_restores_nothing(
     getattr(wizard, "_load_keys")()
 
     assert "restore_all_keys" in capsys.readouterr().err
+
+
+def test_wizard_asks_once_to_retry_a_failed_restore(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def restore(*arguments: object, **options: object) -> None:
+        raise RuntimeError("restore failed")
+
+    questions: list[str] = []
+
+    def confirm(question: str, *, assume_yes: bool) -> bool:
+        questions.append(question)
+        return False
+
+    monkeypatch.setattr(yubihsm_provision, "restore_all_keys", restore)
+    monkeypatch.setattr(yubihsm_provision, "confirm", confirm)
+    wizard = yubihsm_provision.ProvisionWizard(
+        {
+            "KEY_DIR": str(tmp_path),
+            "YUBIHSM_EXPORTABLE_DOMAIN": "1",
+            "YUBIHSM_ONDEMAND_DOMAIN": "3",
+        },
+        cwd=tmp_path,
+    )
+    wizard.keymapper = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    wizard.audit_log_path = tmp_path / "audit.log"
+
+    assert wizard.try_("load_keys", getattr(wizard, "_load_keys")) == 1
+    assert questions == ["load_keys failed (code 1). Try again?"]
