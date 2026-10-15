@@ -716,8 +716,15 @@ class SignOrchestrator:
         plan: SigningPlan,
     ) -> list[tuple[str, list[str], Callable[[], None]]]:
         """
-        List the planned steps in order as (description, items, run), with
-        run uploading the audit logs after the step.
+        List the steps of plan that have work, in the order they run.
+
+        Args:
+            plan: The signing plan.
+
+        Returns:
+            For each step, the description and the items that the plan
+            shows, and a callable that runs the step and then uploads
+            the audit logs.
         """
 
         def sign(
