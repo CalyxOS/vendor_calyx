@@ -543,21 +543,6 @@ def stub(value: T) -> Callable[..., T]:
     return stubbed
 
 
-def parameter_id(request: pytest.FixtureRequest) -> str:
-    """
-    Return the id of the parameter set the requesting test runs with.
-
-    Args:
-        request: The requesting test's fixture request.
-
-    Returns:
-        The id pytest gave the parameter set.
-    """
-    # FixtureRequest.node carries no type annotation.
-    node: pytest.Function = getattr(request, "node")
-    return node.callspec.id
-
-
 BUILD_NUMBER = "2026081500"
 
 PKCS11_ENVIRONMENT = {
