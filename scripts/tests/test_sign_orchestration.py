@@ -23,8 +23,8 @@ from conftest import (
 )
 from cryptography.hazmat.primitives import serialization
 from signing.metadata import load_metadata
+from signing.release_execution import Abort
 from signing.sign_orchestration import (
-    SignAbort,
     SignDone,
     SignOrchestrator,
     SignStepError,
@@ -866,7 +866,7 @@ def test_try_fails_fast_under_sign_assume_yes(
         calls.append(1)
         raise SignStepError("always fails")
 
-    with pytest.raises(SignAbort) as aborted:
+    with pytest.raises(Abort) as aborted:
         orchestrator.try_("always_fails", always_fails)
 
     assert aborted.value.code == 1

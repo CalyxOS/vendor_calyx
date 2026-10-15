@@ -36,6 +36,7 @@ from .release_arguments import (
     make_get_key,
 )
 from .release_execution import (
+    Abort,
     Transcript,
     defer_signals,
     exit_on_signals,
@@ -128,14 +129,6 @@ def avb_algorithm_for(
     return f"SHA256_RSA{size}"
 
 
-class ReleaseAbort(Exception):
-    """Raised to exit with a code, without a usage message."""
-
-    def __init__(self, code: int) -> None:
-        super().__init__(f"release orchestration aborted (code {code})")
-        self.code = code
-
-
 def _extract_android_info_field(target_files: Path, field: str) -> str:
     """
     Read the second "="-separated field of each OTA/android-info.txt line
@@ -149,7 +142,7 @@ def _extract_android_info_field(target_files: Path, field: str) -> str:
         The values, one per line, or "" when no line mentions field.
 
     Raises:
-        ReleaseAbort: If the zip or its android-info.txt cannot be read.
+        Abort: If the zip or its android-info.txt cannot be read.
     """
     try:
         with zipfile.ZipFile(target_files) as archive:
@@ -160,7 +153,7 @@ def _extract_android_info_field(target_files: Path, field: str) -> str:
             f"({error})",
             file=sys.stderr,
         )
-        raise ReleaseAbort(1) from error
+        raise Abort(1) from error
     return "\n".join(
         line.split("=")[1] if "=" in line else line
         for line in text.splitlines()
@@ -459,7 +452,7 @@ class SigningSession:
                 )
                 print(f"Usage: {self.program} {self.usage}")
                 return 1
-            except ReleaseAbort as abort:
+            except Abort as abort:
                 return abort.code
             except KeyboardInterrupt:
                 return 130
@@ -504,14 +497,14 @@ class SigningSession:
                 keymapper = load_keymapper(self.environment, self.metadata)
             except ValueError as error:
                 print(error, file=sys.stderr)
-                raise ReleaseAbort(1) from error
+                raise Abort(1) from error
             self.keymapper = keymapper
             apply_keymapper_exports(self.environment, keymapper)
             try:
                 self._resolve_keys(keymapper)
             except ValueError as error:
                 print(error, file=sys.stderr)
-                raise ReleaseAbort(1) from error
+                raise Abort(1) from error
             if vendor is not None:
                 parent = self.environment.get("TMPDIR") or "/dev/shm"
                 tmpdir = Path(tempfile.mkdtemp(prefix="signing.", dir=parent))
@@ -548,7 +541,7 @@ class SigningSession:
             prepare_signing_args(self.environment, self.args)
         except (RuntimeError, OSError) as error:
             print(f"error: {error}", file=sys.stderr)
-            raise ReleaseAbort(1) from error
+            raise Abort(1) from error
 
         exec_log_path = self.environment.get("EXEC_LOG_PATH")
         if exec_log_path and not self.dry_run:
@@ -676,7 +669,7 @@ class ReleaseOrchestrator(SigningSession):
             check=False,
         )
         if sourced.returncode != 0:
-            raise ReleaseAbort(sourced.returncode)
+            raise Abort(sourced.returncode)
 
         rollback_raw = self.environment.get("AVB_ROLLBACK_INDEX_OVERRIDE")
         rollback = rollback_raw or None
@@ -687,7 +680,7 @@ class ReleaseOrchestrator(SigningSession):
                     f"error: BUILD_NUMBER {build} is not a number",
                     file=sys.stderr,
                 )
-                raise ReleaseAbort(1)
+                raise Abort(1)
             build = str(int(build) + 1)
 
         if not self.target_files_arg:
@@ -768,7 +761,7 @@ class ReleaseOrchestrator(SigningSession):
                     shutil.copyfile(target_files, signed_target_files)
                 except OSError as error:
                     print(f"cp: {error}", file=sys.stderr)
-                    raise ReleaseAbort(1) from error
+                    raise Abort(1) from error
         else:
             release_args = self._build_release_arguments(rollback)
 
@@ -788,7 +781,7 @@ class ReleaseOrchestrator(SigningSession):
                     ],
                 )
                 if code != 0:
-                    raise ReleaseAbort(1)
+                    raise Abort(1)
 
             if rollback is not None:
                 print(
@@ -812,7 +805,7 @@ class ReleaseOrchestrator(SigningSession):
                         ],
                     )
                     if code != 0:
-                        raise ReleaseAbort(1)
+                        raise Abort(1)
 
                     print("Calculating sha256sum for OTA update zip")
                     self._write_checksum(out_dir, ota_zip.name)
@@ -834,7 +827,7 @@ class ReleaseOrchestrator(SigningSession):
                 ],
             )
             if code != 0:
-                raise ReleaseAbort(1)
+                raise Abort(1)
 
         self._assemble_factory_image(
             out_dir=out_dir,
@@ -865,7 +858,7 @@ class ReleaseOrchestrator(SigningSession):
                 ],
             )
             if code != 0:
-                raise ReleaseAbort(1)
+                raise Abort(1)
 
             otatest_ota_zip = (
                 out_dir / f"{self.device}-ota_update-{otatest}.zip"
@@ -883,7 +876,7 @@ class ReleaseOrchestrator(SigningSession):
                 ],
             )
             if code != 0:
-                raise ReleaseAbort(1)
+                raise Abort(1)
 
             print("Calculating sha256sum for OTA test update zip")
             self._write_checksum(out_dir, otatest_ota_zip.name)
@@ -894,7 +887,7 @@ class ReleaseOrchestrator(SigningSession):
                 "Not creating factory image due to OTA_ONLY="
                 f"{self.environment['OTA_ONLY']}",
             )
-            raise ReleaseAbort(0)
+            raise Abort(0)
 
     def _build_release_arguments(
         self,
@@ -918,7 +911,7 @@ class ReleaseOrchestrator(SigningSession):
             )
         except UnsupportedRollbackDeviceError as error:
             print(str(error))
-            raise ReleaseAbort(1) from error
+            raise Abort(1) from error
 
     def _extract_build_id(self, target_files: Path) -> str:
         try:
@@ -930,7 +923,7 @@ class ReleaseOrchestrator(SigningSession):
                 f"({error})",
                 file=sys.stderr,
             )
-            raise ReleaseAbort(1) from error
+            raise Abort(1) from error
         for line in text.splitlines():
             name, sep, value = line.partition("=")
             if sep and name == "ro.build.id":
@@ -1009,7 +1002,7 @@ class ReleaseOrchestrator(SigningSession):
             env={**os.environ, **self.environment},
         )
         if assembled.returncode != 0:
-            raise ReleaseAbort(assembled.returncode)
+            raise Abort(assembled.returncode)
 
         pattern = f"{self.device}-{version}-factory-*.zip"
         matches = sorted(p.name for p in out_dir.glob(pattern))
@@ -1019,7 +1012,7 @@ class ReleaseOrchestrator(SigningSession):
                 f"{out_dir}, found {matches!r}",
                 file=sys.stderr,
             )
-            raise ReleaseAbort(1)
+            raise Abort(1)
         (out_dir / matches[0]).rename(out_dir / final_name)
 
         print("Calculating sha256sum for factory image")
@@ -1092,7 +1085,7 @@ class DeltaOrchestrator(SigningSession):
                 "ota_from_target_files",
             )
             if not ota_from_target_files:
-                raise ReleaseAbort(1)
+                raise Abort(1)
         else:
             ota_from_target_files = "./bin/ota_from_target_files"
             self.args.releasetools += ["-p", "."]
@@ -1103,7 +1096,7 @@ class DeltaOrchestrator(SigningSession):
                 "BUILD_NUMBER not set, did you source envsetup.sh ?",
                 file=sys.stderr,
             )
-            raise ReleaseAbort(1)
+            raise Abort(1)
         try:
             self.prepare_for_signing_full(
                 command_argv=[
@@ -1113,7 +1106,7 @@ class DeltaOrchestrator(SigningSession):
                     self.new,
                 ],
             )
-        except ReleaseAbort as abort:
+        except Abort as abort:
             raise ReleaseUsageError("failed to prepare for signing") from abort
 
         old_dir = f"archive/release-{self.device}-{self.old}"
@@ -1133,7 +1126,7 @@ class DeltaOrchestrator(SigningSession):
             ],
         )
         if code != 0:
-            raise ReleaseAbort(code)
+            raise Abort(code)
 
         print("Calculating sha256sum for incremental")
         self._write_checksum(Path(new_dir), incremental)
