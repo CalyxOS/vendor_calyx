@@ -390,7 +390,6 @@ def test_load_vendor_applies_the_yubihsm_include_exports() -> None:
     assert environment["YUBIHSM_EXPORTABLE_DOMAIN"] == "3"
     assert environment["YUBIHSM_WRAP_KEY_ID"] == "0x0010"
     assert environment["KEYMAP_FILE"].endswith("pkcs11/keymap.tsv")
-    assert environment["KEY_DIR"] == "keys/"
 
 
 @pytest.mark.parametrize(
@@ -785,15 +784,7 @@ def test_load_vendor_returns_none_without_a_vendor() -> None:
     environment: dict[str, str] = {}
 
     assert load_vendor(environment) is None
-    assert environment["KEY_DIR"] == "keys/"
-
-
-def test_load_vendor_treats_an_empty_keymapper_as_legacy() -> None:
-    environment = {"KEYMAPPER": "", "KEY_DIR": "custom/"}
-
-    load_vendor(environment)
-
-    assert environment["KEY_DIR"] == "keys/"
+    assert environment == {}
 
 
 def test_softhsm_vendor_counts_every_device_as_loaded() -> None:
@@ -834,17 +825,6 @@ def test_yubihsm_vendor_cleanup_stops_only_a_connector_it_started(
     )
 
     assert stopped == [Path(started_pid_file)]
-
-
-def test_load_vendor_leaves_key_dir_to_a_keymapper_file() -> None:
-    environment = {
-        "KEYMAPPER_FILE": "keymapper.plugin.py",
-        "KEY_DIR": "custom/",
-    }
-
-    load_vendor(environment)
-
-    assert environment["KEY_DIR"] == "custom/"
 
 
 def test_yubihsm_finalize_release_extracts_under_the_lock(
