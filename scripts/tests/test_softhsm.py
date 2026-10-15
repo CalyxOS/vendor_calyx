@@ -129,7 +129,6 @@ def signing_environment(
     return {
         **base_environment,
         "KEY_DIR": f"{str(key_dir).removesuffix('/')}/",
-        "DEBUG_PAYLOAD_SIGNER": "n",
     }
 
 
