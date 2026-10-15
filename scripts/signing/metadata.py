@@ -26,7 +26,6 @@ BASE_ARRAYS = (
     "keys_app",
     "keys_repo",
     "key_types",
-    "mapped_key_types",
     "all_devices",
 )
 
@@ -40,7 +39,6 @@ class SigningMetadata:
     arrays: Mapping[str, tuple[str, ...]]
     key_types: tuple[str, ...]
     key_type_to_array: Mapping[str, str]
-    mapped_key_types: tuple[str, ...]
     all_devices: tuple[str, ...]
 
     def keys_for_type(self, key_type: str) -> tuple[str, ...]:
@@ -70,29 +68,19 @@ class SigningMetadata:
             None.
 
         Raises:
-            ValueError: If arrays contain duplicates, the mapped key type
-                array contains empty values, key-type mappings are
-                incomplete, or mapped key types are unknown.
+            ValueError: If arrays contain duplicates, no key types or no
+                devices are defined, or key-type mappings are incomplete.
         """
         for name, values in self.arrays.items():
             names = [value for value in values if value]
             if len(names) != len(set(names)):
                 raise ValueError(f"duplicate entries in metadata array {name}")
-        if not all(self.mapped_key_types):
-            raise ValueError("empty entry in metadata array mapped_key_types")
         if not self.key_types:
             raise ValueError("metadata defines no key types")
         if not any(self.all_devices):
             raise ValueError("metadata defines no devices")
         if not set(self.key_types) <= set(self.key_type_to_array):
             raise ValueError("key_type_to_array does not cover key_types")
-        unknown_mapped = set(self.mapped_key_types) - set(
-            self.key_type_to_array,
-        )
-        if unknown_mapped:
-            raise ValueError(
-                f"unknown mapped key types: {sorted(unknown_mapped)}",
-            )
 
 
 def default_metadata_path() -> Path:
@@ -193,7 +181,6 @@ def load_metadata(path: Path) -> SigningMetadata:
             key_type for key_type in frozen_arrays["key_types"] if key_type
         ),
         key_type_to_array=MappingProxyType(mappings),
-        mapped_key_types=frozen_arrays["mapped_key_types"],
         all_devices=frozen_arrays["all_devices"],
     )
     metadata.validate()
