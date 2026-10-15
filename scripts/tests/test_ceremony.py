@@ -22,6 +22,7 @@ from conftest import (
     HSM_PROVISIONING_DIR,
     YUBIHSM_WRAP_ID,
     back_up_yubihsm_key,
+    fake_curl,
     install_executable,
     load_script,
     prepare_ceremony_package,
@@ -55,16 +56,7 @@ SIGNING_AUTHKEY_ID = 0x0001
 AUDIT_AUTHKEY_ID = 0x0002
 ADMIN_AUTHKEY_ID = 0x00AD
 PROMPT_TIMEOUT = 120
-FAKE_CURL = """#!/bin/sh
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -o) out=$2; shift 2 ;;
-    -L) shift ;;
-    *) link=$1; shift ;;
-  esac
-done
-cp "$DOWNLOADS/${link##*/}" "$out"
-"""
+FAKE_CURL = fake_curl('cp "$DOWNLOADS/${link##*/}" "$out"')
 FAKE_SUDO = """#!/bin/sh
 printf '%s\\n' "$*" >> "$SUDO_LOG"
 """
