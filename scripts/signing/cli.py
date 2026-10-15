@@ -153,7 +153,7 @@ def _cmd_generate_delta(args: argparse.Namespace) -> int:
             "error: incorrect number of arguments, please try again",
             file=sys.stderr,
         )
-        print(f"Usage: {program} device oldversion newversion")
+        print(f"Usage: {program} {DeltaOrchestrator.usage}")
         return 1
     device, old, new = arguments
     orchestrator = DeltaOrchestrator(
