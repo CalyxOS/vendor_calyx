@@ -288,7 +288,10 @@ def test_sign_orchestrate_stops_without_a_devices_file(
 
     assert result.returncode == 1
     assert "devices: No such file or directory" in result.stderr
-    assert "SIGN_ASSUME_YES=y is set, not retrying." in result.stderr
+    assert (
+        "Reading the devices file failed (code 1). "
+        "SIGN_ASSUME_YES=y is set, not retrying."
+    ) in result.stderr
     assert "Traceback" not in result.stderr
     assert not (
         sign_tree / "archive" / f"release-bramble-{BUILD_NUMBER}"
