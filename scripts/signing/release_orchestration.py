@@ -45,7 +45,6 @@ from .release_execution import (
     run_release_tool,
 )
 from .sign_planning import is_build_number
-from .signing_server import SigningServer
 
 _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
 
@@ -594,25 +593,18 @@ class SigningSession:
             or Path(interceptor).name != "vendor.yubihsm.interceptor.py"
         ):
             return
-        from .yubihsm_session_service import YubiHsmSessionService
+        from .yubihsm_session_service import yubihsm_signing_server
 
-        session_service = YubiHsmSessionService(
+        assert self.tmpdir is not None
+        socket_path = self.tmpdir / "signing-server.sock"
+        server = yubihsm_signing_server(
             sign_environment.yubihsm_config_from_environment(self.environment),
+            socket_path,
             audit_log_path=(
                 Path(self.environment["AUDIT_LOG_PATH"])
                 if self.environment.get("AUDIT_LOG_PATH")
                 else None
             ),
-        )
-        assert self.tmpdir is not None
-        socket_path = self.tmpdir / "signing-server.sock"
-        server = SigningServer(socket_path)
-        server.add_service(
-            {
-                "yubihsm_sign_pkcs1": session_service.sign,
-                "yubihsm_extract_audit_log": session_service.extract_audit_log,
-            },
-            session_service.close,
         )
         if self.environment.get("NEVER_START_APKSIGNER_BATCH") != "y":
             batch = ApksignerBatch(cwd=self.cwd, env=self.environment)
