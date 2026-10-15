@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar, cast
 
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 
 from .signing_server import Message, request
@@ -64,7 +63,6 @@ class YubiHsmSessionService:
         self._audit_log_path = audit_log_path
         self._hsm: YubiHsm | None = None
         self._session: AuthSession | None = None
-        self._public_keys: dict[int, rsa.RSAPublicKey] = {}
 
     def close(self) -> None:
         session, self._session = self._session, None
@@ -111,19 +109,6 @@ class YubiHsmSessionService:
                 digest,
                 cast(hashes.HashAlgorithm, Prehashed(hash_algorithm)),
             ),
-        )
-        if key_id not in self._public_keys:
-            public_key = self.with_session(
-                lambda session: AsymmetricKey(session, key_id).get_public_key(),
-            )
-            if not isinstance(public_key, rsa.RSAPublicKey):
-                raise ValueError(f"key {key_id:#06x} is not an RSA key")
-            self._public_keys[key_id] = public_key
-        self._public_keys[key_id].verify(
-            signature,
-            digest,
-            padding.PKCS1v15(),
-            Prehashed(hash_algorithm),
         )
         return {
             "status": "ok",
