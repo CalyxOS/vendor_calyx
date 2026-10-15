@@ -127,11 +127,9 @@ def main() -> None:
                     compress=True,
                 )
             except yubihsm.exceptions.YubiHsmDeviceError as e:
-                if e.code == int("0x11", 16):
-                    print("  Cert was already imported, skipping...")
-                    continue
-                else:
-                    raise e
+                if e.code != ERROR.OBJECT_EXISTS:
+                    raise
+                print("  Cert was already imported, skipping...")
             finally:
                 extract_and_save_logs(
                     session,
