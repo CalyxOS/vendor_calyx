@@ -13,11 +13,16 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    APKSIGNER_SIGNING_HELPER,
+    FIXTURES_DIR,
     KEYGEN_METADATA,
+    PAYLOAD_SIGNER,
+    PKCS11_DIR,
     PKCS11_ENGINE,
-    SCRIPTS_DIR,
+    SIGNING_HELPER,
     SOFTHSM_MODULE,
     SOFTHSM_SO_PIN,
+    YUBIHSM_INTERCEPTOR,
     aosp_jar_command,
     require_softhsm,
     run,
@@ -26,9 +31,7 @@ from conftest import (
 from software_rsa import avb_input
 
 TOKEN_LABEL = "androsign-test"
-SOFTHSM_KEYGEN_FIXTURE = (
-    Path(__file__).parent / "fixtures" / "softhsm-keygen.json"
-)
+SOFTHSM_KEYGEN_FIXTURE = FIXTURES_DIR / "softhsm-keygen.json"
 
 
 def softhsm_token(
@@ -70,7 +73,7 @@ def run_keygen(
     environment: dict[str, str],
 ) -> subprocess.CompletedProcess[str]:
     return run(
-        [SCRIPTS_DIR / "pkcs11" / "vendor.softhsm.keygen.sh", output],
+        [PKCS11_DIR / "vendor.softhsm.keygen.sh", output],
         env=environment,
         check=False,
     )
@@ -153,7 +156,7 @@ def test_payload_signer_rejects_mismatched_public_key(
 
     signed = run(
         [
-            SCRIPTS_DIR / "pkcs11" / "payload_signer.py",
+            PAYLOAD_SIGNER,
             "-in",
             digest,
             "-out",
@@ -179,7 +182,7 @@ def test_softhsm_signing_rejects_missing_key(
     environment = signing_environment(base_environment, tmp_path)
     signed = run(
         [
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            SIGNING_HELPER,
             "SHA256_RSA2048",
             public_key_named(output, tmp_path, "ffff"),
         ],
@@ -254,7 +257,7 @@ def test_avbtool_signs_with_softhsm_key(
             "--algorithm",
             "SHA256_RSA2048",
             "--signing_helper",
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            SIGNING_HELPER,
         ],
         env=environment,
         check=False,
@@ -301,7 +304,7 @@ def test_avb_helper_rejects_mismatched_public_key(
             "--algorithm",
             "SHA256_RSA2048",
             "--signing_helper",
-            SCRIPTS_DIR / "pkcs11" / "signing_helper.py",
+            SIGNING_HELPER,
         ],
         env=environment,
         check=False,
@@ -392,7 +395,7 @@ def test_releasetools_signs_apks_through_the_external_kms_provider(
             **base_environment,
             "KEY_DIR": "keys/",
             "APKSIGNER_EXTERNAL_SIGNER": str(
-                SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py",
+                APKSIGNER_SIGNING_HELPER,
             ),
             "PYTHONPATH": str(releasetools),
         },
@@ -447,7 +450,7 @@ def test_releasetools_reuses_a_cached_kms_signature(
             aosp_top / "out" / "host" / "linux-x86",
             "java",
             "/dev/null",
-            SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py",
+            YUBIHSM_INTERCEPTOR,
             app,
         ],
         cwd=tmp_path,
@@ -455,7 +458,7 @@ def test_releasetools_reuses_a_cached_kms_signature(
             **base_environment,
             "KEY_DIR": "keys/",
             "APKSIGNER_EXTERNAL_SIGNER": str(
-                SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py",
+                APKSIGNER_SIGNING_HELPER,
             ),
             "PYTHONPATH": str(releasetools),
             "PATH": os.pathsep.join(
@@ -510,7 +513,7 @@ def test_releasetools_signs_packages_through_the_external_signer(
             aosp_top / "out" / "host" / "linux-x86",
             java,
             "/dev/null",
-            SCRIPTS_DIR / "pkcs11" / "payload_signer.py",
+            PAYLOAD_SIGNER,
             package,
             "signed.zip",
         ],

@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import itertools
 import os
 import shutil
@@ -21,10 +20,10 @@ from typing import Self
 import pytest
 from conftest import (
     HSM_PROVISIONING_DIR,
-    SCRIPTS_DIR,
     YUBIHSM_WRAP_ID,
     back_up_yubihsm_key,
     install_executable,
+    load_script,
     prepare_ceremony_package,
     run,
     sha256,
@@ -753,13 +752,7 @@ def test_audit_script_syncs_the_log_before_acknowledging_it(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    spec = importlib.util.spec_from_file_location(
-        "audit_under_test",
-        SCRIPTS_DIR / "hsm_provisioning" / "audit.py",
-    )
-    assert spec is not None and spec.loader is not None
-    audit = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(audit)
+    audit = load_script(HSM_PROVISIONING_DIR / "audit.py")
     events: list[str] = []
     fsync = os.fsync
 
