@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import pytest
-from conftest import yubihsm_config
+from conftest import YUBIHSM_WRAP_ID, yubihsm_config
 from signing.vendor_yubihsm import (
     StorageInfo,
     get_storage_info,
@@ -25,7 +25,7 @@ def test_get_storage_info_parses_big_endian_response(
 ) -> None:
     device = EmulatedYubiHsm(total_records=200, total_pages=900)
     yubihsm.plug(device)
-    device.put_wrap_key(0x0010)
+    device.put_wrap_key(YUBIHSM_WRAP_ID)
     device.put_asymmetric_key(0x2000)
 
     info = get_storage_info(yubihsm_config(yubihsm))
