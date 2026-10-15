@@ -17,6 +17,17 @@ from pathlib import Path
 
 from .metadata import SCRIPTS_DIR, default_devices_path
 
+_SCRIPT_COMMANDS = (
+    "release-orchestrate",
+    "generate-delta",
+    "keygen",
+    "yubihsm-provision",
+    "mkkey",
+    "updatekeys",
+    "updatecommonkeys",
+    "sign-app",
+)
+
 
 def build_parser() -> argparse.ArgumentParser:
     """
@@ -52,23 +63,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=SCRIPTS_DIR / "generate_delta.sh",
     )
 
-    subparsers.add_parser("release-orchestrate", add_help=False)
+    for command in _SCRIPT_COMMANDS:
+        subparsers.add_parser(command, add_help=False)
 
-    subparsers.add_parser("generate-delta", add_help=False)
-
-    subparsers.add_parser("keygen", add_help=False)
-    subparsers.add_parser("yubihsm-provision", add_help=False)
-    subparsers.add_parser("mkkey", add_help=False)
-    subparsers.add_parser("updatekeys", add_help=False)
-    subparsers.add_parser("updatecommonkeys", add_help=False)
     prepare_ceremony_package = subparsers.add_parser("prepare-ceremony-package")
     prepare_ceremony_package.add_argument(
         "--script-dir",
         type=Path,
         default=SCRIPTS_DIR / "hsm_provisioning",
     )
-
-    subparsers.add_parser("sign-app", add_help=False)
     return parser
 
 
@@ -367,16 +370,7 @@ def main(argv: list[str] | None = None) -> int:
     if callable(reconfigure):
         reconfigure(line_buffering=True)
     script_argv: list[str] = []
-    if argv[:1] in (
-        ["release-orchestrate"],
-        ["generate-delta"],
-        ["sign-app"],
-        ["keygen"],
-        ["yubihsm-provision"],
-        ["mkkey"],
-        ["updatekeys"],
-        ["updatecommonkeys"],
-    ):
+    if argv[:1] and argv[0] in _SCRIPT_COMMANDS:
         script_argv = argv[1:]
         argv = argv[:1]
 
