@@ -269,7 +269,7 @@ def test_wizard_backup_reports_a_failed_export(
     )
 
     with pytest.raises(yubihsm_provision.StepFailed):
-        wizard.export_wrapped_key("0x2000")
+        wizard.back_up_key("0x2000")
     assert "error: the device refused" in capsys.readouterr().err
 
 
@@ -289,7 +289,7 @@ def test_wizard_backup_dry_run_exports_nothing(
         cwd=tmp_path,
     )
 
-    wizard.export_wrapped_key("0x2000")
+    wizard.back_up_key("0x2000")
 
     assert (
         "Operation: export-wrapped-key --connector http://127.0.0.1:1 "
