@@ -39,6 +39,8 @@ if TYPE_CHECKING:
     from signing.vendor_yubihsm import YubiHsmConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+AOSP_TOP = REPO_ROOT.parents[1]
+_AOSP_AVBTOOL = AOSP_TOP / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 HSM_PROVISIONING_DIR = SCRIPTS_DIR / "hsm_provisioning"
 PKCS11_DIR = SCRIPTS_DIR / "pkcs11"
@@ -84,12 +86,17 @@ def fake_pkcs11_modules(
 
 @pytest.fixture(scope="session")
 def aosp_top() -> Path:
-    top = REPO_ROOT.parents[1]
-    required = (top / "out" / "host" / "linux-x86" / "bin" / "avbtool",)
+    required = (_AOSP_AVBTOOL,)
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         pytest.skip(f"the Android tree lacks {', '.join(missing)}")
-    return top
+    return AOSP_TOP
+
+
+@pytest.fixture(scope="session")
+def avbtool(aosp_top: Path) -> Path:
+    """The avbtool the Android tree built."""
+    return _AOSP_AVBTOOL
 
 
 def sha256(path: Path) -> str:
