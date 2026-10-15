@@ -42,10 +42,6 @@ class BatchProcess:
             [
                 "java",
                 "-Xmx4096m",
-                "--add-exports=jdk.crypto.cryptoki/"
-                "sun.security.pkcs11.wrapper=ALL-UNNAMED",
-                "--add-exports=jdk.crypto.cryptoki/"
-                "sun.security.pkcs11=ALL-UNNAMED",
                 f"-Djava.library.path={cwd / 'lib64'}",
                 "-jar",
                 str(cwd / "framework" / "apksigner.jar"),
