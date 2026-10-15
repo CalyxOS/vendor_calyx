@@ -5,8 +5,8 @@
 #
 
 """
-Sign OTA payload digests through the release's SigningServer, or else
-through the backend-neutral Python PKCS#11 layer.
+Sign OTA payload digests through the release's SigningServer, or for a
+SoftHSM release through the backend-neutral Python PKCS#11 layer.
 """
 
 from __future__ import annotations
@@ -122,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     Raises:
         OSError: If input, output, or the PKCS#11 tool cannot be accessed.
         ValueError: If the payload digest is invalid.
+        RuntimeError: If PKCS11_VENDOR is yubihsm and the signing server
+            does not sign.
     """
     args, _ = build_parser().parse_known_args(argv)
     digest = args.input_file.read_bytes()
