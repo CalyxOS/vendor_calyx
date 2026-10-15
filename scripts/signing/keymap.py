@@ -109,6 +109,9 @@ _LEGACY_SEPARATE_VBMETA_SYSTEM_DEVICES = frozenset(
     },
 )
 _LEGACY_QORVO_DEVICES = frozenset({"raven", "cheetah", "tangorpro", "felix"})
+_DEVKEY_NAME = "build/make/target/product/security/devkey"
+_TESTKEY_NAME = "build/make/target/product/security/testkey"
+_RELEASE_KEY_NAMES = frozenset({_TESTKEY_NAME, _DEVKEY_NAME})
 
 
 @dataclass(frozen=True, order=True, slots=True)
@@ -569,7 +572,7 @@ class Id2bConfig:
     ota_key_type: str = "avb"
     ota_key_name: str = "vbmeta"
     release_key_type: str = "core"
-    release_key_name: str = "build/make/target/product/security/testkey"
+    release_key_name: str = _TESTKEY_NAME
 
 
 class Id2bKeymapper(_BaseKeymapper):
@@ -666,10 +669,7 @@ class Id2bKeymapper(_BaseKeymapper):
         lookup = key_type
         if key_type == "other" and key_name == "ota":
             lookup = "ota"
-        elif key_type == "core" and key_name in {
-            "build/make/target/product/security/testkey",
-            "build/make/target/product/security/devkey",
-        }:
+        elif key_type == "core" and key_name in _RELEASE_KEY_NAMES:
             lookup = "releasekey"
         try:
             return self.config.key_is_per_device[lookup]
@@ -710,10 +710,7 @@ class Id2bKeymapper(_BaseKeymapper):
                 key_name = self.metadata.arrays["keys_apex"][0]
             elif strategy == "triple":
                 key_name = self.metadata.arrays["keys_apex"][0]
-        elif key_type == "core" and key_name in {
-            "build/make/target/product/security/testkey",
-            "build/make/target/product/security/devkey",
-        }:
+        elif key_type == "core" and key_name in _RELEASE_KEY_NAMES:
             key_type = self.config.release_key_type
             key_name = self.config.release_key_name
         elif key_type == "other" and key_name == "ota":
@@ -795,10 +792,6 @@ class Id2bKeymapper(_BaseKeymapper):
             raise ValueError(
                 f"devices missing from all_devices: {sorted(unknown)}",
             )
-
-
-_DEVKEY_NAME = "build/make/target/product/security/devkey"
-_TESTKEY_NAME = "build/make/target/product/security/testkey"
 
 
 class StaticKeymapper(Keymapper):
