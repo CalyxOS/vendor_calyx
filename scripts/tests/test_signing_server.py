@@ -450,7 +450,6 @@ def test_payload_signer_checks_the_server_signature_against_its_key(
             **_without_signing_variables(),
             "SIGNING_SERVER_SOCKET": str(server.socket_path),
             "KEY_DIR": f"{tmp_path / 'keys'}/",
-            "DEBUG_PAYLOAD_SIGNER": "yes",
         },
         capture_output=True,
     )
