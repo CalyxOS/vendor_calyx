@@ -37,7 +37,7 @@ def run_helper(main: Callable[[], int]) -> NoReturn:
         if error.stderr:
             sys.stderr.buffer.write(error.stderr)
         raise SystemExit(1) from None
-    except (KeyError, OSError, ValueError) as error:
+    except (KeyError, OSError, RuntimeError, ValueError) as error:
         print(error, file=sys.stderr)
         raise SystemExit(1) from error
 
@@ -123,7 +123,8 @@ def sign(
 ) -> bytes:
     """
     Sign a digest through the signing server SIGNING_SERVER_SOCKET names,
-    or through pkcs11_sign() when no server answers.
+    or through pkcs11_sign() when no server answers and PKCS11_VENDOR is
+    not yubihsm.
 
     Args:
         key_name: The key's name.
@@ -132,6 +133,9 @@ def sign(
 
     Returns:
         The signature.
+
+    Raises:
+        RuntimeError: If PKCS11_VENDOR is yubihsm and no server signed.
     """
     socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
     if socket_path:
@@ -142,4 +146,9 @@ def sign(
         )
         if signature is not None:
             return signature
+    if os.environ.get("PKCS11_VENDOR") == "yubihsm":
+        raise RuntimeError(
+            f"The signing server did not sign with {key_name}, and YubiHSM "
+            "keys sign only through it.",
+        )
     return pkcs11_sign()

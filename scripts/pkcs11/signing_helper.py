@@ -5,8 +5,8 @@
 #
 
 """
-Sign avbtool input through the release's SigningServer, or else through
-the backend-neutral Python PKCS#11 layer.
+Sign avbtool input through the release's SigningServer, or for a SoftHSM
+release through the backend-neutral Python PKCS#11 layer.
 """
 
 from __future__ import annotations
@@ -39,6 +39,8 @@ def main(argv: list[str] | None = None) -> int:
     Raises:
         ValueError: If arguments or AVB input are invalid.
         OSError: If the PKCS#11 signing tool cannot be executed.
+        RuntimeError: If PKCS11_VENDOR is yubihsm and the signing server
+            does not sign.
     """
     algorithm, key_file = signing_helpers.two_arguments(
         argv,

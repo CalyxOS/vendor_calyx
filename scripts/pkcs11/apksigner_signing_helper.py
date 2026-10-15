@@ -6,7 +6,7 @@
 
 """
 Sign apksigner's KMS extension-point input through the signing server, or
-through the backend-neutral Python PKCS#11 layer when no server answers.
+for a SoftHSM release through the backend-neutral Python PKCS#11 layer.
 
 The command line is "apksigner_signing_helper.py MECHANISM KEY_ID". The
 raw, unhashed signable content comes on standard input, and the raw
@@ -43,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     Raises:
         ValueError: If arguments are invalid.
         OSError: If the PKCS#11 signing tool cannot be executed.
+        RuntimeError: If PKCS11_VENDOR is yubihsm and the signing server
+            does not sign.
     """
     mechanism, key_id = signing_helpers.two_arguments(
         argv,
