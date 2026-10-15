@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from conftest import (
     YUBIHSM_WRAP_ID,
+    assert_same_public_key,
     back_up_yubihsm_key,
     plug_yubihsm,
     yubihsm_config,
@@ -93,14 +94,6 @@ def _backup_path(key_dir: Path, object_id: int) -> Path:
     return key_dir / f"{object_id:#06x}-asymmetric-key.yhw"
 
 
-def _stored(device: EmulatedYubiHsm) -> set[tuple[int, OBJECT]]:
-    return {
-        (object_id, object_type)
-        for object_id, object_type in device.objects
-        if object_type in (OBJECT.ASYMMETRIC_KEY, OBJECT.OPAQUE)
-    }
-
-
 def _changes(device: EmulatedYubiHsm) -> list[tuple[COMMAND, int]]:
     """
     Return the device's successful deletes and imports, each with the ID
@@ -120,13 +113,9 @@ def _assert_restored(
     object_id: int,
     key: rsa.RSAPrivateKey,
 ) -> None:
-    restored = device.get(object_id, OBJECT.ASYMMETRIC_KEY)
-    assert restored is not None
-    restored_key = serialization.load_der_private_key(restored.data, None)
-    assert isinstance(restored_key, rsa.RSAPrivateKey)
-    assert (
-        restored_key.public_key().public_numbers()
-        == key.public_key().public_numbers()
+    assert_same_public_key(
+        device.private_key(object_id).public_key(),
+        key.public_key(),
     )
 
 
@@ -165,7 +154,7 @@ def test_already_loaded_key_is_a_noop_whatever_its_certificate(
     _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == []
-    assert (0x2000, OBJECT.ASYMMETRIC_KEY) in _stored(device)
+    assert (0x2000, OBJECT.ASYMMETRIC_KEY) in device.key_objects()
 
 
 def test_loaded_key_needs_no_room_for_its_certificate(
@@ -180,7 +169,7 @@ def test_loaded_key_needs_no_room_for_its_certificate(
     _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == []
-    assert _stored(device) == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
+    assert device.key_objects() == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
 
 
 def test_imports_missing_key_but_not_its_certificate(
@@ -194,7 +183,7 @@ def test_imports_missing_key_but_not_its_certificate(
     _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == [(COMMAND.IMPORT_WRAPPED, 0x2000)]
-    assert _stored(device) == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
+    assert device.key_objects() == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
     _assert_restored(device, 0x2000, key)
     restored = device.get(0x2000, OBJECT.ASYMMETRIC_KEY)
     assert restored is not None
@@ -228,7 +217,7 @@ def test_evicts_candidate_with_its_certificate_when_space_is_needed(
         (COMMAND.IMPORT_WRAPPED, 0x2000),
         (COMMAND.DELETE_OBJECT, 0x2002),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2000, OBJECT.ASYMMETRIC_KEY),
         (0x2001, OBJECT.ASYMMETRIC_KEY),
         (0x2003, OBJECT.OPAQUE),
@@ -265,7 +254,7 @@ def test_a_failed_certificate_delete_leaves_the_new_key_loaded(
     _ensure(yubihsm, tmp_path, "0x2000", after_key=loaded.append)
 
     assert loaded == ["0x2000"]
-    assert (0x2002, OBJECT.OPAQUE) in _stored(device)
+    assert (0x2002, OBJECT.OPAQUE) in device.key_objects()
     assert "could not delete the certificate of evicted key 0x2002" in (
         capsys.readouterr().err
     )
@@ -287,7 +276,7 @@ def test_evicted_key_keeps_a_certificate_without_a_backup(
         (COMMAND.DELETE_OBJECT, 0x2002),
         (COMMAND.IMPORT_WRAPPED, 0x2000),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2000, OBJECT.ASYMMETRIC_KEY),
         (0x2002, OBJECT.OPAQUE),
     }
@@ -317,7 +306,7 @@ def test_undecodable_backup_fails_before_evicting(
         _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == []
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2002, OBJECT.ASYMMETRIC_KEY),
         (0x2002, OBJECT.OPAQUE),
     }
@@ -349,7 +338,7 @@ def test_candidate_with_unreadable_backup_is_not_evicted(
         (COMMAND.IMPORT_WRAPPED, 0x3000),
         (COMMAND.DELETE_OBJECT, 0x2002),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2001, OBJECT.ASYMMETRIC_KEY),
         (0x2001, OBJECT.OPAQUE),
         (0x3000, OBJECT.ASYMMETRIC_KEY),
@@ -372,7 +361,7 @@ def test_raises_when_space_needed_and_no_eviction_candidate(
         _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == []
-    assert _stored(device) == {(0x2001, OBJECT.OPAQUE)}
+    assert device.key_objects() == {(0x2001, OBJECT.OPAQUE)}
 
 
 def test_raises_when_key_backup_missing(
@@ -411,7 +400,7 @@ def test_evicts_lowest_id_candidate_when_own_id_is_above_middle(
         (COMMAND.IMPORT_WRAPPED, 0x2000),
         (COMMAND.DELETE_OBJECT, 0x1000),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x1001, OBJECT.ASYMMETRIC_KEY),
         (0x2000, OBJECT.ASYMMETRIC_KEY),
     }
@@ -490,7 +479,7 @@ def test_object_outside_the_ondemand_domain_is_not_evicted(
         _ensure(yubihsm, tmp_path, "0x2000")
 
     assert _changes(device) == []
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2001, OBJECT.ASYMMETRIC_KEY),
         (0x2001, OBJECT.OPAQUE),
     }
@@ -520,7 +509,7 @@ def test_eviction_skips_objects_outside_the_ondemand_domain(
         (COMMAND.IMPORT_WRAPPED, 0x2000),
         (COMMAND.DELETE_OBJECT, 0x2001),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2000, OBJECT.ASYMMETRIC_KEY),
         (0x2003, OBJECT.ASYMMETRIC_KEY),
         (0x2003, OBJECT.OPAQUE),
@@ -540,7 +529,7 @@ def test_load_is_refused_when_the_device_rejects_the_import(
 
     assert raised.value.code == ERROR.INVALID_DATA
     assert _changes(device) == []
-    assert _stored(device) == set()
+    assert device.key_objects() == set()
 
 
 def test_failed_import_loads_the_evicted_key_again(
@@ -570,7 +559,7 @@ def test_failed_import_loads_the_evicted_key_again(
         (COMMAND.DELETE_OBJECT, 0x2002),
         (COMMAND.IMPORT_WRAPPED, 0x2002),
     ]
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2002, OBJECT.ASYMMETRIC_KEY),
         (0x2002, OBJECT.OPAQUE),
     }
@@ -597,7 +586,7 @@ def test_backup_of_another_key_leaves_no_object_behind(
     with pytest.raises(ValueError, match="does not match expected key id"):
         _ensure(yubihsm, tmp_path, "0x2000")
 
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (0x2002, OBJECT.ASYMMETRIC_KEY),
         (0x2002, OBJECT.OPAQUE),
     }
@@ -753,7 +742,7 @@ def test_ensure_keys_for_devices_unions_multiple_devices(
         ["bramble", "redfin"],
     )
 
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (object_id, OBJECT.ASYMMETRIC_KEY) for object_id in keys
     }
     for object_id, key in keys.items():
@@ -775,7 +764,7 @@ def test_restore_all_keys_logs_each_key_as_it_is_restored(
 
     _restore(yubihsm, key_dir, audit_log)
 
-    assert _stored(device) == {
+    assert device.key_objects() == {
         (object_id, OBJECT.ASYMMETRIC_KEY) for object_id in (0x3000, 0x3001)
     }
     sections = _audit_log_sections(audit_log)
@@ -802,7 +791,7 @@ def test_restore_all_keys_skips_a_certificate_without_a_key_backup(
     _restore(yubihsm, key_dir, tmp_path / "audit.log")
 
     assert _changes(device) == []
-    assert _stored(device) == set()
+    assert device.key_objects() == set()
 
 
 def test_restore_all_keys_restores_keys_in_id_order(
