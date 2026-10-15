@@ -23,7 +23,7 @@ import sys
 import tempfile
 from collections import deque
 from collections.abc import Callable, Generator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import FrameType
 from typing import Any
@@ -395,6 +395,70 @@ def _run_fan_out(
     return _FanOut(jobs, max_jobs, on_success).run()
 
 
+def _run_jobs(
+    jobs: Sequence[Job],
+    *,
+    heading: str,
+    failure: str,
+    retry: str,
+    tmp_prefix: str,
+    max_jobs: int,
+    original_tmpdir: Path,
+    environment: Mapping[str, str],
+    on_success: Callable[[Job], str | None] = lambda job: None,
+) -> int:
+    """
+    Run jobs on top of environment, in a TMPDIR of their own and with
+    ENSURE_KEY_IS_AVAILABLE=n, and report how many devices failed.
+
+    Args:
+        jobs: The jobs, each with only its own variables in env.
+        heading: Text printed with the tags of the jobs before they start.
+        failure: What failed, for "<failure> failed for N devices.".
+        retry: What running again does, for "You can run this script
+            again to <retry> the devices that failed.".
+        tmp_prefix: Prefix of the TMPDIR, created under original_tmpdir
+            and removed once the jobs are done.
+        max_jobs: Maximum number of concurrent jobs.
+        original_tmpdir: Directory to create the TMPDIR in.
+        environment: Environment the jobs start from.
+        on_success: As for _run_fan_out().
+
+    Returns:
+        0 if every job succeeded, 1 otherwise.
+    """
+    print()
+    print(heading, " ".join(job.tag for job in jobs), flush=True)
+
+    tmpdir = Path(tempfile.mkdtemp(prefix=tmp_prefix, dir=str(original_tmpdir)))
+    try:
+        base_env = {
+            **environment,
+            "TMPDIR": str(tmpdir),
+            "ENSURE_KEY_IS_AVAILABLE": "n",
+        }
+        failed = _run_fan_out(
+            [replace(job, env={**base_env, **job.env}) for job in jobs],
+            max_jobs=max_jobs,
+            on_success=on_success,
+        )
+    finally:
+        with defer_signals(interrupt=True):
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    if failed:
+        print(file=sys.stderr)
+        print(f"{failure} failed for {failed} devices.", file=sys.stderr)
+        print(
+            f"You can run this script again to {retry} the devices that "
+            "failed.",
+            file=sys.stderr,
+        )
+        return 1
+
+    return 0
+
+
 def sign_builds(
     pairs: Sequence[SignPair],
     *,
@@ -421,13 +485,6 @@ def sign_builds(
         0 if every device signed successfully, 1 otherwise, never a
         per-job or aggregate failure count.
     """
-    print()
-    print(
-        "Signing release for:",
-        " ".join(pair.tag for pair in pairs),
-        flush=True,
-    )
-
     outputs = {
         pair.tag: Path("out") / f"release-{pair.device}-{pair.target_build}"
         for pair in pairs
@@ -447,42 +504,28 @@ def sign_builds(
             return str(error)
         return None
 
-    tmpdir = Path(
-        tempfile.mkdtemp(prefix="sign_tmp.", dir=str(original_tmpdir)),
-    )
-    try:
-        base_env = {
-            **environment,
-            "TMPDIR": str(tmpdir),
-            "ENSURE_KEY_IS_AVAILABLE": "n",
-        }
-        work_jobs = [
+    return _run_jobs(
+        [
             Job(
                 argv=(
                     str(release_script),
                     pair.device,
                     f"calyx_{pair.device}-target_files-{pair.build}.zip",
                 ),
-                env={**base_env, "BUILD_NUMBER": str(pair.build)},
+                env={"BUILD_NUMBER": str(pair.build)},
                 tag=pair.tag,
             )
             for pair in pairs
-        ]
-        failed = _run_fan_out(work_jobs, max_jobs=jobs, on_success=archive)
-    finally:
-        with defer_signals(interrupt=True):
-            shutil.rmtree(tmpdir, ignore_errors=True)
-
-    if failed:
-        print(file=sys.stderr)
-        print(f"Signing failed for {failed} devices.", file=sys.stderr)
-        print(
-            "You can run this script again to sign the devices that failed.",
-            file=sys.stderr,
-        )
-        return 1
-
-    return 0
+        ],
+        heading="Signing release for:",
+        failure="Signing",
+        retry="sign",
+        tmp_prefix="sign_tmp.",
+        max_jobs=jobs,
+        original_tmpdir=original_tmpdir,
+        environment=environment,
+        on_success=archive,
+    )
 
 
 def generate_incrementals(
@@ -509,23 +552,8 @@ def generate_incrementals(
         0 if every incremental generated successfully, 1 otherwise, never
         a per-job or aggregate failure count.
     """
-    print()
-    print(
-        "Generating incremental updates for:",
-        " ".join(triple.tag for triple in triples),
-        flush=True,
-    )
-
-    tmpdir = Path(
-        tempfile.mkdtemp(prefix="incremental_tmp.", dir=str(original_tmpdir)),
-    )
-    try:
-        base_env = {
-            **environment,
-            "TMPDIR": str(tmpdir),
-            "ENSURE_KEY_IS_AVAILABLE": "n",
-        }
-        work_jobs = [
+    return _run_jobs(
+        [
             Job(
                 argv=(
                     str(generate_delta_script),
@@ -533,29 +561,16 @@ def generate_incrementals(
                     str(triple.old_build),
                     str(triple.new_build),
                 ),
-                env={
-                    **base_env,
-                    "BUILD_NUMBER": f"{triple.new_build}_{triple.old_build}",
-                },
+                env={"BUILD_NUMBER": f"{triple.new_build}_{triple.old_build}"},
                 tag=triple.tag,
             )
             for triple in triples
-        ]
-        failed = _run_fan_out(work_jobs, max_jobs=jobs)
-    finally:
-        with defer_signals(interrupt=True):
-            shutil.rmtree(tmpdir, ignore_errors=True)
-    if failed:
-        print(file=sys.stderr)
-        print(
-            f"Generating incrementals failed for {failed} devices.",
-            file=sys.stderr,
-        )
-        print(
-            "You can run this script again to generate incrementals for "
-            "the devices that failed.",
-            file=sys.stderr,
-        )
-        return 1
-
-    return 0
+        ],
+        heading="Generating incremental updates for:",
+        failure="Generating incrementals",
+        retry="generate incrementals for",
+        tmp_prefix="incremental_tmp.",
+        max_jobs=jobs,
+        original_tmpdir=original_tmpdir,
+        environment=environment,
+    )
