@@ -28,7 +28,6 @@ from conftest import (
     make_release_tree,
     metadata_with_placeholders,
     normalize_dry_run,
-    parameter_id,
     run,
     run_release,
     sha256,
@@ -878,50 +877,45 @@ def test_release_rejects_rollback_override_on_unsupported_device(
     assert "/bin/sign_target_files_apks" not in result.stderr
 
 
-@pytest.mark.parametrize(
-    ("device", "environment"),
-    (
-        ("bramble", {}),
-        (
-            "bramble",
-            PKCS11_ENVIRONMENT,
-        ),
-        ("devon", {"AVB_ROLLBACK_INDEX_OVERRIDE": "42"}),
-        ("bramble", {"KEY_SUFFIX": ""}),
-        ("bramble", {"KEY_SUFFIX": ".key"}),
-        ("bramble", {"KEYMAPPER": "legacy", "KEY_SUFFIX": ".key"}),
-        ("bramble", {"BUILD_NUMBER": "eng.user"}),
+RELEASE_DRY_RUNS: dict[str, tuple[str, dict[str, str], str]] = {
+    "plaintext": ("bramble", {}, "release.stdout"),
+    "pkcs11": ("bramble", PKCS11_ENVIRONMENT, "release.stdout"),
+    "rollback-override": (
+        "devon",
+        {"AVB_ROLLBACK_INDEX_OVERRIDE": "42"},
+        "release-rollback-override.stdout",
     ),
-    ids=(
-        "plaintext",
-        "pkcs11",
-        "rollback-override",
-        "empty-key-suffix",
-        "key-suffix",
-        "legacy-key-suffix",
-        "text-build-number",
+    "empty-key-suffix": ("bramble", {"KEY_SUFFIX": ""}, "release.stdout"),
+    "key-suffix": ("bramble", {"KEY_SUFFIX": ".key"}, "release.stdout"),
+    "legacy-key-suffix": (
+        "bramble",
+        {"KEYMAPPER": "legacy", "KEY_SUFFIX": ".key"},
+        "release.stdout",
     ),
-)
+    "text-build-number": (
+        "bramble",
+        {"BUILD_NUMBER": "eng.user"},
+        "release.stdout",
+    ),
+}
+
+
+@pytest.mark.parametrize("name", RELEASE_DRY_RUNS)
 def test_release_dry_run_renders_the_expected_commands(
     release_tree: Path,
-    device: str,
-    environment: dict[str, str],
-    request: pytest.FixtureRequest,
+    name: str,
 ) -> None:
     """
     DRY_RUN output is the operator's preview of what a live run executes,
     so every rendered command is compared in full, argument order
     included.
     """
-    name = parameter_id(request)
+    device, environment, stdout = RELEASE_DRY_RUNS[name]
 
     result = run_release(release_tree, device, environment=environment)
 
     assert result.returncode == 0, result.stderr
-    assert (
-        result.stdout
-        == (DRY_RUN_FIXTURES / f"release-{name}.stdout").read_text()
-    )
+    assert result.stdout == (DRY_RUN_FIXTURES / stdout).read_text()
     assert (
         normalize_dry_run(result.stderr, release_tree)
         == (DRY_RUN_FIXTURES / f"release-{name}.stderr").read_text()
