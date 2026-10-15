@@ -110,8 +110,8 @@ def avb_algorithm_for(
     AVB_RSA_KEY_SIZE, then RSA_KEY_SIZE. Each defaults to 4096.
 
     Args:
-        environment: Process environment to read PKCS11_MODULE/
-            PKCS11_VENDOR and the key sizes from.
+        environment: Process environment to read PKCS11_VENDOR and the
+            key sizes from.
         keymapper: The keymapper the release resolves keys with.
 
     Returns:
@@ -292,10 +292,8 @@ class _SessionArgs:
 
 
 def _signs_through_pkcs11(environment: Mapping[str, str]) -> bool:
-    """Return whether a PKCS#11 module or vendor is configured."""
-    return bool(
-        environment.get("PKCS11_MODULE") or environment.get("PKCS11_VENDOR"),
-    )
+    """Return whether a PKCS#11 vendor is configured."""
+    return bool(environment.get("PKCS11_VENDOR"))
 
 
 def prepare_signing_args(
@@ -303,7 +301,7 @@ def prepare_signing_args(
     args: _SessionArgs,
 ) -> None:
     """
-    When a PKCS#11 module/vendor is configured, extend the three argument
+    When a PKCS#11 vendor is configured, extend the three argument
     lists with the signing/payload-signer helper tools and apksigner's
     external KMS type, and (if set) add the signing-command interceptor and
     payload-signer maximum-signature-size overrides.
@@ -313,8 +311,8 @@ def prepare_signing_args(
     and the external signer replace, so it is given /dev/null.
 
     Args:
-        environment: Process environment to read PKCS11_MODULE/
-            PKCS11_VENDOR and the overrides from, and to point
+        environment: Process environment to read PKCS11_VENDOR and the
+            overrides from, and to point
             APKSIGNER_EXTERNAL_SIGNER at the apksigner helper in.
         args: Argument lists to extend in place.
 

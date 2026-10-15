@@ -1389,19 +1389,23 @@ def test_release_session_finalizes_then_cleans_up_its_vendor(
         (
             {
                 "KEYMAPPER": "id2b",
-                "PKCS11_MODULE": "x",
+                "PKCS11_VENDOR": "softhsm",
                 "AVB_RSA_KEY_SIZE": "2048",
             },
             "SHA256_RSA4096",
         ),
         (
-            {"KEYMAPPER": "id2b", "PKCS11_MODULE": "x", "RSA_KEY_SIZE": "2048"},
+            {
+                "KEYMAPPER": "id2b",
+                "PKCS11_VENDOR": "softhsm",
+                "RSA_KEY_SIZE": "2048",
+            },
             "SHA256_RSA2048",
         ),
         (
             {
                 "KEYMAPPER": "legacy",
-                "PKCS11_MODULE": "x",
+                "PKCS11_VENDOR": "softhsm",
                 "RSA_KEY_SIZE": "2048",
                 "AVB_RSA_KEY_SIZE": "3072",
             },
