@@ -12,20 +12,27 @@ import signal
 import subprocess
 import sys
 import time
-import zipfile
 from pathlib import Path
 
 import pytest
 from conftest import (
+    BUILD_NUMBER,
+    DRY_RUN_FIXTURES,
     ID2B_KEYMAP,
+    PKCS11_ENVIRONMENT,
     SCRIPTS_DIR,
     TEST_METADATA,
     default_signal_dispositions,
     install_executable,
+    make_release_tree,
+    metadata_with_placeholders,
+    normalize_dry_run,
     parameter_id,
     run,
+    run_release,
     sha256,
     stub,
+    write_target_files_zip,
 )
 from signing.keymap import load_keymapper
 from signing.metadata import load_metadata
@@ -40,74 +47,9 @@ from signing.signing_server import SigningServer
 pytestmark = pytest.mark.usefixtures("small_metadata")
 
 
-BUILD_NUMBER = "2026081500"
-
-PKCS11_ENVIRONMENT = {
-    "PKCS11_VENDOR": "softhsm",
-    "PKCS11_MODULE": "/dev/null",
-    "PKCS11_OPENSSL_ENGINE_LIBRARY_PATH": "/dev/null",
-    "PKCS11_PIN": "test-only",
-}
-
-
-def make_release_tree(root: Path) -> Path:
-    clear_variables = root / "device/common/clear-factory-images-variables.sh"
-    clear_variables.parent.mkdir(parents=True)
-    clear_variables.touch()
-    factory_images_common = (
-        root / "device/common/generate-factory-images-common.sh"
-    )
-    factory_images_common.write_text(
-        'cat "$DEVICE-img-$BUILD.zip" > "$DEVICE-$VERSION-factory-fake.zip"'
-        " || exit 1\n",
-    )
-    _install_fake_release_tools(root)
-    _write_avb_custom_keys(root)
-    return root
-
-
-def _write_avb_custom_keys(root: Path) -> None:
-    metadata = load_metadata(TEST_METADATA)
-    for keymapper in ("legacy", "id2b"):
-        mapper = load_keymapper({"KEYMAPPER": keymapper}, metadata)
-        for device in metadata.all_devices:
-            key = root / "keys" / mapper.avb_custom_key(device)
-            key.parent.mkdir(parents=True, exist_ok=True)
-            key.write_text("avb custom key\n")
-
-
 @pytest.fixture
 def release_tree(tmp_path: Path) -> Path:
     return make_release_tree(tmp_path)
-
-
-def write_target_files_zip(path: Path) -> None:
-    with zipfile.ZipFile(path, "w") as archive:
-        for name, content in (
-            ("SYSTEM/build.prop", "ro.build.id=TestBuild\n"),
-            (
-                "OTA/android-info.txt",
-                "require version-bootloader=test-bootloader\n"
-                "require version-baseband=test-radio\n",
-            ),
-        ):
-            archive.writestr(
-                zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0)),
-                content,
-            )
-
-
-def _install_fake_release_tools(root: Path) -> None:
-    for name, content in (
-        ("sign_target_files_apks", "signed-target-files"),
-        ("ota_from_target_files", "ota-update-zip"),
-        ("img_from_target_files", "factory-img-zip"),
-    ):
-        install_executable(
-            root / "bin" / name,
-            '#!/bin/sh\neval "out=\\${$#}"\n'
-            f'printf %s "{content}" > "$out"\n',
-        )
 
 
 def _manifest(directory: Path) -> dict[str, bytes]:
@@ -116,60 +58,6 @@ def _manifest(directory: Path) -> dict[str, bytes]:
         for path in sorted(directory.rglob("*"))
         if path.is_file()
     }
-
-
-def run_release(
-    release_tree: Path,
-    device: str,
-    *,
-    environment: dict[str, str] | None = None,
-    dry_run: bool = True,
-    target_files_arg: str | None = "_default_",
-) -> subprocess.CompletedProcess[str]:
-    """
-    Run the release entry point with deterministic orchestration settings.
-
-    Args:
-        release_tree: Hermetic working directory containing required support
-            files.
-        device: Android product whose release flow should be exercised.
-        environment: Optional release environment overrides.
-        dry_run: Whether release tools should only be rendered instead of
-            executed.
-        target_files_arg: The target-files argument, "_default_" for the
-            usual calyx_<device>-target_files-<build>.zip name and None for
-            none.
-
-    Returns:
-        The completed release process without enforcing successful status.
-    """
-    tmpdir = release_tree / "tmp"
-    tmpdir.mkdir(exist_ok=True)
-    variables = {
-        "TMPDIR": str(tmpdir),
-        "BUILD_NUMBER": BUILD_NUMBER,
-        "KEYMAPPER": "id2b",
-        "OTA_ONLY": "y",
-        **(environment or {}),
-    }
-    if dry_run:
-        variables["DRY_RUN"] = "y"
-    argv: list[str | Path] = [SCRIPTS_DIR / "release.sh", device]
-    if target_files_arg == "_default_":
-        argv.append(f"calyx_{device}-target_files-{BUILD_NUMBER}.zip")
-    elif target_files_arg is not None:
-        argv.append(target_files_arg)
-    return run(argv, cwd=release_tree, env=variables, check=False)
-
-
-DRY_RUN_FIXTURES = Path(__file__).parent / "fixtures" / "dry-run"
-
-
-def normalize_dry_run(stderr: str, tree: Path) -> str:
-    return stderr.replace(str(SCRIPTS_DIR), "<scripts>").replace(
-        str(tree),
-        "<tree>",
-    )
 
 
 def _command_line(stderr: str, tool: str) -> str:
@@ -1523,8 +1411,6 @@ def test_release_leaves_out_the_metadata_placeholders(
     release_tree: Path,
     tmp_path: Path,
 ) -> None:
-    from test_generate_keymap import metadata_with_placeholders
-
     metadata = metadata_with_placeholders(
         TEST_METADATA,
         tmp_path / "metadata.py",
