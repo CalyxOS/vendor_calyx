@@ -731,7 +731,7 @@ class SignOrchestrator:
 
             return (
                 "sign release for",
-                [f"{p.device},{p.build},{p.target_build}" for p in pairs],
+                [pair.tag for pair in pairs],
                 run,
             )
 
@@ -744,7 +744,7 @@ class SignOrchestrator:
 
             return (
                 "generate incremental updates for",
-                [f"{t.device},{t.old_build},{t.new_build}" for t in triples],
+                [triple.tag for triple in triples],
                 run,
             )
 
@@ -858,11 +858,11 @@ class SignOrchestrator:
         if self.dry_run:
             self._show(
                 "sign_builds",
-                *(f"{p.device},{p.build},{p.target_build}" for p in pairs),
+                *(pair.tag for pair in pairs),
             )
             return
         code = _run_sign_builds(
-            [(p.device, p.build, p.target_build) for p in pairs],
+            pairs,
             release_script=self.release_script,
             archive_dir=self.cwd / "archive",
             jobs=int(self.environment["NUM_SIGN_JOBS"]),
@@ -879,11 +879,11 @@ class SignOrchestrator:
         if self.dry_run:
             self._show(
                 "generate_incrementals",
-                *(f"{t.device},{t.old_build},{t.new_build}" for t in triples),
+                *(triple.tag for triple in triples),
             )
             return
         code = _run_generate_incrementals(
-            [(t.device, t.old_build, t.new_build) for t in triples],
+            triples,
             generate_delta_script=self.generate_delta_script,
             jobs=int(self.environment["NUM_INCREMENTAL_JOBS"]),
             original_tmpdir=self.original_tmpdir,
