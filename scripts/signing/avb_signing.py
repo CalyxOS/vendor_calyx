@@ -3,13 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Adapter between avbtool's signing-helper protocol and signing backends.
+Take apart the signing input avbtool hands its signing helper.
 """
 
 from __future__ import annotations
-
-from collections.abc import Mapping
-from pathlib import Path
 
 # DER DigestInfo headers for SHA-256 and SHA-512, including the digest's
 # OCTET STRING tag and length. PKCS#1 v1.5 places the digest after them.
@@ -27,25 +24,6 @@ _AVB_ALGORITHMS = {
     "SHA512_RSA4096": (512, 429, _SHA512_DIGEST_INFO_PREFIX, 64),
     "SHA512_RSA8192": (1024, 941, _SHA512_DIGEST_INFO_PREFIX, 64),
 }
-
-
-def key_name_from_path(key_path: Path, environment: Mapping[str, str]) -> str:
-    """
-    Derive the legacy PKCS#11 key name from an avbtool key path.
-
-    Args:
-        key_path: Public-key path supplied to avbtool through ``--key``.
-        environment: Variables containing the optional ``KEY_DIR`` prefix.
-
-    Returns:
-        Key name with the configured directory prefix and ``.pem`` suffix
-        removed.
-    """
-    rendered = str(key_path)
-    key_directory = environment.get("KEY_DIR")
-    if key_directory and rendered.startswith(key_directory):
-        rendered = rendered[len(key_directory) :]
-    return rendered.removesuffix(".pem")
 
 
 def avb_input_digest(algorithm: str, data: bytes) -> tuple[bytes, bytes]:

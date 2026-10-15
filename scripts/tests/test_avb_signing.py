@@ -9,11 +9,8 @@ import hashlib
 from pathlib import Path
 
 import pytest
-from signing.avb_signing import (
-    SHA256_DIGEST_INFO_PREFIX,
-    avb_input_digest,
-    key_name_from_path,
-)
+from signing.avb_signing import SHA256_DIGEST_INFO_PREFIX, avb_input_digest
+from signing.signing_helpers import key_name_from_path
 from software_rsa import avb_input
 
 SHA512_PREFIX = bytes.fromhex("3051300d060960864801650304020305000440")
