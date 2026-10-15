@@ -19,6 +19,9 @@ from software_rsa import avb_input
 
 PYTHON_SIGNING_HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.py"
 PYTHON_PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
+APKSIGNER_SIGNING_HELPER = (
+    SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py"
+)
 
 
 def load_helper(path: Path) -> ModuleType:
@@ -120,6 +123,60 @@ def test_payload_helper_rejects_invalid_verification_mode(
     assert "DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'" in result.stderr
     assert "PKCS11_MODULE" not in result.stderr
     assert not output.exists()
+
+
+@pytest.mark.parametrize("server", (False, True), ids=("unset", "unreachable"))
+@pytest.mark.parametrize("helper", ("avb", "payload", "apksigner"))
+def test_yubihsm_helper_fails_without_the_signing_server(
+    tmp_path: Path,
+    helper: str,
+    server: bool,
+) -> None:
+    called = tmp_path / "pkcs11-tool-called"
+    tool = install_executable(
+        tmp_path / "pkcs11-tool",
+        f"#!/bin/sh\ntouch {called}\nexit 1\n",
+    )
+    keys = tmp_path / "keys"
+    keys.mkdir()
+    (keys / "0x2000.x509.pem").write_text("certificate")
+    digest = tmp_path / "digest.bin"
+    digest.write_bytes(bytes(range(32)))
+    commands: dict[str, list[str | Path]] = {
+        "avb": [PYTHON_SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        "payload": [
+            PYTHON_PAYLOAD_SIGNER,
+            "-in",
+            digest,
+            "-out",
+            tmp_path / "signature.bin",
+            "-inkey",
+            "keys/0x2000",
+        ],
+        "apksigner": [APKSIGNER_SIGNING_HELPER, "sha256-rsa-pkcs", "0x2000"],
+    }
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "PKCS11_MODULE": "/dev/null",
+        "PKCS11_TOOL_BIN": str(tool),
+        "KEY_DIR": "keys/",
+    }
+    if server:
+        environment["SIGNING_SERVER_SOCKET"] = str(tmp_path / "none.sock")
+
+    result = run(
+        commands[helper],
+        cwd=tmp_path,
+        env=environment,
+        input=avb_input(bytes(range(32))),
+        check=False,
+        text=False,
+    )
+
+    assert result.returncode == 1
+    assert b"The signing server did not sign with 0x2000" in result.stderr
+    assert b"Traceback" not in result.stderr
+    assert not called.exists()
 
 
 def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
