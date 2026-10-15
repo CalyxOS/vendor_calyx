@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import fcntl
+import re
 import shutil
 import sys
 import threading
@@ -615,6 +616,27 @@ def test_initialize_softhsm_release_sets_log_paths(
         f"{logs_dir}/2026081500-bramble-",
     )
     assert environment["EXEC_LOG_PATH"].endswith("-release-exec.log")
+
+
+def test_initialize_softhsm_release_stamps_the_exec_log_in_one_format(
+    tmp_path: Path,
+) -> None:
+    environment = {
+        "PKCS11_VENDOR": "softhsm",
+        "SOFTHSM_LOGS_DIR": str(tmp_path / "logs"),
+        "DATE_FORMAT": "%Y",
+    }
+
+    _initialize_release(
+        environment,
+        device="bramble",
+        build_number="2026081500",
+    )
+
+    assert re.fullmatch(
+        r"2026081500-bramble-\d{8}-\d{6}-release-exec\.log",
+        Path(environment["EXEC_LOG_PATH"]).name,
+    )
 
 
 def test_initialize_softhsm_release_dry_run_creates_no_logs_dir(
