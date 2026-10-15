@@ -521,11 +521,8 @@ def test_sign_orchestrate_asks_for_yubihsm_credentials_after_free_space(
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
     install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
-    module = sign_tree / "yubihsm_pkcs11.so"
-    module.touch()
     environment = {
         "PKCS11_VENDOR": "yubihsm",
-        "PKCS11_MODULE": str(module),
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
         "YUBIHSM_AUTHKEY": "0x0001",
     }
