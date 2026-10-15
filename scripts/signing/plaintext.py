@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Plaintext OpenSSL backend for AOSP-compatible signing keys.
+Generate AOSP-compatible plaintext signing keys and certificates with
+OpenSSL.
 """
 
 from __future__ import annotations

@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 """
-Domain objects shared by plaintext and HSM signing backends.
+Key references, key specifications, signing requests and the default
+certificate lifetime shared by the PKCS#11 backend, keygen and plaintext
+key generation.
 """
 
 from __future__ import annotations
