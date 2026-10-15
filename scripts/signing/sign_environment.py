@@ -15,7 +15,6 @@ from __future__ import annotations
 import abc
 import contextlib
 import datetime
-import fcntl
 import shutil
 import sys
 import tempfile
@@ -30,6 +29,7 @@ from .vendor_yubihsm import (
     extract_and_save_audit_log,
     get_device_identity,
     get_loaded_key_ids,
+    yubihsm_lock,
 )
 from .vendor_yubihsm_connector import YubiHsmConnector, YubiHsmConnectorConfig
 
@@ -786,9 +786,7 @@ class YubiHsmVendor(Vendor):
         from yubihsm.exceptions import YubiHsmError
 
         config = yubihsm_config_from_environment(environment)
-        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
-        with open(lock_path, "a") as lock_file:
-            fcntl.flock(lock_file, fcntl.LOCK_EX)
+        with yubihsm_lock(environment.get("YUBIHSM_LOCKFILE")):
             try:
                 identity = get_device_identity(config)
                 name = identity.name
@@ -859,10 +857,8 @@ class YubiHsmVendor(Vendor):
         ):
             return
         config = yubihsm_config_from_environment(environment)
-        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
         try:
-            with open(lock_path, "a") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
+            with yubihsm_lock(environment.get("YUBIHSM_LOCKFILE")):
                 extract_and_save_audit_log(
                     config,
                     Path(environment["AUDIT_LOG_PATH"]),
@@ -912,9 +908,7 @@ class YubiHsmVendor(Vendor):
         log named after the HSM, and once more if loading fails.
         """
         config = yubihsm_config_from_environment(environment)
-        lock_path = environment.get("YUBIHSM_LOCKFILE") or "/dev/null"
-        with open(lock_path, "a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+        with yubihsm_lock(environment.get("YUBIHSM_LOCKFILE")):
             audit_log_path: Path | None = None
             if environment.get("DRY_RUN") != "y":
                 if environment.get("AUDIT_LOG_PATH"):
