@@ -21,6 +21,7 @@ from conftest import (
     YUBIHSM_WRAP_ID,
     install_executable,
     run,
+    shipped_metadata,
 )
 from signing import keygen, yubihsm_provision
 from signing.keymap import Id2bKeymapper
@@ -33,7 +34,7 @@ PROVISION_SH = PKCS11_DIR / "vendor.yubihsm.provision.sh"
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
     (root / "devices").write_text("readonly devices=(bramble)\n")
-    keymap = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py")).to_tsv(
+    keymap = Id2bKeymapper(shipped_metadata()).to_tsv(
         ("bramble",),
     )
     (root / "keymap.tsv").write_text(keymap)
@@ -102,7 +103,7 @@ def _tree(directory: Path, yubihsm: Connector) -> dict[str, str]:
     return files
 
 
-KEYGEN_METADATA = """KEYS_AVB = ("vbmeta",)
+WIZARD_METADATA = """KEYS_AVB = ("vbmeta",)
 KEYS_OTHER = ("ota",)
 KEYS_CORE = ("build/make/target/product/security/testkey",)
 KEYS_APEX = ()
@@ -128,7 +129,7 @@ def _source_directory(root: Path) -> Path:
 
 def _keygen_environment(root: Path, avbtool: Path) -> dict[str, str]:
     metadata = root / "metadata.py"
-    metadata.write_text(KEYGEN_METADATA)
+    metadata.write_text(WIZARD_METADATA)
     keymap = Id2bKeymapper(load_metadata(metadata)).to_tsv(("bramble",))
     (root / "keymap.tsv").write_text(keymap)
     (root / "tmp").mkdir()
@@ -303,7 +304,7 @@ def test_wizard_load_keys_dry_run_restores_nothing(
         {"DRY_RUN": "y", "KEY_DIR": str(tmp_path)},
         cwd=tmp_path,
     )
-    wizard.keymapper = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    wizard.keymapper = Id2bKeymapper(shipped_metadata())
     wizard.audit_log_path = tmp_path / "audit.log"
 
     getattr(wizard, "_load_keys")()
@@ -334,7 +335,7 @@ def test_wizard_asks_once_to_retry_a_failed_restore(
         },
         cwd=tmp_path,
     )
-    wizard.keymapper = Id2bKeymapper(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    wizard.keymapper = Id2bKeymapper(shipped_metadata())
     wizard.audit_log_path = tmp_path / "audit.log"
 
     assert wizard.try_("load_keys", getattr(wizard, "_load_keys")) == 1
