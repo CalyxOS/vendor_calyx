@@ -16,7 +16,6 @@ from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS_DIR, install_executable, yubihsm_config
-from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from signing import signing_server
@@ -133,15 +132,21 @@ def test_sign_reopens_an_expired_session(yubihsm: Connector) -> None:
     assert yubihsm.device.sessions_opened == 2
 
 
-def test_sign_rejects_a_signature_that_does_not_verify(
+def test_sign_leaves_the_signature_check_to_the_helper(
     yubihsm: Connector,
 ) -> None:
     yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
     yubihsm.device.corrupt_signatures = True
     service = _service(yubihsm)
 
-    with pytest.raises(InvalidSignature):
-        service.sign(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
+    response = service.sign(
+        _sign_request(0x2000, hashlib.sha256(b"x").digest()),
+    )
+
+    assert response["status"] == "ok"
+    assert COMMAND.GET_PUBLIC_KEY not in [
+        command for command, _ in yubihsm.device.history
+    ]
 
 
 def test_extract_audit_log_keeps_the_session_open(
