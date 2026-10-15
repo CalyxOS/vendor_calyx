@@ -496,11 +496,22 @@ class SigningSession:
             ValueError: If the keymapper maps no such key for the device.
         """
 
-    def prepare_for_signing_full(
+    def prepare_signing(
         self,
         *,
         command_argv: list[str],
     ) -> None:
+        """
+        Load the keymapper, set up the vendor and the signing arguments,
+        start the EXEC_LOG_PATH transcript and print the command line.
+
+        Args:
+            command_argv: The command line to print.
+
+        Raises:
+            Abort: With exit status 1, if the keymapper, the keys or the
+                vendor cannot be set up.
+        """
         try:
             vendor = sign_environment.load_vendor(self.environment)
             try:
@@ -725,7 +736,7 @@ class ReleaseOrchestrator(SigningSession):
 
         skip_signing = self.environment.get("SKIP_SIGNING") == "y"
         if not skip_signing:
-            self.prepare_for_signing_full(
+            self.prepare_signing(
                 command_argv=[
                     self.program,
                     self.device,
@@ -1102,7 +1113,7 @@ class DeltaOrchestrator(SigningSession):
             )
             raise Abort(1)
         try:
-            self.prepare_for_signing_full(
+            self.prepare_signing(
                 command_argv=[
                     self.program,
                     self.device,
