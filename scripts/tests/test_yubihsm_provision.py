@@ -20,7 +20,6 @@ from conftest import (
     YUBIHSM_SDK,
     YUBIHSM_WRAP_ID,
     install_executable,
-    parameter_id,
     run,
 )
 from signing import keygen, yubihsm_provision
@@ -190,33 +189,24 @@ def _outcome(
     }
 
 
-@pytest.mark.parametrize(
-    ("mode", "input_text"),
-    [
-        ("backup", "n\nsigning-password\ny\n"),
-        ("backup", "n\nsigning-password\nn\nn\n"),
-        ("bogus", ""),
-        ("load-keys", "signing-password\nn\ny\n"),
-        ("keygen", "n\nsigning-password\ny\n"),
-    ],
-    ids=(
-        "backup",
-        "backup-without-hsm",
-        "unknown-mode",
-        "load-keys",
-        "keygen",
-    ),
-)
+WIZARD_RUNS = {
+    "backup": ("backup", "n\nsigning-password\ny\n"),
+    "backup-without-hsm": ("backup", "n\nsigning-password\nn\nn\n"),
+    "unknown-mode": ("bogus", ""),
+    "load-keys": ("load-keys", "signing-password\nn\ny\n"),
+    "keygen": ("keygen", "n\nsigning-password\ny\n"),
+}
+
+
+@pytest.mark.parametrize("name", WIZARD_RUNS)
 def test_wizard_runs_its_stages(
     tmp_path: Path,
-    mode: str,
-    input_text: str,
+    name: str,
     request: pytest.FixtureRequest,
     yubihsm: Connector,
 ) -> None:
-    expected = json.loads(
-        (PROVISION_FIXTURES / f"{parameter_id(request)}.json").read_text(),
-    )
+    mode, input_text = WIZARD_RUNS[name]
+    expected = json.loads((PROVISION_FIXTURES / f"{name}.json").read_text())
 
     avbtool = None
     if mode == "keygen":
