@@ -13,24 +13,19 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from signing.avb_signing import (
-    SHA256_DIGEST_INFO_PREFIX,
-    key_name_from_path,
-    pkcs11_signer_from_environment,
-)
+from signing import signing_helpers
+from signing.avb_signing import SHA256_DIGEST_INFO_PREFIX
 from signing.key_consistency import (
     require_matching_public_key,
     require_signature_from_public_key,
 )
 from signing.models import KeyReference, SignRequest
-from signing.yubihsm_session_service import sign_digest_through_server
 
 
 def write_signature_atomically(output: Path, signature: bytes) -> None:
@@ -133,26 +128,22 @@ def main(argv: list[str] | None = None) -> int:
     if len(digest) != 32:
         raise ValueError("payload SHA-256 digest must be exactly 32 bytes")
     public_key = public_key_file(args.key_file)
-    key_name = key_name_from_path(args.key_file, os.environ)
+    key_name = signing_helpers.key_name_from_path(args.key_file, os.environ)
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
-    signature = None
-    socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
-    if socket_path:
-        signature = sign_digest_through_server(
-            Path(socket_path),
-            key_name,
-            digest,
-        )
     verify = True
-    if signature is None:
+
+    def pkcs11_sign() -> bytes:
+        nonlocal verify
         verify_signature = os.environ.get("DEBUG_PAYLOAD_SIGNER") or "y"
         if verify_signature not in {"y", "n"}:
             raise ValueError("DEBUG_PAYLOAD_SIGNER must be 'y' or 'n'")
-        signer = pkcs11_signer_from_environment()
+        signer = signing_helpers.pkcs11_signer_from_environment()
         reference = KeyReference(key_name, key_name)
         require_matching_public_key(signer, reference, public_key)
-        signature = signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
         verify = verify_signature == "y"
+        return signer.sign(SignRequest(reference, digest_info, "rsa-pkcs"))
+
+    signature = signing_helpers.sign(key_name, digest, pkcs11_sign)
     if verify:
         require_signature_from_public_key(public_key, digest_info, signature)
     write_signature_atomically(args.output_file, signature)
@@ -160,12 +151,4 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except subprocess.CalledProcessError as error:
-        if error.stderr:
-            sys.stderr.buffer.write(error.stderr)
-        raise SystemExit(1) from None
-    except (KeyError, OSError, ValueError) as error:
-        print(error, file=sys.stderr)
-        raise SystemExit(1) from error
+    signing_helpers.run_helper(main)

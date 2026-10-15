@@ -19,16 +19,14 @@ from __future__ import annotations
 
 import hashlib
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from signing.avb_signing import pkcs11_signer_from_environment
+from signing import signing_helpers
 from signing.key_consistency import require_signature_from_certificate
 from signing.models import KeyReference, SignRequest
-from signing.yubihsm_session_service import sign_digest_through_server
 
 _MECHANISMS = frozenset(
     {"sha1-rsa-pkcs", "sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
@@ -49,13 +47,10 @@ def main(argv: list[str] | None = None) -> int:
         ValueError: If arguments are invalid.
         OSError: If the PKCS#11 signing tool cannot be executed.
     """
-    arguments = sys.argv[1:] if argv is None else argv
-    if len(arguments) < 2:
-        raise ValueError("expected MECHANISM and KEY_ID")
-    if len(arguments) > 2:
-        unexpected = " ".join(arguments[2:])
-        raise ValueError(f"Unexpected arguments: {unexpected}")
-    mechanism, key_id = arguments
+    mechanism, key_id = signing_helpers.two_arguments(
+        argv,
+        "MECHANISM and KEY_ID",
+    )
     if mechanism not in _MECHANISMS:
         raise ValueError(f"Unsupported mechanism: {mechanism}")
     data = sys.stdin.buffer.read()
@@ -66,31 +61,21 @@ def main(argv: list[str] | None = None) -> int:
             f"no certificate {certificate} to check the signature of "
             f"{key_id} against",
         )
-    signature = None
-    socket_path = os.environ.get("SIGNING_SERVER_SOCKET")
-    if socket_path:
-        digest = hashlib.new(hash_name, data).digest()
-        signature = sign_digest_through_server(
-            Path(socket_path),
-            key_id,
-            digest,
-        )
-    if signature is None:
-        signer = pkcs11_signer_from_environment()
+
+    def pkcs11_sign() -> bytes:
+        signer = signing_helpers.pkcs11_signer_from_environment()
         reference = KeyReference(key_id=key_id, label=key_id)
-        signature = signer.sign(SignRequest(reference, data, mechanism))
+        return signer.sign(SignRequest(reference, data, mechanism))
+
+    signature = signing_helpers.sign(
+        key_id,
+        hashlib.new(hash_name, data).digest(),
+        pkcs11_sign,
+    )
     require_signature_from_certificate(certificate, data, signature, hash_name)
     sys.stdout.buffer.write(signature)
     return 0
 
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except subprocess.CalledProcessError as error:
-        if error.stderr:
-            sys.stderr.buffer.write(error.stderr)
-        raise SystemExit(1) from None
-    except (KeyError, OSError, ValueError) as error:
-        print(error, file=sys.stderr)
-        raise SystemExit(1) from error
+    signing_helpers.run_helper(main)
