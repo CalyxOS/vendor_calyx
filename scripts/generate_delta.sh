@@ -32,10 +32,11 @@ OLD=$2
 NEW=$3
 
 if [[ -d build/tools/releasetools ]]; then
-  RELEASETOOLS_PATH=build/tools
+  RELEASETOOLS_BINARY_PATH=out/soong/.intermediates/build/make/tools/releasetools
+  OTA_FROM_TARGET_FILES=$(releasetools_binary ota_from_target_files) || exit 1
 else
   # For usage with otatools.zip
-  RELEASETOOLS_PATH=.
+  OTA_FROM_TARGET_FILES=./bin/ota_from_target_files
   EXTRA_RELEASETOOLS_ARGS+=(-p .)
 fi
 
@@ -43,7 +44,7 @@ prepare_for_signing_full "$0" "$@" || error "failed to prepare for signing"
 
 OTAKEY=$(get_key other ota || exit $?)
 
-$maybe_dry_run "$RELEASETOOLS_PATH/bin/ota_from_target_files" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
+$maybe_dry_run "$OTA_FROM_TARGET_FILES" "${EXTRA_RELEASETOOLS_ARGS[@]}" "${EXTRA_OTA_ARGS[@]}" -k "$OTAKEY" \
   -i "archive/release-$DEVICE-$OLD/$DEVICE-target_files-$OLD.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-target_files-$NEW.zip" \
   "archive/release-$DEVICE-$NEW/$DEVICE-incremental-$OLD-$NEW.zip"

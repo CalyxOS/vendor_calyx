@@ -28,6 +28,26 @@ else
   maybe_dry_run_ignore=
 fi
 
+# Resolve the full path to a releasetools binary. In-tree, the binaries built
+# by soong live at out/soong/.intermediates/build/make/tools/releasetools/<tool>/<host_tag>/<tool>,
+# while otatools.zip has them directly at bin/<tool>.
+releasetools_binary() {
+  local tool=$1
+  local candidate
+  if [ -f "$RELEASETOOLS_BINARY_PATH/$tool" ] && [ -x "$RELEASETOOLS_BINARY_PATH/$tool" ]; then
+    echo "$RELEASETOOLS_BINARY_PATH/$tool"
+    return 0
+  fi
+  for candidate in "$RELEASETOOLS_BINARY_PATH/$tool"/*/"$tool"; do
+    if [ -f "$candidate" ] && [ -x "$candidate" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo "error: couldn't find releasetools binary '$tool' under $RELEASETOOLS_BINARY_PATH" >&2
+  return 1
+}
+
 load_keymapper() {
   local scriptpath
   scriptpath=$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit $?;pwd -P) || return $?
