@@ -149,17 +149,17 @@ def test_updatecommonkeys_refuses_a_half_key(
     assert not (key_dir / f"microg{missing}").exists()
 
 
-def test_updatecommonkeys_leaves_no_chromium_key_behind_on_failure(
-    tmp_path: Path,
-) -> None:
-    key_dir = tmp_path / "keys"
-    key_dir.mkdir()
+def _chromium_keystore(path: Path) -> None:
+    """
+    Write a JKS keystore with the store and key password secret1 that
+    holds an RSA key under the alias chromium.
+    """
     subprocess.run(
         [
             "keytool",
             "-genkeypair",
             "-keystore",
-            key_dir / "calyxos.keystore",
+            path,
             "-storetype",
             "jks",
             "-storepass",
@@ -180,6 +180,14 @@ def test_updatecommonkeys_leaves_no_chromium_key_behind_on_failure(
         capture_output=True,
         check=True,
     )
+
+
+def test_updatecommonkeys_leaves_no_chromium_key_behind_on_failure(
+    tmp_path: Path,
+) -> None:
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _chromium_keystore(key_dir / "calyxos.keystore")
     temporary = tmp_path / "tmp"
     temporary.mkdir()
 
@@ -206,32 +214,7 @@ def test_updatecommonkeys_converts_the_chromium_keystore(
     tmp_path: Path,
 ) -> None:
     keystore = tmp_path / "calyxos.keystore"
-    subprocess.run(
-        [
-            "keytool",
-            "-genkeypair",
-            "-keystore",
-            keystore,
-            "-storetype",
-            "jks",
-            "-storepass",
-            "secret1",
-            "-keypass",
-            "secret1",
-            "-alias",
-            "chromium",
-            "-keyalg",
-            "RSA",
-            "-keysize",
-            "2048",
-            "-dname",
-            "CN=chromium",
-            "-validity",
-            "3650",
-        ],
-        capture_output=True,
-        check=True,
-    )
+    _chromium_keystore(keystore)
     script = SCRIPTS_DIR / "updatecommonkeys.sh"
     key_dir = tmp_path / "keys"
     key_dir.mkdir()
