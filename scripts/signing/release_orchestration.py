@@ -547,6 +547,7 @@ class SigningSession:
                 )
                 sign_environment.maybe_initialize_vendor(
                     self.environment,
+                    vendor,
                     tmpdir=tmpdir,
                 )
                 if (

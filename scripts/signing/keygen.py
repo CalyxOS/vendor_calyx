@@ -1231,10 +1231,12 @@ def keygen_main(
         driver.keymapper = keymapper
         sign_environment.maybe_initialize_vendor_interactive(
             environment,
+            vendor,
             assume_yes=environment.get("SIGN_ASSUME_YES") == "y",
         )
         sign_environment.maybe_initialize_vendor(
             environment,
+            vendor,
             tmpdir=Path(environment.get("TMPDIR") or "/dev/shm"),
         )
         initialize_post_metadata_common(environment, driver)

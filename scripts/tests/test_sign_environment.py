@@ -56,7 +56,11 @@ def test_maybe_initialize_vendor_interactive_skips_when_not_needed(
 ) -> None:
     _no_prompt(monkeypatch)
     environment: dict[str, str] = {}
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=False,
+    )
     assert "PKCS11_VENDOR_INITIALIZED_INTERACTIVE" not in environment
 
 
@@ -68,7 +72,11 @@ def test_maybe_initialize_vendor_interactive_is_idempotent(
         "PKCS11_VENDOR": "yubihsm",
         "PKCS11_VENDOR_INITIALIZED_INTERACTIVE": "y",
     }
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        YubiHsmVendor(),
+        assume_yes=False,
+    )
 
 
 def test_initialize_yubihsm_interactive_prompts_for_authkey_and_password(
@@ -85,7 +93,11 @@ def test_initialize_yubihsm_interactive_prompts_for_authkey_and_password(
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
     }
 
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=False,
+    )
 
     assert environment["YUBIHSM_AUTHKEY"] == "0x0002"
     assert environment["YUBIHSM_PASSWORD"] == "hunter2"
@@ -107,7 +119,11 @@ def test_initialize_yubihsm_interactive_reads_password_file(
         "YUBIHSM_PASSWORD_FILE": str(password_file),
     }
 
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=False,
+    )
 
     assert environment["YUBIHSM_PASSWORD"] == "hunter2"
 
@@ -125,7 +141,11 @@ def test_initialize_yubihsm_interactive_prefers_password_over_file(
         "YUBIHSM_PASSWORD_FILE": str(tmp_path / "missing.txt"),
     }
 
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=False,
+    )
 
     assert environment["YUBIHSM_PASSWORD"] == "from-environment"
 
@@ -146,7 +166,11 @@ def test_initialize_yubihsm_interactive_warns_and_confirms_when_running(
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
     }
 
-    maybe_initialize_vendor_interactive(environment, assume_yes=False)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=False,
+    )
 
     assert environment["YUBIHSM_AUTHKEY"] == "0x0001"
 
@@ -159,7 +183,11 @@ def test_initialize_yubihsm_interactive_aborts_when_declined(
     environment: dict[str, str] = {"PKCS11_VENDOR": "yubihsm"}
 
     with pytest.raises(RuntimeError):
-        maybe_initialize_vendor_interactive(environment, assume_yes=False)
+        maybe_initialize_vendor_interactive(
+            environment,
+            load_vendor(environment),
+            assume_yes=False,
+        )
 
 
 def test_initialize_yubihsm_interactive_assume_yes_skips_warning_prompt(
@@ -177,7 +205,11 @@ def test_initialize_yubihsm_interactive_assume_yes_skips_warning_prompt(
         "YUBIHSM_CONNECTOR_BIN": "fake-yubihsm-connector",
     }
 
-    maybe_initialize_vendor_interactive(environment, assume_yes=True)
+    maybe_initialize_vendor_interactive(
+        environment,
+        load_vendor(environment),
+        assume_yes=True,
+    )
 
     assert environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] == "y"
 
@@ -216,7 +248,11 @@ def test_maybe_initialize_vendor_sets_pkcs11_pin(
         "YUBIHSM_PASSWORD": password,
     }
 
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+    maybe_initialize_vendor(
+        environment,
+        load_vendor(environment),
+        tmpdir=tmp_path,
+    )
 
     assert environment["PKCS11_PIN"] == pin
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
@@ -238,7 +274,11 @@ def test_maybe_initialize_vendor_reads_the_password_file(
     }
     del environment["YUBIHSM_PASSWORD"]
 
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+    maybe_initialize_vendor(
+        environment,
+        load_vendor(environment),
+        tmpdir=tmp_path,
+    )
 
     assert environment["YUBIHSM_PASSWORD"] == "hunter2"
     assert environment["PKCS11_PIN"] == "0001hunter2"
@@ -254,7 +294,11 @@ def test_maybe_initialize_vendor_rejects_empty_upload_script(
     (tmp_path / "logs" / "upload.py").write_text("")
 
     with pytest.raises(RuntimeError, match="not the expected git repository"):
-        maybe_initialize_vendor(yubihsm_vendor_tree, tmpdir=tmp_path)
+        maybe_initialize_vendor(
+            yubihsm_vendor_tree,
+            load_vendor(yubihsm_vendor_tree),
+            tmpdir=tmp_path,
+        )
 
 
 def test_maybe_initialize_vendor_dry_run_skips_full_setup(
@@ -275,7 +319,11 @@ def test_maybe_initialize_vendor_dry_run_skips_full_setup(
         "DRY_RUN": "y",
     }
 
-    maybe_initialize_vendor(environment, tmpdir=tmpdir)
+    maybe_initialize_vendor(
+        environment,
+        load_vendor(environment),
+        tmpdir=tmpdir,
+    )
 
     assert sorted(path.name for path in tmp_path.iterdir()) == ["tmp"]
     assert list(tmpdir.iterdir()) == []
@@ -290,7 +338,11 @@ def test_maybe_initialize_vendor_generates_pkcs11_conf(
         "YUBIHSM_CONNECTOR": "http://127.0.0.1:9999",
     }
 
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+    maybe_initialize_vendor(
+        environment,
+        load_vendor(environment),
+        tmpdir=tmp_path,
+    )
 
     conf_text = Path(environment["YUBIHSM_PKCS11_CONF"]).read_text()
     assert "connector = http://127.0.0.1:9999" in conf_text
@@ -303,7 +355,11 @@ def test_maybe_initialize_vendor_requires_logs_dir(
     shutil.rmtree(tmp_path / "logs")
 
     with pytest.raises(RuntimeError):
-        maybe_initialize_vendor(yubihsm_vendor_tree, tmpdir=tmp_path)
+        maybe_initialize_vendor(
+            yubihsm_vendor_tree,
+            load_vendor(yubihsm_vendor_tree),
+            tmpdir=tmp_path,
+        )
 
 
 def test_maybe_initialize_vendor_is_idempotent(tmp_path: Path) -> None:
@@ -311,13 +367,17 @@ def test_maybe_initialize_vendor_is_idempotent(tmp_path: Path) -> None:
         "PKCS11_VENDOR": "yubihsm",
         "PKCS11_VENDOR_INITIALIZED": "y",
     }
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+    maybe_initialize_vendor(environment, YubiHsmVendor(), tmpdir=tmp_path)
     assert "PKCS11_PIN" not in environment
 
 
 def test_maybe_initialize_vendor_softhsm_is_a_noop(tmp_path: Path) -> None:
     environment = {"PKCS11_VENDOR": "softhsm"}
-    maybe_initialize_vendor(environment, tmpdir=tmp_path)
+    maybe_initialize_vendor(
+        environment,
+        load_vendor(environment),
+        tmpdir=tmp_path,
+    )
     assert environment["PKCS11_VENDOR_INITIALIZED"] == "y"
     assert "PKCS11_PIN" not in environment
 
