@@ -243,7 +243,6 @@ def partition_by_key_availability(
 
     def build_pairs(
         devices: Sequence[str],
-        preexisting_builds: Mapping[str, int],
     ) -> tuple[tuple[SignPair, ...], tuple[IncrementalTriple, ...]]:
         sign_pairs: list[SignPair] = []
         incrementals: list[IncrementalTriple] = []
@@ -252,7 +251,7 @@ def partition_by_key_availability(
             next_target = (
                 next_build + 1 if avb_rollback_index_override else next_build
             )
-            if next_build != preexisting_builds.get(device):
+            if next_build != device_to_preexisting_build.get(device):
                 sign_pairs.append(SignPair(device, next_build, next_target))
             prev_build = device_to_prev_build.get(device)
             if prev_build is not None:
@@ -261,13 +260,9 @@ def partition_by_key_availability(
                 )
         return tuple(sign_pairs), tuple(incrementals)
 
-    sign_with, incremental_with = build_pairs(
-        devices_with_loaded_keys,
-        device_to_preexisting_build,
-    )
+    sign_with, incremental_with = build_pairs(devices_with_loaded_keys)
     sign_without, incremental_without = build_pairs(
         devices_without_loaded_keys,
-        device_to_preexisting_build,
     )
     return SigningPlan(
         sign_pairs_with_loaded_keys=sign_with,
