@@ -45,24 +45,6 @@ def _back_up_certificate(
     )
 
 
-def _put_key_and_certificate(
-    device: EmulatedYubiHsm,
-    key_id: int,
-    *,
-    domains: int = 0xFFFF,
-) -> None:
-    device.put_asymmetric_key(key_id, domains=domains)
-    device.put_certificate(key_id, device.attest(key_id), domains=domains)
-
-
-def _on_device(device: EmulatedYubiHsm) -> list[tuple[int, OBJECT]]:
-    return sorted(
-        key
-        for key in device.objects
-        if key[1] in (OBJECT.ASYMMETRIC_KEY, OBJECT.OPAQUE)
-    )
-
-
 def _deleted(device: EmulatedYubiHsm) -> list[int]:
     return [
         target[0]
@@ -130,7 +112,7 @@ def test_list_restorable_objects_returns_keys_and_certs_in_the_domain(
     yubihsm: Connector,
 ) -> None:
     device = plug_yubihsm(yubihsm)
-    _put_key_and_certificate(device, 0x2000, domains=0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     device.put_asymmetric_key(0x2100, domains=0b001)
 
     result = list_restorable_objects(yubihsm_config(yubihsm), "3")
@@ -195,7 +177,7 @@ def test_list_restorable_objects_orders_them_by_id(
 ) -> None:
     device = plug_yubihsm(yubihsm)
     device.put_asymmetric_key(0x2100, domains=0b100)
-    _put_key_and_certificate(device, 0x2000, domains=0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     listed = AuthSession.list_objects
 
     def list_objects(
@@ -291,7 +273,7 @@ def test_limit_ondemand_objects_stops_once_space_is_sufficient(
 
     limit_ondemand_objects(yubihsm_config(yubihsm), tmp_path, "3")
 
-    assert _on_device(device) == [(0x2001, OBJECT.ASYMMETRIC_KEY)]
+    assert device.key_objects() == {(0x2001, OBJECT.ASYMMETRIC_KEY)}
     assert device.storage()[0] == 5
 
 
@@ -300,7 +282,7 @@ def test_limit_ondemand_objects_finishes_current_id_before_stopping(
     tmp_path: Path,
 ) -> None:
     device = plug_yubihsm(yubihsm, free_records=3 + 4)
-    _put_key_and_certificate(device, 0x2000, domains=0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     device.put_asymmetric_key(0x2001, domains=0b100)
     back_up_yubihsm_key(device, tmp_path, 0x2000)
     _back_up_certificate(device, tmp_path, 0x2000)
@@ -308,7 +290,7 @@ def test_limit_ondemand_objects_finishes_current_id_before_stopping(
 
     limit_ondemand_objects(yubihsm_config(yubihsm), tmp_path, "3")
 
-    assert _on_device(device) == [(0x2001, OBJECT.ASYMMETRIC_KEY)]
+    assert device.key_objects() == {(0x2001, OBJECT.ASYMMETRIC_KEY)}
     assert _deleted(device) == [0x2000, 0x2000]
 
 
@@ -317,7 +299,7 @@ def test_limit_ondemand_objects_keeps_a_certificate_whose_backup_is_corrupt(
     tmp_path: Path,
 ) -> None:
     device = plug_yubihsm(yubihsm, free_records=3 + 4)
-    _put_key_and_certificate(device, 0x2000, domains=0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     device.put_asymmetric_key(0x2001, domains=0b100)
     back_up_yubihsm_key(device, tmp_path, 0x2000)
     _back_up_certificate(device, tmp_path, 0x2000)
@@ -328,10 +310,10 @@ def test_limit_ondemand_objects_keeps_a_certificate_whose_backup_is_corrupt(
 
     limit_ondemand_objects(yubihsm_config(yubihsm), tmp_path, "3")
 
-    assert _on_device(device) == [
+    assert device.key_objects() == {
         (0x2000, OBJECT.OPAQUE),
         (0x2001, OBJECT.ASYMMETRIC_KEY),
-    ]
+    }
     assert _deleted(device) == [0x2000]
 
 
@@ -340,7 +322,7 @@ def test_limit_ondemand_objects_audits_every_delete(
     tmp_path: Path,
 ) -> None:
     device = plug_yubihsm(yubihsm, free_records=2 + 4)
-    _put_key_and_certificate(device, 0x2000, domains=0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     back_up_yubihsm_key(device, tmp_path, 0x2000)
     _back_up_certificate(device, tmp_path, 0x2000)
     device.audit(COMMAND.DELETE_OBJECT)
@@ -352,7 +334,7 @@ def test_limit_ondemand_objects_audits_every_delete(
 
     limit_ondemand_objects(config, tmp_path, "3", after_delete)
 
-    assert _on_device(device) == []
+    assert device.key_objects() == set()
     sections: list[tuple[str, list[str]]] = []
     for line in log_file.read_text().splitlines():
         if line.startswith("#"):
@@ -395,7 +377,7 @@ def test_limit_ondemand_objects_reports_a_failed_delete(
         "Operation: delete-object --object-id 0x2000 --object-type "
         "asymmetric-key Result: 1",
     ]
-    assert _on_device(device) == [(0x2000, OBJECT.ASYMMETRIC_KEY)]
+    assert device.key_objects() == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
 
 
 def test_limit_ondemand_objects_evicts_only_backed_up_ondemand_objects(
@@ -411,10 +393,10 @@ def test_limit_ondemand_objects_evicts_only_backed_up_ondemand_objects(
 
     limit_ondemand_objects(yubihsm_config(yubihsm), tmp_path, "3")
 
-    assert _on_device(device) == [
+    assert device.key_objects() == {
         (0x2000, OBJECT.ASYMMETRIC_KEY),
         (0x2100, OBJECT.ASYMMETRIC_KEY),
-    ]
+    }
 
 
 def test_limit_ondemand_objects_raises_if_still_low_after_sweep(
@@ -428,7 +410,7 @@ def test_limit_ondemand_objects_raises_if_still_low_after_sweep(
     with pytest.raises(RuntimeError, match="Failed to make enough space"):
         limit_ondemand_objects(yubihsm_config(yubihsm), tmp_path, "3")
 
-    assert _on_device(device) == []
+    assert device.key_objects() == set()
 
 
 def test_limit_ondemand_objects_dry_run_prints_deletes_without_deleting(
@@ -450,7 +432,7 @@ def test_limit_ondemand_objects_dry_run_prints_deletes_without_deleting(
             dry_run=True,
         )
 
-    assert _on_device(device) == [(0x2000, OBJECT.ASYMMETRIC_KEY)]
+    assert device.key_objects() == {(0x2000, OBJECT.ASYMMETRIC_KEY)}
     assert _deleted(device) == []
     assert deletes == []
     assert (
