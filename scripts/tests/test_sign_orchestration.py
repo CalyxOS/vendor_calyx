@@ -225,7 +225,7 @@ def test_sign_orchestrate_skips_symlinked_target_files(sign_tree: Path) -> None:
     ]
 
 
-def test_sign_orchestrate_dry_run_prints_the_steps_instead_of_running_them(
+def test_sign_orchestrate_dry_run_stops_after_the_plan(
     sign_tree: Path,
 ) -> None:
     _write_target_files(sign_tree, "bramble", BUILD_NUMBER)
@@ -241,12 +241,15 @@ def test_sign_orchestrate_dry_run_prints_the_steps_instead_of_running_them(
     )
 
     assert result.returncode == 0, result.stderr
-    assert (
-        f"sign_builds bramble,{BUILD_NUMBER},{BUILD_NUMBER}\n\n"
-        "upload_logs\n\n"
-        f"generate_incrementals bramble,{OLD_BUILD_NUMBER},{BUILD_NUMBER}\n\n"
-        "upload_logs\n\n"
-    ) in result.stderr
+    assert result.stdout.endswith(
+        "Here's the plan:\n"
+        f"Would sign release for: bramble,{BUILD_NUMBER},{BUILD_NUMBER}\n"
+        "Would generate incremental updates for: "
+        f"bramble,{OLD_BUILD_NUMBER},{BUILD_NUMBER}\n"
+        "\n",
+    )
+    assert "sign_builds" not in result.stderr
+    assert "upload_logs" not in result.stderr
     assert not (
         sign_tree / "archive" / f"release-bramble-{BUILD_NUMBER}"
     ).exists()
@@ -268,7 +271,8 @@ def test_sign_orchestrate_finds_no_prior_build_for_a_word_that_is_none(
     )
 
     assert result.returncode == 0, result.stderr
-    assert "generate_incrementals" not in result.stderr
+    assert "Would sign release for: " in result.stdout
+    assert "Would generate incremental updates for: " not in result.stdout
 
 
 def test_sign_orchestrate_stops_without_a_devices_file(
