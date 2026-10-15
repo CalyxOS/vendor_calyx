@@ -16,6 +16,7 @@ import tempfile
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypeVar
 
 from . import sign_environment
 from .confirmation import ask_variable, confirm
@@ -76,6 +77,9 @@ def load_devices_file(path: Path) -> tuple[str, ...]:
     return tuple(part.decode() for part in parts)
 
 
+T = TypeVar("T")
+
+
 class SignStepError(Exception):
     """
     One orchestration step failed with a non-zero exit code.
@@ -117,7 +121,6 @@ class SignState:
         default_factory=dict[str, int],
     )
     devices_without_loaded_keys: tuple[str, ...] = ()
-    plan: SigningPlan | None = None
     no_incremental: bool = False
 
 
@@ -169,7 +172,7 @@ class SignOrchestrator:
         self.tmpdir: Path | None = None
         self.inherited_environment = dict(environment)
 
-    def try_(self, description: str, step: Callable[[], object]) -> None:
+    def try_(self, description: str, step: Callable[[], T]) -> T:
         """
         Run step(), retrying on failure until it succeeds or the user
         declines to retry. SIGN_ASSUME_YES=y fails fast instead of
@@ -182,15 +185,14 @@ class SignOrchestrator:
                 failure.
 
         Returns:
-            None.
+            What step() returns.
 
         Raises:
             SignAbort: If the step fails and is not retried.
         """
         while True:
             try:
-                step()
-                return
+                return step()
             except SignStepError as error:
                 if self.assume_yes:
                     print(
@@ -265,13 +267,13 @@ class SignOrchestrator:
         )
         self.try_("check_free_space", self.check_free_space)
         self.try_("initialize", self.initialize)
-        self.try_(
+        plan = self.try_(
             "sort_and_separate_devices_by_key_availability",
             self._sort_and_separate_devices_by_key_availability,
         )
-        self.try_("final_confirmation", self._final_confirmation)
+        self.try_("final_confirmation", lambda: self._final_confirmation(plan))
 
-        self._do_or_show()
+        self._do_or_show(plan)
 
         self._finish()
 
@@ -666,7 +668,7 @@ class SignOrchestrator:
                 raise _reported_step_error(str(error)) from error
         (self.cwd / "archive").mkdir(exist_ok=True)
 
-    def _sort_and_separate_devices_by_key_availability(self) -> None:
+    def _sort_and_separate_devices_by_key_availability(self) -> SigningPlan:
         ordered = [
             device
             for device in self.metadata.all_devices
@@ -712,15 +714,16 @@ class SignOrchestrator:
         self.state.devices_without_loaded_keys = tuple(
             device for device in without_loaded if device in work
         )
-        self.state.plan = plan
+        return plan
 
-    def _steps(self) -> list[tuple[str, list[str], Callable[[], None]]]:
+    def _steps(
+        self,
+        plan: SigningPlan,
+    ) -> list[tuple[str, list[str], Callable[[], None]]]:
         """
         List the planned steps in order as (description, items, run), with
         run uploading the audit logs after the step.
         """
-        plan = self.state.plan
-        assert plan is not None
 
         def sign(
             pairs: Sequence[SignPair],
@@ -761,14 +764,14 @@ class SignOrchestrator:
         ]
         return [step for step in steps if step[1]]
 
-    def _render_plan(self) -> None:
-        for description, items, _ in self._steps():
+    def _render_plan(self, plan: SigningPlan) -> None:
+        for description, items, _ in self._steps(plan):
             print(f"Would {description}: " + " ".join(items))
 
-    def _final_confirmation(self) -> None:
+    def _final_confirmation(self, plan: SigningPlan) -> None:
         print()
         print("Here's the plan:")
-        self._render_plan()
+        self._render_plan(plan)
         print()
         if not confirm("Ready?", assume_yes=self.assume_yes):
             raise SignStepError("declined final confirmation")
@@ -819,12 +822,12 @@ class SignOrchestrator:
         except SignAbort:
             pass
 
-    def _do_or_show(self) -> None:
+    def _do_or_show(self, plan: SigningPlan) -> None:
         """
         Run the planned steps, or under DRY_RUN=y print each of them to
         stderr instead.
         """
-        for _, _, run in self._steps():
+        for _, _, run in self._steps(plan):
             run()
 
     def _ensure_keys(self) -> None:
