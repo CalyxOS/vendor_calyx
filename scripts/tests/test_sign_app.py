@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -21,9 +25,12 @@ from conftest import (
     install_executable,
     run,
 )
+from cryptography.hazmat.primitives import serialization
 from signing import sign_app
 from signing.metadata import default_metadata_path, load_metadata
-from yubihsm_emulator import Connector
+from software_rsa import rsa_key, verifies
+from yubihsm.defs import COMMAND
+from yubihsm_emulator import Connector, self_signed_certificate
 
 APP = "com.google.android.apps.photos"
 ANDROID_TOP = REPO_ROOT.resolve().parents[1]
@@ -38,23 +45,29 @@ open(out, "w").write("signed")
 
 
 @pytest.fixture
-def sign_app_tree(tmp_path: Path) -> Path:
+def sign_app_tree(tmp_path: Path) -> Iterator[Path]:
+    """
+    An otatools directory whose tmp links to a directory short enough
+    for the signing server's socket path.
+    """
     root = tmp_path / "android"
     (root / "keys").mkdir(parents=True)
     (root / "logs").mkdir()
     (root / "logs" / "upload.py").write_text("#!/bin/sh\n")
     (root / "bin").mkdir()
     install_executable(root / "bin" / "java", _FAKE_JAVA)
-    (root / "tmp").mkdir()
+    short_tmpdir = Path(tempfile.mkdtemp(prefix="sign-app.", dir="/tmp"))
+    (root / "tmp").symlink_to(short_tmpdir)
     (root / "app.apk").write_text("unsigned")
-    return root
+    yield root
+    shutil.rmtree(short_tmpdir, ignore_errors=True)
 
 
 def _sign_app_environment(root: Path, yubihsm: Connector) -> dict[str, str]:
     return {
         "YUBIHSM_CONNECTOR": yubihsm.url,
         "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
-        "TMPDIR": str(root / "tmp"),
+        "TMPDIR": str((root / "tmp").resolve()),
         "KEY_DIR": str(root / "keys"),
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "password",
@@ -119,6 +132,47 @@ def test_sign_app_signs_through_the_calyx_kms_provider(
     (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
     assert "apksigner.jar sign" in audit_log.read_text()
     assert list((root / "tmp").glob("yubihsm.*")) == []
+
+
+_SIGNING_JAVA = f"""#!{sys.executable}
+import os, subprocess, sys
+alias = sys.argv[sys.argv.index("--kms-key-alias") + 1]
+signature = subprocess.run(
+    [os.environ["CALYX_APKSIGNER_SIGNING_HELPER"], "sha256-rsa-pkcs", alias],
+    input=b"signable content",
+    stdout=subprocess.PIPE,
+    check=True,
+).stdout
+open(sys.argv[sys.argv.index("--out") + 1], "wb").write(signature)
+"""
+
+
+def test_sign_app_signs_through_the_signing_server(
+    sign_app_tree: Path,
+    yubihsm: Connector,
+) -> None:
+    root = sign_app_tree
+    yubihsm.device.put_asymmetric_key(0x1502, key=rsa_key("app"))
+    yubihsm.device.audit(COMMAND.SIGN_PKCS1)
+    (root / "keys" / "0x1502.x509.pem").write_bytes(
+        self_signed_certificate("app", rsa_key("app")).public_bytes(
+            serialization.Encoding.PEM,
+        ),
+    )
+    install_executable(root / "bin" / "java", _SIGNING_JAVA)
+
+    result, _ = _run_sign_app(root, yubihsm, APP, "app.apk")
+
+    assert result.returncode == 0, result.stderr
+    assert verifies(
+        rsa_key("app"),
+        (root / "app-signed.apk").read_bytes(),
+        hashlib.sha256(b"signable content").digest(),
+    )
+    assert yubihsm.device.sessions_opened == 1
+    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
+    assert "tKey: 0x1502" in audit_log.read_text()
+    assert yubihsm.device.unread_log() == []
 
 
 @pytest.mark.parametrize(
@@ -198,7 +252,7 @@ def test_sign_app_exports_the_key_dir_it_defaults_to(
     monkeypatch.chdir(root)
     environment = {
         "YUBIHSM_CONNECTOR": yubihsm.url,
-        "TMPDIR": str(root / "tmp"),
+        "TMPDIR": str((root / "tmp").resolve()),
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "password",
         "PKCS11_MODULE": "/dev/null",

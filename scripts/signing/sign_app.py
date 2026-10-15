@@ -8,6 +8,7 @@ Sign one app with its key on the YubiHSM, for sign-app.sh.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from collections.abc import MutableMapping, Sequence
@@ -19,6 +20,7 @@ from .keymap import StaticKeymapper
 from .metadata import SigningMetadata
 from .release_execution import defer_signals, exit_on_signals, run_release_tool
 from .vendor_yubihsm import get_device_identity
+from .yubihsm_session_service import yubihsm_signing_server
 
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
@@ -32,7 +34,8 @@ def sign_app(
 ) -> int:
     """
     Sign an app APK through the signing command interceptor and
-    apksigner's calyx KMS provider.
+    apksigner's calyx KMS provider, whose helper signs through a
+    SigningServer holding one YubiHSM session for the run.
 
     Args:
         environment: Process environment, mutated in place. The signing
@@ -128,8 +131,24 @@ def sign_app(
                 output,
                 apk,
             ]
-            with defer_signals():
-                code = run_release_tool(argv)
+            socket_path = (
+                Path(environment["YUBIHSM_TMPDIR"]) / "signing-server.sock"
+            )
+            server = yubihsm_signing_server(
+                sign_environment.yubihsm_config_from_environment(environment),
+                socket_path,
+                audit_log_path=Path(environment["AUDIT_LOG_PATH"]),
+            )
+            with contextlib.ExitStack() as stack:
+                try:
+                    stack.enter_context(server)
+                except OSError as failure:
+                    raise RuntimeError(
+                        f"cannot start the signing server ({failure})",
+                    ) from failure
+                environment["SIGNING_SERVER_SOCKET"] = str(socket_path)
+                with defer_signals():
+                    code = run_release_tool(argv)
             if code == 0:
                 print(f"Signed {apk} successfully")
             return code
