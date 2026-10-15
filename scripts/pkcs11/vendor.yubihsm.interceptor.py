@@ -295,9 +295,7 @@ def run_command(
     use_cache = is_signing_command and jar == "apksigner" and cache_enabled
     if use_cache:
         try:
-            from_cache([cmd, *args])
-        except SystemExit as cache_result:
-            cache_miss = cache_result.code != 0
+            cache_miss = not from_cache([cmd, *args])
         except Exception as error:
             print(f"Signing cache lookup failed: {error}", file=sys.stderr)
             cache_miss = True
@@ -372,7 +370,7 @@ def run_command(
     if cache_miss and err == 0 and cache_enabled:
         try:
             to_cache([cmd, *args])
-        except (Exception, SystemExit) as error:
+        except Exception as error:
             print(f"Signing cache store failed: {error}", file=sys.stderr)
 
     log_err = 0
