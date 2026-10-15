@@ -234,38 +234,44 @@ class SignOrchestrator:
 
     def _run_steps(self) -> None:
         self._find_target_files()
-        self.try_("setup_log_dir", self._setup_log_dir)
+        self.try_("Checking the audit log directory", self._setup_log_dir)
         self.try_(
-            "gather_signable_devices_from_metadata",
+            "Reading the devices file",
             self._gather_signable_devices_from_metadata,
         )
         self._gather_latest_device_builds()
-        self.try_("prompt_missing_variables", self._prompt_missing_variables)
+        self.try_(
+            "Asking for the missing variables",
+            self._prompt_missing_variables,
+        )
         self._gather_device_builds_to_sign()
         self._find_prev_signed_device_builds()
         self.try_(
-            "maybe_ask_about_prev_signed_device_builds",
+            "Confirming the previous builds",
             self._maybe_ask_about_prev_signed_device_builds,
         )
         self.try_(
-            "load_keymapper_and_maybe_pkcs11",
+            "Loading the vendor and the keymapper",
             self._load_keymapper_and_maybe_pkcs11,
         )
         self.try_(
-            "maybe_handle_already_existing_builds",
+            "Confirming the already signed builds",
             self._maybe_handle_already_existing_builds,
         )
         self.try_(
-            "maybe_ask_about_missing_target_files",
+            "Confirming the missing target files",
             self._maybe_ask_about_missing_target_files,
         )
-        self.try_("check_free_space", self.check_free_space)
-        self.try_("initialize", self.initialize)
+        self.try_("Checking the free space", self.check_free_space)
+        self.try_("Initializing", self.initialize)
         plan = self.try_(
-            "sort_and_separate_devices_by_key_availability",
+            "Finding the devices with loaded keys",
             self._sort_and_separate_devices_by_key_availability,
         )
-        self.try_("final_confirmation", lambda: self._final_confirmation(plan))
+        self.try_(
+            "Confirming the plan",
+            lambda: self._final_confirmation(plan),
+        )
 
         for _, _, run in self._steps(plan):
             run()
@@ -822,13 +828,13 @@ class SignOrchestrator:
         when the user declines one.
         """
         try:
-            self.try_("upload_logs", self._upload_logs)
+            self.try_("Uploading the audit logs", self._upload_logs)
         except Abort:
             pass
 
     def _ensure_keys(self) -> None:
         self.try_(
-            "ensure_all_keys_available_for_devices",
+            "Loading the missing keys",
             self._ensure_all_keys_available_for_devices,
         )
         self._upload_logs_retry_best_effort()
