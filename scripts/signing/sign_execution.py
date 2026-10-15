@@ -29,6 +29,7 @@ from types import FrameType
 from typing import Any
 
 from .release_execution import defer_signals
+from .sign_planning import IncrementalTriple, SignPair
 
 _SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 _PR_SET_PDEATHSIG = 1
@@ -41,8 +42,8 @@ class Job:
     """
     One subprocess invocation of the fan-out.
 
-    tag is the "device,build,target_build" or "device,old_build,new_build"
-    string that prefixes the job's output lines, followed by a tab.
+    tag is the tag of the job's SignPair or IncrementalTriple, which
+    prefixes the job's output lines, followed by a tab.
     """
 
     argv: tuple[str, ...]
@@ -395,7 +396,7 @@ def _run_fan_out(
 
 
 def sign_builds(
-    pairs: Sequence[tuple[str, int, int]],
+    pairs: Sequence[SignPair],
     *,
     release_script: Path,
     archive_dir: Path,
@@ -407,8 +408,7 @@ def sign_builds(
     Sign each (device, build, target_build) and archive the signed output.
 
     Args:
-        pairs: (device, build, target_build) work items, matching
-            sign_planning.SignPair.
+        pairs: The releases to sign.
         release_script: Path to release.sh.
         archive_dir: Directory signed output is moved into on success
             (sign.sh's `archive/`).
@@ -423,15 +423,15 @@ def sign_builds(
         per-job or aggregate failure count.
     """
     print()
-    tags = [
-        f"{device},{build},{target_build}"
-        for device, build, target_build in pairs
-    ]
-    print("Signing release for:", " ".join(tags), flush=True)
+    print(
+        "Signing release for:",
+        " ".join(pair.tag for pair in pairs),
+        flush=True,
+    )
 
     outputs = {
-        tag: Path("out") / f"release-{device}-{target_build}"
-        for (device, _build, target_build), tag in zip(pairs, tags, strict=True)
+        pair.tag: Path("out") / f"release-{pair.device}-{pair.target_build}"
+        for pair in pairs
     }
 
     def archive(job: Job) -> str | None:
@@ -461,17 +461,13 @@ def sign_builds(
             Job(
                 argv=(
                     str(release_script),
-                    device,
-                    f"calyx_{device}-target_files-{build}.zip",
+                    pair.device,
+                    f"calyx_{pair.device}-target_files-{pair.build}.zip",
                 ),
-                env={**base_env, "BUILD_NUMBER": str(build)},
-                tag=tag,
+                env={**base_env, "BUILD_NUMBER": str(pair.build)},
+                tag=pair.tag,
             )
-            for (device, build, _target_build), tag in zip(
-                pairs,
-                tags,
-                strict=True,
-            )
+            for pair in pairs
         ]
         failed = _run_fan_out(work_jobs, max_jobs=jobs, on_success=archive)
     finally:
@@ -491,7 +487,7 @@ def sign_builds(
 
 
 def generate_incrementals(
-    triples: Sequence[tuple[str, int, int]],
+    triples: Sequence[IncrementalTriple],
     *,
     generate_delta_script: Path,
     jobs: int,
@@ -502,8 +498,7 @@ def generate_incrementals(
     Generate each (device, old_build, new_build) incremental.
 
     Args:
-        triples: (device, old_build, new_build) work items, matching
-            sign_planning.IncrementalTriple.
+        triples: The incrementals to generate.
         generate_delta_script: Path to generate_delta.sh.
         jobs: Maximum concurrent generate_delta.sh invocations
             (NUM_INCREMENTAL_JOBS).
@@ -517,11 +512,11 @@ def generate_incrementals(
         a per-job or aggregate failure count.
     """
     print()
-    tags = [
-        f"{device},{old_build},{new_build}"
-        for device, old_build, new_build in triples
-    ]
-    print("Generating incremental updates for:", " ".join(tags), flush=True)
+    print(
+        "Generating incremental updates for:",
+        " ".join(triple.tag for triple in triples),
+        flush=True,
+    )
 
     tmpdir = Path(
         tempfile.mkdtemp(prefix="incremental_tmp.", dir=str(original_tmpdir)),
@@ -536,21 +531,17 @@ def generate_incrementals(
             Job(
                 argv=(
                     str(generate_delta_script),
-                    device,
-                    str(old_build),
-                    str(new_build),
+                    triple.device,
+                    str(triple.old_build),
+                    str(triple.new_build),
                 ),
                 env={
                     **base_env,
-                    "BUILD_NUMBER": f"{new_build}_{old_build}",
+                    "BUILD_NUMBER": f"{triple.new_build}_{triple.old_build}",
                 },
-                tag=tag,
+                tag=triple.tag,
             )
-            for (device, old_build, new_build), tag in zip(
-                triples,
-                tags,
-                strict=True,
-            )
+            for triple in triples
         ]
         failed = _run_fan_out(work_jobs, max_jobs=jobs)
     finally:

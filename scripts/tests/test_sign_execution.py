@@ -90,10 +90,11 @@ SIGN_BUILDS = """
 import sys
 from pathlib import Path
 from signing.sign_execution import sign_builds
+from signing.sign_planning import SignPair
 release, archive, tmpdir, jobs, *pairs = sys.argv[1:]
 raise SystemExit(sign_builds(
     [
-        (d, int(b), int(t))
+        SignPair(d, int(b), int(t))
         for d, b, t in (p.split(",") for p in pairs)
     ],
     release_script=Path(release),
@@ -107,10 +108,11 @@ GENERATE_INCREMENTALS = """
 import sys
 from pathlib import Path
 from signing.sign_execution import generate_incrementals
+from signing.sign_planning import IncrementalTriple
 script, tmpdir, jobs, *triples = sys.argv[1:]
 raise SystemExit(generate_incrementals(
     [
-        (d, int(old), int(new))
+        IncrementalTriple(d, int(old), int(new))
         for d, old, new in (t.split(",") for t in triples)
     ],
     generate_delta_script=Path(script),
@@ -354,6 +356,7 @@ def test_sign_builds_leaves_no_partial_release_in_the_archive(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from signing import sign_execution
+    from signing.sign_planning import SignPair
 
     release_script = tmp_path / "release.sh"
     release_script.write_text(FAKE_RELEASE_TOOL)
@@ -370,7 +373,7 @@ def test_sign_builds_leaves_no_partial_release_in_the_archive(
     monkeypatch.chdir(tmp_path)
 
     status = sign_execution.sign_builds(
-        [("bramble", 100, 100)],
+        [SignPair("bramble", 100, 100)],
         release_script=release_script,
         archive_dir=Path("archive"),
         jobs=1,
@@ -388,6 +391,7 @@ def test_sign_builds_starts_its_jobs_from_the_given_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from signing import sign_execution
+    from signing.sign_planning import SignPair
 
     release_script = tmp_path / "release.sh"
     release_script.write_text(
@@ -402,7 +406,7 @@ def test_sign_builds_starts_its_jobs_from_the_given_environment(
     monkeypatch.delenv("MARKER", raising=False)
 
     status = sign_execution.sign_builds(
-        [("bramble", 100, 100)],
+        [SignPair("bramble", 100, 100)],
         release_script=release_script,
         archive_dir=Path("archive"),
         jobs=1,
@@ -631,6 +635,7 @@ def test_sign_builds_removes_its_tmpdir_through_an_interrupt(
 import os, shutil, signal, sys
 from pathlib import Path
 from signing import sign_execution
+from signing.sign_planning import SignPair
 remove = shutil.rmtree
 def interrupted(path, *args, **kwargs):
     if Path(path).name.startswith("sign_tmp."):
@@ -639,7 +644,7 @@ def interrupted(path, *args, **kwargs):
 shutil.rmtree = interrupted
 try:
     sign_execution.sign_builds(
-        [("bramble", 100, 100)],
+        [SignPair("bramble", 100, 100)],
         release_script=Path(sys.argv[1]),
         archive_dir=Path("archive"),
         jobs=1,
