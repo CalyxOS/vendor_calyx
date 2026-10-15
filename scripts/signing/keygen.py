@@ -794,8 +794,8 @@ class YubiHsmKeygenDriver(KeygenDriver):
             print("YUBIHSM_AUTHKEY not specified. Using 1.", file=sys.stderr)
         if environment.get("PKCS11_PIN"):
             print(
-                "WARNING: Specified PKCS11_PIN is ignored! It is constructed "
-                "from YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.",
+                "WARNING: Specified PKCS11_PIN is ignored! The YubiHSM is "
+                "reached with YUBIHSM_AUTHKEY and YUBIHSM_PASSWORD.",
                 file=sys.stderr,
             )
 
