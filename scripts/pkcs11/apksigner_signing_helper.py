@@ -27,10 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from signing import signing_helpers
 from signing.key_consistency import require_signature_from_certificate
 from signing.models import KeyReference, SignRequest
-
-_MECHANISMS = frozenset(
-    {"sha1-rsa-pkcs", "sha256-rsa-pkcs", "sha384-rsa-pkcs", "sha512-rsa-pkcs"},
-)
+from signing.pkcs11 import MESSAGE_SIGNING_MECHANISMS
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -51,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
         argv,
         "MECHANISM and KEY_ID",
     )
-    if mechanism not in _MECHANISMS:
+    if mechanism not in MESSAGE_SIGNING_MECHANISMS:
         raise ValueError(f"Unsupported mechanism: {mechanism}")
     data = sys.stdin.buffer.read()
     hash_name = mechanism.split("-", 1)[0]
