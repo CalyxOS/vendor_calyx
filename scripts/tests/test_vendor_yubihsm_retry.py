@@ -14,10 +14,14 @@ from pathlib import Path
 
 import pytest
 import signing.vendor_yubihsm as vendor_yubihsm
-from conftest import install_executable, process_alive, stub, yubihsm_config
+from conftest import (
+    assert_same_public_key,
+    install_executable,
+    process_alive,
+    stub,
+    yubihsm_config,
+)
 from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from signing.vendor_yubihsm import (
     attest_key,
     extract_and_save_audit_log,
@@ -49,17 +53,6 @@ def _unplug(
 
     monkeypatch.setattr(time, "sleep", fast_sleep)
     return device
-
-
-def _issued_for_the_key(certificate: bytes, device: EmulatedYubiHsm) -> bool:
-    attestation = x509.load_pem_x509_certificate(certificate)
-    key = device.get(0x2000, OBJECT.ASYMMETRIC_KEY)
-    assert key is not None
-    expected = serialization.load_der_private_key(key.data, None).public_key()
-    public = attestation.public_key()
-    assert isinstance(public, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
-    assert isinstance(expected, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
-    return public.public_numbers() == expected.public_numbers()
 
 
 def _read_pid(pid_file: Path) -> int:
@@ -100,7 +93,10 @@ def test_restarts_the_connector_and_retries_after_connection_error(
         result = attest_key(yubihsm_config(yubihsm), KEY_ID)
 
         second_pid = _read_pid(pid_file)
-        assert _issued_for_the_key(result, device)
+        assert_same_public_key(
+            x509.load_pem_x509_certificate(result).public_key(),
+            device.private_key(0x2000).public_key(),
+        )
         assert not process_alive(first_pid)
         assert second_pid != first_pid
         assert process_alive(second_pid)
