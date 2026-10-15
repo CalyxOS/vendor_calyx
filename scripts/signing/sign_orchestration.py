@@ -161,6 +161,7 @@ class SignOrchestrator:
         self.generate_delta_script = generate_delta_script
         self.state = SignState()
         self._loaded_keymapper: Keymapper | None = None
+        self.vendor: sign_environment.Vendor | None = None
         self.assume_yes = environment.get("SIGN_ASSUME_YES") == "y"
         self.original_tmpdir = Path(environment.get("TMPDIR") or "/dev/shm")
         self.tmpdir: Path | None = None
@@ -519,7 +520,7 @@ class SignOrchestrator:
 
     def _load_keymapper_and_maybe_pkcs11(self) -> None:
         try:
-            sign_environment.load_vendor(self.environment)
+            self.vendor = sign_environment.load_vendor(self.environment)
         except RuntimeError as error:
             raise _reported_step_error(str(error)) from error
         try:
@@ -652,17 +653,19 @@ class SignOrchestrator:
             )
         self.environment["TMPDIR"] = str(self.tmpdir)
         print()
-        if not self.environment.get("PKCS11_VENDOR"):
+        if self.vendor is None:
             print("Initializing...")
         else:
             print("Initializing PKCS#11 and related components...")
             try:
                 sign_environment.maybe_initialize_vendor_interactive(
                     self.environment,
+                    self.vendor,
                     assume_yes=self.assume_yes,
                 )
                 sign_environment.maybe_initialize_vendor(
                     self.environment,
+                    self.vendor,
                     tmpdir=self.tmpdir,
                 )
             except (RuntimeError, OSError) as error:
@@ -675,11 +678,10 @@ class SignOrchestrator:
             for device in self.metadata.all_devices
             if device in self.state.device_to_next_build
         ]
-        vendor = sign_environment.load_vendor(self.environment)
-        if vendor is not None:
+        if self.vendor is not None:
             try:
                 with_loaded, without_loaded = (
-                    vendor.split_devices_by_loaded_keys(
+                    self.vendor.split_devices_by_loaded_keys(
                         self.environment,
                         self.keymapper(),
                         ordered,
@@ -879,9 +881,8 @@ class SignOrchestrator:
 
     def _ensure_all_keys_available_for_devices(self) -> None:
         try:
-            vendor = sign_environment.load_vendor(self.environment)
-            assert vendor is not None
-            vendor.ensure_keys_for_devices(
+            assert self.vendor is not None
+            self.vendor.ensure_keys_for_devices(
                 self.environment,
                 self.keymapper(),
                 self.state.devices_without_loaded_keys,
@@ -897,12 +898,8 @@ class SignOrchestrator:
         )
 
     def cleanup(self) -> None:
-        try:
-            vendor = sign_environment.load_vendor(self.environment)
-        except RuntimeError:
-            vendor = None
-        if vendor is not None:
-            vendor.cleanup(
+        if self.vendor is not None:
+            self.vendor.cleanup(
                 self.environment,
                 inherited=self.inherited_environment,
             )

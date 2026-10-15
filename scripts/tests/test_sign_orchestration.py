@@ -24,6 +24,7 @@ from conftest import (
 from cryptography.hazmat.primitives import serialization
 from signing.metadata import load_metadata
 from signing.release_execution import Abort
+from signing.sign_environment import YubiHsmVendor
 from signing.sign_orchestration import (
     SignDone,
     SignOrchestrator,
@@ -990,6 +991,7 @@ def test_sign_orchestrate_reuses_its_tmpdir_when_initialization_is_retried(
             "YUBIHSM_PASSWORD": "password",
         },
     )
+    orchestrator.vendor = YubiHsmVendor()
 
     for _ in range(2):
         with pytest.raises(SignStepError):
