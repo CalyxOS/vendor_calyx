@@ -1299,8 +1299,8 @@ def extract_and_save_audit_log(
 ) -> None:
     """
     Append a device's new audit log entries and a comment line to a log
-    file, over one session opened when first needed and opened again
-    after a connector restart.
+    file, over one connection, and one session opened only when entries
+    are pending. Both are opened again after a connector restart.
 
     Args:
         config: Connector URL, authentication key, and password.
@@ -1312,34 +1312,59 @@ def extract_and_save_audit_log(
         AuditLogNotAcknowledged: If the entries are written but the device
             does not take the acknowledgement.
     """
+    from yubihsm.core import YubiHsm
     from yubihsm.exceptions import YubiHsmConnectionError
 
-    sessions: list[AuthSession] = []
+    hsm: YubiHsm | None = None
+    session: AuthSession | None = None
 
-    def run(operation: Callable[[AuthSession], T]) -> T:
+    def close() -> None:
+        nonlocal hsm, session
+        closing_hsm, closing_session = hsm, session
+        hsm = session = None
+        try:
+            if closing_session is not None:
+                closing_session.close()
+        finally:
+            if closing_hsm is not None:
+                closing_hsm.close()
+
+    def device() -> YubiHsm:
+        nonlocal hsm
+        if hsm is None:
+            hsm = YubiHsm.connect(config.connector_url)
+        return hsm
+
+    def authenticated() -> AuthSession:
+        nonlocal session
+        if session is None:
+            session = device().create_session_derived(
+                int(config.auth_key, 16),
+                config.password,
+            )
+        return session
+
+    def run(operation: Callable[[], T]) -> T:
         def attempt() -> T:
-            if not sessions:
-                sessions.append(connect_yubihsm_session(config))
             try:
-                return operation(sessions[0])
+                return operation()
             except YubiHsmConnectionError:
                 with contextlib.suppress(Exception):
-                    sessions.pop().close()
+                    close()
                 raise
 
         return _retry_after_connector_restart(attempt)
 
     try:
         save_audit_log(
-            lambda: count_unacknowledged_audit_entries(config),
-            lambda: run(lambda session: session.get_log_entries().entries),
-            lambda number: run(lambda session: session.set_log_index(number)),
+            lambda: run(lambda: unacknowledged_audit_entries(device())),
+            lambda: run(lambda: authenticated().get_log_entries().entries),
+            lambda number: run(lambda: authenticated().set_log_index(number)),
             log_file,
             comment,
         )
     finally:
-        if sessions:
-            sessions.pop().close()
+        close()
 
 
 def unacknowledged_audit_entries(hsm: YubiHsm) -> int:
@@ -1360,31 +1385,6 @@ def unacknowledged_audit_entries(hsm: YubiHsm) -> int:
     from yubihsm.defs import COMMAND
 
     return int(DeviceInfo.parse(hsm.send_cmd(COMMAND.DEVICE_INFO)).log_used)
-
-
-def count_unacknowledged_audit_entries(config: YubiHsmConfig) -> int:
-    """
-    Return how many audit log entries the device holds unacknowledged,
-    over a new connection and without an authenticated session.
-
-    Args:
-        config: Connector URL.
-
-    Returns:
-        The number of entries not yet acknowledged with SET_LOG_INDEX.
-
-    Raises:
-        RuntimeError: If a managed connector fails to restart after a
-            connector-level failure.
-        yubihsm.exceptions.YubiHsmError: If the SDK connection or
-            command fails.
-    """
-    from yubihsm.core import YubiHsm
-
-    return _run_with_session(
-        lambda: YubiHsm.connect(config.connector_url),
-        unacknowledged_audit_entries,
-    )
 
 
 def save_audit_log(
