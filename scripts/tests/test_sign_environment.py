@@ -360,7 +360,7 @@ def test_maybe_initialize_vendor_softhsm_is_a_noop(tmp_path: Path) -> None:
     assert "SIGNING_COMMAND_INTERCEPTOR" not in environment
 
 
-def test_load_vendor_applies_the_yubihsm_include_exports() -> None:
+def test_load_vendor_applies_the_yubihsm_defaults() -> None:
     environment = {"PKCS11_VENDOR": "yubihsm"}
 
     assert isinstance(load_vendor(environment), YubiHsmVendor)
@@ -681,7 +681,7 @@ def test_initialize_softhsm_release_respects_preset_exec_log_path(
     assert environment["EXEC_LOG_PATH"] == str(tmp_path / expected)
 
 
-def test_load_vendor_softhsm_applies_source_exports() -> None:
+def test_load_vendor_applies_the_softhsm_defaults() -> None:
     environment = {"PKCS11_VENDOR": "softhsm", "KEYMAPPER": "legacy"}
 
     load_vendor(environment)
@@ -844,7 +844,7 @@ def test_yubihsm_finalize_release_extracts_under_the_lock(
     ),
     ids=("missing", "shared", "two-lines", "blank-line", "latin-1"),
 )
-def test_read_yubihsm_password_file_reports_as_bash_does(
+def test_read_yubihsm_password_file_reports_an_unusable_file(
     tmp_path: Path,
     contents: str | bytes | None,
     mode: int,
@@ -871,7 +871,7 @@ def test_read_yubihsm_password_file_reports_as_bash_does(
     ("pass\fword\n", "secret\r\n", "secret"),
     ids=("form-feed", "crlf", "no-newline"),
 )
-def test_read_yubihsm_password_file_splits_lines_as_mapfile(
+def test_read_yubihsm_password_file_takes_the_first_line(
     tmp_path: Path,
     contents: str,
 ) -> None:
