@@ -119,7 +119,7 @@ def avb_algorithm_for(
     """
     if isinstance(keymapper, LegacyKeymapper):
         size = environment.get("AVB_RSA_KEY_SIZE") or "4096"
-    elif environment.get("PKCS11_MODULE") or environment.get("PKCS11_VENDOR"):
+    elif _signs_through_pkcs11(environment):
         size = environment.get("RSA_KEY_SIZE") or "4096"
     else:
         size = (
