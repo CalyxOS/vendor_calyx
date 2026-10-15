@@ -31,7 +31,11 @@ from .vendor_yubihsm import (
     get_loaded_key_ids,
     yubihsm_lock,
 )
-from .vendor_yubihsm_connector import YubiHsmConnector, YubiHsmConnectorConfig
+from .vendor_yubihsm_connector import (
+    DEFAULT_CONNECTOR_URL,
+    YubiHsmConnector,
+    YubiHsmConnectorConfig,
+)
 
 _YUBIHSM_PKCS11_CONF_TEMPLATE = """\
 # This is a sample configuration file for the YubiHSM PKCS#11 module
@@ -199,7 +203,7 @@ def _yubihsm_connector_config(
     return YubiHsmConnectorConfig(
         connector_url=environment.get(
             "YUBIHSM_CONNECTOR",
-            "http://127.0.0.1:12345",
+            DEFAULT_CONNECTOR_URL,
         ),
         pid_file=pid_file,
         binary=binary,
@@ -361,7 +365,7 @@ def yubihsm_config_from_environment(
     return YubiHsmConfig(
         connector_url=environment.get(
             "YUBIHSM_CONNECTOR",
-            "http://127.0.0.1:12345",
+            DEFAULT_CONNECTOR_URL,
         ),
         auth_key=environment.get("YUBIHSM_AUTHKEY", "0x0001"),
         password=environment.get("YUBIHSM_PASSWORD", ""),
@@ -636,7 +640,7 @@ class YubiHsmVendor(Vendor):
     ) -> None:
         environment["KEYMAPPER"] = "static"
         environment["USE_APKSIGNER"] = "y"
-        _default(environment, "YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
+        _default(environment, "YUBIHSM_CONNECTOR", DEFAULT_CONNECTOR_URL)
         _default(environment, "YUBIHSM_WRAP_KEY_ID", "0x0010")
         _default(
             environment,
@@ -729,7 +733,7 @@ class YubiHsmVendor(Vendor):
                     _YUBIHSM_PKCS11_CONF_TEMPLATE.format(
                         connector_url=environment.get(
                             "YUBIHSM_CONNECTOR",
-                            "http://127.0.0.1:12345",
+                            DEFAULT_CONNECTOR_URL,
                         ),
                     ),
                 )

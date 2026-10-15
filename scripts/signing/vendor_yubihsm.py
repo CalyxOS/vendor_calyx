@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
 from .vendor_yubihsm_connector import (
+    DEFAULT_CONNECTOR_URL,
     YubiHsmConnector,
     YubiHsmConnectorConfig,
 )
@@ -95,7 +96,7 @@ def restart_connector() -> None:
         YubiHsmConnectorConfig(
             connector_url=os.environ.get(
                 "YUBIHSM_CONNECTOR",
-                "http://127.0.0.1:12345",
+                DEFAULT_CONNECTOR_URL,
             ),
             pid_file=Path(pid_file),
             binary=os.environ.get("YUBIHSM_CONNECTOR_BIN", "yubihsm-connector"),
