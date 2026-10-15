@@ -23,6 +23,7 @@ from conftest import (
     SCRIPTS_DIR,
     TEST_METADATA,
     default_signal_dispositions,
+    file_tree,
     install_executable,
     make_release_tree,
     metadata_with_placeholders,
@@ -50,14 +51,6 @@ pytestmark = pytest.mark.usefixtures("small_metadata")
 @pytest.fixture
 def release_tree(tmp_path: Path) -> Path:
     return make_release_tree(tmp_path)
-
-
-def _manifest(directory: Path) -> dict[str, bytes]:
-    return {
-        str(path.relative_to(directory)): path.read_bytes()
-        for path in sorted(directory.rglob("*"))
-        if path.is_file()
-    }
 
 
 def _command_line(stderr: str, tool: str) -> str:
@@ -114,7 +107,7 @@ def test_release_runs_the_release_tools(release_tree: Path) -> None:
     )
 
     assert result.returncode == 0, result.stderr
-    manifest = _manifest(release_tree / f"out/release-bramble-{BUILD_NUMBER}")
+    manifest = file_tree(release_tree / f"out/release-bramble-{BUILD_NUMBER}")
     assert sorted(manifest) == [
         f"bramble-factory-{BUILD_NUMBER}.zip",
         f"bramble-factory-{BUILD_NUMBER}.zip.sha256sum",
@@ -160,7 +153,7 @@ def test_release_skip_signing_copies_the_target_files(
     assert (
         out / f"bramble-target_files-{BUILD_NUMBER}.zip"
     ).read_bytes() == unsigned.read_bytes()
-    assert sorted(_manifest(out)) == [
+    assert sorted(file_tree(out)) == [
         f"bramble-factory-{BUILD_NUMBER}.zip",
         f"bramble-factory-{BUILD_NUMBER}.zip.sha256sum",
         f"bramble-target_files-{BUILD_NUMBER}.zip",
@@ -240,7 +233,7 @@ def test_release_finds_in_tree_tools_and_target_files(
     )
 
     assert result.returncode == 0, result.stderr
-    manifest = _manifest(
+    manifest = file_tree(
         release_tree / f"out/release/release-bramble-{BUILD_NUMBER}",
     )
     assert sorted(manifest) == [
@@ -1543,12 +1536,12 @@ def test_a_plaintext_release_loads_no_cryptography_package() -> None:
 
 
 def test_release_dry_run_writes_no_files(release_tree: Path) -> None:
-    before = _manifest(release_tree)
+    before = file_tree(release_tree)
 
     result = run_release(release_tree, "bramble", environment={"OTA_ONLY": ""})
 
     assert result.returncode == 0, result.stderr
-    assert _manifest(release_tree) == before
+    assert file_tree(release_tree) == before
 
 
 def test_release_signs_plain_keys_without_its_tmpdir(

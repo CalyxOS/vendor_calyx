@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from conftest import ID2B_KEYMAP, SCRIPTS_DIR
+from conftest import FIXTURES_DIR, ID2B_KEYMAP, PKCS11_DIR, SCRIPTS_DIR
 from signing.keymap import (
     Id2bConfig,
     Id2bKeymapper,
@@ -259,7 +259,7 @@ def test_id2b_keymapper_validates_the_config_it_is_given(
 
 
 ANSWERS = json.loads(
-    (SCRIPTS_DIR / "tests" / "fixtures" / "keymapper-answers.json").read_text(),
+    (FIXTURES_DIR / "keymapper-answers.json").read_text(),
 )
 KEYMAPPERS: dict[
     str,
@@ -358,7 +358,7 @@ def test_is_per_device_gives_the_answers_of_the_bash_keymapper(
 
 def test_id2b_keymap_of_every_shipped_device_is_the_shipped_keymap() -> None:
     metadata = load_metadata(SCRIPTS_DIR / "metadata.py")
-    expected = SCRIPTS_DIR / "pkcs11" / "keymap.tsv"
+    expected = PKCS11_DIR / "keymap.tsv"
 
     assert (
         Id2bKeymapper(metadata).to_tsv(
