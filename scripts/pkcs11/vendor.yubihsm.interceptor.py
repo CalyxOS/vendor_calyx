@@ -353,11 +353,12 @@ def main(argv: list[str] | None = None) -> int:
     """
     arguments = sys.argv[1:] if argv is None else argv
     cmd = os.environ.get("SIGNING_COMMAND", "")
+    command_name = Path(cmd).name
     jar: str | None = None
-    if cmd == "avbtool":
+    if command_name == "avbtool":
         args = list(arguments)
         is_signing_command = classify_avbtool(args)
-    elif cmd == "java":
+    elif command_name == "java":
         args, jar, is_signing_command = classify_java(list(arguments))
     else:
         # An unknown command may sign, so its audit log is extracted.
