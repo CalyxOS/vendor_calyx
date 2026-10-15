@@ -578,7 +578,7 @@ def test_release_rejects_unrecognized_device_by_default(
     assert not (release_tree / f"out/release-{device}-{BUILD_NUMBER}").exists()
 
 
-def test_release_reports_a_wrong_argument_count_as_release_sh_does(
+def test_release_reports_a_wrong_argument_count(
     release_tree: Path,
 ) -> None:
     result = run(
@@ -972,7 +972,7 @@ def test_release_reports_an_unsupported_vendor(release_tree: Path) -> None:
     (signal.SIGTERM, signal.SIGHUP),
     ids=("sigterm", "sighup"),
 )
-def test_python_release_cleans_up_when_terminated(
+def test_release_cleans_up_when_terminated(
     release_tree: Path,
     signum: signal.Signals,
 ) -> None:
@@ -1024,7 +1024,7 @@ def test_python_release_cleans_up_when_terminated(
 
 
 @pytest.mark.parametrize("second", ("SIGTERM", "SIGINT", "between"))
-def test_python_release_finishes_its_cleanup_after_a_second_signal(
+def test_release_finishes_its_cleanup_after_a_second_signal(
     tmp_path: Path,
     second: str,
 ) -> None:
@@ -1348,7 +1348,7 @@ def test_yubihsm_release_fails_when_its_signing_server_cannot_start(
         ),
     ),
 )
-def test_avb_algorithm_is_the_one_bash_picks(
+def test_avb_algorithm_follows_the_avb_key_size(
     environment: dict[str, str],
     algorithm: str,
 ) -> None:
@@ -1465,7 +1465,7 @@ def test_release_goes_on_without_an_unwritable_exec_log(
 
 
 @pytest.mark.parametrize("status", (0, 23))
-def test_run_release_tool_prints_and_runs_like_print_and_run(
+def test_run_release_tool_prints_the_command_and_returns_its_status(
     tmp_path: Path,
     capfd: pytest.CaptureFixture[str],
     status: int,

@@ -282,78 +282,68 @@ KEYS = (
     ("apex_payload", "com.android.adbd"),
     ("app", "prebuilts/calyx/microg/certs/microg"),
 )
-KEY_IDS = ("0x1100", "0x1200", "0x2000", "0x2001", "0x2100", "0x2140", "0xfe00")
 
 
 @pytest.mark.parametrize("name", KEYMAPPERS)
 @pytest.mark.parametrize("key_suffix", (None, "", ".key"))
-def test_keymapper_gives_the_answers_of_the_bash_keymapper(
+def test_keymapper_resolves_the_recorded_key_paths(
     name: str,
     key_suffix: str | None,
 ) -> None:
     environment, create = KEYMAPPERS[name]
     keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
     answers = (
-        ANSWERS["interface"]["legacy"][
+        ANSWERS["key_paths"]["legacy"][
             "none" if key_suffix is None else key_suffix
         ]
         if name == "legacy"
-        else ANSWERS["interface"]["id2b_static"]
+        else ANSWERS["key_paths"]["id2b_static"]
     )
-    key_dir = keymapper.key_dir(dict(environment))
 
-    expected = [
-        f"avb_custom_key\t<scripts>/{key_dir}"
-        f"{keymapper.avb_custom_key('bramble')}",
-        f"key_dir\t{key_dir}",
-    ]
-    for key_type, key_name in KEYS:
-        for suffix in ("", ".pem", ".key"):
-            value = keymapper.key(
+    assert keymapper.key_dir(dict(environment)) == answers["key_dir"]
+    assert keymapper.avb_custom_key("bramble") == answers["avb_custom_key"]
+    assert [
+        [
+            key_type,
+            key_name,
+            suffix,
+            keymapper.key(
                 key_type,
                 key_name,
                 "bramble",
                 suffix=suffix,
                 key_suffix=".pem" if key_suffix is None else key_suffix,
-            )
-            expected.append(
-                f"key\t{key_type}\t{key_name}\t{suffix}\t"
-                f"{f'{key_dir}{value}' if value else ''}",
-            )
-
-    assert expected == answers
+            ),
+        ]
+        for key_type, key_name in KEYS
+        for suffix in ("", ".pem", ".key")
+    ] == answers["keys"]
 
 
 @pytest.mark.parametrize("name", ("id2b", "static"))
-def test_keymapper_key_id_queries_give_the_answers_of_the_bash_keymapper(
-    name: str,
-) -> None:
+def test_keymapper_reports_the_recorded_key_ids(name: str) -> None:
     _, create = KEYMAPPERS[name]
     keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
-    map_line, *per_device = ANSWERS["key_ids"][name]
+    answers = ANSWERS["key_ids"][name]
 
-    assert set(map_line.split("\t")[1:]) - {""} == set(
-        keymapper.device_key_ids("bramble"),
+    assert set(keymapper.device_key_ids("bramble")) == set(
+        answers["device_key_ids"],
     )
-    assert per_device == [
-        f"per_device\t{key_id}\t"
-        f"{'y' if keymapper.key_id_is_per_device(key_id) else 'n'}"
-        for key_id in KEY_IDS
-    ]
+    assert {
+        key_id: keymapper.key_id_is_per_device(key_id)
+        for key_id in answers["per_device"]
+    } == answers["per_device"]
 
 
 @pytest.mark.parametrize("name", KEYMAPPERS)
-def test_is_per_device_gives_the_answers_of_the_bash_keymapper(
-    name: str,
-) -> None:
+def test_is_per_device_gives_the_recorded_answers(name: str) -> None:
     _, create = KEYMAPPERS[name]
     keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
 
-    assert ANSWERS["per_device"][name] == [
-        f"{key_type}\t{key_name}\t"
-        f"{'y' if keymapper.is_per_device(key_type, key_name) else 'n'}"
+    assert [
+        [key_type, key_name, keymapper.is_per_device(key_type, key_name)]
         for key_type, key_name in KEYS
-    ]
+    ] == ANSWERS["per_device"][name]
 
 
 def test_id2b_keymap_of_every_shipped_device_is_the_shipped_keymap() -> None:
