@@ -435,12 +435,9 @@ class Pkcs11KeygenDriver(KeygenDriver):
         environment = self.environment
         user_pin = environment.get("PKCS11_PIN") or None
         pin = signing_pin = discovery_pin = None
-        use_so_pin = list_requires_no_pin = False
+        use_so_pin = False
         if discovery:
-            if environment.get("LIST_REQUIRES_NO_PIN", "n") == "y":
-                list_requires_no_pin = True
-            else:
-                pin = user_pin
+            pin = user_pin
         elif environment.get("MODIFICATION_USES_SO_PIN") == "y":
             if environment.get("PKCS11_SO_PIN"):
                 use_so_pin = True
@@ -456,13 +453,11 @@ class Pkcs11KeygenDriver(KeygenDriver):
                 discovery_pin=discovery_pin,
                 signing_pin=signing_pin,
                 token_label=environment.get("PKCS11_TOKEN_LABEL") or None,
-                slot=environment.get("PKCS11_SLOT") or None,
                 tool=environment["PKCS11_TOOL_BIN"],
                 openssl=environment.get("OPENSSL_BIN", "openssl"),
                 openssl_engine=Path(engine) if engine else None,
                 certificate_days=int(environment["CERT_EXPIRY_DAYS"]),
                 use_so_pin=use_so_pin,
-                list_requires_no_pin=list_requires_no_pin,
             ),
         )
 
