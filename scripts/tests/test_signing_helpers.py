@@ -138,7 +138,7 @@ def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
     )
     data = avb_input(hashlib.sha256(b"vbmeta").digest())
     monkeypatch.setattr(
-        helper,
+        helper.signing_helpers,
         "pkcs11_signer_from_environment",
         stub(SimpleNamespace(sign=stub(bytes(256)))),
     )
@@ -159,7 +159,11 @@ def test_payload_helper_rejects_invalid_digest_size(
     digest = tmp_path / "digest.bin"
     output = tmp_path / "signature.bin"
     digest.write_bytes(b"x" * size)
-    monkeypatch.setattr(helper, "pkcs11_signer_from_environment", object)
+    monkeypatch.setattr(
+        helper.signing_helpers,
+        "pkcs11_signer_from_environment",
+        object,
+    )
     monkeypatch.setattr(helper, "require_matching_public_key", stub(None))
 
     with pytest.raises(ValueError, match="exactly 32 bytes"):
@@ -196,7 +200,7 @@ def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
     monkeypatch.delenv("SIGNING_SERVER_SOCKET", raising=False)
     monkeypatch.delenv("DEBUG_PAYLOAD_SIGNER", raising=False)
     monkeypatch.setattr(
-        helper,
+        helper.signing_helpers,
         "pkcs11_signer_from_environment",
         stub(SimpleNamespace(sign=stub(bytes(256)))),
     )
@@ -231,7 +235,7 @@ def test_python_avb_helper_names_a_key_file_it_cannot_load(
     public_key.write_bytes(contents)
     data = avb_input(hashlib.sha256(b"vbmeta").digest())
     monkeypatch.setattr(
-        helper,
+        helper.signing_helpers,
         "pkcs11_signer_from_environment",
         stub(SimpleNamespace(sign=stub(bytes(256)))),
     )
