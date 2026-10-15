@@ -19,6 +19,7 @@ from conftest import (
     PAYLOAD_SIGNER,
     SIGNING_HELPER,
     YUBIHSM_INTERCEPTOR,
+    RecordingHandler,
     install_executable,
     yubihsm_config,
 )
@@ -32,24 +33,8 @@ from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector, EmulatedYubiHsm
 
 
-class _Handler:
-    def __init__(self, response: Message | Exception) -> None:
-        self.response = response
-        self.requests: list[Message] = []
-        self.closed = 0
-
-    def handle(self, request: Message) -> Message:
-        self.requests.append(request)
-        if isinstance(self.response, Exception):
-            raise self.response
-        return self.response
-
-    def close(self) -> None:
-        self.closed += 1
-
-
 def test_request_reaches_the_handler_for_its_op(tmp_path: Path) -> None:
-    handler = _Handler({"status": "ok", "value": 1})
+    handler = RecordingHandler({"status": "ok", "value": 1})
     server = SigningServer(tmp_path / "s.sock")
     server.add_service(
         {"a": handler.handle, "b": handler.handle},
@@ -66,11 +51,14 @@ def test_request_reaches_the_handler_for_its_op(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "handler",
-    [_Handler({"status": "unavailable"}), _Handler(RuntimeError("boom"))],
+    [
+        RecordingHandler({"status": "unavailable"}),
+        RecordingHandler(RuntimeError("boom")),
+    ],
 )
 def test_request_without_an_ok_response_is_none(
     tmp_path: Path,
-    handler: _Handler,
+    handler: RecordingHandler,
 ) -> None:
     server = SigningServer(tmp_path / "s.sock")
     server.add_service({"a": handler.handle})
@@ -503,7 +491,7 @@ class _NestedHandler:
 
 def test_a_handler_can_send_requests_to_another_handler(tmp_path: Path) -> None:
     socket_path = tmp_path / "s.sock"
-    inner = _Handler({"status": "ok", "value": 7})
+    inner = RecordingHandler({"status": "ok", "value": 7})
     server = SigningServer(socket_path)
     server.add_service({"outer": _NestedHandler(socket_path).handle})
     server.add_service({"inner": inner.handle})
@@ -565,7 +553,7 @@ def test_a_client_that_never_finishes_its_request_does_not_block(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(signing_server, "_REQUEST_TIMEOUT", 0.2)
-    handler = _Handler({"status": "ok"})
+    handler = RecordingHandler({"status": "ok"})
     server = SigningServer(tmp_path / "s.sock")
     server.add_service({"a": handler.handle})
     with server:

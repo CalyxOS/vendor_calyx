@@ -15,6 +15,7 @@ import pytest
 from conftest import (
     APKSIGNER_SIGNING_HELPER,
     SOFTHSM_KEY_ID,
+    RecordingHandler,
     run,
     yubihsm_config,
 )
@@ -22,7 +23,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
-from signing.signing_server import Message, SigningServer
+from signing.signing_server import SigningServer
 from signing.yubihsm_session_service import YubiHsmSessionService
 from software_rsa import der_public_key, rsa_key, verifies
 from yubihsm_emulator import Connector
@@ -138,16 +139,6 @@ def test_apksigner_signing_helper_rejects_extra_arguments() -> None:
     assert "Unexpected arguments: unexpected" in result.stderr
 
 
-class _SignHandler:
-    def __init__(self, response: Message) -> None:
-        self.response = response
-        self.requests: list[Message] = []
-
-    def handle(self, message: Message) -> Message:
-        self.requests.append(message)
-        return self.response
-
-
 @pytest.mark.parametrize(
     ("mechanism", "algorithm"),
     (
@@ -196,7 +187,7 @@ def test_apksigner_signing_helper_falls_back_when_the_server_cannot_sign(
 ) -> None:
     environment, public_key = softhsm_rsa_key
     data = b"apksigner signable content, unhashed"
-    handler = _SignHandler({"status": "unavailable"})
+    handler = RecordingHandler({"status": "unavailable"})
     server = SigningServer(tmp_path / "s.sock")
     server.add_service({"yubihsm_sign_pkcs1": handler.handle})
 
