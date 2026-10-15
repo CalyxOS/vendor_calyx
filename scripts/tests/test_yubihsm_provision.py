@@ -16,6 +16,7 @@ import pytest
 from conftest import (
     SCRIPTS_DIR,
     YUBIHSM_SDK,
+    YUBIHSM_WRAP_ID,
     install_executable,
     parameter_id,
     run,
@@ -27,7 +28,6 @@ from yubihsm.defs import OBJECT
 from yubihsm_emulator import Connector
 
 PROVISION_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.provision.sh"
-WRAP_KEY_ID = 0x0010
 
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
@@ -90,7 +90,7 @@ def _tree(directory: Path, yubihsm: Connector) -> dict[str, str]:
         if path.name.endswith("-asymmetric-key.yhw"):
             object_id, object_type = yubihsm.device.unwrap(
                 base64.b64decode(path.read_bytes()),
-                WRAP_KEY_ID,
+                YUBIHSM_WRAP_ID,
             )
             content = f"<wrapped {object_id:#06x} {object_type.name}>"
         elif path.name.endswith((".x509.pem", ".avbpubkey", ".pem")):
@@ -151,13 +151,13 @@ def _outcome(
     root = tmp_path
     device = yubihsm.device
     device.put_authentication_key(0x0001, "signing-password")
-    device.put_wrap_key(WRAP_KEY_ID)
+    device.put_wrap_key(YUBIHSM_WRAP_ID)
     for object_id in (0x0101, 0x0102):
         device.put_asymmetric_key(object_id)
     (root / "keys").mkdir()
     (root / "keys" / "0x0101-asymmetric-key.yhw").write_bytes(
         base64.b64encode(
-            device.wrapped(0x0101, OBJECT.ASYMMETRIC_KEY, WRAP_KEY_ID),
+            device.wrapped(0x0101, OBJECT.ASYMMETRIC_KEY, YUBIHSM_WRAP_ID),
         )
         + b"\n",
     )
@@ -263,7 +263,7 @@ def test_wizard_backup_reports_a_failed_export(
             "YUBIHSM_CONNECTOR": "http://127.0.0.1:1",
             "YUBIHSM_AUTHKEY": "0x0001",
             "YUBIHSM_PASSWORD": "password",
-            "YUBIHSM_WRAP_KEY_ID": "0x0010",
+            "YUBIHSM_WRAP_KEY_ID": f"{YUBIHSM_WRAP_ID:#06x}",
         },
         cwd=tmp_path,
     )
@@ -284,7 +284,7 @@ def test_wizard_backup_dry_run_exports_nothing(
             "YUBIHSM_CONNECTOR": "http://127.0.0.1:1",
             "YUBIHSM_AUTHKEY": "0x0001",
             "YUBIHSM_PASSWORD": "password",
-            "YUBIHSM_WRAP_KEY_ID": "0x0010",
+            "YUBIHSM_WRAP_KEY_ID": f"{YUBIHSM_WRAP_ID:#06x}",
         },
         cwd=tmp_path,
     )

@@ -16,31 +16,17 @@ from signing.vendor_yubihsm import (
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import (
     Connector,
-    EmulatedYubiHsm,
 )
 
 SCOPED_AUTHKEY_ID = 0x0002
 SCOPED_PASSWORD = "scoped"
 
 
-def put_key_and_certificate(
-    device: EmulatedYubiHsm,
-    object_id: int,
-    domains: int,
-) -> None:
-    device.put_asymmetric_key(object_id, domains=domains)
-    device.put_certificate(
-        object_id,
-        device.attestation_certificate,
-        domains=domains,
-    )
-
-
 def test_get_loaded_key_ids_reports_only_keys_in_every_domain(
     yubihsm: Connector,
 ) -> None:
     device = yubihsm.device
-    put_key_and_certificate(device, 0x2000, 0b100)
+    device.put_key_and_certificate(0x2000, domains=0b100)
     device.put_asymmetric_key(0x2001, domains=0b001)
     device.put_certificate(0x2002, device.attestation_certificate)
     device.put_wrap_key(0x2003)
@@ -61,8 +47,8 @@ def test_get_loaded_key_ids_skips_objects_outside_the_auth_key_domains(
         SCOPED_PASSWORD,
         domains=0b001,
     )
-    put_key_and_certificate(yubihsm.device, 0x2000, 0b001)
-    put_key_and_certificate(yubihsm.device, 0x2100, 0b100)
+    yubihsm.device.put_key_and_certificate(0x2000, domains=0b001)
+    yubihsm.device.put_key_and_certificate(0x2100, domains=0b100)
     yubihsm.device.put_asymmetric_key(0x2200, domains=0b100)
     yubihsm.device.put_certificate(
         0x2200,
