@@ -10,7 +10,13 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from conftest import FIXTURES_DIR, ID2B_KEYMAP, PKCS11_DIR, SCRIPTS_DIR
+from conftest import (
+    FIXTURES_DIR,
+    ID2B_KEYMAP,
+    PKCS11_DIR,
+    SCRIPTS_DIR,
+    shipped_metadata,
+)
 from signing.keymap import (
     Id2bConfig,
     Id2bKeymapper,
@@ -19,7 +25,7 @@ from signing.keymap import (
     StaticKeymapper,
     load_keymapper,
 )
-from signing.metadata import SigningMetadata, load_metadata
+from signing.metadata import SigningMetadata
 
 
 def test_static_keymapper_skips_empty_lines(tmp_path: Path) -> None:
@@ -56,7 +62,7 @@ def test_load_keymapper_refuses_unknown_or_unconfigured_keymapper(
     message: str,
 ) -> None:
     with pytest.raises(ValueError, match=message):
-        load_keymapper(environment, load_metadata(SCRIPTS_DIR / "metadata.py"))
+        load_keymapper(environment, shipped_metadata())
 
 
 @pytest.mark.parametrize(
@@ -67,10 +73,7 @@ def test_load_keymapper_refuses_unknown_or_unconfigured_keymapper(
 def test_load_keymapper_defaults_to_legacy(
     environment: dict[str, str],
 ) -> None:
-    keymapper = load_keymapper(
-        environment,
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
-    )
+    keymapper = load_keymapper(environment, shipped_metadata())
 
     assert isinstance(keymapper, LegacyKeymapper)
 
@@ -97,7 +100,7 @@ def test_keymapper_file_supplies_the_keymapper(tmp_path: Path) -> None:
 
     keymapper = load_keymapper(
         {"KEYMAPPER_FILE": str(plugin), "KEYMAPPER": "legacy"},
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
+        shipped_metadata(),
     )
 
     assert keymapper.key("other", "ota", "bramble") == "plugin/0x2000"
@@ -105,10 +108,7 @@ def test_keymapper_file_supplies_the_keymapper(tmp_path: Path) -> None:
 
 def test_keymapper_file_resolves_relative_to_the_scripts_directory() -> None:
     with pytest.raises(ValueError, match=f"{SCRIPTS_DIR}/missing.py"):
-        load_keymapper(
-            {"KEYMAPPER_FILE": "missing.py"},
-            load_metadata(SCRIPTS_DIR / "metadata.py"),
-        )
+        load_keymapper({"KEYMAPPER_FILE": "missing.py"}, shipped_metadata())
 
 
 @pytest.mark.parametrize(
@@ -132,10 +132,7 @@ def test_keymapper_file_must_create_a_keymapper(
     plugin.write_text(source)
 
     with pytest.raises(ValueError, match=message):
-        load_keymapper(
-            {"KEYMAPPER_FILE": str(plugin)},
-            load_metadata(SCRIPTS_DIR / "metadata.py"),
-        )
+        load_keymapper({"KEYMAPPER_FILE": str(plugin)}, shipped_metadata())
 
 
 def test_a_keymapper_must_define_rows_and_is_per_device() -> None:
@@ -158,7 +155,7 @@ def test_keymapper_file_can_define_a_dataclass(tmp_path: Path) -> None:
 
     keymapper = load_keymapper(
         {"KEYMAPPER_FILE": str(plugin)},
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
+        shipped_metadata(),
     )
 
     assert keymapper.key("other", "ota", "bramble") == "0x2000"
@@ -172,10 +169,7 @@ def test_keymapper_file_that_fails_to_load_is_named(tmp_path: Path) -> None:
         ValueError,
         match=f"Cannot load KEYMAPPER_FILE {plugin}",
     ):
-        load_keymapper(
-            {"KEYMAPPER_FILE": str(plugin)},
-            load_metadata(SCRIPTS_DIR / "metadata.py"),
-        )
+        load_keymapper({"KEYMAPPER_FILE": str(plugin)}, shipped_metadata())
 
 
 def test_keymapper_file_prints_its_keymap(tmp_path: Path) -> None:
@@ -184,17 +178,14 @@ def test_keymapper_file_prints_its_keymap(tmp_path: Path) -> None:
 
     keymapper = load_keymapper(
         {"KEYMAPPER_FILE": str(plugin)},
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
+        shipped_metadata(),
     )
 
     assert keymapper.to_tsv(("bramble", "redfin")) == ID2B_KEYMAP.read_text()
 
 
 def test_legacy_keymapper_assigns_no_key_ids() -> None:
-    keymapper = load_keymapper(
-        {"KEYMAPPER": "legacy"},
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
-    )
+    keymapper = load_keymapper({"KEYMAPPER": "legacy"}, shipped_metadata())
 
     with pytest.raises(ValueError, match="does not assign key IDs"):
         keymapper.device_key_ids("bramble")
@@ -203,10 +194,7 @@ def test_legacy_keymapper_assigns_no_key_ids() -> None:
 
 
 def test_legacy_keymapper_overrides_a_preset_key_dir() -> None:
-    keymapper = load_keymapper(
-        {"KEYMAPPER": "legacy"},
-        load_metadata(SCRIPTS_DIR / "metadata.py"),
-    )
+    keymapper = load_keymapper({"KEYMAPPER": "legacy"}, shipped_metadata())
     environment = {"KEY_DIR": "custom/"}
 
     assert keymapper.key_dir(environment) == "keys/"
@@ -223,10 +211,7 @@ def test_keymapper_file_whose_create_keymapper_fails_is_named(
     )
 
     with pytest.raises(ValueError, match=r"failing.py failed \(no keymapper"):
-        load_keymapper(
-            {"KEYMAPPER_FILE": str(plugin)},
-            load_metadata(SCRIPTS_DIR / "metadata.py"),
-        )
+        load_keymapper({"KEYMAPPER_FILE": str(plugin)}, shipped_metadata())
 
 
 @pytest.mark.parametrize(
@@ -252,7 +237,7 @@ def test_id2b_keymapper_validates_the_config_it_is_given(
     config: Id2bConfig,
     message: str,
 ) -> None:
-    metadata = load_metadata(SCRIPTS_DIR / "metadata.py")
+    metadata = shipped_metadata()
 
     with pytest.raises(ValueError, match=message):
         Id2bKeymapper(metadata, config=config)
@@ -291,7 +276,7 @@ def test_keymapper_resolves_the_recorded_key_paths(
     key_suffix: str | None,
 ) -> None:
     environment, create = KEYMAPPERS[name]
-    keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    keymapper = create(shipped_metadata())
     answers = (
         ANSWERS["key_paths"]["legacy"][
             "none" if key_suffix is None else key_suffix
@@ -323,7 +308,7 @@ def test_keymapper_resolves_the_recorded_key_paths(
 @pytest.mark.parametrize("name", ("id2b", "static"))
 def test_keymapper_reports_the_recorded_key_ids(name: str) -> None:
     _, create = KEYMAPPERS[name]
-    keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    keymapper = create(shipped_metadata())
     answers = ANSWERS["key_ids"][name]
 
     assert set(keymapper.device_key_ids("bramble")) == set(
@@ -338,7 +323,7 @@ def test_keymapper_reports_the_recorded_key_ids(name: str) -> None:
 @pytest.mark.parametrize("name", KEYMAPPERS)
 def test_is_per_device_gives_the_recorded_answers(name: str) -> None:
     _, create = KEYMAPPERS[name]
-    keymapper = create(load_metadata(SCRIPTS_DIR / "metadata.py"))
+    keymapper = create(shipped_metadata())
 
     assert [
         [key_type, key_name, keymapper.is_per_device(key_type, key_name)]
@@ -347,7 +332,7 @@ def test_is_per_device_gives_the_recorded_answers(name: str) -> None:
 
 
 def test_id2b_keymap_of_every_shipped_device_is_the_shipped_keymap() -> None:
-    metadata = load_metadata(SCRIPTS_DIR / "metadata.py")
+    metadata = shipped_metadata()
     expected = PKCS11_DIR / "keymap.tsv"
 
     assert (
