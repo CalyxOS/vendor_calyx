@@ -31,7 +31,6 @@ def _downloaded_sha(name: str) -> str:
 
 SMALL_MANIFEST = (
     "filename\tsha256sum\tfilesize\tlink\n"
-    "start.sh\n"
     "vendor/calyx/scripts/hsm_provisioning/audit.py\n"
     "vendor/calyx/scripts/hsm_provisioning/provision.py\n"
     "vendor/calyx/scripts/hsm_provisioning/keys/1.pub\n"
@@ -122,8 +121,10 @@ def test_package_refuses_files_that_fail_verification(tmp_path: Path) -> None:
             "Cannot find vendor/calyx/scripts/hsm_provisioning/missing.py.\n",
         ),
         ("../escape\n", "Unacceptable path traversal in ../escape\n"),
+        ("start.sh\n", "start.sh is generated and must not be listed in "),
+        ("keys/../start.sh\n", "start.sh is generated and must not be listed"),
     ),
-    ids=("missing-file", "traversal"),
+    ids=("missing-file", "traversal", "start", "start-elsewhere"),
 )
 def test_package_refuses_a_bad_manifest_line(
     tmp_path: Path,
