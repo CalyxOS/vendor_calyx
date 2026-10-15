@@ -13,12 +13,13 @@ from __future__ import annotations
 import base64
 import binascii
 import contextlib
+import fcntl
 import os
 import re
 import struct
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, TypeVar
@@ -54,6 +55,26 @@ class YubiHsmConfig:
     auth_key: str
     password: str = field(repr=False)
     wrap_id: str = "0x0010"
+
+
+@contextlib.contextmanager
+def yubihsm_lock(lock_path: str | None) -> Generator[None, None, None]:
+    """
+    Hold an exclusive flock on the YubiHSM lock file for a with block.
+
+    Args:
+        lock_path: The lock file, created when missing, or None or ""
+            for no lock.
+    """
+    if not lock_path:
+        yield
+        return
+    with open(lock_path, "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 def restart_connector() -> None:
