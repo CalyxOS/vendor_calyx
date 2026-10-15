@@ -402,7 +402,7 @@ def sign_builds(
     archive_dir: Path,
     jobs: int,
     original_tmpdir: Path,
-    environment: Mapping[str, str] | None = None,
+    environment: Mapping[str, str],
 ) -> int:
     """
     Sign each (device, build, target_build) and archive the signed output.
@@ -415,8 +415,7 @@ def sign_builds(
         jobs: Maximum concurrent release.sh invocations (NUM_SIGN_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
             (sign.sh's TMPDIR, defaulting to /dev/shm).
-        environment: Environment the jobs start from, the process
-            environment unless given.
+        environment: Environment the jobs start from.
 
     Returns:
         0 if every device signed successfully, 1 otherwise, never a
@@ -453,7 +452,7 @@ def sign_builds(
     )
     try:
         base_env = {
-            **(os.environ if environment is None else environment),
+            **environment,
             "TMPDIR": str(tmpdir),
             "ENSURE_KEY_IS_AVAILABLE": "n",
         }
@@ -492,7 +491,7 @@ def generate_incrementals(
     generate_delta_script: Path,
     jobs: int,
     original_tmpdir: Path,
-    environment: Mapping[str, str] | None = None,
+    environment: Mapping[str, str],
 ) -> int:
     """
     Generate each (device, old_build, new_build) incremental.
@@ -504,8 +503,7 @@ def generate_incrementals(
             (NUM_INCREMENTAL_JOBS).
         original_tmpdir: Base directory for the per-run TMPDIR
             (sign.sh's TMPDIR, defaulting to /dev/shm).
-        environment: Environment the jobs start from, the process
-            environment unless given.
+        environment: Environment the jobs start from.
 
     Returns:
         0 if every incremental generated successfully, 1 otherwise, never
@@ -523,7 +521,7 @@ def generate_incrementals(
     )
     try:
         base_env = {
-            **(os.environ if environment is None else environment),
+            **environment,
             "TMPDIR": str(tmpdir),
             "ENSURE_KEY_IS_AVAILABLE": "n",
         }
