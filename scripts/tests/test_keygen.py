@@ -89,7 +89,12 @@ def test_keygen_honours_sign_assume_yes(
 ) -> None:
     answers: list[bool] = []
 
-    def interactive(environment: object, *, assume_yes: bool) -> None:
+    def interactive(
+        environment: object,
+        vendor: object,
+        *,
+        assume_yes: bool,
+    ) -> None:
         answers.append(assume_yes)
         raise KeygenError("stop")
 
@@ -172,7 +177,12 @@ def test_keygen_reports_a_failure_without_a_traceback(
     capsys: pytest.CaptureFixture[str],
     failure: Exception,
 ) -> None:
-    def fail(environment: object, *, assume_yes: bool) -> None:
+    def fail(
+        environment: object,
+        vendor: object,
+        *,
+        assume_yes: bool,
+    ) -> None:
         raise failure
 
     monkeypatch.setattr(
@@ -192,7 +202,12 @@ def test_keygen_writes_the_stderr_of_a_failed_tool(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    def fail(environment: object, *, assume_yes: bool) -> None:
+    def fail(
+        environment: object,
+        vendor: object,
+        *,
+        assume_yes: bool,
+    ) -> None:
         raise subprocess.CalledProcessError(
             1,
             ["pkcs11-tool", "--keypairgen"],
