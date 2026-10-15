@@ -60,9 +60,6 @@ class KeygenError(RuntimeError):
 class KeygenDriver(abc.ABC):
     """The per-vendor steps of key generation."""
 
-    uses_pkcs11_to_generate_key = False
-    uses_pkcs11_to_generate_cert = False
-
     def __init__(
         self,
         environment: MutableMapping[str, str],
@@ -159,7 +156,7 @@ def initialize_post_metadata_common(
     driver: KeygenDriver,
 ) -> None:
     """
-    Find openssl and avbtool and apply the defaults of PKCS#11 generation.
+    Find openssl and avbtool.
 
     Raises:
         KeygenError: If openssl or avbtool cannot be found.
@@ -191,31 +188,6 @@ def initialize_post_metadata_common(
         environment["AVBTOOL_BIN"] = avbtool
     if missing:
         raise KeygenError("missing tools")
-    if driver.uses_pkcs11_to_generate_key:
-        if not environment.get("RSA_KEY_SIZE"):
-            environment["RSA_KEY_SIZE"] = "4096"
-            print("RSA_KEY_SIZE not specified. Using 4096.", file=sys.stderr)
-        if not environment.get("EXTRACTION_ARGS"):
-            environment["EXTRACTION_ARGS"] = "--sensitive --extractable"
-            print(
-                "EXTRACTION_ARGS not specified. Using --sensitive "
-                "--extractable.",
-                file=sys.stderr,
-            )
-    if driver.uses_pkcs11_to_generate_cert:
-        if not environment.get("CERT_EXPIRY_DAYS"):
-            environment["CERT_EXPIRY_DAYS"] = "7200"
-            print(
-                "CERT_EXPIRY_DAYS not specified. Using 7200.",
-                file=sys.stderr,
-            )
-        if not environment.get("SIGNING_SUBJECT_TEMPLATE"):
-            environment["SIGNING_SUBJECT_TEMPLATE"] = DEFAULT_SUBJECT_TEMPLATE
-            print(
-                "SIGNING_SUBJECT_TEMPLATE not specified. Using "
-                f"{DEFAULT_SUBJECT_TEMPLATE}.",
-                file=sys.stderr,
-            )
 
 
 def generate_keys(
@@ -321,9 +293,6 @@ class Pkcs11KeygenDriver(KeygenDriver):
     the PKCS#11 backend.
     """
 
-    uses_pkcs11_to_generate_key = True
-    uses_pkcs11_to_generate_cert = True
-
     def initialize_pre_metadata(self) -> None:
         """Find pkcs11-tool and require the OpenSSL PKCS#11 engine."""
         missing = False
@@ -356,8 +325,34 @@ class Pkcs11KeygenDriver(KeygenDriver):
             raise KeygenError("missing PKCS#11 tools")
 
     def initialize_post_metadata(self) -> None:
-        """Resolve the token PINs and require PKCS11_MODULE."""
+        """
+        Default the key size, extraction mode, certificate lifetime and
+        subject, resolve the token PINs and require PKCS11_MODULE.
+        """
         environment = self.environment
+        if not environment.get("RSA_KEY_SIZE"):
+            environment["RSA_KEY_SIZE"] = "4096"
+            print("RSA_KEY_SIZE not specified. Using 4096.", file=sys.stderr)
+        if not environment.get("EXTRACTION_ARGS"):
+            environment["EXTRACTION_ARGS"] = "--sensitive --extractable"
+            print(
+                "EXTRACTION_ARGS not specified. Using --sensitive "
+                "--extractable.",
+                file=sys.stderr,
+            )
+        if not environment.get("CERT_EXPIRY_DAYS"):
+            environment["CERT_EXPIRY_DAYS"] = "7200"
+            print(
+                "CERT_EXPIRY_DAYS not specified. Using 7200.",
+                file=sys.stderr,
+            )
+        if not environment.get("SIGNING_SUBJECT_TEMPLATE"):
+            environment["SIGNING_SUBJECT_TEMPLATE"] = DEFAULT_SUBJECT_TEMPLATE
+            print(
+                "SIGNING_SUBJECT_TEMPLATE not specified. Using "
+                f"{DEFAULT_SUBJECT_TEMPLATE}.",
+                file=sys.stderr,
+            )
         testing = (environment.get("PKCS11_TESTING") or "n") != "n"
         if not environment.get("PKCS11_SO_PIN") and (
             environment.get("MODIFICATION_USES_SO_PIN") == "y"
