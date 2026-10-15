@@ -728,9 +728,7 @@ def generate_asymmetric_key(
     try:
         algorithm_name = _PKCS11_ALGORITHM_NAMES[algorithm]
     except KeyError:
-        raise ValueError(
-            f"Unknown algorithm '{algorithm}'; cannot convert to yubico",
-        ) from None
+        raise ValueError(f"Unknown algorithm '{algorithm}'") from None
     yubihsm_algorithm = ALGORITHM[algorithm_name]
     object_id = int(key_id, 16)
     domain_bits = parse_domains(domains)
