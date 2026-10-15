@@ -29,6 +29,7 @@ from yubihsm_emulator import (
     DEFAULT_PASSWORD,
     Connector,
     EmulatedYubiHsm,
+    self_signed_certificate,
     serve_connector,
 )
 
@@ -341,6 +342,20 @@ def softhsm_rsa_key(tmp_path: Path) -> tuple[dict[str, str], Path]:
     return environment, public_key
 
 
+def assert_same_public_key(
+    actual: PublicKeyTypes,
+    expected: PublicKeyTypes,
+) -> None:
+    """Assert that actual and expected are the same public key."""
+    assert actual.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    ) == expected.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+
+
 def assert_certificate_of(
     public_key: PublicKeyTypes,
     certificate: Path,
@@ -355,13 +370,7 @@ def assert_certificate_of(
         subject: RFC 4514 subject the certificate must have, if given.
     """
     loaded = x509.load_pem_x509_certificate(certificate.read_bytes())
-    assert loaded.public_key().public_bytes(
-        serialization.Encoding.DER,
-        serialization.PublicFormat.SubjectPublicKeyInfo,
-    ) == public_key.public_bytes(
-        serialization.Encoding.DER,
-        serialization.PublicFormat.SubjectPublicKeyInfo,
-    )
+    assert_same_public_key(loaded.public_key(), public_key)
     if subject is not None:
         assert loaded.subject.rfc4514_string() == subject
 
@@ -440,6 +449,36 @@ def back_up_yubihsm_key(
         ),
     )
     return backup
+
+
+def back_up_yubihsm_key_and_certificate(
+    device: EmulatedYubiHsm,
+    key_dir: Path,
+    key_id: int,
+    *,
+    loaded: bool,
+) -> None:
+    """
+    Put a new asymmetric key key_id on device and back it up with a
+    self-signed certificate in key_dir.
+
+    Args:
+        device: Device the key is generated on.
+        key_dir: Directory for the wrapped key and certificate backups.
+        key_id: Object ID of the key and certificate.
+        loaded: Whether device keeps the key and gets the certificate
+            as well, or keeps neither.
+    """
+    device.put_asymmetric_key(key_id)
+    back_up_yubihsm_key(device, key_dir, key_id)
+    certificate = self_signed_certificate()
+    (key_dir / f"{key_id:#06x}.x509.pem").write_bytes(
+        certificate.public_bytes(serialization.Encoding.PEM),
+    )
+    if loaded:
+        device.put_certificate(key_id, certificate)
+    else:
+        del device.objects[(key_id, OBJECT.ASYMMETRIC_KEY)]
 
 
 T = TypeVar("T")

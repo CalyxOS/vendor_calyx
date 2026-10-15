@@ -22,6 +22,7 @@ import pytest
 from conftest import (
     HSM_PROVISIONING_DIR,
     SCRIPTS_DIR,
+    YUBIHSM_WRAP_ID,
     back_up_yubihsm_key,
     install_executable,
     prepare_ceremony_package,
@@ -30,7 +31,7 @@ from conftest import (
 )
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding
 from yubihsm.core import AuthSession, YubiHsm
 from yubihsm.defs import ALGORITHM, AUDIT, CAPABILITY, COMMAND, OBJECT, OPTION
 from yubihsm.exceptions import YubiHsmAuthenticationError, YubiHsmDeviceError
@@ -51,7 +52,6 @@ SHAMIR_DIR = Path(
 SHAMIR_COMBINE_SHA256 = (
     "e130d50ea83bdcfc24fa242a3d318077572cac842d8123a8353d01d70ec1909a"
 )
-WRAP_KEY_ID = 0x0010
 SIGNING_AUTHKEY_ID = 0x0001
 AUDIT_AUTHKEY_ID = 0x0002
 ADMIN_AUTHKEY_ID = 0x00AD
@@ -439,10 +439,10 @@ def test_ceremony_resets_and_provisions_each_hsm(
     ) == [
         (SIGNING_AUTHKEY_ID, OBJECT.AUTHENTICATION_KEY),
         (AUDIT_AUTHKEY_ID, OBJECT.AUTHENTICATION_KEY),
-        (WRAP_KEY_ID, OBJECT.WRAP_KEY),
+        (YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY),
         (ADMIN_AUTHKEY_ID, OBJECT.AUTHENTICATION_KEY),
     ]
-    wrap_key = hsm.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
+    wrap_key = hsm.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
     assert wrap_key.algorithm == ALGORITHM.AES256_CCM_WRAP
     assert wrap_key.capabilities == (
         CAPABILITY.IMPORT_WRAPPED | CAPABILITY.EXPORT_WRAPPED
@@ -461,8 +461,8 @@ def test_ceremony_resets_and_provisions_each_hsm(
 
 
 def test_ceremony_puts_one_wrap_key_on_both_hsms(ceremony: Ceremony) -> None:
-    primary = ceremony.primary.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
-    secondary = ceremony.secondary.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
+    primary = ceremony.primary.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
+    secondary = ceremony.secondary.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
     assert primary is not None
     assert secondary is not None
 
@@ -471,7 +471,7 @@ def test_ceremony_puts_one_wrap_key_on_both_hsms(ceremony: Ceremony) -> None:
 
 
 def test_any_three_shards_restore_the_wrap_key(ceremony: Ceremony) -> None:
-    stored_wrap_key = ceremony.primary.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
+    stored_wrap_key = ceremony.primary.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
     assert stored_wrap_key is not None
     wrap_key = stored_wrap_key.data
     shards = {
@@ -611,8 +611,8 @@ def test_backup_hsm_restores_the_wrap_key_and_the_signing_keys(
         check=False,
     )
     assert restored.returncode == 0, restored.stdout + restored.stderr
-    backup_wrap_key = backup.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
-    primary_wrap_key = ceremony.primary.get(WRAP_KEY_ID, OBJECT.WRAP_KEY)
+    backup_wrap_key = backup.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
+    primary_wrap_key = ceremony.primary.get(YUBIHSM_WRAP_ID, OBJECT.WRAP_KEY)
     assert backup_wrap_key is not None
     assert primary_wrap_key is not None
     assert backup_wrap_key.data == primary_wrap_key.data
@@ -657,22 +657,16 @@ def test_restored_signing_key_signs_on_the_backup_hsm(
         CAPABILITY.SIGN_PKCS | CAPABILITY.EXPORTABLE_UNDER_WRAP,
         ALGORITHM.RSA_2048,
     )
-    wrapped = WrapKey(primary_session, WRAP_KEY_ID).export_wrapped(key)
+    wrapped = WrapKey(primary_session, YUBIHSM_WRAP_ID).export_wrapped(key)
     primary_session.close()
-    stored = ceremony.primary.get(0x2300, OBJECT.ASYMMETRIC_KEY)
-    assert stored is not None
-    public_key = serialization.load_der_private_key(
-        stored.data,
-        None,
-    ).public_key()
-    assert isinstance(public_key, rsa.RSAPublicKey)
+    public_key = ceremony.primary.private_key(0x2300).public_key()
 
     session = ceremony.session(
         ceremony.secondary,
         SIGNING_AUTHKEY_ID,
         ceremony.signing_password(),
     )
-    restored = WrapKey(session, WRAP_KEY_ID).import_wrapped(wrapped)
+    restored = WrapKey(session, YUBIHSM_WRAP_ID).import_wrapped(wrapped)
     assert isinstance(restored, AsymmetricKey)
     signature = restored.sign_pkcs1v1_5(b"release")
     session.close()

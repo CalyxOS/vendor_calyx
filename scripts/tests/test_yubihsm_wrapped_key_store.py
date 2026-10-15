@@ -8,9 +8,7 @@ from __future__ import annotations
 import base64
 
 import pytest
-from conftest import YUBIHSM_WRAP_ID, yubihsm_config
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from conftest import YUBIHSM_WRAP_ID, assert_same_public_key, yubihsm_config
 from signing.vendor_yubihsm import (
     decode_wrapped_key_backup,
     export_wrapped_key,
@@ -51,13 +49,9 @@ def test_import_wrapped_key_restores_the_exported_key(
 
     import_wrapped_key(yubihsm_config(yubihsm), KEY_ID, wrapped)
 
-    restored = yubihsm.device.get(0x2000, OBJECT.ASYMMETRIC_KEY)
-    assert restored is not None
-    restored_key = serialization.load_der_private_key(restored.data, None)
-    assert isinstance(restored_key, rsa.RSAPrivateKey)
-    assert (
-        restored_key.public_key().public_numbers()
-        == key.public_key().public_numbers()
+    assert_same_public_key(
+        yubihsm.device.private_key(0x2000).public_key(),
+        key.public_key(),
     )
 
 
