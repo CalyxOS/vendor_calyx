@@ -13,6 +13,11 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 
+def is_build_number(word: str) -> bool:
+    """Return whether word is a decimal build number."""
+    return word.isascii() and word.isdigit()
+
+
 def parse_build_numbers(value: str) -> tuple[int, ...]:
     """
     Read the blank-separated words of BUILD_NUMBER or PREV_BUILD_NUMBER.
@@ -26,9 +31,7 @@ def parse_build_numbers(value: str) -> tuple[int, ...]:
     Returns:
         The build numbers among its words, in order.
     """
-    return tuple(
-        int(word) for word in value.split() if word.isascii() and word.isdigit()
-    )
+    return tuple(int(word) for word in value.split() if is_build_number(word))
 
 
 _TARGET_FILES_RE = re.compile(
