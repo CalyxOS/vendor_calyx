@@ -171,6 +171,57 @@ def test_apksigner_skips_signature_schemes_below_min_sdk_version(
     ]
 
 
+def test_java_named_by_its_path_is_classified_as_java(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    received = tmp_path / "received"
+    java = make_script(
+        bin_dir / "java",
+        f'printf "%s\\n" "$@" > "{received}"\n',
+    )
+    args = ["-jar", "apksigner.jar", "sign", "--min-sdk-version", "30"]
+
+    result = run(
+        [INTERCEPTOR, *args],
+        env=_audit_environment(
+            tmp_path,
+            bin_dir,
+            str(java),
+            yubihsm,
+            DRY_RUN="y",
+        ),
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert received.read_text().splitlines() == [
+        *args,
+        "--v1-signing-enabled=false",
+        "--v2-signing-enabled=false",
+    ]
+
+
+def test_avbtool_named_by_its_path_inspects_without_an_audit_log(
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    avbtool = make_script(bin_dir / "avbtool", "exit 0\n")
+
+    result = run(
+        [INTERCEPTOR, "info_image", "--image", "x"],
+        env=_audit_environment(tmp_path, bin_dir, str(avbtool), yubihsm),
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "audit.log").exists()
+
+
 def test_relays_output_and_exit_code(tmp_path: Path) -> None:
     make_script(
         tmp_path / "avbtool",
