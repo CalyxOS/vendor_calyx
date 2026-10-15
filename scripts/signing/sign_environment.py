@@ -39,6 +39,9 @@ from .vendor_yubihsm_connector import (
     connector_config_from_environment,
 )
 
+_DEFAULT_AUTH_KEY = "0x0001"
+_DEFAULT_WRAP_KEY_ID = "0x0010"
+
 _YUBIHSM_PKCS11_CONF_TEMPLATE = """\
 # This is a sample configuration file for the YubiHSM PKCS#11 module
 # Uncomment the various options as needed
@@ -246,7 +249,7 @@ def ask_yubihsm_credentials(environment: MutableMapping[str, str]) -> None:
     ask_variable(
         "YUBIHSM_AUTHKEY",
         environment,
-        default="0x0001",
+        default=_DEFAULT_AUTH_KEY,
         needs_value=True,
     )
     if not read_yubihsm_password_file(environment):
@@ -338,9 +341,9 @@ def yubihsm_config_from_environment(
             "YUBIHSM_CONNECTOR",
             DEFAULT_CONNECTOR_URL,
         ),
-        auth_key=environment.get("YUBIHSM_AUTHKEY", "0x0001"),
+        auth_key=environment.get("YUBIHSM_AUTHKEY", _DEFAULT_AUTH_KEY),
         password=environment.get("YUBIHSM_PASSWORD", ""),
-        wrap_id=environment.get("YUBIHSM_WRAP_KEY_ID", "0x0010"),
+        wrap_id=environment.get("YUBIHSM_WRAP_KEY_ID", _DEFAULT_WRAP_KEY_ID),
     )
 
 
@@ -612,7 +615,7 @@ class YubiHsmVendor(Vendor):
         environment["KEYMAPPER"] = "static"
         environment["USE_APKSIGNER"] = "y"
         _default(environment, "YUBIHSM_CONNECTOR", DEFAULT_CONNECTOR_URL)
-        _default(environment, "YUBIHSM_WRAP_KEY_ID", "0x0010")
+        _default(environment, "YUBIHSM_WRAP_KEY_ID", _DEFAULT_WRAP_KEY_ID)
         _default(
             environment,
             "YUBIHSM_KEY_CAPABILITIES",
