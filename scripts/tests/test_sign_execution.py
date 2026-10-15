@@ -449,35 +449,16 @@ def test_sign_builds_respects_job_concurrency_ceiling(tmp_path: Path) -> None:
 def test_sign_builds_waits_for_a_job_that_closes_its_output(
     tmp_path: Path,
 ) -> None:
-    release_script = tmp_path / "release.sh"
-    install_executable(
-        release_script,
-        "#!/bin/sh\n"
-        "exec > /dev/null 2>&1\n"
-        "sleep 0.5\n"
-        'mkdir -p "out/release-$1-$BUILD_NUMBER"\n',
-    )
-    (tmp_path / "archive").mkdir()
-    (tmp_path / "tmp").mkdir()
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            SIGN_BUILDS,
-            str(release_script),
-            "archive",
-            "tmp",
-            "1",
-            "bramble,100,100",
-        ],
-        cwd=tmp_path,
-        env={**os.environ, "PYTHONPATH": str(SCRIPTS_DIR)},
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=False,
-        preexec_fn=default_signal_dispositions,
+    result = run_sign_builds(
+        tmp_path,
+        ["bramble,100,100"],
+        release_tool=(
+            "#!/bin/sh\n"
+            "exec > /dev/null 2>&1\n"
+            "sleep 0.5\n"
+            'mkdir -p "out/release-$1-$BUILD_NUMBER"\n'
+        ),
+        jobs=1,
     )
 
     assert result.returncode == 0, result.stderr
