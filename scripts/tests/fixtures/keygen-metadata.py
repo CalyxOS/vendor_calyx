@@ -6,7 +6,6 @@ KEYS_APEX_APK = ()
 KEYS_APP = ()
 KEYS_REPO = ()
 KEY_TYPES = ("avb", "apex_payload", "other", "core", "apex_container")
-MAPPED_KEY_TYPES = ("core",)
 ALL_DEVICES = ("bramble",)
 KEY_TYPE_TO_ARRAY = {
     "avb": "keys_avb",
