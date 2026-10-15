@@ -575,7 +575,17 @@ def test_backend_discovers_without_logging_in_when_configured(
     ids=("plain", "annotated", "other-id", "no-id"),
 )
 def test_listing_must_name_the_requested_id(
+    tmp_path: Path,
     listing: bytes,
     listed: bool,
 ) -> None:
-    assert Pkcs11Backend.listing_contains_id(listing, "2000") is listed
+    (tmp_path / "listing").write_bytes(listing)
+    tool = install_executable(
+        tmp_path / "pkcs11-tool",
+        f"#!/bin/sh\ncat {tmp_path / 'listing'}\n",
+    )
+    backend = Pkcs11Backend(
+        Pkcs11Config(module=Path("/dev/null"), tool=str(tool)),
+    )
+
+    assert backend.key_exists(KeyReference("0x2000", "")) is listed
