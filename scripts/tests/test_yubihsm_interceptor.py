@@ -471,9 +471,10 @@ def test_retries_an_unacknowledged_extraction_without_writing_it_twice(
         yubihsm_config(yubihsm),
         audit_log_path=audit_log,
     )
-    server = SigningServer(
-        tmp_path / "s.sock",
-        {"yubihsm_extract_audit_log": service},
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service(
+        {"yubihsm_extract_audit_log": service.extract_audit_log},
+        service.close,
     )
     environment = _audit_environment(tmp_path, tmp_path, "avbtool", yubihsm)
     if through_server:

@@ -4,14 +4,13 @@
 #
 
 """
-SigningServer handler that holds one authenticated YubiHSM session for a
+SigningServer service that holds one authenticated YubiHSM session for a
 whole release.
 """
 
 from __future__ import annotations
 
 import base64
-import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar, cast
@@ -42,9 +41,6 @@ _DIGEST_HASHES: dict[int, Callable[[], hashes.HashAlgorithm]] = {
 }
 
 
-_CLOSE_TIMEOUT = 10.0
-
-
 class YubiHsmSessionService:
     """
     Handle YubiHSM operations over one session, opened on first use.
@@ -69,27 +65,15 @@ class YubiHsmSessionService:
         self._hsm: YubiHsm | None = None
         self._session: AuthSession | None = None
         self._public_keys: dict[int, rsa.RSAPublicKey] = {}
-        self._lock = threading.RLock()
-
-    def handle(self, request: Message) -> Message:
-        with self._lock:
-            if request["op"] == "yubihsm_sign_pkcs1":
-                return self._sign(request)
-            return self._extract_audit_log(request)
 
     def close(self) -> None:
-        locked = self._lock.acquire(timeout=_CLOSE_TIMEOUT)
-        try:
-            session, self._session = self._session, None
-            self._hsm = None
-            if session is not None:
-                try:
-                    session.close()
-                except Exception:
-                    pass
-        finally:
-            if locked:
-                self._lock.release()
+        session, self._session = self._session, None
+        self._hsm = None
+        if session is not None:
+            try:
+                session.close()
+            except Exception:
+                pass
 
     def with_session(self, operation: Callable[[AuthSession], T]) -> T:
         for attempt in (1, 2):
@@ -110,7 +94,7 @@ class YubiHsmSessionService:
 
         return self.with_session(operation)
 
-    def _sign(self, request: Message) -> Message:
+    def sign(self, request: Message) -> Message:
         from yubihsm.objects import AsymmetricKey
 
         key_id = int(request["key_id"])
@@ -146,7 +130,7 @@ class YubiHsmSessionService:
             "signature": base64.b64encode(signature).decode(),
         }
 
-    def _extract_audit_log(self, request: Message) -> Message:
+    def extract_audit_log(self, request: Message) -> Message:
         if (
             self._audit_log_path is None
             or Path(request["log_path"]) != self._audit_log_path
