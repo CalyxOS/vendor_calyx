@@ -14,7 +14,6 @@ in the SIGNING_COMMAND environment variable.
 
 from __future__ import annotations
 
-import fcntl
 import os
 import subprocess
 import sys
@@ -37,6 +36,7 @@ from signing.vendor_yubihsm import (
     YubiHsmConfig,
     extract_and_save_audit_log,
     restart_connector,
+    yubihsm_lock,
 )
 from signing_cache import from_cache, to_cache
 
@@ -420,18 +420,8 @@ def main(argv: list[str] | None = None) -> int:
         args = list(arguments)
         is_signing_command = True
 
-    lockfile = os.environ.get("YUBIHSM_LOCKFILE")
-    if not lockfile:
+    with yubihsm_lock(os.environ.get("YUBIHSM_LOCKFILE")):
         return run_command(cmd, args, is_signing_command, jar)
-
-    # A restarted yubihsm-connector must not keep this lock open, which
-    # holds because subprocess closes descriptors other than 0/1/2.
-    with open(lockfile, "a") as lock_handle:
-        fcntl.flock(lock_handle, fcntl.LOCK_EX)
-        try:
-            return run_command(cmd, args, is_signing_command, jar)
-        finally:
-            fcntl.flock(lock_handle, fcntl.LOCK_UN)
 
 
 if __name__ == "__main__":
