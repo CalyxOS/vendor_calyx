@@ -426,7 +426,7 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             include_pin=not self.config.list_requires_no_pin,
             use_discovery_pin=True,
         ).stdout
-        return self.listing_contains_id(output, object_id)
+        return self._listing_contains_id(output, object_id)
 
     @staticmethod
     def _object_id(key: KeyReference) -> str:
@@ -471,7 +471,7 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         return match.group(1).lower()
 
     @classmethod
-    def listing_contains_id(cls, output: bytes, object_id: str) -> bool:
+    def _listing_contains_id(cls, output: bytes, object_id: str) -> bool:
         """
         Return whether ``pkcs11-tool`` listed an object with an ID.
 
@@ -483,12 +483,12 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             Whether an ``ID:`` field of the listing names object_id.
         """
         for line in output.splitlines():
-            field = line.lstrip()
-            if not field.startswith(b"ID:"):
+            stripped = line.lstrip()
+            if not stripped.startswith(b"ID:"):
                 continue
             try:
                 listed = cls._normalize_listing_id(
-                    field[3:].strip().decode("ascii", errors="replace"),
+                    stripped[3:].strip().decode("ascii", errors="replace"),
                 )
             except ValueError:
                 continue
@@ -503,6 +503,10 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
     ) -> list[str]:
         """
         Build common module, token, and login arguments.
+
+        Args:
+            include_pin: Whether to include configured login arguments.
+            use_discovery_pin: Whether to use normal discovery credentials.
 
         Returns:
             Arguments shared by discovery, export, and signing commands.
