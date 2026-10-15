@@ -121,10 +121,6 @@ class SignState:
     no_incremental: bool = False
 
 
-def _parse_build_numbers(value: str) -> tuple[int, ...]:
-    return tuple(parse_build_numbers(value.split()))
-
-
 def _join_builds(device_to_build: Mapping[str, int]) -> str:
     return " ".join(
         str(build) for build in sorted(set(device_to_build.values()))
@@ -302,12 +298,12 @@ class SignOrchestrator:
 
     def _find_prev_signed_device_builds(self) -> None:
         archive_dirs = self._archive_dirs()
-        build_numbers = _parse_build_numbers(
+        build_numbers = parse_build_numbers(
             self.environment.get("BUILD_NUMBER", ""),
         )
         prev_build_number = self.environment.get("PREV_BUILD_NUMBER", "")
         prev_build_numbers = (
-            _parse_build_numbers(prev_build_number)
+            parse_build_numbers(prev_build_number)
             if prev_build_number
             else None
         )
@@ -439,7 +435,7 @@ class SignOrchestrator:
         )
 
     def _gather_device_builds_to_sign(self) -> None:
-        build_numbers = _parse_build_numbers(self.environment["BUILD_NUMBER"])
+        build_numbers = parse_build_numbers(self.environment["BUILD_NUMBER"])
         self.state.device_to_next_build = gather_device_builds(
             self.state.target_files,
             build_numbers,
@@ -529,7 +525,7 @@ class SignOrchestrator:
             raise _reported_step_error(str(error)) from error
 
     def _maybe_handle_already_existing_builds(self) -> None:
-        build_numbers = _parse_build_numbers(self.environment["BUILD_NUMBER"])
+        build_numbers = parse_build_numbers(self.environment["BUILD_NUMBER"])
         any_already_signed = any(
             build in self.state.device_to_preexisting_build.values()
             for build in build_numbers
