@@ -43,13 +43,11 @@ class Pkcs11Config:
     # Certificates are signed with this PIN, since pin may hold the SO PIN.
     signing_pin: str | None = field(default=None, repr=False)
     token_label: str | None = None
-    slot: str | None = None
     tool: str = "pkcs11-tool"
     openssl: str = "openssl"
     openssl_engine: Path | None = None
     certificate_days: int = DEFAULT_CERTIFICATE_DAYS
     use_so_pin: bool = False
-    list_requires_no_pin: bool = False
 
     def __post_init__(self) -> None:
         """
@@ -65,12 +63,6 @@ class Pkcs11Config:
             raise ValueError("PKCS#11 module must not be empty")
         if self.token_label is not None and not self.token_label:
             raise ValueError("PKCS#11 token label must not be empty")
-        if self.slot is not None and not self.slot:
-            raise ValueError("PKCS#11 slot must not be empty")
-        if self.token_label is not None and self.slot is not None:
-            raise ValueError(
-                "select a PKCS#11 token by label or slot, not both",
-            )
         if not self.tool:
             raise ValueError("PKCS#11 tool must not be empty")
         if not self.openssl:
@@ -349,8 +341,6 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             attributes.append(
                 f"token={quote(self.config.token_label, safe='')}",
             )
-        if self.config.slot is not None:
-            attributes.append(f"slot-id={quote(self.config.slot, safe='')}")
         encoded_id = "".join(
             f"%{object_id[index : index + 2]}"
             for index in range(0, len(object_id), 2)
@@ -398,7 +388,6 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
             object_type,
             "--id",
             object_id,
-            include_pin=not self.config.list_requires_no_pin,
             use_discovery_pin=True,
         ).stdout
         return self._listing_contains_id(output, object_id)
@@ -471,16 +460,11 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
                 return True
         return False
 
-    def _base_arguments(
-        self,
-        include_pin: bool = True,
-        use_discovery_pin: bool = False,
-    ) -> list[str]:
+    def _base_arguments(self, use_discovery_pin: bool = False) -> list[str]:
         """
         Build common module, token, and login arguments.
 
         Args:
-            include_pin: Whether to include configured login arguments.
             use_discovery_pin: Whether to use normal discovery credentials.
 
         Returns:
@@ -489,14 +473,12 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         arguments = ["--module", str(self.config.module)]
         if self.config.token_label is not None:
             arguments.extend(("--token-label", self.config.token_label))
-        if self.config.slot is not None:
-            arguments.extend(("--slot", self.config.slot))
         pin = self.config.pin
         if use_discovery_pin:
             pin = self.config.discovery_pin
             if pin is None and not self.config.use_so_pin:
                 pin = self.config.pin
-        if include_pin and pin is not None:
+        if pin is not None:
             if self.config.use_so_pin and not use_discovery_pin:
                 arguments.extend(
                     (
@@ -538,7 +520,6 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         self,
         *arguments: str,
         input_data: bytes | None = None,
-        include_pin: bool = True,
         use_discovery_pin: bool = False,
     ) -> subprocess.CompletedProcess[bytes]:
         """
@@ -548,7 +529,6 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         Args:
             arguments: Operation-specific ``pkcs11-tool`` arguments.
             input_data: Optional bytes supplied to standard input.
-            include_pin: Whether to include configured login arguments.
             use_discovery_pin: Whether to use normal discovery credentials.
 
         Returns:
@@ -562,7 +542,7 @@ PIN = ${{ENV::PKCS11_BACKEND_PIN}}
         return subprocess.run(
             [
                 self.config.tool,
-                *self._base_arguments(include_pin, use_discovery_pin),
+                *self._base_arguments(use_discovery_pin),
                 *arguments,
             ],
             input=input_data,
