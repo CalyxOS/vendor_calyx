@@ -33,7 +33,8 @@ def _signing_server(
     service = YubiHsmSessionService(
         yubihsm_config(yubihsm),
     )
-    server = SigningServer(socket_path, {"yubihsm_sign_pkcs1": service})
+    server = SigningServer(socket_path)
+    server.add_service({"yubihsm_sign_pkcs1": service.sign}, service.close)
     with server:
         yield server
 
@@ -193,7 +194,8 @@ def test_apksigner_signing_helper_falls_back_when_the_server_cannot_sign(
     environment, public_key = softhsm_rsa_key
     data = b"apksigner signable content, unhashed"
     handler = _SignHandler({"status": "unavailable"})
-    server = SigningServer(tmp_path / "s.sock", {"yubihsm_sign_pkcs1": handler})
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service({"yubihsm_sign_pkcs1": handler.handle})
 
     with server:
         result = run(

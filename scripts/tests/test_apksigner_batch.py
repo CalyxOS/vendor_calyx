@@ -109,10 +109,10 @@ def fake_java(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _server(tmp_path: Path) -> SigningServer:
-    return SigningServer(
-        tmp_path / "batch.sock",
-        {"apksigner": ApksignerBatch(cwd=tmp_path, env=os.environ)},
-    )
+    server = SigningServer(tmp_path / "batch.sock")
+    batch = ApksignerBatch(cwd=tmp_path, env=os.environ)
+    server.add_service({"apksigner": batch.handle}, batch.close)
+    return server
 
 
 def _starts(log: Path) -> list[str]:
@@ -552,7 +552,8 @@ def test_batch_process_sees_environment_set_after_the_handler(
     environment = dict(os.environ)
     handler = ApksignerBatch(cwd=tmp_path, env=environment)
     environment["FAKE_JAVA_EXTRA"] = "set-later"
-    server = SigningServer(tmp_path / "batch.sock", {"apksigner": handler})
+    server = SigningServer(tmp_path / "batch.sock")
+    server.add_service({"apksigner": handler.handle}, handler.close)
 
     with server:
         run_in_batch(server.socket_path, ["sign", "a"], cwd=tmp_path)
@@ -640,7 +641,8 @@ def test_interceptor_signs_with_the_tree_apksigner_through_the_server(
         cwd=host,
         env={**os.environ, "PATH": f"{Path(java).parent}:{os.environ['PATH']}"},
     )
-    server = SigningServer(tmp_path / "batch.sock", {"apksigner": handler})
+    server = SigningServer(tmp_path / "batch.sock")
+    server.add_service({"apksigner": handler.handle}, handler.close)
 
     signed: list[subprocess.CompletedProcess[str]] = []
     processes: list[object] = []
