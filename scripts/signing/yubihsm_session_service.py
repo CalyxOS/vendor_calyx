@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, TypeVar, cast
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 
-from .signing_server import Message, request
+from .signing_server import Message, SigningServer, request
 from .vendor_yubihsm import (
     AuditLogNotAcknowledged,
     YubiHsmConfig,
@@ -136,6 +136,36 @@ class YubiHsmSessionService:
         except AuditLogNotAcknowledged as error:
             return {"status": "ok", "unacknowledged": str(error)}
         return {"status": "ok"}
+
+
+def yubihsm_signing_server(
+    config: YubiHsmConfig,
+    socket_path: Path,
+    *,
+    audit_log_path: Path | None,
+) -> SigningServer:
+    """
+    Build a SigningServer that signs and extracts the audit log over one
+    YubiHSM session.
+
+    Args:
+        config: Connector URL, authentication key and password.
+        socket_path: Where the server binds its socket.
+        audit_log_path: The audit log the server extracts into.
+
+    Returns:
+        The server, not started yet.
+    """
+    service = YubiHsmSessionService(config, audit_log_path=audit_log_path)
+    server = SigningServer(socket_path)
+    server.add_service(
+        {
+            "yubihsm_sign_pkcs1": service.sign,
+            "yubihsm_extract_audit_log": service.extract_audit_log,
+        },
+        service.close,
+    )
+    return server
 
 
 def sign_digest_through_server(
