@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    FIXTURES_DIR,
+    PKCS11_DIR,
     SCRIPTS_DIR,
     YUBIHSM_SDK,
     YUBIHSM_WRAP_ID,
@@ -27,7 +29,7 @@ from signing.metadata import load_metadata
 from yubihsm.defs import OBJECT
 from yubihsm_emulator import Connector
 
-PROVISION_SH = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.provision.sh"
+PROVISION_SH = PKCS11_DIR / "vendor.yubihsm.provision.sh"
 
 
 def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
@@ -48,7 +50,7 @@ def _provisioning_tree(root: Path, yubihsm: Connector) -> dict[str, str]:
     }
 
 
-PROVISION_FIXTURES = Path(__file__).parent / "fixtures" / "provision"
+PROVISION_FIXTURES = FIXTURES_DIR / "provision"
 
 
 def _wizard(
