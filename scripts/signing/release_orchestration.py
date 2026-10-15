@@ -44,6 +44,7 @@ from .release_execution import (
     render_release_tool,
     run_release_tool,
 )
+from .sign_planning import is_build_number
 from .signing_server import SigningServer
 
 _PKCS11_DIR = Path(__file__).resolve().parents[1] / "pkcs11"
@@ -675,7 +676,7 @@ class ReleaseOrchestrator(SigningSession):
         rollback = rollback_raw or None
         build = self.environment["BUILD_NUMBER"]
         if rollback is not None:
-            if not (build.isascii() and build.isdigit()):
+            if not is_build_number(build):
                 print(
                     f"error: BUILD_NUMBER {build} is not a number",
                     file=sys.stderr,
