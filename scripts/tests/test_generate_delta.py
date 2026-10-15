@@ -17,7 +17,6 @@ from conftest import (
     SCRIPTS_DIR,
     install_executable,
     normalize_dry_run,
-    parameter_id,
     run,
     write_target_files_zip,
 )
@@ -156,28 +155,24 @@ def test_generate_delta_removes_its_temporaries(
     assert bool(list(incrementals)) != fails
 
 
-@pytest.mark.parametrize(
-    "environment",
-    (
-        {},
-        DELTA_PKCS11_ENVIRONMENT,
-        {"KEY_SUFFIX": "", "EXTRA_RELEASETOOLS_ARGS": "--verbose"},
-    ),
-    ids=("plaintext", "pkcs11", "key-suffix"),
-)
+DELTA_DRY_RUNS = {
+    "plaintext": {},
+    "pkcs11": DELTA_PKCS11_ENVIRONMENT,
+    "key-suffix": {"KEY_SUFFIX": "", "EXTRA_RELEASETOOLS_ARGS": "--verbose"},
+}
+
+
+@pytest.mark.parametrize("name", DELTA_DRY_RUNS)
 def test_generate_delta_dry_run_renders_the_expected_commands(
     delta_tree: Path,
-    environment: dict[str, str],
-    request: pytest.FixtureRequest,
+    name: str,
 ) -> None:
-    name = parameter_id(request)
-
-    result = run_generate_delta(delta_tree, environment=environment)
+    result = run_generate_delta(delta_tree, environment=DELTA_DRY_RUNS[name])
 
     assert result.returncode == 0, result.stderr
     assert (
         result.stdout
-        == (DRY_RUN_FIXTURES / f"generate-delta-{name}.stdout").read_text()
+        == (DRY_RUN_FIXTURES / "generate-delta.stdout").read_text()
     )
     assert (
         normalize_dry_run(result.stderr, delta_tree)
