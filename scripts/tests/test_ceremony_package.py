@@ -11,18 +11,14 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, prepare_ceremony_package, sha256
+from conftest import (
+    SCRIPTS_DIR,
+    fake_curl,
+    prepare_ceremony_package,
+    sha256,
+)
 
-FAKE_CURL = """#!/bin/sh
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -o) out=$2; shift 2 ;;
-    -L) shift ;;
-    *) link=$1; shift ;;
-  esac
-done
-printf "downloaded %s\\n" "${link##*/}" > "$out"
-"""
+FAKE_CURL = fake_curl('printf "downloaded %s\\n" "${link##*/}" > "$out"')
 
 
 def _downloaded_sha(name: str) -> str:
