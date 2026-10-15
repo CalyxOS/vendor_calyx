@@ -38,6 +38,7 @@ from signing.vendor_yubihsm import (
     restart_connector,
     yubihsm_lock,
 )
+from signing.vendor_yubihsm_connector import DEFAULT_CONNECTOR_URL
 from signing_cache import from_cache, to_cache
 
 _NUM_TRIES = 2
@@ -202,7 +203,7 @@ def extract_logs(comment: str) -> None:
     config = YubiHsmConfig(
         connector_url=os.environ.get(
             "YUBIHSM_CONNECTOR",
-            "http://127.0.0.1:12345",
+            DEFAULT_CONNECTOR_URL,
         ),
         auth_key=os.environ["YUBIHSM_AUTHKEY"],
         password=os.environ["YUBIHSM_PASSWORD"],
