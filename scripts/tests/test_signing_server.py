@@ -47,7 +47,11 @@ class _Handler:
 
 def test_request_reaches_the_handler_for_its_op(tmp_path: Path) -> None:
     handler = _Handler({"status": "ok", "value": 1})
-    server = SigningServer(tmp_path / "s.sock", {"a": handler, "b": handler})
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service(
+        {"a": handler.handle, "b": handler.handle},
+        handler.close,
+    )
     with server:
         response = request(server.socket_path, "a", field="x")
 
@@ -65,7 +69,8 @@ def test_request_without_an_ok_response_is_none(
     tmp_path: Path,
     handler: _Handler,
 ) -> None:
-    server = SigningServer(tmp_path / "s.sock", {"a": handler})
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service({"a": handler.handle})
     with server:
         assert request(server.socket_path, "a") is None
         assert request(server.socket_path, "unknown") is None
@@ -103,7 +108,7 @@ def test_sign_uses_one_session_and_verifies(yubihsm: Connector) -> None:
     digest = hashlib.sha256(b"payload").digest()
 
     for _ in range(3):
-        response = service.handle(_sign_request(0x2000, digest))
+        response = service.sign(_sign_request(0x2000, digest))
         assert verifies(
             rsa_key("service"),
             base64.b64decode(response["signature"]),
@@ -119,10 +124,10 @@ def test_sign_reopens_an_expired_session(yubihsm: Connector) -> None:
     yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("service"))
     service = _service(yubihsm)
     sign = _sign_request(0x2000, hashlib.sha256(b"x").digest())
-    service.handle(sign)
+    service.sign(sign)
     yubihsm.device.sessions.clear()
 
-    response = service.handle(sign)
+    response = service.sign(sign)
 
     assert response["status"] == "ok"
     assert yubihsm.device.sessions_opened == 2
@@ -136,7 +141,7 @@ def test_sign_rejects_a_signature_that_does_not_verify(
     service = _service(yubihsm)
 
     with pytest.raises(InvalidSignature):
-        service.handle(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
+        service.sign(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
 
 
 def test_extract_audit_log_keeps_the_session_open(
@@ -147,7 +152,7 @@ def test_extract_audit_log_keeps_the_session_open(
     service = _service(yubihsm, log_path)
 
     for comment in ("first", "second"):
-        response = service.handle(
+        response = service.extract_audit_log(
             {
                 "op": "yubihsm_extract_audit_log",
                 "log_path": str(log_path),
@@ -174,13 +179,13 @@ def test_extract_audit_log_counts_entries_on_the_open_connection(
     yubihsm.device.audit(COMMAND.SIGN_PKCS1)
     log_path = tmp_path / "audit.log"
     service = _service(yubihsm, log_path)
-    service.handle(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
+    service.sign(_sign_request(0x2000, hashlib.sha256(b"x").digest()))
 
     def refuse(url: str | None = None) -> YubiHsm:
         raise AssertionError("the service connected again")
 
     monkeypatch.setattr(YubiHsm, "connect", staticmethod(refuse))
-    response = service.handle(
+    response = service.extract_audit_log(
         {
             "op": "yubihsm_extract_audit_log",
             "log_path": str(log_path),
@@ -202,7 +207,7 @@ def test_extract_audit_log_leaves_an_empty_log_unread(
     log_path = tmp_path / "audit.log"
     service = _service(yubihsm, log_path)
 
-    response = service.handle(
+    response = service.extract_audit_log(
         {
             "op": "yubihsm_extract_audit_log",
             "log_path": str(log_path),
@@ -226,7 +231,7 @@ def test_extract_audit_log_retry_writes_the_entries_once(
     log_path = tmp_path / "audit.log"
     service = _service(yubihsm, log_path)
 
-    response = service.handle(
+    response = service.extract_audit_log(
         {
             "op": "yubihsm_extract_audit_log",
             "log_path": str(log_path),
@@ -261,12 +266,13 @@ def yubihsm_server(
     yubihsm.device.put_asymmetric_key(0x2000, key=rsa_key("server-a"))
     yubihsm.device.put_asymmetric_key(0x2100, key=rsa_key("server-b"))
     service = _service(yubihsm, tmp_path / "audit.log")
-    server = SigningServer(
-        tmp_path / "s.sock",
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service(
         {
-            "yubihsm_sign_pkcs1": service,
-            "yubihsm_extract_audit_log": service,
+            "yubihsm_sign_pkcs1": service.sign,
+            "yubihsm_extract_audit_log": service.extract_audit_log,
         },
+        service.close,
     )
     with server:
         yield server, yubihsm.device
@@ -494,10 +500,9 @@ class _NestedHandler:
 def test_a_handler_can_send_requests_to_another_handler(tmp_path: Path) -> None:
     socket_path = tmp_path / "s.sock"
     inner = _Handler({"status": "ok", "value": 7})
-    server = SigningServer(
-        socket_path,
-        {"outer": _NestedHandler(socket_path), "inner": inner},
-    )
+    server = SigningServer(socket_path)
+    server.add_service({"outer": _NestedHandler(socket_path).handle})
+    server.add_service({"inner": inner.handle})
 
     responses: list[Message | None] = []
     with server:
@@ -514,13 +519,51 @@ def test_a_handler_can_send_requests_to_another_handler(tmp_path: Path) -> None:
     ]
 
 
+def test_operations_of_one_service_run_one_at_a_time(tmp_path: Path) -> None:
+    started = threading.Event()
+    release = threading.Event()
+    ran: list[str] = []
+
+    def first(message: Message) -> Message:
+        started.set()
+        release.wait(timeout=10)
+        ran.append("first")
+        return {"status": "ok"}
+
+    def second(message: Message) -> Message:
+        ran.append("second")
+        return {"status": "ok"}
+
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service({"first": first, "second": second})
+    with server:
+        callers = [
+            threading.Thread(
+                target=request,
+                args=(server.socket_path, op),
+                daemon=True,
+            )
+            for op in ("first", "second")
+        ]
+        callers[0].start()
+        assert started.wait(timeout=10)
+        callers[1].start()
+        callers[1].join(timeout=0.2)
+        release.set()
+        for caller in callers:
+            caller.join(timeout=10)
+
+    assert ran == ["first", "second"]
+
+
 def test_a_client_that_never_finishes_its_request_does_not_block(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(signing_server, "_REQUEST_TIMEOUT", 0.2)
     handler = _Handler({"status": "ok"})
-    server = SigningServer(tmp_path / "s.sock", {"a": handler})
+    server = SigningServer(tmp_path / "s.sock")
+    server.add_service({"a": handler.handle})
     with server:
         stalled = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         stalled.connect(str(server.socket_path))
@@ -537,7 +580,7 @@ def test_extract_audit_log_refuses_another_log(
 ) -> None:
     service = _service(yubihsm, tmp_path / "audit.log")
 
-    response = service.handle(
+    response = service.extract_audit_log(
         {
             "op": "yubihsm_extract_audit_log",
             "log_path": str(tmp_path / "elsewhere.log"),

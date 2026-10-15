@@ -8,10 +8,10 @@ A Unix-socket server that keeps signing state alive for a whole release.
 
 Each request is one JSON object naming an operation in "op", and each
 connection carries one request and one JSON response. Each connection is
-handled on a thread of its own by the handler registered for the
-operation, and each handler serializes its own requests, so that a
-request one handler is working on can itself send requests to another,
-as apksigner does from inside the batch process. A response whose
+handled on a thread of its own by the operation registered for it, and
+the operations of one service run one at a time, so that a request one
+service is working on can itself send requests to another, as apksigner
+does from inside the batch process. A response whose
 "status" is not "ok" tells the caller to do the work itself.
 """
 
@@ -22,58 +22,56 @@ import socket
 import sys
 import threading
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
 Message = dict[str, Any]
-
-
-class Handler(Protocol):
-    """
-    Serves the requests for one or more operations.
-    """
-
-    def handle(self, request: Message, /) -> Message:
-        """
-        Answer one request.
-
-        Args:
-            request: The decoded request, with its operation in "op".
-
-        Returns:
-            The response to send back.
-        """
-        ...
+Operation = Callable[[Message], Message]
 
 
 class SigningServer:
     """
     Serve registered operations over a Unix socket for the lifetime of a
-    with block. Every handler's close(), when it has one, is called on
+    with block. Every service's close(), when it has one, is called on
     exit.
     """
 
-    def __init__(
-        self,
-        socket_path: Path,
-        handlers: Mapping[str, Handler],
-    ) -> None:
+    def __init__(self, socket_path: Path) -> None:
         """
-        Prepare a server for the given operations.
+        Prepare a server with no operations.
 
         Args:
             socket_path: Where to bind the socket (mode 0600).
-            handlers: Operation name to an object with a handle(request)
-                method returning the response, and optionally close().
         """
         self.socket_path = socket_path
-        self.handlers = dict(handlers)
+        self._operations: dict[str, tuple[Operation, threading.Lock]] = {}
+        self._closers: list[tuple[Callable[[], None], threading.Lock]] = []
         self._listener: socket.socket | None = None
         self._thread: threading.Thread | None = None
         self._workers: set[threading.Thread] = set()
         self._workers_lock = threading.Lock()
         self._stopping = False
+
+    def add_service(
+        self,
+        operations: Mapping[str, Operation],
+        close: Callable[[], None] | None = None,
+    ) -> None:
+        """
+        Register operations that run one at a time, under one lock.
+
+        Args:
+            operations: Operation name to the callable that answers its
+                requests.
+            close: Called on exit, once no operation of the service runs
+                or after ten seconds of waiting for one to finish.
+        """
+        lock = threading.Lock()
+        for op, operation in operations.items():
+            self._operations[op] = (operation, lock)
+        if close is not None:
+            self._closers.append((close, lock))
 
     def __enter__(self) -> None:
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -104,10 +102,13 @@ class SigningServer:
         for worker in workers:
             worker.join(timeout=max(0.0, deadline - time.monotonic()))
         try:
-            for handler in dict.fromkeys(self.handlers.values()):
-                close = getattr(handler, "close", None)
-                if close is not None:
+            for close, lock in self._closers:
+                locked = lock.acquire(timeout=_STOP_TIMEOUT)
+                try:
                     close()
+                finally:
+                    if locked:
+                        lock.release()
         finally:
             self.socket_path.unlink(missing_ok=True)
 
@@ -147,10 +148,12 @@ class SigningServer:
     def _respond(self, raw: bytes) -> Message:
         try:
             request: Message = json.loads(raw)
-            handler = self.handlers.get(request["op"])
-            if handler is None:
+            entry = self._operations.get(request["op"])
+            if entry is None:
                 return {"status": "unavailable"}
-            return handler.handle(request)
+            operation, lock = entry
+            with lock:
+                return operation(request)
         except Exception as error:
             print(
                 f"Warning: signing server request failed ({error}).",
