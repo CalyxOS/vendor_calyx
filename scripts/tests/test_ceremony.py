@@ -761,7 +761,7 @@ def test_audit_script_syncs_the_log_before_acknowledging_it(
 ) -> None:
     spec = importlib.util.spec_from_file_location(
         "audit_under_test",
-        SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.audit.logs.py",
+        SCRIPTS_DIR / "hsm_provisioning" / "audit.py",
     )
     assert spec is not None and spec.loader is not None
     audit = importlib.util.module_from_spec(spec)
