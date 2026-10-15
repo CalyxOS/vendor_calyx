@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from conftest import yubihsm_config
 from signing.vendor_yubihsm import (
     YubiHsmConfig,
     extract_and_save_audit_log,
 )
+from yubihsm.core import YubiHsm
 from yubihsm_emulator import Connector
 
 
@@ -61,3 +63,27 @@ def test_extract_and_save_audit_log_reads_and_acknowledges_in_one_session(
     assert len(log_file.read_text().splitlines()) == 2
     assert yubihsm.device.unread_log() == []
     assert yubihsm.device.sessions_opened == 1
+
+
+def test_extract_and_save_audit_log_connects_once(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    yubihsm: Connector,
+) -> None:
+    connect = YubiHsm.connect
+    urls: list[str | None] = []
+
+    def counted(url: str | None = None) -> YubiHsm:
+        urls.append(url)
+        return connect(url)
+
+    monkeypatch.setattr(YubiHsm, "connect", staticmethod(counted))
+
+    extract_and_save_audit_log(
+        yubihsm_config(yubihsm),
+        tmp_path / "audit.log",
+        "comment",
+    )
+
+    assert len(urls) == 1
+    assert yubihsm.device.unread_log() == []
