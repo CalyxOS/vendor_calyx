@@ -29,8 +29,8 @@ from conftest import (
 )
 from signing.keymap import load_keymapper
 from signing.metadata import load_metadata
+from signing.release_execution import Abort
 from signing.release_orchestration import (
-    ReleaseAbort,
     ReleaseOrchestrator,
     avb_algorithm_for,
     read_words,
@@ -1240,7 +1240,7 @@ def test_release_session_treats_an_empty_tmpdir_as_unset(
         target_files_arg=None,
     )
 
-    with pytest.raises(ReleaseAbort):
+    with pytest.raises(Abort):
         session.prepare_for_signing_full(command_argv=[])
 
     assert parents == ["/dev/shm"]
