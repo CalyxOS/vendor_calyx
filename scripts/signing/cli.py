@@ -125,10 +125,10 @@ def _cmd_release_orchestrate(args: argparse.Namespace) -> int:
         os.environ,
         cwd=Path.cwd(),
         metadata=load_metadata(default_metadata_path()),
+        program=program,
         device=arguments[0],
         target_files_arg=arguments[1] if len(arguments) > 1 else None,
     )
-    orchestrator.program = program
     return orchestrator.run()
 
 
@@ -160,11 +160,11 @@ def _cmd_generate_delta(args: argparse.Namespace) -> int:
         os.environ,
         cwd=Path.cwd(),
         metadata=load_metadata(default_metadata_path()),
+        program=program,
         device=device,
         old=old,
         new=new,
     )
-    orchestrator.program = program
     return orchestrator.run()
 
 
