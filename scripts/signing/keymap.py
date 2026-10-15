@@ -347,9 +347,7 @@ class _BaseKeymapper(Keymapper):
         for key_type in self.metadata.key_types:
             for key_name in self.metadata.keys_for_type(key_type):
                 row_devices = (
-                    devices
-                    if self._is_per_device_row(key_type, key_name)
-                    else ("",)
+                    devices if self.is_per_device(key_type, key_name) else ("",)
                 )
                 for device in row_devices:
                     value = self._row_value(key_type, key_name, device)
@@ -376,23 +374,6 @@ class _BaseKeymapper(Keymapper):
         """
         if not devices:
             raise ValueError("at least one device is required")
-
-    def is_per_device(self, key_type: str, key_name: str) -> bool:
-        return self._is_per_device_row(key_type, key_name)
-
-    @abc.abstractmethod
-    def _is_per_device_row(self, key_type: str, key_name: str) -> bool:
-        """
-        Resolve whether a logical key receives one row per device.
-
-        Args:
-            key_type: Metadata key category.
-            key_name: Logical key name from that category.
-
-        Returns:
-            Whether ``rows()`` should emit one row per device rather than a
-            single shared row.
-        """
 
     @abc.abstractmethod
     def _row_value(self, key_type: str, key_name: str, device: str) -> str:
@@ -426,7 +407,7 @@ class LegacyKeymapper(_BaseKeymapper):
         """
         self.metadata = metadata
 
-    def _is_per_device_row(self, key_type: str, key_name: str) -> bool:
+    def is_per_device(self, key_type: str, key_name: str) -> bool:
         return key_type not in {"app", "repo"}
 
     def _row_value(self, key_type: str, key_name: str, device: str) -> str:
@@ -665,7 +646,7 @@ class Id2bKeymapper(_BaseKeymapper):
         }:
             raise ValueError("invalid APEX consolidation strategy")
 
-    def _is_per_device(self, key_type: str, key_name: str) -> bool:
+    def is_per_device(self, key_type: str, key_name: str) -> bool:
         """
         Resolve whether a logical key receives a distinct ID per device.
 
@@ -756,7 +737,7 @@ class Id2bKeymapper(_BaseKeymapper):
             ValueError: If the key, device, prefix, offset, or resulting ID is
                 invalid.
         """
-        per_device = self._is_per_device(key_type, key_name)
+        per_device = self.is_per_device(key_type, key_name)
         key_type, key_name = self._canonical_key(key_type, key_name)
         array_name = self.metadata.key_type_to_array[key_type]
         try:
@@ -792,9 +773,6 @@ class Id2bKeymapper(_BaseKeymapper):
         return f"0x{(prefix << 8) | low_byte:04x}"
 
     payload_signer_maximum_signature_size = 512
-
-    def _is_per_device_row(self, key_type: str, key_name: str) -> bool:
-        return self._is_per_device(key_type, key_name)
 
     def _row_value(self, key_type: str, key_name: str, device: str) -> str:
         return self.key_id(key_type, key_name, device)
