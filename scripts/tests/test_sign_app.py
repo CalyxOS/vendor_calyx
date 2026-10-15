@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    AOSP_TOP,
     ID2B_KEYMAP,
-    REPO_ROOT,
     SCRIPTS_DIR,
     default_signal_dispositions,
     install_executable,
@@ -33,7 +33,6 @@ from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector, self_signed_certificate
 
 APP = "com.google.android.apps.photos"
-ANDROID_TOP = REPO_ROOT.resolve().parents[1]
 
 _FAKE_JAVA = f"""#!{sys.executable}
 import json, os, sys
@@ -110,7 +109,7 @@ def test_sign_app_signs_through_the_external_kms_provider(
     assert result.returncode == 0, result.stderr
     assert argv == [
         "-jar",
-        f"{ANDROID_TOP}/framework/apksigner.jar",
+        f"{AOSP_TOP}/framework/apksigner.jar",
         "sign",
         "--v4-signing-enabled=false",
         "--min-sdk-version",
