@@ -18,6 +18,7 @@ import time
 import zipfile
 from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import pytest
@@ -40,9 +41,15 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 HSM_PROVISIONING_DIR = SCRIPTS_DIR / "hsm_provisioning"
-TEST_METADATA = Path(__file__).parent / "fixtures" / "metadata.py"
-KEYGEN_METADATA = Path(__file__).parent / "fixtures" / "keygen-metadata.py"
-ID2B_KEYMAP = Path(__file__).parent / "fixtures" / "id2b-bramble-redfin.tsv"
+PKCS11_DIR = SCRIPTS_DIR / "pkcs11"
+SIGNING_HELPER = PKCS11_DIR / "signing_helper.py"
+PAYLOAD_SIGNER = PKCS11_DIR / "payload_signer.py"
+APKSIGNER_SIGNING_HELPER = PKCS11_DIR / "apksigner_signing_helper.py"
+YUBIHSM_INTERCEPTOR = PKCS11_DIR / "vendor.yubihsm.interceptor.py"
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+TEST_METADATA = FIXTURES_DIR / "metadata.py"
+KEYGEN_METADATA = FIXTURES_DIR / "keygen-metadata.py"
+ID2B_KEYMAP = FIXTURES_DIR / "id2b-bramble-redfin.tsv"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 _YUBIHSM_SPEC = importlib.util.find_spec("yubihsm")
@@ -121,6 +128,20 @@ def aosp_jar_command(aosp_top: Path, jar_name: str) -> list[str]:
         "-jar",
         str(jar),
     ]
+
+
+def load_script(path: Path) -> ModuleType:
+    """
+    Import the script at path as a module without running its entry
+    point.
+    """
+    name = f"{path.stem.replace('.', '_')}_under_test"
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def default_signal_dispositions() -> None:
@@ -382,6 +403,19 @@ def small_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("METADATA_FILE", str(TEST_METADATA))
 
 
+def file_tree(directory: Path) -> dict[str, bytes]:
+    """
+    Return the content of every file under directory by its path
+    relative to directory, in path order, or nothing if directory does not
+    exist.
+    """
+    return {
+        str(path.relative_to(directory)): path.read_bytes()
+        for path in sorted(directory.rglob("*"))
+        if path.is_file()
+    }
+
+
 def install_executable(path: Path, text: str) -> Path:
     """
     Write text to path, creating its directory, and make it executable.
@@ -629,7 +663,7 @@ def run_release(
     return run(argv, cwd=release_tree, env=variables, check=False)
 
 
-DRY_RUN_FIXTURES = Path(__file__).parent / "fixtures" / "dry-run"
+DRY_RUN_FIXTURES = FIXTURES_DIR / "dry-run"
 
 
 def normalize_dry_run(stderr: str, tree: Path) -> str:
