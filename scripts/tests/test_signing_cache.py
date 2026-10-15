@@ -5,13 +5,11 @@
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 from pathlib import Path
 from types import ModuleType
 
 import pytest
-from conftest import SCRIPTS_DIR
+from conftest import PKCS11_DIR, load_script
 
 
 @pytest.fixture
@@ -19,14 +17,7 @@ def signing_cache(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> ModuleType:
-    spec = importlib.util.spec_from_file_location(
-        "signing_cache_under_test",
-        SCRIPTS_DIR / "pkcs11" / "signing_cache.py",
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    monkeypatch.setitem(sys.modules, spec.name, module)
-    spec.loader.exec_module(module)
+    module = load_script(PKCS11_DIR / "signing_cache.py")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("YUBIHSM_SIGNING_CACHE", str(tmp_path / "cache"))
     return module

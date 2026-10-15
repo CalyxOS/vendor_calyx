@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from conftest import SCRIPTS_DIR, install_executable, run
+from conftest import FIXTURES_DIR, SCRIPTS_DIR, install_executable, run
 
 SUBJECT = "/C=US/O=Calyx Institute/CN=updatekeys recovery"
 NONCE = "$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')"
@@ -398,9 +398,7 @@ def test_updatekeys_gives_its_files_the_modes_of_the_bash_run(
     tmp_path: Path,
 ) -> None:
     expected = json.loads(
-        (
-            SCRIPTS_DIR / "tests" / "fixtures" / "updatekeys-modes.json"
-        ).read_text(),
+        (FIXTURES_DIR / "updatekeys-modes.json").read_text(),
     )
 
     manifest = install_tree(tmp_path).succeed()
