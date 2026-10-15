@@ -266,63 +266,61 @@ def ask_yubihsm_credentials(environment: MutableMapping[str, str]) -> None:
 
 def maybe_initialize_vendor_interactive(
     environment: MutableMapping[str, str],
+    vendor: Vendor | None,
     *,
     assume_yes: bool,
 ) -> None:
     """
-    Run the vendor's interactive initialization once, when a vendor is
-    set.
+    Run the vendor's interactive initialization once, when there is a
+    vendor.
 
     Args:
         environment: Process environment, mutated in place with any
             resolved values.
+        vendor: The vendor load_vendor() returned.
         assume_yes: Auto-answer any confirmation prompt yes.
 
     Returns:
         None.
 
     Raises:
-        UnsupportedVendorError: See load_vendor().
         RuntimeError: If interactive initialization fails or is
             declined.
     """
-    if not environment.get("PKCS11_VENDOR"):
+    if vendor is None:
         return
     if environment.get("PKCS11_VENDOR_INITIALIZED_INTERACTIVE") == "y":
         return
-    vendor = load_vendor(environment)
-    assert vendor is not None
     vendor.initialize_interactive(environment, assume_yes=assume_yes)
     environment["PKCS11_VENDOR_INITIALIZED_INTERACTIVE"] = "y"
 
 
 def maybe_initialize_vendor(
     environment: MutableMapping[str, str],
+    vendor: Vendor | None,
     *,
     tmpdir: Path,
 ) -> None:
     """
-    Run the vendor's initialization once, when a vendor is set.
+    Run the vendor's initialization once, when there is a vendor.
 
     Args:
         environment: Process environment, mutated in place with any
             resolved values.
+        vendor: The vendor load_vendor() returned.
         tmpdir: Directory to create vendor-specific scratch space under.
 
     Returns:
         None.
 
     Raises:
-        UnsupportedVendorError: See load_vendor().
         RuntimeError: If initialization fails (e.g. a required tool or
             directory is missing).
     """
-    if not environment.get("PKCS11_VENDOR"):
+    if vendor is None:
         return
     if environment.get("PKCS11_VENDOR_INITIALIZED") == "y":
         return
-    vendor = load_vendor(environment)
-    assert vendor is not None
     vendor.initialize(environment, tmpdir=tmpdir)
     environment["PKCS11_VENDOR_INITIALIZED"] = "y"
 
