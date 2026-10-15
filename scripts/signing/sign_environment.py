@@ -542,8 +542,9 @@ class SoftHsmVendor(Vendor):
                     f"SOFTHSM_LOGS_DIR ({logs_dir_raw}) does not exist, and "
                     "failed to create it",
                 ) from error
-        date_format = environment.get("DATE_FORMAT") or "%Y%m%d-%H%M%S"
-        timestamp = datetime.datetime.now(datetime.UTC).strftime(date_format)
+        timestamp = datetime.datetime.now(datetime.UTC).strftime(
+            "%Y%m%d-%H%M%S",
+        )
         default_prefix = f"{build_number}-{device}-{timestamp}-{command}"
         _default(environment, "EXEC_LOG_PATH", f"{default_prefix}-exec.log")
         environment["EXEC_LOG_PATH"] = str(
