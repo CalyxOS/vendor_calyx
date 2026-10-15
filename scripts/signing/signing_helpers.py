@@ -111,7 +111,6 @@ def pkcs11_signer_from_environment() -> Pkcs11Backend:
             list_requires_no_pin=(
                 values.get("LIST_REQUIRES_NO_PIN", "n") == "y"
             ),
-            preload_module=values.get("PKCS11_VENDOR") == "yubihsm",
         ),
     )
 
