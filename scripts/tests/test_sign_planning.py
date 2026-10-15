@@ -118,10 +118,10 @@ def test_planning_skips_names_without_a_numeric_build() -> None:
 
 
 def test_parse_build_numbers_skips_words_that_are_not_numbers() -> None:
-    assert parse_build_numbers(["2026081500", "2026081600,", "eng", "7"]) == [
+    assert parse_build_numbers("2026081500 2026081600, eng\t7") == (
         2026081500,
         7,
-    ]
+    )
 
 
 def test_gather_signable_devices_keeps_known_devices_in_metadata_order() -> (
