@@ -185,15 +185,6 @@ KEY_TYPE_TO_ARRAY = {
     "repo": "keys_repo",
 }
 
-# Key types whose keys are remapped by passing -k to sign_target_files_apks.
-# This applies to most key types apart from avb, apex containers and payloads,
-# and other (ota).
-MAPPED_KEY_TYPES = (
-    "core",
-    "apex_apk",
-    "app",
-)
-
 # Devices that have been supported since switching to this new metadata scheme.
 # This should always contain all of the devices currently in
 # calyx/scripts/vars/devices along with any devices added there in the future,
