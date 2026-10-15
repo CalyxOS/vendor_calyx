@@ -210,18 +210,12 @@ class ProvisionWizard:
         self.signing_authkey_id = (
             environment.get("YUBIHSM_SIGNING_AUTHKEY_ID") or "0x0001"
         )
-
-        def load() -> None:
-            try:
-                self.keymapper = load_keymapper(environment, metadata)
-            except ValueError as error:
-                print(error, file=sys.stderr)
-                raise StepFailed(1) from error
-            apply_keymapper_exports(environment, self.keymapper)
-
-        code = self.try_("load_keymapper", load)
-        if code:
-            raise StepFailed(code)
+        try:
+            self.keymapper = load_keymapper(environment, metadata)
+        except ValueError as error:
+            print(error, file=sys.stderr)
+            raise StepFailed(1) from error
+        apply_keymapper_exports(environment, self.keymapper)
 
     def _maybe_start_yubihsm_connector_service(self) -> None:
         print()
@@ -338,29 +332,21 @@ class ProvisionWizard:
         environment = self.environment
         assert self.keymapper is not None
         assert self.audit_log_path is not None
-        keymapper = self.keymapper
-        log_file = self.audit_log_path
-
-        def restore() -> None:
-            if environment.get("DRY_RUN") == "y":
-                print(
-                    render_release_tool(["restore_all_keys"]),
-                    end="",
-                    file=sys.stderr,
-                )
-                return
-            restore_all_keys(
-                self._config(),
-                Path(self.key_dir),
-                log_file,
-                is_ondemand=sign_environment.key_id_is_ondemand(keymapper),
-                exportable_domain=environment["YUBIHSM_EXPORTABLE_DOMAIN"],
-                ondemand_domain=environment["YUBIHSM_ONDEMAND_DOMAIN"],
+        if environment.get("DRY_RUN") == "y":
+            print(
+                render_release_tool(["restore_all_keys"]),
+                end="",
+                file=sys.stderr,
             )
-
-        code = self.try_("restore_all_keys", restore)
-        if code:
-            raise StepFailed(code)
+            return
+        restore_all_keys(
+            self._config(),
+            Path(self.key_dir),
+            self.audit_log_path,
+            is_ondemand=sign_environment.key_id_is_ondemand(self.keymapper),
+            exportable_domain=environment["YUBIHSM_EXPORTABLE_DOMAIN"],
+            ondemand_domain=environment["YUBIHSM_ONDEMAND_DOMAIN"],
+        )
 
     def _finish(self) -> None:
         if self.is_provisioning_mode:
