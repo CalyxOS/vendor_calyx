@@ -5,39 +5,26 @@
 
 from __future__ import annotations
 
-import importlib.util
 import os
 import signal
 import socket
 import subprocess
 import sys
 from pathlib import Path
-from types import ModuleType
 
 import pytest
-from conftest import SCRIPTS_DIR, install_executable, run, stub, yubihsm_config
+from conftest import (
+    YUBIHSM_INTERCEPTOR,
+    install_executable,
+    load_script,
+    run,
+    stub,
+    yubihsm_config,
+)
 from signing.signing_server import SigningServer
 from signing.yubihsm_session_service import YubiHsmSessionService
 from yubihsm.defs import COMMAND
 from yubihsm_emulator import Connector
-
-INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
-
-
-def _load_interceptor() -> ModuleType:
-    """
-    Import the interceptor as a library, for tests that need to
-    monkeypatch its internals. Its filename has dots, so it cannot be
-    imported by name.
-    """
-    spec = importlib.util.spec_from_file_location(
-        "yubihsm_python_interceptor",
-        INTERCEPTOR,
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def make_script(path: Path, body: str) -> Path:
@@ -95,7 +82,7 @@ def test_signing_commands_append_to_the_audit_log(
     make_script(bin_dir / command, "exit 0\n")
 
     result = run(
-        [INTERCEPTOR, *args],
+        [YUBIHSM_INTERCEPTOR, *args],
         env=_audit_environment(tmp_path, bin_dir, command, yubihsm),
         check=False,
     )
@@ -122,7 +109,7 @@ def test_dry_run_writes_no_audit_log(
     make_script(bin_dir / "avbtool", "exit 0\n")
 
     result = run(
-        [INTERCEPTOR, "add_hash_footer", "--signing_helper", "x"],
+        [YUBIHSM_INTERCEPTOR, "add_hash_footer", "--signing_helper", "x"],
         env=_audit_environment(
             tmp_path,
             bin_dir,
@@ -158,7 +145,7 @@ def test_apksigner_skips_signature_schemes_below_min_sdk_version(
     args = ["-jar", "apksigner.jar", "sign", "--min-sdk-version"]
 
     result = run(
-        [INTERCEPTOR, *args, min_sdk_version],
+        [YUBIHSM_INTERCEPTOR, *args, min_sdk_version],
         env=_audit_environment(tmp_path, bin_dir, "java", yubihsm, DRY_RUN="y"),
         check=False,
     )
@@ -185,7 +172,7 @@ def test_java_named_by_its_path_is_classified_as_java(
     args = ["-jar", "apksigner.jar", "sign", "--min-sdk-version", "30"]
 
     result = run(
-        [INTERCEPTOR, *args],
+        [YUBIHSM_INTERCEPTOR, *args],
         env=_audit_environment(
             tmp_path,
             bin_dir,
@@ -213,7 +200,7 @@ def test_avbtool_named_by_its_path_inspects_without_an_audit_log(
     avbtool = make_script(bin_dir / "avbtool", "exit 0\n")
 
     result = run(
-        [INTERCEPTOR, "info_image", "--image", "x"],
+        [YUBIHSM_INTERCEPTOR, "info_image", "--image", "x"],
         env=_audit_environment(tmp_path, bin_dir, str(avbtool), yubihsm),
         check=False,
     )
@@ -228,7 +215,7 @@ def test_relays_output_and_exit_code(tmp_path: Path) -> None:
         'echo "to stdout"\necho "to stderr" >&2\nexit 3\n',
     )
     result = run(
-        [INTERCEPTOR, "info_image"],
+        [YUBIHSM_INTERCEPTOR, "info_image"],
         env={
             "SIGNING_COMMAND": "avbtool",
             "DRY_RUN": "y",
@@ -270,7 +257,7 @@ printf %s "freshly signed" > "$out"
     for name in ("out1.apk", "out2.apk"):
         result = subprocess.run(
             [
-                INTERCEPTOR,
+                YUBIHSM_INTERCEPTOR,
                 "-jar",
                 "apksigner.jar",
                 "sign",
@@ -325,7 +312,7 @@ echo "signed on try $count"
     )
     pid_file = tmp_path / "connector.pid"
     result = run(
-        [INTERCEPTOR, "--signing_helper", "x"],
+        [YUBIHSM_INTERCEPTOR, "--signing_helper", "x"],
         env={
             "SIGNING_COMMAND": "avbtool",
             "YUBIHSM_CONNECTOR_PIDFILE": str(pid_file),
@@ -360,7 +347,7 @@ def test_extracts_the_audit_log_when_the_connector_restart_fails(
     )
 
     result = run(
-        [INTERCEPTOR, "add_hash_footer", "--signing_helper", "x"],
+        [YUBIHSM_INTERCEPTOR, "add_hash_footer", "--signing_helper", "x"],
         env=_audit_environment(
             tmp_path,
             bin_dir,
@@ -387,7 +374,7 @@ def test_holds_lockfile_while_the_command_runs(tmp_path: Path) -> None:
         "else echo locked; fi\n",
     )
     result = run(
-        [INTERCEPTOR, "info_image"],
+        [YUBIHSM_INTERCEPTOR, "info_image"],
         env={
             "SIGNING_COMMAND": "avbtool",
             "YUBIHSM_LOCKFILE": str(lockfile),
@@ -407,7 +394,7 @@ def test_retries_a_failed_audit_log_extraction(
     tmp_path: Path,
     yubihsm: Connector,
 ) -> None:
-    interceptor = _load_interceptor()
+    interceptor = load_script(YUBIHSM_INTERCEPTOR)
     yubihsm.device.fail_next(COMMAND.GET_LOG_ENTRIES)
     monkeypatch.setattr(interceptor.time, "sleep", stub(None))
     make_script(tmp_path / "avbtool", "exit 0\n")
@@ -443,7 +430,7 @@ def test_signing_cache_failures_fall_back_to_running_the_command(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    interceptor = _load_interceptor()
+    interceptor = load_script(YUBIHSM_INTERCEPTOR)
 
     def fail(args: list[str]) -> None:
         raise OSError("cache unavailable")
@@ -481,7 +468,7 @@ def test_audit_comment_quotes_the_command_for_a_shell(
     args = ["add_hash_footer", "--signing_helper", "a b", "it's", "$HOME", ""]
 
     result = run(
-        [INTERCEPTOR, *args],
+        [YUBIHSM_INTERCEPTOR, *args],
         env=_audit_environment(tmp_path, bin_dir, "avbtool", yubihsm),
         check=False,
     )
@@ -504,7 +491,7 @@ def test_audit_comment_keeps_a_multiline_argument_on_one_line(
 
     result = run(
         [
-            INTERCEPTOR,
+            YUBIHSM_INTERCEPTOR,
             "add_hash_footer",
             "--signing_helper",
             "one\ntwo",
@@ -535,7 +522,7 @@ def test_retries_an_unacknowledged_extraction_without_writing_it_twice(
     through_server: bool,
     failures: int,
 ) -> None:
-    interceptor = _load_interceptor()
+    interceptor = load_script(YUBIHSM_INTERCEPTOR)
     monkeypatch.setattr(interceptor.time, "sleep", stub(None))
     yubihsm.device.fail_next(COMMAND.SET_LOG_INDEX, times=failures)
     make_script(tmp_path / "avbtool", "exit 0\n")
