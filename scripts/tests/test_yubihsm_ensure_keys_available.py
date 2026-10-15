@@ -849,6 +849,40 @@ def test_restore_all_keys_extracts_log_even_on_failure(
     assert _changes(device) == []
 
 
+def test_restore_all_keys_raises_the_key_failure_over_a_log_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    yubihsm: Connector,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import signing.vendor_yubihsm as vendor_yubihsm
+
+    device = plug_yubihsm(yubihsm, free_records=1)
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    _key(device, key_dir, 0x3003, loaded=False)
+    _certificate(device, key_dir, 0x3003, loaded=False)
+
+    def extract(
+        hsm_config: YubiHsmConfig,
+        log_file: Path,
+        comment: str,
+    ) -> None:
+        raise OSError("audit log unavailable")
+
+    monkeypatch.setattr(vendor_yubihsm, "extract_and_save_audit_log", extract)
+
+    with pytest.raises(RuntimeError, match="Could not find any on-demand key"):
+        _restore(yubihsm, key_dir, tmp_path / "audit.log")
+
+    assert (
+        capsys.readouterr().err.count(
+            "Failed to extract logs: audit log unavailable",
+        )
+        == 2
+    )
+
+
 def test_restore_all_keys_reports_failure_when_logging_a_key_fails(
     monkeypatch: pytest.MonkeyPatch,
     yubihsm: Connector,
