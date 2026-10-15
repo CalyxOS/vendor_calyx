@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # SPDX-FileCopyrightText: The Calyx Institute
 # SPDX-License-Identifier: Apache-2.0
@@ -10,40 +9,29 @@ import argparse
 import hashlib
 import os
 import shutil
-import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NoReturn
 
-apksigner_parser = argparse.ArgumentParser(allow_abbrev=False)
+apksigner_parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    exit_on_error=False,
+)
 apksigner_parser.add_argument("--out", nargs=2)
 
 
-def main() -> None:
-    # define command line arguments
-    parser = argparse.ArgumentParser(description="signing cache test")
-    parser.add_argument(
-        "--from-cache",
-        nargs="+",
-        metavar=("command", "arguments"),
-        help="use to check cache and use cached file if available",
-    )
-    parser.add_argument(
-        "--to-cache",
-        nargs="+",
-        metavar=("command", "arguments"),
-        help="save output file to cache if there was a cache miss",
-    )
-    args = parser.parse_known_args()[0]
-    if args.from_cache:
-        from_cache(sys.argv[2:])
-    elif args.to_cache:
-        to_cache(sys.argv[2:])
-    else:
-        parser.print_help()
+def from_cache(args: list[str]) -> bool:
+    """
+    Copy a cached signed output into place for an apksigner invocation.
 
+    Args:
+        args: The apksigner command line.
 
-def from_cache(args: list[str]) -> NoReturn:
+    Returns:
+        Whether the cache held the output, which is then in place.
+
+    Raises:
+        argparse.ArgumentError: If the --out argument is malformed.
+    """
     # parse command line
     signing_obj = apksigner_get_apks(args)
 
@@ -58,10 +46,10 @@ def from_cache(args: list[str]) -> NoReturn:
     if (cache_dir / key).is_file():
         print(f"Cache hit for {key} copying to {out_file}")
         link_or_copy(cache_dir / key, Path(signing_obj.out_file))
-        sys.exit(0)
+        return True
 
     print(f"Cache miss for {key} {out_file}")
-    sys.exit(1)
+    return False
 
 
 # Called if there is a cache miss, to save the new output file to the cache
@@ -127,7 +115,3 @@ class SigningObj:
     in_file: str
     out_file: str
     extra_args: tuple[str, ...] = ()
-
-
-if __name__ == "__main__":
-    main()
