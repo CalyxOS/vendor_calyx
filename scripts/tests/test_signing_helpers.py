@@ -6,34 +6,23 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import io
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 
 import pytest
-from conftest import SCRIPTS_DIR, install_executable, run, stub
+from conftest import (
+    APKSIGNER_SIGNING_HELPER,
+    PAYLOAD_SIGNER,
+    SIGNING_HELPER,
+    install_executable,
+    load_script,
+    run,
+    stub,
+)
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from software_rsa import avb_input
-
-PYTHON_SIGNING_HELPER = SCRIPTS_DIR / "pkcs11" / "signing_helper.py"
-PYTHON_PAYLOAD_SIGNER = SCRIPTS_DIR / "pkcs11" / "payload_signer.py"
-APKSIGNER_SIGNING_HELPER = (
-    SCRIPTS_DIR / "pkcs11" / "apksigner_signing_helper.py"
-)
-
-
-def load_helper(path: Path) -> ModuleType:
-    """Import a helper script without running its entry point."""
-    spec = importlib.util.spec_from_file_location(
-        f"{path.stem}_under_test",
-        path,
-    )
-    assert spec is not None and spec.loader is not None
-    helper = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(helper)
-    return helper
 
 
 @pytest.fixture
@@ -58,7 +47,7 @@ def test_avb_helper_preserves_provider_stderr(
     failing_pkcs11_tool: Path,
 ) -> None:
     result = run(
-        [PYTHON_SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        [SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
         env=python_helper_env(failing_pkcs11_tool),
         input=avb_input(bytes(range(32))),
         check=False,
@@ -79,7 +68,7 @@ def test_payload_helper_preserves_provider_stderr(
     digest.write_bytes(bytes(range(32)))
     result = run(
         [
-            PYTHON_PAYLOAD_SIGNER,
+            PAYLOAD_SIGNER,
             "-in",
             digest,
             "-out",
@@ -116,9 +105,9 @@ def test_yubihsm_helper_fails_without_the_signing_server(
     digest = tmp_path / "digest.bin"
     digest.write_bytes(bytes(range(32)))
     commands: dict[str, list[str | Path]] = {
-        "avb": [PYTHON_SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
+        "avb": [SIGNING_HELPER, "SHA256_RSA2048", "keys/0x2000.pem"],
         "payload": [
-            PYTHON_PAYLOAD_SIGNER,
+            PAYLOAD_SIGNER,
             "-in",
             digest,
             "-out",
@@ -156,7 +145,7 @@ def test_python_avb_helper_refuses_a_signature_that_does_not_verify(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    helper = load_helper(PYTHON_SIGNING_HELPER)
+    helper = load_script(SIGNING_HELPER)
     public_key = tmp_path / "rsa-2048.pub.pem"
     public_key.write_bytes(
         rsa.generate_private_key(65537, 2048)
@@ -185,7 +174,7 @@ def test_payload_helper_rejects_invalid_digest_size(
     monkeypatch: pytest.MonkeyPatch,
     size: int,
 ) -> None:
-    helper = load_helper(PYTHON_PAYLOAD_SIGNER)
+    helper = load_script(PAYLOAD_SIGNER)
     digest = tmp_path / "digest.bin"
     output = tmp_path / "signature.bin"
     digest.write_bytes(b"x" * size)
@@ -214,7 +203,7 @@ def test_python_payload_signer_refuses_a_signature_that_does_not_verify(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    helper = load_helper(PYTHON_PAYLOAD_SIGNER)
+    helper = load_script(PAYLOAD_SIGNER)
     public_key = tmp_path / "ota.pem"
     public_key.write_bytes(
         rsa.generate_private_key(65537, 2048)
@@ -260,7 +249,7 @@ def test_python_avb_helper_names_a_key_file_it_cannot_load(
     monkeypatch: pytest.MonkeyPatch,
     contents: bytes,
 ) -> None:
-    helper = load_helper(PYTHON_SIGNING_HELPER)
+    helper = load_script(SIGNING_HELPER)
     public_key = tmp_path / "rsa-2048.pub.pem"
     public_key.write_bytes(contents)
     data = avb_input(hashlib.sha256(b"vbmeta").digest())

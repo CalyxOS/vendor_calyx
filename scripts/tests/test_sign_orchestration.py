@@ -20,6 +20,7 @@ from conftest import (
     YUBIHSM_WRAP_ID,
     back_up_yubihsm_key_and_certificate,
     default_signal_dispositions,
+    file_tree,
     install_executable,
     run,
 )
@@ -116,17 +117,6 @@ def _archive_previous_build(work: Path, device: str, build: str) -> None:
     (directory / f"{device}-target_files-{build}.zip").write_bytes(b"")
 
 
-def _archive_manifest(work: Path) -> dict[str, bytes]:
-    archive = work / "archive"
-    if not archive.is_dir():
-        return {}
-    return {
-        str(path.relative_to(archive)): path.read_bytes()
-        for path in sorted(archive.rglob("*"))
-        if path.is_file()
-    }
-
-
 def _sign_orchestrate_command(
     work: Path,
     devices: tuple[str, ...] | None,
@@ -194,7 +184,7 @@ def test_sign_orchestrate_signs_into_archive_without_incrementals(
     )
 
     assert result.returncode == 0, result.stderr
-    assert _archive_manifest(sign_tree) == {
+    assert file_tree(sign_tree / "archive") == {
         f"release-bramble-{BUILD_NUMBER}/output.bin": (
             f"signed-bramble-{BUILD_NUMBER}".encode()
         ),
@@ -221,7 +211,7 @@ def test_sign_orchestrate_skips_symlinked_target_files(sign_tree: Path) -> None:
     )
 
     assert result.returncode == 0, result.stderr
-    assert list(_archive_manifest(sign_tree)) == [
+    assert list(file_tree(sign_tree / "archive")) == [
         f"release-bramble-{BUILD_NUMBER}/output.bin",
     ]
 
@@ -318,7 +308,7 @@ def test_sign_orchestrate_generates_incremental_from_prior_build(
         f"release-bramble-{BUILD_NUMBER}/"
         f"bramble-incremental-{OLD_BUILD_NUMBER}-{BUILD_NUMBER}.zip"
     )
-    assert _archive_manifest(sign_tree)[incremental] == (
+    assert file_tree(sign_tree / "archive")[incremental] == (
         f"delta-bramble-{OLD_BUILD_NUMBER}-{BUILD_NUMBER}".encode()
     )
 
@@ -347,7 +337,9 @@ def test_sign_orchestrate_generates_no_incremental_for_a_rollback_build(
 
     assert result.returncode == 0, result.stderr
     assert not [
-        name for name in _archive_manifest(sign_tree) if "incremental" in name
+        name
+        for name in file_tree(sign_tree / "archive")
+        if "incremental" in name
     ]
 
 
@@ -371,7 +363,9 @@ def test_sign_orchestrate_takes_no_previous_build_newer_than_the_one_signed(
 
     assert result.returncode == 0, result.stderr
     assert not [
-        name for name in _archive_manifest(sign_tree) if "incremental" in name
+        name
+        for name in file_tree(sign_tree / "archive")
+        if "incremental" in name
     ]
 
 
@@ -496,7 +490,7 @@ def test_sign_orchestrate_exits_cleanly_with_nothing_to_sign(
     )
 
     assert result.returncode == 0, result.stderr
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_aborts_when_missing_target_files_declined(
@@ -513,7 +507,7 @@ def test_sign_orchestrate_aborts_when_missing_target_files_declined(
     assert result.returncode != 0
     assert "redfin" in result.stdout
     assert "Ready?" not in result.stdout
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_asks_for_yubihsm_credentials_after_free_space(
@@ -552,7 +546,7 @@ def test_sign_orchestrate_aborts_on_insufficient_free_space(
     assert result.returncode != 0
     assert "Only 5GB free" in result.stderr
     assert "20GB is needed" in result.stderr
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_aborts_when_final_confirmation_declined(
@@ -564,7 +558,7 @@ def test_sign_orchestrate_aborts_when_final_confirmation_declined(
 
     assert result.returncode != 0
     assert "Ready?" in result.stdout
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_rejects_empty_upload_script(sign_tree: Path) -> None:
@@ -580,7 +574,7 @@ def test_sign_orchestrate_rejects_empty_upload_script(sign_tree: Path) -> None:
     assert result.returncode == 1
     assert "is not the expected git repository" in result.stderr
     assert "Traceback" not in result.stderr
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_treats_every_softhsm_device_as_loaded(
@@ -599,7 +593,7 @@ def test_sign_orchestrate_treats_every_softhsm_device_as_loaded(
     )
 
     assert result.returncode == 0, result.stderr
-    assert _archive_manifest(sign_tree) == {
+    assert file_tree(sign_tree / "archive") == {
         f"release-bramble-{BUILD_NUMBER}/output.bin": (
             f"signed-bramble-{BUILD_NUMBER}".encode()
         ),
@@ -620,7 +614,7 @@ def test_sign_orchestrate_reports_unsupported_vendor(
     assert result.returncode == 1
     assert "PKCS11_VENDOR='acme' is not supported" in result.stderr
     assert "Traceback" not in result.stderr
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_signs_nothing_for_a_build_word_that_is_no_number(
@@ -639,7 +633,7 @@ def test_sign_orchestrate_signs_nothing_for_a_build_word_that_is_no_number(
     assert result.returncode == 0, result.stderr
     assert "There is nothing left to sign." in result.stdout
     assert "Traceback" not in result.stderr
-    assert _archive_manifest(sign_tree) == {}
+    assert file_tree(sign_tree / "archive") == {}
 
 
 def test_sign_orchestrate_refuses_a_rollback_build_that_is_no_number(
@@ -739,7 +733,7 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
         for line in load_keys_log.read_text().splitlines()
         if line.startswith("# ")
     ] == ["Function: ensure_key_is_available Key: 0x2100 Result: 0"]
-    assert set(_archive_manifest(sign_tree)) == {
+    assert set(file_tree(sign_tree / "archive")) == {
         f"release-bramble-{BUILD_NUMBER}/output.bin",
         f"release-redfin-{BUILD_NUMBER}/output.bin",
     }
@@ -752,7 +746,7 @@ def test_sign_orchestrate_leaves_a_signed_device_without_keys_alone(
     for name in ("bramble", "redfin"):
         _write_target_files(sign_tree, name, BUILD_NUMBER)
     _archive_previous_build(sign_tree, "redfin", BUILD_NUMBER)
-    signed = _archive_manifest(sign_tree)
+    signed = file_tree(sign_tree / "archive")
     keymap_file = sign_tree / "keymap.tsv"
     keymap_file.write_text(
         "ID\tDevice\tKey Type\tKey\n"
@@ -789,7 +783,7 @@ def test_sign_orchestrate_leaves_a_signed_device_without_keys_alone(
     )
 
     assert result.returncode == 0, result.stderr
-    manifest = _archive_manifest(sign_tree)
+    manifest = file_tree(sign_tree / "archive")
     assert {
         name: data for name, data in manifest.items() if "redfin" in name
     } == signed

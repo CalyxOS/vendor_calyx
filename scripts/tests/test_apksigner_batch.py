@@ -18,8 +18,11 @@ from typing import Any
 import pytest
 from conftest import (
     BUILD_NUMBER,
+    PAYLOAD_SIGNER,
     PKCS11_ENVIRONMENT,
     SCRIPTS_DIR,
+    SIGNING_HELPER,
+    YUBIHSM_INTERCEPTOR,
     aosp_jar_command,
     install_executable,
     make_release_tree,
@@ -35,8 +38,6 @@ from signing.signing_server import SigningServer
 
 pytestmark = pytest.mark.usefixtures("small_metadata")
 
-
-INTERCEPTOR = SCRIPTS_DIR / "pkcs11" / "vendor.yubihsm.interceptor.py"
 
 FAKE_JAVA = f"""#!{sys.executable}
 import os, sys
@@ -303,7 +304,7 @@ def _run_interceptor(
 ) -> subprocess.CompletedProcess[str]:
     return run(
         [
-            INTERCEPTOR,
+            YUBIHSM_INTERCEPTOR,
             "-Xmx1g",
             "-jar",
             "apksigner.jar",
@@ -385,7 +386,7 @@ def test_interceptor_runs_directly_when_batch_is_unavailable(
     assert "direct sign a.apk" in fake_java.read_text().splitlines()
 
 
-YUBIHSM_INTERCEPTOR = "/s/pkcs11/vendor.yubihsm.interceptor.py"
+INTERCEPTOR_SETTING = "/s/pkcs11/vendor.yubihsm.interceptor.py"
 RECORDING_SIGN_TARGET_FILES = f"""#!{sys.executable}
 import json
 import os
@@ -457,9 +458,6 @@ def _release(
     return result, recorded
 
 
-HELPERS = SCRIPTS_DIR / "pkcs11"
-
-
 @pytest.mark.parametrize(
     ("extra", "batch_runs"),
     [({}, True), ({"NEVER_START_APKSIGNER_BATCH": "y"}, False)],
@@ -474,7 +472,7 @@ def test_release_hosts_the_signing_server_for_its_tools(
     result, recorded = _release(
         tmp_path,
         short_tmpdir,
-        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR, **extra},
+        {"SIGNING_COMMAND_INTERCEPTOR": INTERCEPTOR_SETTING, **extra},
     )
 
     assert result.returncode == 0, result.stderr
@@ -489,8 +487,8 @@ def test_release_hosts_the_signing_server_for_its_tools(
         assert _starts(fake_java) == []
     argv = " ".join(recorded["argv"])
     assert "--apksigner_kms_type calyx" in argv
-    assert f"--signing_helper {HELPERS}/signing_helper.py" in argv
-    assert f"--payload_signer {HELPERS}/payload_signer.py" in argv
+    assert f"--signing_helper {SIGNING_HELPER}" in argv
+    assert f"--payload_signer {PAYLOAD_SIGNER}" in argv
 
 
 @pytest.mark.parametrize(
@@ -522,7 +520,7 @@ def test_release_dry_run_has_no_server(
     result, recorded = _release(
         tmp_path,
         short_tmpdir,
-        {"SIGNING_COMMAND_INTERCEPTOR": YUBIHSM_INTERCEPTOR, "DRY_RUN": "y"},
+        {"SIGNING_COMMAND_INTERCEPTOR": INTERCEPTOR_SETTING, "DRY_RUN": "y"},
     )
 
     assert result.returncode == 0, result.stderr
@@ -639,7 +637,7 @@ def test_interceptor_signs_with_the_tree_apksigner_through_the_server(
             signed.append(
                 run(
                     [
-                        INTERCEPTOR,
+                        YUBIHSM_INTERCEPTOR,
                         *java_options,
                         *_sign_arguments(
                             pk8,
