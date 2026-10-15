@@ -694,16 +694,21 @@ class SignOrchestrator:
             with_loaded,
             without_loaded,
             device_to_next_build=self.state.device_to_next_build,
-            device_to_prev_build=self.state.device_to_prev_build,
+            device_to_prev_build=(
+                {}
+                if self.state.no_incremental
+                else self.state.device_to_prev_build
+            ),
             device_to_preexisting_build=self.state.device_to_preexisting_build,
             avb_rollback_index_override=rollback,
         )
-        work = [pair.device for pair in plan.sign_pairs_without_loaded_keys]
-        if not self.state.no_incremental:
-            work += [
+        work = [
+            *(pair.device for pair in plan.sign_pairs_without_loaded_keys),
+            *(
                 triple.device
                 for triple in plan.incremental_triples_without_loaded_keys
-            ]
+            ),
+        ]
         self.state.devices_without_loaded_keys = tuple(
             device for device in without_loaded if device in work
         )
@@ -716,7 +721,6 @@ class SignOrchestrator:
         """
         plan = self.state.plan
         assert plan is not None
-        incremental = not self.state.no_incremental
 
         def sign(
             pairs: Sequence[SignPair],
@@ -746,22 +750,14 @@ class SignOrchestrator:
 
         steps = [
             sign(plan.sign_pairs_with_loaded_keys),
-            generate(
-                plan.incremental_triples_with_loaded_keys
-                if incremental
-                else (),
-            ),
+            generate(plan.incremental_triples_with_loaded_keys),
             (
                 "ensure keys available for devices",
                 list(self.state.devices_without_loaded_keys),
                 self._ensure_keys,
             ),
             sign(plan.sign_pairs_without_loaded_keys),
-            generate(
-                plan.incremental_triples_without_loaded_keys
-                if incremental
-                else (),
-            ),
+            generate(plan.incremental_triples_without_loaded_keys),
         ]
         return [step for step in steps if step[1]]
 
