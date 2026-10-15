@@ -337,8 +337,12 @@ def prepare_signing_args(
             "--apksigner_kms_type",
             "external",
         ]
-        args.ota += ["--payload_signer", payload_signer_tool]
-        args.ota += ["--signapk_external_signer", payload_signer_tool]
+        args.ota += [
+            "--payload_signer",
+            payload_signer_tool,
+            "--signapk_external_signer",
+            payload_signer_tool,
+        ]
         environment["APKSIGNER_EXTERNAL_SIGNER"] = str(
             _PKCS11_DIR / "apksigner_signing_helper.py",
         )
