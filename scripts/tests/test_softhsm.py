@@ -51,7 +51,7 @@ def softhsm_token(
 def keygen_environment(
     token: dict[str, str],
     directory: Path,
-    aosp_top: Path,
+    avbtool: Path,
 ) -> dict[str, str]:
     devices = directory / "devices"
     devices.write_text("devices=(bramble)\n")
@@ -59,9 +59,7 @@ def keygen_environment(
         **token,
         "METADATA_FILE": str(KEYGEN_METADATA),
         "DEVICES_FILE": str(devices),
-        "AVBTOOL_BIN": str(
-            aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool",
-        ),
+        "AVBTOOL_BIN": str(avbtool),
         "RSA_KEY_SIZE": "2048",
         "CERT_EXPIRY_DAYS": "1",
         "YUBIHSM_PASSWORD": "unused-by-softhsm",
@@ -116,10 +114,10 @@ def softhsm_env(tmp_path: Path) -> dict[str, str]:
 def generated_softhsm_keys(
     tmp_path: Path,
     softhsm_env: dict[str, str],
-    aosp_top: Path,
+    avbtool: Path,
 ) -> tuple[Path, dict[str, str]]:
     output = tmp_path / "keys"
-    environment = keygen_environment(softhsm_env, tmp_path, aosp_top)
+    environment = keygen_environment(softhsm_env, tmp_path, avbtool)
     generated = run_keygen(output, environment)
     assert generated.returncode == 0, generated.stderr
     return output, environment
@@ -234,13 +232,12 @@ def test_keygen_repairs_missing_certificate(
 def test_avbtool_signs_with_softhsm_key(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
-    aosp_top: Path,
+    avbtool: Path,
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, output)
     image = tmp_path / "test.img"
     image.write_bytes(bytes(range(256)) * 16)
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 
     signed = run(
         [
@@ -281,13 +278,12 @@ def test_avbtool_signs_with_softhsm_key(
 def test_avb_helper_rejects_mismatched_public_key(
     tmp_path: Path,
     generated_softhsm_keys: tuple[Path, dict[str, str]],
-    aosp_top: Path,
+    avbtool: Path,
 ) -> None:
     output, base_environment = generated_softhsm_keys
     environment = signing_environment(base_environment, tmp_path)
     image = tmp_path / "mismatched.img"
     image.write_bytes(bytes(range(256)) * 16)
-    avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
 
     signed = run(
         [
@@ -317,7 +313,7 @@ def test_avb_helper_rejects_mismatched_public_key(
 @pytest.mark.aosp
 def test_keygen_initializes_empty_softhsm_store(
     tmp_path: Path,
-    aosp_top: Path,
+    avbtool: Path,
 ) -> None:
     require_softhsm(engine=True)
     output = tmp_path / "initialized-keys"
@@ -326,7 +322,7 @@ def test_keygen_initializes_empty_softhsm_store(
         for name, value in keygen_environment(
             softhsm_token(tmp_path / "empty", initialize=False),
             tmp_path,
-            aosp_top,
+            avbtool,
         ).items()
         if name not in ("PKCS11_PIN", "PKCS11_SO_PIN")
     }
@@ -546,9 +542,9 @@ def test_releasetools_signs_packages_through_the_external_signer(
 def test_softhsm_keygen_fills_the_token(
     tmp_path: Path,
     softhsm_env: dict[str, str],
-    aosp_top: Path,
+    avbtool: Path,
 ) -> None:
-    environment = keygen_environment(softhsm_env, tmp_path, aosp_top)
+    environment = keygen_environment(softhsm_env, tmp_path, avbtool)
     output = tmp_path / "keys"
 
     generated = run_keygen(output, environment)

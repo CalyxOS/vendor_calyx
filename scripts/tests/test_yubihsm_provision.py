@@ -220,8 +220,7 @@ def test_wizard_runs_its_stages(
 
     avbtool = None
     if mode == "keygen":
-        aosp_top = request.getfixturevalue("aosp_top")
-        avbtool = aosp_top / "out" / "host" / "linux-x86" / "bin" / "avbtool"
+        avbtool = request.getfixturevalue("avbtool")
     assert _outcome(tmp_path, mode, input_text, yubihsm, avbtool) == expected
 
 
