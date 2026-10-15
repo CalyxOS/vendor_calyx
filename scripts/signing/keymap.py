@@ -813,6 +813,25 @@ class StaticKeymapper(Keymapper):
             None.
         """
         self.static_rows = tuple(rows)
+        self._rows_by_key: dict[tuple[str, str], list[KeymapRow]] = {}
+        for row in self.static_rows:
+            self._rows_by_key.setdefault(
+                (row.key_type, row.key_name),
+                [],
+            ).append(row)
+
+    def _key_rows(
+        self,
+        key_type: str,
+        key_name: str,
+    ) -> tuple[str, list[KeymapRow]]:
+        """
+        Return the name the keymap lists a key under, devkey being listed
+        as testkey, and the key's rows in file order.
+        """
+        if key_name == _DEVKEY_NAME:
+            key_name = _TESTKEY_NAME
+        return key_name, self._rows_by_key.get((key_type, key_name), [])
 
     @classmethod
     def from_file(cls, keymap_file: Path) -> StaticKeymapper:
@@ -852,14 +871,9 @@ class StaticKeymapper(Keymapper):
         Raises:
             ValueError: If the keymap has no such row.
         """
-        if key_name == _DEVKEY_NAME:
-            key_name = _TESTKEY_NAME
-        for row in self.static_rows:
-            if (
-                row.key_type == key_type
-                and row.key_name == key_name
-                and (row.device == "" or row.device == device)
-            ):
+        key_name, rows = self._key_rows(key_type, key_name)
+        for row in rows:
+            if row.device in ("", device):
                 return row.key_id
         raise ValueError(
             f"Could not find key type '{key_type}' name '{key_name}' for "
@@ -881,13 +895,7 @@ class StaticKeymapper(Keymapper):
         Raises:
             ValueError: If the keymap has no row for the key.
         """
-        if key_name == _DEVKEY_NAME:
-            key_name = _TESTKEY_NAME
-        matches = [
-            row
-            for row in self.static_rows
-            if row.key_type == key_type and row.key_name == key_name
-        ]
+        key_name, matches = self._key_rows(key_type, key_name)
         if not matches:
             raise ValueError(
                 f"Could not find key type '{key_type}' name '{key_name}' "
