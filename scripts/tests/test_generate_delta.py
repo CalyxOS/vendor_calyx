@@ -12,15 +12,13 @@ from pathlib import Path
 
 import pytest
 from conftest import (
-    SCRIPTS_DIR,
-    install_executable,
-    parameter_id,
-    run,
-)
-from test_release_orchestration import (
     DRY_RUN_FIXTURES,
     PKCS11_ENVIRONMENT,
+    SCRIPTS_DIR,
+    install_executable,
     normalize_dry_run,
+    parameter_id,
+    run,
     write_target_files_zip,
 )
 
