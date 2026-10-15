@@ -128,7 +128,6 @@ You will be asked for a password which is the one you decrypted in the key gener
 
 In extracted `otatools-keys.zip` directory:
 ```bash
-PKCS11_VENDOR=yubihsm \
 vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsigned.apk
 ```
 
@@ -140,7 +139,6 @@ vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsi
 On server, in extracted `otatools-keys.zip` directory:
 ```bash
 NEVER_START_YUBIHSM_CONNECTOR=y \
-PKCS11_VENDOR=yubihsm \
 vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsigned.apk
 ```
 
@@ -149,3 +147,5 @@ vendor/calyx/scripts/sign-app.sh com.google.android.apps.photos app-release-unsi
 * payload signer is for OTA payloads and the whole-file signature of the OTA package
 * [signing helper](https://android.googlesource.com/platform/external/avb/+/0bcd559d39fbddec44fcadd38a3f91ee44e0108a/avbtool.py#439)
   is for AVB partitions and APEX payloads
+* apksigner signing helper is for APKs and APEX containers,
+  which apksigner signs through its `external` KMS type
