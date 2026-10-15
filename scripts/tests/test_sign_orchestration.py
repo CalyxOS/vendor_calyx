@@ -16,12 +16,12 @@ from pathlib import Path
 import pytest
 from conftest import (
     SCRIPTS_DIR,
-    back_up_yubihsm_key,
+    YUBIHSM_WRAP_ID,
+    back_up_yubihsm_key_and_certificate,
     default_signal_dispositions,
     install_executable,
     run,
 )
-from cryptography.hazmat.primitives import serialization
 from signing.metadata import load_metadata
 from signing.release_execution import Abort
 from signing.sign_environment import YubiHsmVendor
@@ -692,20 +692,12 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
     )
     device = yubihsm.device
     device.put_authentication_key(0x0001, "secret")
-    device.put_wrap_key(0x0010)
+    device.put_wrap_key(YUBIHSM_WRAP_ID)
     device.put_asymmetric_key(0x2000)
-    device.put_certificate(
-        0x2000,
-        self_signed_certificate(),
-    )
-    device.put_asymmetric_key(0x2100)
+    device.put_certificate(0x2000, self_signed_certificate())
     key_dir = sign_tree / "keys"
     key_dir.mkdir()
-    back_up_yubihsm_key(device, key_dir, 0x2100)
-    del device.objects[(0x2100, OBJECT.ASYMMETRIC_KEY)]
-    (key_dir / "0x2100.x509.pem").write_bytes(
-        self_signed_certificate().public_bytes(serialization.Encoding.PEM),
-    )
+    back_up_yubihsm_key_and_certificate(device, key_dir, 0x2100, loaded=False)
     install_executable(sign_tree / "logs" / "upload.py", "#!/bin/sh\n")
     install_executable(
         sign_tree.parent / "bin" / "yubihsm-has-key",
@@ -740,7 +732,7 @@ def test_sign_orchestrate_loads_missing_keys_before_signing_their_devices(
         target
         for command, target in device.history
         if command == COMMAND.IMPORT_WRAPPED
-    ] == [(0x0010, 0x2100)]
+    ] == [(YUBIHSM_WRAP_ID, 0x2100)]
     (load_keys_log,) = (sign_tree / "logs").glob("*/*-load-keys.log")
     assert [
         line.split(" ", 2)[2]
@@ -769,7 +761,7 @@ def test_sign_orchestrate_leaves_a_signed_device_without_keys_alone(
     )
     device = yubihsm.device
     device.put_authentication_key(0x0001, "secret")
-    device.put_wrap_key(0x0010)
+    device.put_wrap_key(YUBIHSM_WRAP_ID)
     device.put_asymmetric_key(0x2000)
     device.put_certificate(0x2000, self_signed_certificate())
     key_dir = sign_tree / "keys"
