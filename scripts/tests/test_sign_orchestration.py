@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from conftest import (
+    BUILD_NUMBER,
     SCRIPTS_DIR,
     YUBIHSM_WRAP_ID,
     back_up_yubihsm_key_and_certificate,
@@ -34,7 +35,6 @@ from signing.sign_orchestration import (
 from yubihsm.defs import COMMAND, OBJECT
 from yubihsm_emulator import Connector, self_signed_certificate
 
-BUILD_NUMBER = "2026081500"
 OLD_BUILD_NUMBER = "2026081400"
 
 FAKE_RELEASE_SH = """\

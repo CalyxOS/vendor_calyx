@@ -9,7 +9,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import ID2B_KEYMAP, SCRIPTS_DIR, run
+from conftest import (
+    ID2B_KEYMAP,
+    METADATA_PLACEHOLDERS,
+    SCRIPTS_DIR,
+    metadata_with_placeholders,
+    run,
+)
 from signing import cli, metadata
 from signing.keymap import LegacyKeymapper
 from signing.metadata import load_metadata
@@ -132,28 +138,7 @@ def test_legacy_keymapper_requires_only_some_device() -> None:
         keymapper.key_value("other", "ota")
 
 
-PLACEHOLDERS = (
-    "dtbo",
-    "com.android.adservices",
-    "packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin",
-    "com.google.android.apps.photos",
-    "repo",
-)
 PLACEHOLDER_DEVICES = ("bramble", "panther")
-
-
-def metadata_with_placeholders(
-    source: Path,
-    path: Path,
-    names: tuple[str, ...] = PLACEHOLDERS,
-) -> Path:
-    text = source.read_text()
-    for name in names:
-        entry = f'    "{name}",\n'
-        assert text.count(entry) == 1, name
-        text = text.replace(entry, '    "",\n')
-    path.write_text(text)
-    return path
 
 
 def _keymap_rows(
@@ -182,11 +167,13 @@ def test_keymap_leaves_out_only_the_metadata_placeholders(
     metadata = metadata_with_placeholders(
         SCRIPTS_DIR / "metadata.py",
         tmp_path / "metadata.py",
-        (*PLACEHOLDERS, "redfin"),
+        (*METADATA_PLACEHOLDERS, "redfin"),
     )
 
     rows = _keymap_rows(tmp_path, keymapper, metadata)
 
     assert rows == [
-        row for row in full if not set(row.split("\t")[2:]) & set(PLACEHOLDERS)
+        row
+        for row in full
+        if not set(row.split("\t")[2:]) & set(METADATA_PLACEHOLDERS)
     ]
