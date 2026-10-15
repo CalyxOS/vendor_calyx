@@ -9,10 +9,12 @@ Local yubihsm-connector process lifecycle management.
 from __future__ import annotations
 
 import os
+import shutil
 import signal
 import socket
 import subprocess
 import time
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -60,6 +62,46 @@ class YubiHsmConnectorConfig:
     connector_url: str
     pid_file: Path
     binary: str = "yubihsm-connector"
+
+
+def connector_config_from_environment(
+    environment: MutableMapping[str, str],
+    pid_file: Path,
+) -> YubiHsmConnectorConfig:
+    """
+    Build the settings for the connector YUBIHSM_CONNECTOR names, run from
+    YUBIHSM_CONNECTOR_BIN or the yubihsm-connector on PATH, and record the
+    binary in YUBIHSM_CONNECTOR_BIN.
+
+    Args:
+        environment: Variables naming the connector and its binary.
+        pid_file: Where the connector's PID is kept.
+
+    Returns:
+        The connector settings.
+
+    Raises:
+        RuntimeError: If YUBIHSM_CONNECTOR_BIN is unset and PATH has no
+            yubihsm-connector.
+    """
+    binary = environment.get("YUBIHSM_CONNECTOR_BIN") or shutil.which(
+        "yubihsm-connector",
+    )
+    if not binary:
+        raise RuntimeError(
+            "Please install yubihsm-connector, or set "
+            "YUBIHSM_CONNECTOR_BIN to its path. Alternatively, set "
+            "NEVER_START_YUBIHSM_CONNECTOR=y.",
+        )
+    environment["YUBIHSM_CONNECTOR_BIN"] = binary
+    return YubiHsmConnectorConfig(
+        connector_url=environment.get(
+            "YUBIHSM_CONNECTOR",
+            DEFAULT_CONNECTOR_URL,
+        ),
+        pid_file=pid_file,
+        binary=binary,
+    )
 
 
 class YubiHsmConnector:

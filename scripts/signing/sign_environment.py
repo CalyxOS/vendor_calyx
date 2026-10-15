@@ -35,6 +35,7 @@ from .vendor_yubihsm_connector import (
     DEFAULT_CONNECTOR_URL,
     YubiHsmConnector,
     YubiHsmConnectorConfig,
+    connector_config_from_environment,
 )
 
 _YUBIHSM_PKCS11_CONF_TEMPLATE = """\
@@ -184,30 +185,6 @@ def _default(
     """Set a variable that is unset or empty."""
     if not environment.get(name):
         environment[name] = value
-
-
-def _yubihsm_connector_config(
-    environment: MutableMapping[str, str],
-    pid_file: Path,
-) -> YubiHsmConnectorConfig:
-    binary = environment.get("YUBIHSM_CONNECTOR_BIN") or shutil.which(
-        "yubihsm-connector",
-    )
-    if not binary:
-        raise RuntimeError(
-            "Please install yubihsm-connector, or set "
-            "YUBIHSM_CONNECTOR_BIN to its path. Alternatively, set "
-            "NEVER_START_YUBIHSM_CONNECTOR=y.",
-        )
-    environment["YUBIHSM_CONNECTOR_BIN"] = binary
-    return YubiHsmConnectorConfig(
-        connector_url=environment.get(
-            "YUBIHSM_CONNECTOR",
-            DEFAULT_CONNECTOR_URL,
-        ),
-        pid_file=pid_file,
-        binary=binary,
-    )
 
 
 def read_yubihsm_password_file(environment: MutableMapping[str, str]) -> bool:
@@ -667,7 +644,10 @@ class YubiHsmVendor(Vendor):
         """
         if environment.get("NEVER_START_YUBIHSM_CONNECTOR") != "y":
             connector = YubiHsmConnector(
-                _yubihsm_connector_config(environment, Path("/dev/null")),
+                connector_config_from_environment(
+                    environment,
+                    Path("/dev/null"),
+                ),
             )
             if connector.is_running():
                 print()
@@ -742,7 +722,7 @@ class YubiHsmVendor(Vendor):
             if environment.get("NEVER_START_YUBIHSM_CONNECTOR") != "y":
                 pid_file = Path(yubihsm_tmpdir) / "yubihsm_connector.pid"
                 connector = YubiHsmConnector(
-                    _yubihsm_connector_config(environment, pid_file),
+                    connector_config_from_environment(environment, pid_file),
                 )
                 connector.start()
                 if pid_file.exists():
