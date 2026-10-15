@@ -35,6 +35,7 @@ from signing.release_orchestration import (
     avb_algorithm_for,
     read_words,
 )
+from signing.signing_server import SigningServer
 
 pytestmark = pytest.mark.usefixtures("small_metadata")
 
@@ -1361,6 +1362,59 @@ def test_release_session_finalizes_then_cleans_up_its_vendor(
     assert calls == expected
     assert session.tmpdir is not None
     assert not session.tmpdir.exists()
+
+
+def test_yubihsm_release_fails_when_its_signing_server_cannot_start(
+    release_tree: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    class Vendor:
+        def initialize_release(self, *args: object, **options: object) -> None:
+            pass
+
+        def finalize_release(self, *args: object, **options: object) -> None:
+            pass
+
+        def cleanup(self, *args: object, **options: object) -> None:
+            pass
+
+    def refuse(self: SigningServer) -> None:
+        raise OSError("Address already in use")
+
+    monkeypatch.setattr("signing.sign_environment.load_vendor", stub(Vendor()))
+    monkeypatch.setattr(
+        "signing.sign_environment.maybe_initialize_vendor",
+        stub(None),
+    )
+    monkeypatch.setattr(SigningServer, "__enter__", refuse)
+    environment = {
+        "PKCS11_VENDOR": "yubihsm",
+        "SIGNING_COMMAND_INTERCEPTOR": "/s/vendor.yubihsm.interceptor.py",
+        "KEYMAPPER": "id2b",
+        "TMPDIR": str(release_tree),
+        "BUILD_NUMBER": BUILD_NUMBER,
+    }
+    session = ReleaseOrchestrator(
+        environment,
+        cwd=release_tree,
+        metadata=load_metadata(TEST_METADATA),
+        program="release.sh",
+        device="bramble",
+        target_files_arg=None,
+    )
+    monkeypatch.setattr(
+        session,
+        "_run_steps",
+        lambda: session.prepare_signing(command_argv=[]),
+    )
+
+    assert session.run() == 1
+    assert (
+        "error: cannot start the signing server (Address already in use)"
+        in (capsys.readouterr().err)
+    )
+    assert "SIGNING_SERVER_SOCKET" not in environment
 
 
 @pytest.mark.parametrize(
