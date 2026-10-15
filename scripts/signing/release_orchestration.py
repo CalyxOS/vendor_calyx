@@ -599,6 +599,16 @@ class SigningSession:
             return 0
         return run_release_tool(argv)
 
+    def _run_tool(self, argv: list[str]) -> None:
+        """
+        Run or under DRY_RUN=y print one release tool invocation.
+
+        Raises:
+            Abort: With exit status 1, if the tool fails.
+        """
+        if self._invoke(argv) != 0:
+            raise Abort(1)
+
     def _write_checksum(self, out_dir: Path, filename: str) -> None:
         """
         Write filename's checksum to filename.sha256sum in out_dir,
@@ -757,21 +767,11 @@ class ReleaseOrchestrator(SigningSession):
 
             if not keep_target_files or not signed_target_files.exists():
                 print("Creating signed targetfiles zip")
-                code = self._invoke(
-                    [
-                        _releasetools_binary(
-                            self.releasetools_binary_path,
-                            "sign_target_files_apks",
-                        ),
-                        *self.args.releasetools,
-                        "-o",
-                        *release_args.signing_args,
-                        str(target_files),
-                        str(signed_target_files),
-                    ],
+                self._sign_target_files(
+                    release_args,
+                    target_files,
+                    signed_target_files,
                 )
-                if code != 0:
-                    raise Abort(1)
 
             if rollback is not None:
                 print(
@@ -782,20 +782,7 @@ class ReleaseOrchestrator(SigningSession):
                 ota_zip = out_dir / f"{self.device}-ota_update-{build}.zip"
                 if not keep_ota or not ota_zip.exists():
                     print("Creating OTA update zip")
-                    code = self._invoke(
-                        [
-                            _releasetools_binary(
-                                self.releasetools_binary_path,
-                                "ota_from_target_files",
-                            ),
-                            *self.args.releasetools,
-                            *release_args.ota_args,
-                            str(signed_target_files),
-                            str(ota_zip),
-                        ],
-                    )
-                    if code != 0:
-                        raise Abort(1)
+                    self._make_ota(release_args, signed_target_files, ota_zip)
 
                     print("Calculating sha256sum for OTA update zip")
                     self._write_checksum(out_dir, ota_zip.name)
@@ -805,7 +792,7 @@ class ReleaseOrchestrator(SigningSession):
         img_zip = out_dir / f"{self.device}-img-{build}.zip"
         if not keep_factory or not img_zip.exists():
             print("Creating factory image")
-            code = self._invoke(
+            self._run_tool(
                 [
                     _releasetools_binary(
                         self.releasetools_binary_path,
@@ -816,8 +803,6 @@ class ReleaseOrchestrator(SigningSession):
                     str(img_zip),
                 ],
             )
-            if code != 0:
-                raise Abort(1)
 
         self._assemble_factory_image(
             out_dir=out_dir,
@@ -833,43 +818,61 @@ class ReleaseOrchestrator(SigningSession):
                 out_dir / f"{self.device}-target_files-{otatest}.zip"
             )
             print("Creating OTA test update zip")
-            code = self._invoke(
-                [
-                    _releasetools_binary(
-                        self.releasetools_binary_path,
-                        "sign_target_files_apks",
-                    ),
-                    *self.args.releasetools,
-                    "--otatest",
-                    "-o",
-                    *release_args.signing_args,
-                    str(target_files),
-                    str(otatest_target_files),
-                ],
+            self._sign_target_files(
+                release_args,
+                target_files,
+                otatest_target_files,
+                "--otatest",
             )
-            if code != 0:
-                raise Abort(1)
 
             otatest_ota_zip = (
                 out_dir / f"{self.device}-ota_update-{otatest}.zip"
             )
-            code = self._invoke(
-                [
-                    _releasetools_binary(
-                        self.releasetools_binary_path,
-                        "ota_from_target_files",
-                    ),
-                    *self.args.releasetools,
-                    *release_args.ota_args,
-                    str(otatest_target_files),
-                    str(otatest_ota_zip),
-                ],
-            )
-            if code != 0:
-                raise Abort(1)
+            self._make_ota(release_args, otatest_target_files, otatest_ota_zip)
 
             print("Calculating sha256sum for OTA test update zip")
             self._write_checksum(out_dir, otatest_ota_zip.name)
+
+    def _sign_target_files(
+        self,
+        release_args: ReleaseArguments,
+        target_files: Path,
+        signed_target_files: Path,
+        *options: str,
+    ) -> None:
+        self._run_tool(
+            [
+                _releasetools_binary(
+                    self.releasetools_binary_path,
+                    "sign_target_files_apks",
+                ),
+                *self.args.releasetools,
+                *options,
+                "-o",
+                *release_args.signing_args,
+                str(target_files),
+                str(signed_target_files),
+            ],
+        )
+
+    def _make_ota(
+        self,
+        release_args: ReleaseArguments,
+        target_files: Path,
+        ota_zip: Path,
+    ) -> None:
+        self._run_tool(
+            [
+                _releasetools_binary(
+                    self.releasetools_binary_path,
+                    "ota_from_target_files",
+                ),
+                *self.args.releasetools,
+                *release_args.ota_args,
+                str(target_files),
+                str(ota_zip),
+            ],
+        )
 
     def _abort_if_ota_only(self) -> None:
         if self.environment.get("OTA_ONLY"):
