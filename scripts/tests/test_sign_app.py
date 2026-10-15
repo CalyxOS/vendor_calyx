@@ -71,7 +71,6 @@ def _sign_app_environment(root: Path, yubihsm: Connector) -> dict[str, str]:
         "KEY_DIR": str(root / "keys"),
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "password",
-        "PKCS11_MODULE": "/dev/null",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
         "KEYMAP_FILE": str(ID2B_KEYMAP),
     }
@@ -255,7 +254,6 @@ def test_sign_app_exports_the_key_dir_it_defaults_to(
         "TMPDIR": str((root / "tmp").resolve()),
         "YUBIHSM_AUTHKEY": "0x0001",
         "YUBIHSM_PASSWORD": "password",
-        "PKCS11_MODULE": "/dev/null",
         "NEVER_START_YUBIHSM_CONNECTOR": "y",
         "KEYMAP_FILE": str(ID2B_KEYMAP),
     }

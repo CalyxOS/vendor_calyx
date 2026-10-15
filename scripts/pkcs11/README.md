@@ -18,19 +18,18 @@ Note that adding new devices also requires them adding them to the following fil
 
 The following Debian 13 packages are needed:
 
-    sudo apt install yubihsm-pkcs11 python3-yubihsm python3-usb python3-git yubihsm-connector opensc openssl libengine-pkcs11-openssl
+    sudo apt install python3-yubihsm python3-usb python3-git yubihsm-connector openssl
 
 Alternatively for Ubuntu 24.04/Mint 22.2, install the following packages:
 
-    sudo apt install python3-usb python3-git opensc openssl libengine-pkcs11-openssl
+    sudo apt install python3-usb python3-git openssl
 
 and manually install the YubiHSM packages:
 
 [python3-yubihsm](http://ftp.us.debian.org/debian/pool/main/p/python-yubihsm/python3-yubihsm_3.1.1-1_all.deb),
 [yubihsm-connector](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-connector/yubihsm-connector_3.0.5-2_amd64.deb),
 [libyubihsm2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm2_2.6.0-5_amd64.deb),
-[libyubihsm-http2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm-http2_2.6.0-5_amd64.deb),
-[yubihsm-pkcs11](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/yubihsm-pkcs11_2.6.0-5_amd64.deb)
+[libyubihsm-http2](http://ftp.us.debian.org/debian/pool/main/y/yubihsm-shell/libyubihsm-http2_2.6.0-5_amd64.deb)
 
 Creating keys is a manual step that is required before signing anything.
 

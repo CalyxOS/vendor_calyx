@@ -63,19 +63,14 @@ def fake_pkcs11_modules(
 ) -> dict[str, Path]:
     from signing import sign_environment
 
-    directory = tmp_path_factory.mktemp("pkcs11-modules")
-    modules: dict[str, Path] = {}
-    for vendor in ("yubihsm", "softhsm"):
-        module = directory / f"{vendor}_pkcs11.so"
-        module.touch()
-        modules[vendor] = module
-    for vendor, module in modules.items():
-        monkeypatch.setattr(
-            sign_environment.VENDORS[vendor],
-            "find_pkcs11_module",
-            _find_module_at(module),
-        )
-    return modules
+    module = tmp_path_factory.mktemp("pkcs11-modules") / "softhsm_pkcs11.so"
+    module.touch()
+    monkeypatch.setattr(
+        sign_environment.SoftHsmVendor,
+        "find_pkcs11_module",
+        _find_module_at(module),
+    )
+    return {"softhsm": module}
 
 
 @pytest.fixture(scope="session")
