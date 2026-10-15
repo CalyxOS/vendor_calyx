@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from conftest import ID2B_KEYMAP, SCRIPTS_DIR, run
+from signing import cli, metadata
 from signing.keymap import LegacyKeymapper
 from signing.metadata import load_metadata
 
@@ -62,6 +63,25 @@ def test_legacy_keymap_needs_a_device(tmp_path: Path) -> None:
     assert result.stdout == ""
     assert "ERROR: No defined devices for which to generate keys." in (
         result.stderr
+    )
+
+
+def test_legacy_keymap_names_the_resolved_default_devices_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    devices_file = tmp_path / "calyx/scripts/vars/devices"
+    devices_file.parent.mkdir(parents=True)
+    devices_file.write_text("devices=()\n")
+    monkeypatch.setattr(metadata, "SCRIPTS_DIR", tmp_path / "vendor/calyx/x")
+    monkeypatch.delenv("DEVICES_FILE", raising=False)
+    monkeypatch.setenv("KEYMAPPER", "legacy")
+    monkeypatch.setenv("METADATA_FILE", str(SCRIPTS_DIR / "metadata.py"))
+
+    assert cli.main(["print-keymap"]) == 1
+    assert f"$DEVICES_FILE ({devices_file.resolve()}).\n" in (
+        capsys.readouterr().err
     )
 
 

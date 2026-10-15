@@ -15,6 +15,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from .metadata import default_devices_path
+
 
 def build_parser() -> argparse.ArgumentParser:
     """
@@ -37,11 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     sign_orchestrate_parser.add_argument(
         "--devices-file",
         type=Path,
-        default=Path(
-            os.environ.get("DEVICES_FILE")
-            or Path(__file__).resolve().parents[1]
-            / "../../../calyx/scripts/vars/devices",
-        ).resolve(),
+        default=default_devices_path().resolve(),
     )
     sign_orchestrate_parser.add_argument(
         "--release-script",
@@ -300,11 +298,9 @@ def _cmd_print_keymap(args: argparse.Namespace) -> int:
     from .sign_orchestration import load_devices_file
 
     del args
-    scripts = Path(__file__).resolve().parents[1]
-    default_devices = scripts / "../../../calyx/scripts/vars/devices"
-    devices_file = os.environ.get("DEVICES_FILE") or str(default_devices)
+    devices_file = default_devices_path()
     try:
-        devices = load_devices_file(Path(devices_file))
+        devices = load_devices_file(devices_file)
     except subprocess.CalledProcessError as error:
         sys.stderr.buffer.write(error.stderr)
         return 1
