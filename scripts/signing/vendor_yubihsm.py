@@ -1063,12 +1063,14 @@ def restore_all_keys(
             not a regular file, or if no eviction candidate can be found
             while space is needed.
     """
-    result = 0
-    try:
+    with audit_logged(config, log_file, "Function: restore_all_keys"):
         for path in sorted(key_dir.glob("*-asymmetric-key.yhw")):
             key_id = path.name.removesuffix("-asymmetric-key.yhw")
-            key_result = 1
-            try:
+            with audit_logged(
+                config,
+                log_file,
+                "Function: ensure_key_is_available",
+            ):
                 ensure_keys_are_available(
                     config,
                     key_dir,
@@ -1076,24 +1078,6 @@ def restore_all_keys(
                     is_ondemand=is_ondemand,
                     lookup_domains=f"{exportable_domain},{ondemand_domain}",
                 )
-                key_result = 0
-            finally:
-                result = 1
-                extract_and_save_audit_log(
-                    config,
-                    log_file,
-                    comment=(
-                        "Function: ensure_key_is_available "
-                        f"Result: {key_result}"
-                    ),
-                )
-                result = key_result
-    finally:
-        extract_and_save_audit_log(
-            config,
-            log_file,
-            comment=f"Function: restore_all_keys Result: {result}",
-        )
 
 
 def attest_key(config: YubiHsmConfig, key_id: str) -> bytes:
@@ -1357,6 +1341,43 @@ def extract_and_save_audit_log(
         )
     finally:
         close()
+
+
+@contextlib.contextmanager
+def audit_logged(
+    config: YubiHsmConfig,
+    log_file: Path,
+    comment: str,
+) -> Generator[None, None, None]:
+    """
+    Run a with block, then append the device's audit log to a log file
+    under a comment line that ends in "Result: 0", or "Result: 1" when
+    the block raises.
+
+    When the block raises, its exception propagates and a failed
+    extraction is only reported. When the block succeeds, a failed
+    extraction propagates.
+
+    Args:
+        config: Connector URL, authentication key, and password.
+        log_file: Path to append the comment line and entries to.
+        comment: Text of the comment line before its result.
+
+    Raises:
+        OSError: If log_file cannot be written after a block that
+            succeeds.
+        AuditLogNotAcknowledged: If the device does not take the
+            acknowledgement after a block that succeeds.
+    """
+    try:
+        yield
+    except BaseException:
+        try:
+            extract_and_save_audit_log(config, log_file, f"{comment} Result: 1")
+        except Exception as error:
+            print(f"Failed to extract logs: {error}", file=sys.stderr)
+        raise
+    extract_and_save_audit_log(config, log_file, f"{comment} Result: 0")
 
 
 def unacknowledged_audit_entries(hsm: YubiHsm) -> int:
