@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -28,7 +29,9 @@ from conftest import (
     run,
     softhsm_environment,
 )
-from software_rsa import avb_input
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from software_rsa import avb_input, verifies
 
 TOKEN_LABEL = "androsign-test"
 SOFTHSM_KEYGEN_FIXTURE = FIXTURES_DIR / "softhsm-keygen.json"
@@ -358,9 +361,8 @@ import common
 
 common.OPTIONS.search_path = sys.argv[1]
 common.OPTIONS.java_path = sys.argv[2]
-common.OPTIONS.pkcs11_config = sys.argv[3]
 common.OPTIONS.apksigner_kms_type = "external"
-common.SignFile(sys.argv[4], sys.argv[5], "keys/0x1100", None, min_api_level=30)
+common.SignFile(sys.argv[3], sys.argv[4], "keys/0x1100", None, min_api_level=30)
 """
 
 
@@ -382,7 +384,6 @@ def test_releasetools_signs_apks_through_the_external_kms_provider(
             SIGN_APK,
             aosp_top / "out" / "host" / "linux-x86",
             apksigner[0],
-            "/dev/null",
             app,
             "signed.apk",
         ],
@@ -415,13 +416,12 @@ import common
 
 common.OPTIONS.search_path = sys.argv[1]
 common.OPTIONS.java_path = sys.argv[2]
-common.OPTIONS.pkcs11_config = sys.argv[3]
 common.OPTIONS.apksigner_kms_type = "external"
-common.OPTIONS.signing_command_interceptor = sys.argv[4]
+common.OPTIONS.signing_command_interceptor = sys.argv[3]
 key = "keys/0x1100"
-common.SignFile(sys.argv[5], "signed.apk", key, None, min_api_level=30)
+common.SignFile(sys.argv[4], "signed.apk", key, None, min_api_level=30)
 os.environ["APKSIGNER_EXTERNAL_SIGNER"] = "false"
-common.SignFile(sys.argv[5], "cached.apk", key, None, min_api_level=30)
+common.SignFile(sys.argv[4], "cached.apk", key, None, min_api_level=30)
 """
 
 
@@ -445,7 +445,6 @@ def test_releasetools_reuses_a_cached_kms_signature(
             SIGN_APK_TWICE,
             aosp_top / "out" / "host" / "linux-x86",
             "java",
-            "/dev/null",
             YUBIHSM_INTERCEPTOR,
             app,
         ],
@@ -484,9 +483,8 @@ import common
 
 common.OPTIONS.search_path = sys.argv[1]
 common.OPTIONS.java_path = sys.argv[2]
-common.OPTIONS.pkcs11_config = sys.argv[3]
-common.OPTIONS.signapk_external_signer = sys.argv[4]
-common.SignFile(sys.argv[5], sys.argv[6], "keys/0x2000", None, whole_file=True)
+common.OPTIONS.signapk_external_signer = sys.argv[3]
+common.SignFile(sys.argv[4], sys.argv[5], "keys/0x2000", None, whole_file=True)
 """
 
 
@@ -508,7 +506,6 @@ def test_releasetools_signs_packages_through_the_external_signer(
             SIGN_WHOLE_FILE,
             aosp_top / "out" / "host" / "linux-x86",
             java,
-            "/dev/null",
             PAYLOAD_SIGNER,
             package,
             "signed.zip",
@@ -536,6 +533,52 @@ def test_releasetools_signs_packages_through_the_external_signer(
     )
     assert verified.returncode == 0, verified.stderr
     assert "Whole package signature VERIFIED" in verified.stdout
+
+
+SIGN_PAYLOAD_HASH = """
+import shutil
+import sys
+from payload_signer import PayloadSigner
+
+signer = PayloadSigner("keys/0x2000", ".pk8", payload_signer=sys.argv[1])
+shutil.copyfile(signer.SignHashFile(sys.argv[2]), sys.argv[3])
+"""
+
+
+@pytest.mark.aosp
+def test_releasetools_signs_payloads_through_the_payload_signer(
+    tmp_path: Path,
+    generated_softhsm_keys: tuple[Path, dict[str, str]],
+    aosp_top: Path,
+) -> None:
+    output, base_environment = generated_softhsm_keys
+    releasetools = aosp_top / "build/make/tools/releasetools"
+    digest = hashlib.sha256(b"payload").digest()
+    (tmp_path / "hash.bin").write_bytes(digest)
+
+    signed = run(
+        [
+            "python3",
+            "-c",
+            SIGN_PAYLOAD_HASH,
+            PAYLOAD_SIGNER,
+            "hash.bin",
+            "sig.bin",
+        ],
+        cwd=tmp_path,
+        env={
+            **signing_environment(base_environment),
+            "PYTHONPATH": str(releasetools),
+        },
+        check=False,
+    )
+
+    assert signed.returncode == 0, signed.stderr
+    public_key = serialization.load_pem_public_key(
+        (output / "0x2000.pem").read_bytes(),
+    )
+    assert isinstance(public_key, rsa.RSAPublicKey)
+    assert verifies(public_key, (tmp_path / "sig.bin").read_bytes(), digest)
 
 
 @pytest.mark.aosp
