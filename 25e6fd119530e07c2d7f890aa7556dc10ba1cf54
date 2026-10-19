@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "c2fb35c4_e4d9f72b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-10-19T15:27:08Z",
+      "side": 1,
+      "message": "It\u0027s more of a theoretical, since --min-sdk-version also comes from the APK itself, which is already hashed. I can drop this one.",
+      "parentUuid": "95227125_ae9447ea",
+      "revId": "25e6fd119530e07c2d7f890aa7556dc10ba1cf54",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "91c5f61d_9cc04a80",
         "filename": "/PATCHSET_LEVEL",
         "patchSetId": 2
