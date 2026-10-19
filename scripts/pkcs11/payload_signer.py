@@ -60,16 +60,32 @@ def write_signature_atomically(output: Path, signature: bytes) -> None:
             temporary_path.unlink(missing_ok=True)
 
 
-def public_key_file(key_path: Path) -> Path:
+def package_key_path(key_path: Path) -> Path:
     """
-    Find the PEM public key that a payload signer's -inkey names.
+    Return the package key that a payload signer's -inkey names.
 
-    With a PKCS#11 configuration, releasetools passes the package key
-    without a suffix ("keys/0x2000"), and the key directory holds its
-    public key as "keys/0x2000.pem".
+    releasetools passes the package key with its private key suffix to
+    a payload signer ("keys/0x2000.pk8") and without one to signapk's
+    external signer ("keys/0x2000").
 
     Args:
         key_path: Key path supplied through ``-inkey``.
+
+    Returns:
+        ``key_path`` without a trailing ``.pk8``.
+    """
+    return Path(str(key_path).removesuffix(".pk8"))
+
+
+def public_key_file(key_path: Path) -> Path:
+    """
+    Find the PEM public key of a package key.
+
+    The key directory holds the public key of package key "keys/0x2000"
+    as "keys/0x2000.pem".
+
+    Args:
+        key_path: Package key path from ``package_key_path()``.
 
     Returns:
         ``key_path`` if it is a file, otherwise ``key_path`` with
@@ -129,8 +145,9 @@ def main(argv: list[str] | None = None) -> int:
     digest = args.input_file.read_bytes()
     if len(digest) != 32:
         raise ValueError("payload SHA-256 digest must be exactly 32 bytes")
-    public_key = public_key_file(args.key_file)
-    key_name = signing_helpers.key_name_from_path(args.key_file, os.environ)
+    key_path = package_key_path(args.key_file)
+    public_key = public_key_file(key_path)
+    key_name = signing_helpers.key_name_from_path(key_path, os.environ)
     digest_info = SHA256_DIGEST_INFO_PREFIX + digest
 
     def pkcs11_sign() -> bytes:
