@@ -305,10 +305,6 @@ def prepare_signing_args(
     external KMS type, and (if set) add the signing-command interceptor and
     payload-signer maximum-signature-size overrides.
 
-    releasetools takes --pkcs11_config as the switch to PKCS#11 signing
-    and reads the file only for a SunPKCS11 KeyStore, which the KMS type
-    and the external signer replace, so it is given /dev/null.
-
     Args:
         environment: Process environment to read PKCS11_VENDOR and the
             overrides from, and to point
@@ -323,8 +319,6 @@ def prepare_signing_args(
         payload_signer_tool = f"{_PKCS11_DIR}/payload_signer.py"
         args.releasetools += [
             "--verbose",
-            "--pkcs11_config",
-            "/dev/null",
             "--extra_avbtool_signing_args",
             f"--signing_helper {shlex.quote(signing_helper_tool)}",
         ]

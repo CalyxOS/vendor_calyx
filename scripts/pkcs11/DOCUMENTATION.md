@@ -391,6 +391,8 @@ The certificate comes from the key's `.x509.pem` file.
 hands its digest to the payload signer instead,
 through the `build/make` changes "signapk: Add an external whole-file signer"
 and "releasetools: Pass --signapk_external_signer to signapk".
+The `build/make` change "releasetools: Drop SunPKCS11 KeyStore signing"
+lets both run without `--pkcs11_config`, which releases no longer pass.
 
 Every PKCS#11 release and `sign-app.sh` sign this way,
 so they need an otatools package built with these changes.
