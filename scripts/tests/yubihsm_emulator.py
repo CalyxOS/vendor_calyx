@@ -1066,13 +1066,13 @@ _key_pool_used: dict[int, int] = {}
 
 def _generated_rsa_key(bits: int) -> rsa.RSAPrivateKey:
     """
-    Take the next unused fixtures/rsa/emulated-<bits>-<n>.pem, so that a
+    Take the next unused fixtures/rsa/emulated-<bits>-<n>.key, so that a
     test process gets distinct keys without paying for slow generation,
     and generate a key once the pool runs out.
     """
     with _key_pool_lock:
         index = _key_pool_used.get(bits, 0)
-        pooled = _KEY_POOL / f"emulated-{bits}-{index}.pem"
+        pooled = _KEY_POOL / f"emulated-{bits}-{index}.key"
         if pooled.is_file():
             _key_pool_used[bits] = index + 1
             key = serialization.load_pem_private_key(
