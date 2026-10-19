@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "505ad4a5_32b813a4",
+        "filename": "scripts/pkcs11/DOCUMENTATION.md",
+        "patchSetId": 7
+      },
+      "lineNbr": 539,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-19T14:15:54Z",
+      "side": 1,
+      "message": "Worth sending them a patch or updating the ticket at least?\n\nhttps://github.com/Yubico/yubihsm-shell/issues/524",
+      "revId": "a6e4ee97dec4b9854f478723b82803303609bccd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
