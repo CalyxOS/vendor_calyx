@@ -452,9 +452,11 @@ def test_payload_signer_checks_the_server_signature_against_its_key(
         assert b"does not verify under the supplied public key" in result.stderr
 
 
+@pytest.mark.parametrize("key", ("keys/0x2000", "keys/0x2000.pk8"))
 def test_payload_signer_falls_back_to_pkcs11_without_a_server(
     tmp_path: Path,
     softhsm_rsa_key: tuple[dict[str, str], Path],
+    key: str,
 ) -> None:
     public_key, environment = _softhsm_fallback(tmp_path, softhsm_rsa_key)
     digest = hashlib.sha256(b"payload").digest()
@@ -468,7 +470,7 @@ def test_payload_signer_falls_back_to_pkcs11_without_a_server(
             "-out",
             "sig.bin",
             "-inkey",
-            "keys/0x2000",
+            key,
         ],
         cwd=tmp_path,
         env={**environment, "PYTHONSAFEPATH": "1"},
