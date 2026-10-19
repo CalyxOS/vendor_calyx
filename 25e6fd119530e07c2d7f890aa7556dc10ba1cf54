@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "95227125_ae9447ea",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-19T15:03:11Z",
+      "side": 1,
+      "message": "Interesting catch! Did you see this happen in practice?",
+      "revId": "25e6fd119530e07c2d7f890aa7556dc10ba1cf54",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "91c5f61d_9cc04a80",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-19T15:03:11Z",
+      "side": 1,
+      "message": "Ideally, we clear the signing cache when using this as all old entries won\u0027t be used anymore anyway due to key mismatch.",
+      "revId": "25e6fd119530e07c2d7f890aa7556dc10ba1cf54",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
