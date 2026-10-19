@@ -38,6 +38,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "090ae638_68b11c31",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-19T17:38:50Z",
+      "side": 1,
+      "message": "I guess there\u0027s a remote chance of this happening. so maybe the question is how much overhead the new key calculation is adding.",
+      "parentUuid": "c2fb35c4_e4d9f72b",
+      "revId": "25e6fd119530e07c2d7f890aa7556dc10ba1cf54",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "91c5f61d_9cc04a80",
         "filename": "/PATCHSET_LEVEL",
         "patchSetId": 2
