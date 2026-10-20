@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "1843656e_130a3ecd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-20T20:06:51Z",
+      "side": 1,
+      "message": "I think we never used those modes, but why not fix them?",
+      "revId": "7e0fea69e3a79c57b73c6b6bbd04c1914cf9c74c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
