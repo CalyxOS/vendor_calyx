@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "1c2b419e_1c49f7c1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-23T17:29:52Z",
+      "side": 1,
+      "message": "@demonsingur@gmail.com do you have a fix for that? If not, can we integrate this into your chain?",
+      "revId": "7cb22d7f270ee133a6816f847b9b14d7ed801e1c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
