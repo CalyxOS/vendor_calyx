@@ -59,7 +59,7 @@ main() {
   # set file name for audit logging
   read_yubihsm_deviceinfo || return $?
   name=$(get_name_for_hsm) || return $?
-  AUDIT_LOG_PATH="$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-$APP.log"
+  AUDIT_LOG_PATH="$YUBIHSM_LOGS_DIR/$name/$(get_formatted_date)-${APP//\//-}.log"
   export AUDIT_LOG_PATH
 
   # run the actual signing command via the interceptor that also gets used for build signing
