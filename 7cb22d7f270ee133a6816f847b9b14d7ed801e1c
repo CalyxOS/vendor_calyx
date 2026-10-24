@@ -16,6 +16,24 @@
       "message": "@demonsingur@gmail.com do you have a fix for that? If not, can we integrate this into your chain?",
       "revId": "7cb22d7f270ee133a6816f847b9b14d7ed801e1c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "422840ff_de4f4a3c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-10-24T17:08:38Z",
+      "side": 1,
+      "message": "I didn\u0027t notice this during my port. It is fine to merge this one and I\u0027ll rebase mine on top and fix it in the Python port too.",
+      "parentUuid": "1c2b419e_1c49f7c1",
+      "revId": "7cb22d7f270ee133a6816f847b9b14d7ed801e1c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
