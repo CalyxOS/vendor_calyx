@@ -42,3 +42,8 @@ TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS ?= 0
 ifneq ($(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS),)
     $(call soong_config_set,libui,additional_gralloc_10_usage_bits,$(TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS))
 endif
+
+# Apps
+ifeq ($(OFFICIAL_BUILD),true)
+    $(call soong_config_set_bool,calyx,use_presigned_apks,true)
+endif
