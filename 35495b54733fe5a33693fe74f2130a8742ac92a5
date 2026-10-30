@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "4a92a998_e1493725",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 526,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-10-30T15:35:12Z",
+      "side": 1,
+      "message": "These are the same cases handled in generate_cert_pkcs11().\nAVB, APEX payload and APEX container keys need a .pem.\nAVB and APEX payload keys also need a .avbpubkey.\nOther types only need a .x509.pem.",
+      "parentUuid": "7c4e9a5c_955716bb",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "73ae310c_451b613d",
         "filename": "scripts/pkcs11/keygen.include.sh",
         "patchSetId": 3
@@ -31,6 +49,24 @@
       "writtenOn": "2026-10-30T14:56:18Z",
       "side": 1,
       "message": "Copying does nothing here, but in another file? The yubihsm version is overwriting and implementing this, but otherwise it doesn\u0027t need an implementation?",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "73fc8d5e_ebc4ed6a",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 549,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-10-30T15:35:12Z",
+      "side": 1,
+      "message": "YubiHSM also keeps a per-HSM copy of the public keys, see generate_cert() in vendor.yubihsm.keygen.sh, so it overrides this to copy the derived files there too.\nDoes that clear things up?",
+      "parentUuid": "73ae310c_451b613d",
       "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
