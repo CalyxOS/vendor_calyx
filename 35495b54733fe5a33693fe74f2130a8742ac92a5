@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7c4e9a5c_955716bb",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 526,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-30T14:56:18Z",
+      "side": 1,
+      "message": "What does this key_type checking do here?",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "73ae310c_451b613d",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 549,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-10-30T14:56:18Z",
+      "side": 1,
+      "message": "Copying does nothing here, but in another file? The yubihsm version is overwriting and implementing this, but otherwise it doesn\u0027t need an implementation?",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
