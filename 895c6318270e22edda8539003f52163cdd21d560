@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "75837efb_c82824f1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T14:54:06Z",
+      "side": 1,
+      "message": "I must say that I find the myriad of paths bash scripts are using super confusing and I have a hard time checking that the old paths and the new paths still match up. So I\u0027ll trust that you tested this properly.",
+      "revId": "895c6318270e22edda8539003f52163cdd21d560",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
