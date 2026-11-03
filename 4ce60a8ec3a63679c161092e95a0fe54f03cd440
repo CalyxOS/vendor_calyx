@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "537d4366_dab0e8c2",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T19:59:39Z",
+      "side": 1,
+      "message": "Wow that\u0027s a lot to digest. The code seems clean and well structured. I couldn\u0027t review every detail, especially not of the tests.",
+      "revId": "4ce60a8ec3a63679c161092e95a0fe54f03cd440",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
