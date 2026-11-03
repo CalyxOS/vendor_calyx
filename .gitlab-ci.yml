@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: The Calyx Institute
+# SPDX-License-Identifier: Apache-2.0
+
+include:
+  - project: CalyxOS/ci-templates
+    ref: main
+    file: /.gerrit-ci-template.yml
+
+python-checks:
+  extends: .gerrit_checkout
+  stage: build
+  image: python:3.11-bookworm
+  script:
+    - python -m pip install -r scripts/requirements-checks.txt
+    - ./scripts/check-python.sh
