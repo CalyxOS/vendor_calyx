@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a00ddb88_88f45274",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T17:00:17Z",
+      "side": 1,
+      "message": "Crazy! I haven\u0027t reviewed the entire emulated HSM as it only gets used for tests.",
+      "revId": "b78494423196fa017706790e71013785521d9be0",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
