@@ -20,6 +20,24 @@
     {
       "unresolved": true,
       "key": {
+        "uuid": "514dacba_5d50908f",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-03T23:22:11Z",
+      "side": 1,
+      "message": "I\u0027ll add the script and if I can get it working, CI support too.",
+      "parentUuid": "852cd300_d644a5a7",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
         "uuid": "f984ab3a_7d4e8522",
         "filename": "scripts/hsm_provisioning/setup.py",
         "patchSetId": 3
@@ -31,6 +49,24 @@
       "writtenOn": "2026-11-03T14:23:11Z",
       "side": 1,
       "message": "Is this a functional change? Why is this better/different than `CAPABILITY.NONE`?",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "63cc5328_6c964b8e",
+        "filename": "scripts/hsm_provisioning/setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-03T23:22:11Z",
+      "side": 1,
+      "message": "https://github.com/Yubico/python-yubihsm/blob/3.1.2/yubihsm/defs.py#L455-L457\n\nIt\u0027s only for strict type checking.",
+      "parentUuid": "f984ab3a_7d4e8522",
       "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
