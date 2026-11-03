@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "990a66dd_93c8893b",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 526,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T14:11:18Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "4a92a998_e1493725",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "73ae310c_451b613d",
@@ -67,6 +85,24 @@
       "side": 1,
       "message": "YubiHSM also keeps a per-HSM copy of the public keys, see generate_cert() in vendor.yubihsm.keygen.sh, so it overrides this to copy the derived files there too.\nDoes that clear things up?",
       "parentUuid": "73ae310c_451b613d",
+      "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "f77aad83_80eca985",
+        "filename": "scripts/pkcs11/keygen.include.sh",
+        "patchSetId": 3
+      },
+      "lineNbr": 549,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T14:11:18Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "73fc8d5e_ebc4ed6a",
       "revId": "35495b54733fe5a33693fe74f2130a8742ac92a5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
