@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "01f7ae42_eeb5761c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T16:53:09Z",
+      "side": 1,
+      "message": "Again, it would be nice to have a script that runs formatting, linting and tests, so we can easily run this locally for further changes without forgetting anything. Also CI could run the same script.",
+      "revId": "36f8a4a930d113f16f1b04feade811b7c5e54f5b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8bfbcd16_2caffaa4",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T16:53:09Z",
+      "side": 1,
+      "message": "I haven\u0027t reviewed all tests in detail, but it is great to have some test coverage.",
+      "revId": "36f8a4a930d113f16f1b04feade811b7c5e54f5b",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
