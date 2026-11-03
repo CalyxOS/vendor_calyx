@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "852cd300_d644a5a7",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T14:23:11Z",
+      "side": 1,
+      "message": "Is there a script to run all these checks locally? We probably should set up a CI bot that ensures future contributions follow this.",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f984ab3a_7d4e8522",
+        "filename": "scripts/hsm_provisioning/setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-03T14:23:11Z",
+      "side": 1,
+      "message": "Is this a functional change? Why is this better/different than `CAPABILITY.NONE`?",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
