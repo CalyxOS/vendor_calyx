@@ -97,9 +97,10 @@ def sign_app(
             except YubiHsmError as failure:
                 raise RuntimeError(f"YubiHSM failure: {failure}") from failure
             name = identity.name
+            audit_app = app.replace("/", "-")
             environment["AUDIT_LOG_PATH"] = (
                 f"{environment['YUBIHSM_LOGS_DIR']}/{name}/"
-                f"{sign_environment.formatted_date()}-{app}.log"
+                f"{sign_environment.formatted_date()}-{audit_app}.log"
             )
             environment["SIGNING_COMMAND"] = "java"
             interceptor = environment["SIGNING_COMMAND_INTERCEPTOR"]

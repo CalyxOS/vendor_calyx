@@ -97,14 +97,23 @@ def _run_sign_app(
     return result, argv
 
 
+@pytest.mark.parametrize(
+    ("app", "key_id"),
+    (
+        (APP, "0x1502"),
+        ("prebuilts/calyx/microg/certs/microg", "0x1500"),
+    ),
+)
 def test_sign_app_signs_through_the_external_kms_provider(
     sign_app_tree: Path,
     yubihsm: Connector,
+    app: str,
+    key_id: str,
 ) -> None:
     root = sign_app_tree
-    (root / "keys" / "0x1502.x509.pem").write_text("certificate")
+    (root / "keys" / f"{key_id}.x509.pem").write_text("certificate")
 
-    result, argv = _run_sign_app(root, yubihsm, APP, "app.apk")
+    result, argv = _run_sign_app(root, yubihsm, app, "app.apk")
 
     assert result.returncode == 0, result.stderr
     assert argv == [
@@ -119,15 +128,17 @@ def test_sign_app_signs_through_the_external_kms_provider(
         "--kms-type",
         "external",
         "--kms-key-alias",
-        "0x1502",
+        key_id,
         "--cert",
-        f"{root}/keys/0x1502.x509.pem",
+        f"{root}/keys/{key_id}.x509.pem",
         "--out",
         "app-signed.apk",
         "app.apk",
     ]
     assert yubihsm.device.unread_log() == []
-    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(f"*-{APP}.log")
+    (audit_log,) = (root / "logs" / "YubiHSM2-123456").glob(
+        f"*-{app.replace('/', '-')}.log",
+    )
     assert "apksigner.jar sign" in audit_log.read_text()
     assert list((root / "tmp").glob("yubihsm.*")) == []
 
