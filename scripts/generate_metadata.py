@@ -21,9 +21,9 @@ args = parser.parse_args()
 
 
 # From build/make/tools/releasetools/common.py
-def LoadBuildProp(input_file, prop_file):
+def LoadBuildProp(input_file: ZipFile, prop_file: str) -> dict[str, str]:
     lines = input_file.read(prop_file).decode().split("\n")
-    d = {}
+    d: dict[str, str] = {}
     for line in lines:
         line = line.strip()
         if not line or line.startswith("#"):

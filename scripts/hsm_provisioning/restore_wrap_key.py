@@ -26,7 +26,7 @@ KEEP_PATH = os.getenv(
 #
 
 
-def main():
+def main() -> None:
     # receive wrap key via STDIN
     wrap_key_hex = sys.stdin.readline().rstrip()
     wrap_key_bytes = bytes.fromhex(wrap_key_hex)
