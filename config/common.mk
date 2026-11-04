@@ -113,7 +113,9 @@ PRODUCT_PACKAGES += \
     BatteryStatsViewer \
     Bellis \
     CalyxChromium \
+    CalyxChromium-Stub \
     CalyxWebView \
+    CalyxWebView-Stub \
     Camelot \
     Datura \
     ESpeakNG \
