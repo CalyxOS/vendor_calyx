@@ -112,6 +112,8 @@ PRODUCT_PACKAGES += \
     AvatarPicker \
     BatteryStatsViewer \
     Bellis \
+    CalyxChromium \
+    CalyxWebView \
     Camelot \
     Datura \
     ESpeakNG \
@@ -120,8 +122,6 @@ PRODUCT_PACKAGES += \
     Glimpse \
     LupinUpdater \
     Talkback \
-    TrichromeChrome \
-    TrichromeWebView \
     Twelve \
     Recorder \
     Seedvault
