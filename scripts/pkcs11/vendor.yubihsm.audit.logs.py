@@ -13,10 +13,19 @@ from yubihsm import YubiHsm
 
 def main():
     # define command line arguments
-    parser = argparse.ArgumentParser(description="Extracts, saves and uploads YubiHSM 2 audit logs.")
-    parser.add_argument("--log-file", help="File to append audit log to", required=True)
-    parser.add_argument("--comment", help="Comment for all log entries that will get saved")
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser = argparse.ArgumentParser(
+        description="Extracts, saves and uploads YubiHSM 2 audit logs.",
+    )
+    parser.add_argument(
+        "--log-file",
+        help="File to append audit log to",
+        required=True,
+    )
+    parser.add_argument(
+        "--comment",
+        help="Comment for all log entries that will get saved",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     # connect to the YubiHSM via the connector
@@ -27,7 +36,12 @@ def main():
     password = os.getenv("YUBIHSM_PASSWORD", "password")
     session = hsm.create_session_derived(auth_key, password)
     try:
-        extract_and_save_logs(session, args.log_file, args.comment, args.verbose)
+        extract_and_save_logs(
+            session,
+            args.log_file,
+            args.comment,
+            args.verbose,
+        )
     finally:
         session.close()
 
@@ -37,7 +51,7 @@ def extract_and_save_logs(session, log_file, comment, verbose=False):
     if comment is None:
         c = ""
     else:
-        c = comment.replace('\n', '').replace('\r', '')
+        c = comment.replace("\n", "").replace("\r", "")
     if len(log_data.entries) <= 0 and c == "":
         print("No logs to extract and no comment to write.")
         return
