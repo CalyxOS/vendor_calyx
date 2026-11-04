@@ -23,10 +23,18 @@ use_log = False
 def main():
     # define command line arguments
     parser = argparse.ArgumentParser(description="signing cache test")
-    parser.add_argument('--from-cache', nargs='+', metavar=("command", "arguments"),
-                        help="use to check cache and use cached file if available")
-    parser.add_argument('--to-cache', nargs='+', metavar=("command", "arguments"),
-                        help="save output file to cache if there was a cache miss")
+    parser.add_argument(
+        "--from-cache",
+        nargs="+",
+        metavar=("command", "arguments"),
+        help="use to check cache and use cached file if available",
+    )
+    parser.add_argument(
+        "--to-cache",
+        nargs="+",
+        metavar=("command", "arguments"),
+        help="save output file to cache if there was a cache miss",
+    )
     print(sys.argv)
     args = parser.parse_known_args()[0]
     if args.from_cache:
@@ -80,7 +88,11 @@ def to_cache(args):
 
 def apksigner_get_apks(arg_str):
     args = apksigner_parser.parse_known_args(arg_str)[0]
-    return SigningObj(in_file=args.out[1], out_file=args.out[0], key_id=args.key)
+    return SigningObj(
+        in_file=args.out[1],
+        out_file=args.out[0],
+        key_id=args.key,
+    )
 
 
 def link_or_copy(src: Path, dst: Path) -> None:
@@ -93,7 +105,7 @@ def link_or_copy(src: Path, dst: Path) -> None:
 def log(cache_dir, msg):
     if use_log:
         time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        with(cache_dir / "signing_cache.log").open("a") as f:
+        with (cache_dir / "signing_cache.log").open("a") as f:
             f.write(f"{time} {msg}\n")
     print(msg)
 
