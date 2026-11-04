@@ -3,7 +3,8 @@
 # SPDX-FileCopyrightText: The Calyx Institute
 # SPDX-License-Identifier: Apache-2.0
 #
-# Leads through the process of provisioning YubiHSM for CalyxOS in an offline environment
+# Leads through the process of provisioning YubiHSM for CalyxOS in an offline
+# environment
 
 import glob
 import os
@@ -14,7 +15,7 @@ BASE_DIR = os.getenv("SOURCE_DIRECTORY", OUR_DIR)
 OUTPUT_DIR = BASE_DIR
 
 
-def main():
+def main() -> None:
     extract_sdk()
     install_packages()
     start_connector()
@@ -22,7 +23,7 @@ def main():
     subprocess.run([os.path.join(OUR_DIR, "setup.py")])
 
 
-def extract_sdk():
+def extract_sdk() -> None:
     # ensure extraction location exists
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     # find SDK files for extraction
@@ -39,10 +40,11 @@ def extract_sdk():
         os.remove(os.path.join(sdk_output_dir, f))
 
 
-def install_packages():
+def install_packages() -> None:
     print()
     print(
-        "This step uses administrator privileges via sudo to install the packages required to provision YubiHSM 2.",
+        "This step uses administrator privileges via sudo to install the "
+        "packages required to provision YubiHSM 2.",
     )
     print("You may be required to enter your administrator password.")
     print()
@@ -61,10 +63,11 @@ def install_packages():
     subprocess.run(command, check=True)
 
 
-def start_connector():
+def start_connector() -> None:
     print()
     print(
-        "This step uses administrator privileges via sudo to start the YubiHSM connector.",
+        "This step uses administrator privileges via sudo to start the "
+        "YubiHSM connector.",
     )
     print("You may be required to enter your administrator password.")
     print()

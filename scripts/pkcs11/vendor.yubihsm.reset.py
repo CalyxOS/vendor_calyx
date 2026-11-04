@@ -8,11 +8,12 @@ import argparse
 import os
 import sys
 
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from yubihsm import YubiHsm
+from yubihsm.core import YubiHsm
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Resets YubiHSM 2")
     parser.add_argument(
         "-f",
@@ -33,6 +34,8 @@ def main():
 
     with open(args.key_file, "rb") as f:
         private_key = load_pem_private_key(f.read(), password=None)
+    if not isinstance(private_key, ec.EllipticCurvePrivateKey):
+        sys.exit(f"{args.key_file} does not hold an EC private key")
 
     # connect to the YubiHSM via the connector
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")

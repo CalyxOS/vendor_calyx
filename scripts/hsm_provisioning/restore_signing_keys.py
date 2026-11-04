@@ -10,11 +10,10 @@ import os
 import pathlib
 import sys
 
-import cryptography.hazmat._oid
 import cryptography.x509
-import yubihsm
 import yubihsm.exceptions
 from cryptography.hazmat.bindings._rust import ObjectIdentifier
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from setup import (
     ADMIN_AUTHKEY_ID,
@@ -22,8 +21,9 @@ from setup import (
     print_and_get_info,
     save_audit_log,
 )
+from yubihsm.core import YubiHsm
 from yubihsm.defs import CAPABILITY
-from yubihsm.objects import WrapKey
+from yubihsm.objects import Opaque, WrapKey
 
 KEEP_PATH = os.getenv(
     "KEEP_PATH",
@@ -36,7 +36,7 @@ KEEP_PATH = os.getenv(
 #
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Imports wrapped signing keys")
     parser.add_argument(
         "-k",
@@ -49,24 +49,27 @@ def main():
     # Load private key for auth
     with open(args.key_file, "rb") as f:
         admin_private_key = load_pem_private_key(f.read(), password=None)
+    if not isinstance(admin_private_key, ec.EllipticCurvePrivateKey):
+        sys.exit(f"{args.key_file} does not hold an EC private key")
 
     # check if we can find key dir
     key_dir = os.path.join(os.getcwd(), "keys")
     if not os.path.isfile(os.path.join(key_dir, "0x1100-asymmetric-key.yhw")):
         print(
-            f"Could not find keys in {key_dir}. Are you in ota-tools root folder?",
+            f"Could not find keys in {key_dir}. "
+            "Are you in ota-tools root folder?",
             file=sys.stderr,
         )
         sys.exit(1)
 
     # connect
     connector_url = os.getenv("YUBIHSM_CONNECTOR", "http://127.0.0.1:12345")
-    hsm = yubihsm.YubiHsm.connect(connector_url)
+    hsm = YubiHsm.connect(connector_url)
     session = hsm.create_session_asymmetric(ADMIN_AUTHKEY_ID, admin_private_key)
     hsm_name = print_and_get_info(hsm, session)
     try:
         # import all signing keys
-        wrap_key = WrapKey(session, WRAP_KEY_ID)
+        _wrap_key = WrapKey(session, WRAP_KEY_ID)
         key_files = sorted(
             glob.glob("0x*-asymmetric-key.yhw", root_dir=key_dir),
         )
@@ -74,7 +77,7 @@ def main():
             key = os.path.join(key_dir, key_file)
             with open(key) as f:
                 wrapped_key_base64 = f.read()
-            wrapped_key_bytes = base64.b64decode(wrapped_key_base64)
+            _wrapped_key_bytes = base64.b64decode(wrapped_key_base64)
             print(f"Importing {key_file} ...")
             # wrap_key.import_wrapped(wrapped_key_bytes)
         print(f"Successfully imported {len(key_files)} signing keys.")
@@ -90,18 +93,27 @@ def main():
             subject = pem.subject.rfc4514_string()
             key_id_index = subject.find("id:")
             key_id = subject[key_id_index + 3 :]
-            label_bytes = pem.extensions.get_extension_for_oid(
+            extension = pem.extensions.get_extension_for_oid(
                 ObjectIdentifier("1.3.6.1.4.1.41482.4.9"),
-            ).value.value
+            ).value
+            if not isinstance(
+                extension,
+                cryptography.x509.UnrecognizedExtension,
+            ):
+                sys.exit(
+                    f"{cert_file} has a YubiHSM label extension that is not "
+                    "raw bytes",
+                )
+            label_bytes = extension.value
             label = label_bytes.decode().lstrip()
             print(f"Importing {cert_file} {key_id} {label} ...")
             try:
-                yubihsm.objects.Opaque.put_certificate(
+                Opaque.put_certificate(
                     session=session,
                     object_id=int(key_id, 16),
                     label=label,
                     domains=4,  # TODO
-                    capabilities=CAPABILITY.NONE,  # TODO
+                    capabilities=CAPABILITY(0),  # TODO
                     certificate=pem,
                     compress=True,
                 )
@@ -112,7 +124,8 @@ def main():
                 else:
                     raise e
         print(
-            f"Successfully imported {len(cert_files)} signing key certificates.",
+            f"Successfully imported {len(cert_files)} signing key "
+            "certificates.",
         )
     finally:
         save_audit_log(session, hsm_name)

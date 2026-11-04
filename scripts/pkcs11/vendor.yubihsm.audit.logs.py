@@ -8,10 +8,10 @@ import argparse
 import os
 import time
 
-from yubihsm import YubiHsm
+from yubihsm.core import AuthSession, YubiHsm
 
 
-def main():
+def main() -> None:
     # define command line arguments
     parser = argparse.ArgumentParser(
         description="Extracts, saves and uploads YubiHSM 2 audit logs.",
@@ -46,7 +46,12 @@ def main():
         session.close()
 
 
-def extract_and_save_logs(session, log_file, comment, verbose=False):
+def extract_and_save_logs(
+    session: AuthSession,
+    log_file: str,
+    comment: str | None,
+    verbose: bool = False,
+) -> None:
     log_data = session.get_log_entries()
     if comment is None:
         c = ""
@@ -64,7 +69,14 @@ def extract_and_save_logs(session, log_file, comment, verbose=False):
         if verbose:
             print(comment_line)
         for entry in log_data.entries:
-            entry_str = f"{entry.number:>{5}} cmd: {entry.command:#0{4}x} len: {entry.length:>{5}} sKey: {entry.session_key:#0{6}x} tKey: {entry.target_key:#0{6}x} 2Key: {entry.second_key:#0{6}x} res: {entry.result:#0{4}x} tick: {entry.tick:>{10}} hash: {entry.digest.hex()}"
+            entry_str = (
+                f"{entry.number:>{5}} cmd: {entry.command:#0{4}x} "
+                f"len: {entry.length:>{5}} sKey: {entry.session_key:#0{6}x} "
+                f"tKey: {entry.target_key:#0{6}x} "
+                f"2Key: {entry.second_key:#0{6}x} "
+                f"res: {entry.result:#0{4}x} tick: {entry.tick:>{10}} "
+                f"hash: {entry.digest.hex()}"
+            )
             file.write(entry_str + "\n")
             if verbose:
                 print(entry_str)
