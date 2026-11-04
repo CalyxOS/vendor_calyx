@@ -36,6 +36,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "649748d8_53a79fc2",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-04T14:33:14Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "514dacba_5d50908f",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "f984ab3a_7d4e8522",
@@ -67,6 +85,24 @@
       "side": 1,
       "message": "https://github.com/Yubico/python-yubihsm/blob/3.1.2/yubihsm/defs.py#L455-L457\n\nIt\u0027s only for strict type checking.",
       "parentUuid": "f984ab3a_7d4e8522",
+      "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "60759cd9_c688a4da",
+        "filename": "scripts/hsm_provisioning/setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-04T14:33:14Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "63cc5328_6c964b8e",
       "revId": "47b59c1a67da9a01d8cad62bfc17f51cb0cb63e8",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
