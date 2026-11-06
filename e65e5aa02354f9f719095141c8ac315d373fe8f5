@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "e9eb59bf_2aa2c66c",
+        "filename": "scripts/pkcs11/signing_helper.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "Any reason to place this file and the payload signer into the old bash folder and not into the new signing package?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9461d88d_cd1de9f0",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "Could you add some comments about what those magic prefixes are?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0bc68dfe_899a82be",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "Why is this here in `avb_signing.py`? It does seem unrelated to avb signing.",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "04d9cd78_160e1fd6",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "what is this signing officer pin about? did we support that before?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "37e59aef_e9c08d8a",
+        "filename": "scripts/signing/pkcs11.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 612,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "I am still not sure what this means. Did we have this concept before?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "5e95c46c_e4a60d0e",
+        "filename": "scripts/tests/test_avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "Do we need to repeat those here or could we import the production definitions?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "47874eba_b55601be",
+        "filename": "scripts/tests/test_signing_helpers.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T18:56:54Z",
+      "side": 1,
+      "message": "What is a `YubiHSM recovery marker`?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
