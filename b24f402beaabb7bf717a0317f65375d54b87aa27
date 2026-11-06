@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "31d33c34_b5dd0be1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-06T17:22:43Z",
+      "side": 1,
+      "message": "I am not too familiar with that updatekeys.sh file, so I wonder what this legacy key mapping is and if we really need this ported.",
+      "revId": "b24f402beaabb7bf717a0317f65375d54b87aa27",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
