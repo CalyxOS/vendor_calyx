@@ -34,6 +34,24 @@
       "parentUuid": "505ad4a5_32b813a4",
       "revId": "a6e4ee97dec4b9854f478723b82803303609bccd",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "edde92ab_e61af62d",
+        "filename": "scripts/pkcs11/DOCUMENTATION.md",
+        "patchSetId": 7
+      },
+      "lineNbr": 539,
+      "author": {
+        "id": 1000004
+      },
+      "writtenOn": "2026-11-07T16:57:23Z",
+      "side": 1,
+      "message": "Acknowledged",
+      "parentUuid": "b0dbea42_75fac4d7",
+      "revId": "a6e4ee97dec4b9854f478723b82803303609bccd",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
