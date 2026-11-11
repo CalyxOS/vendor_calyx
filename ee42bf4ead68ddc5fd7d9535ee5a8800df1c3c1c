@@ -16,6 +16,24 @@
       "message": "So we load the keymap directly from metadata now and the `.tsv` file is just for printing? The reason why we used the checked in copy as a canonical source as a static keymap was to have the explicit mapping present in the repo and the history, so whenever we did metadata changes, we could verify the IDs are still as expected.",
       "revId": "ee42bf4ead68ddc5fd7d9535ee5a8800df1c3c1c",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8eace993_c01b68f6",
+        "filename": "scripts/signing/cli.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 365,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:30:05Z",
+      "side": 1,
+      "message": "The TSV is still the source of key IDs for YubiHSM signing and key generation. The new command only generates a proposed TSV from metadata, like the Bash generator did.\n\nWe still check that file in and review its diff when metadata changes. I’ve also added a test here that compares the generated mapping against the checked-in TSV, so they cannot drift apart.",
+      "parentUuid": "e6a6ab39_d5a0478e",
+      "revId": "ee42bf4ead68ddc5fd7d9535ee5a8800df1c3c1c",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
   ]
 }
