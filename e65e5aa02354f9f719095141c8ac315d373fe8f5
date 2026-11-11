@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "154eaa3e_a06a11d5",
+        "filename": "scripts/pkcs11/signing_helper.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e9eb59bf_2aa2c66c",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "9461d88d_cd1de9f0",
@@ -31,6 +49,24 @@
       "writtenOn": "2026-11-06T18:56:54Z",
       "side": 1,
       "message": "Could you add some comments about what those magic prefixes are?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a2fd3910_e4712799",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9461d88d_cd1de9f0",
       "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
@@ -52,6 +88,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "2d411527_3c4eef65",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "This used to be moved later. I put it in the correct place from the start now.",
+      "parentUuid": "0bc68dfe_899a82be",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "04d9cd78_160e1fd6",
@@ -65,6 +119,24 @@
       "writtenOn": "2026-11-06T18:56:54Z",
       "side": 1,
       "message": "what is this signing officer pin about? did we support that before?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3a656b52_8252352d",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "The Bash scripts supported this through SIGNING_USES_SO_PIN. It selects the PKCS#11 security-officer PIN for signing.",
+      "parentUuid": "04d9cd78_160e1fd6",
       "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
@@ -86,6 +158,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "af38dd81_91b7c78e",
+        "filename": "scripts/signing/pkcs11.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 612,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "The Bash helpers used the normal user PIN to find the key on the token, even when SIGNING_USES_SO_PIN\u003dy selected the security-officer PIN for signing. This preserves that distinction. I’ve replaced “discovery credentials” with “object-lookup PIN” in the docstring.",
+      "parentUuid": "37e59aef_e9c08d8a",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "5e95c46c_e4a60d0e",
@@ -103,6 +193,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ce12fd8d_eb4b044a",
+        "filename": "scripts/tests/test_avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "An incorrect production constant could also change the test input and expectation, hiding the error",
+      "parentUuid": "5e95c46c_e4a60d0e",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "47874eba_b55601be",
@@ -116,6 +224,24 @@
       "writtenOn": "2026-11-06T18:56:54Z",
       "side": 1,
       "message": "What is a `YubiHSM recovery marker`?",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "71338076_38c8551c",
+        "filename": "scripts/tests/test_signing_helpers.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:37:59Z",
+      "side": 1,
+      "message": "This meant the \"Connector operation failed\" text recognized by the interceptor. The fixture emits that message to check that the helper preserves provider stderr. I reworded the description to remove the unexplained term.",
+      "parentUuid": "47874eba_b55601be",
       "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
