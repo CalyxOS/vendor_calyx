@@ -18,6 +18,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ecdf928f_cbefd8bd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 5
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:32:45Z",
+      "side": 1,
+      "message": "This legacy key mapping is used by plaintext signing.",
+      "parentUuid": "31d33c34_b5dd0be1",
+      "revId": "b24f402beaabb7bf717a0317f65375d54b87aa27",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "a8faa388_b42500a7",
@@ -31,6 +49,24 @@
       "writtenOn": "2026-11-06T17:23:31Z",
       "side": 1,
       "message": "Is this only relevant for the legacy wrapper? If we add a new device, seems easy to forget adding it here.",
+      "revId": "b24f402beaabb7bf717a0317f65375d54b87aa27",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "9b29824d_408e16de",
+        "filename": "scripts/signing/keymap.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-11T15:32:45Z",
+      "side": 1,
+      "message": "A new device only needs an entry if it requires one of those legacy exceptions. YubiHSM signing uses the static TSV instead.",
+      "parentUuid": "a8faa388_b42500a7",
       "revId": "b24f402beaabb7bf717a0317f65375d54b87aa27",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
