@@ -1,0 +1,161 @@
+ID	Device	Key Type	Key
+0x1100		core	build/make/target/product/security/testkey
+0x1101		core	build/make/target/product/security/media
+0x1102		core	build/make/target/product/security/shared
+0x1103		core	build/make/target/product/security/platform
+0x1104		core	build/make/target/product/security/networkstack
+0x1105		core	build/make/target/product/security/bluetooth
+0x1106		core	build/make/target/product/security/sdk_sandbox
+0x1107		core	build/make/target/product/security/nfc
+0x1200		apex_apk	device/google/gs-common/uwb-certs/com.qorvo.uwb
+0x1200		apex_apk	packages/modules/AdServices/adservices/apk/com.android.adservices.api
+0x1200		apex_apk	packages/modules/AppSearch/apk/com.android.appsearch.apk
+0x1200		apex_apk	packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources
+0x1200		apex_apk	packages/modules/HealthFitness/apk/com.android.healthconnect.controller
+0x1200		apex_apk	packages/modules/HealthFitness/backuprestore/com.android.health.connect.backuprestore
+0x1200		apex_apk	packages/modules/OnDevicePersonalization/federatedcompute/apk/com.android.federatedcompute
+0x1200		apex_apk	packages/modules/Permission/SafetyCenter/Resources/com.android.safetycenter.resources
+0x1200		apex_apk	packages/modules/Telephony/apex/com.android.telecom.resources
+0x1200		apex_apk	packages/modules/Telephony/apex/com.android.telecomui
+0x1200		apex_apk	packages/modules/Uwb/service/ServiceUwbResources/resources-certs/com.android.uwb.resources
+0x1200		apex_apk	packages/modules/WebApp/apex/com.android.webapp
+0x1200		apex_apk	packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin
+0x1200		apex_apk	packages/modules/Wifi/WifiDialog/certs/com.android.wifi.dialog
+0x1200		apex_apk	packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources
+0x1200		apex_container	com.android.adbd
+0x1200		apex_container	com.android.adservices
+0x1200		apex_container	com.android.appsearch
+0x1200		apex_container	com.android.art
+0x1200		apex_container	com.android.bluetooth
+0x1200		apex_container	com.android.bt
+0x1200		apex_container	com.android.btservices
+0x1200		apex_container	com.android.cellbroadcast
+0x1200		apex_container	com.android.compos
+0x1200		apex_container	com.android.configinfrastructure
+0x1200		apex_container	com.android.conscrypt
+0x1200		apex_container	com.android.crashrecovery
+0x1200		apex_container	com.android.devicelock
+0x1200		apex_container	com.android.extservices
+0x1200		apex_container	com.android.hardware.authsecret
+0x1200		apex_container	com.android.hardware.biometrics.face.virtual
+0x1200		apex_container	com.android.hardware.biometrics.fingerprint.virtual
+0x1200		apex_container	com.android.hardware.boot
+0x1200		apex_container	com.android.hardware.cas
+0x1200		apex_container	com.android.hardware.neuralnetworks
+0x1200		apex_container	com.android.hardware.rebootescrow
+0x1200		apex_container	com.android.hardware.wifi
+0x1200		apex_container	com.android.healthfitness
+0x1200		apex_container	com.android.i18n
+0x1200		apex_container	com.android.ipsec
+0x1200		apex_container	com.android.media
+0x1200		apex_container	com.android.media.swcodec
+0x1200		apex_container	com.android.mediaprovider
+0x1200		apex_container	com.android.neuralnetworks
+0x1200		apex_container	com.android.nfcservices
+0x1200		apex_container	com.android.npumanager
+0x1200		apex_container	com.android.ondevicepersonalization
+0x1200		apex_container	com.android.os.statsd
+0x1200		apex_container	com.android.permission
+0x1200		apex_container	com.android.profiling
+0x1200		apex_container	com.android.resolv
+0x1200		apex_container	com.android.rkpd
+0x1200		apex_container	com.android.runtime
+0x1200		apex_container	com.android.scheduling
+0x1200		apex_container	com.android.sdkext
+0x1200		apex_container	com.android.support.apexer
+0x1200		apex_container	com.android.telephonycore
+0x1200		apex_container	com.android.telephonymodules
+0x1200		apex_container	com.android.tethering
+0x1200		apex_container	com.android.tzdata
+0x1200		apex_container	com.android.uprobestats
+0x1200		apex_container	com.android.uwb
+0x1200		apex_container	com.android.vibrator.drv2624
+0x1200		apex_container	com.android.vibrator.sunfish
+0x1200		apex_container	com.android.virt
+0x1200		apex_container	com.android.vndk.current
+0x1200		apex_container	com.android.vndk.current.on_vendor
+0x1200		apex_container	com.android.webapp
+0x1200		apex_container	com.android.wifi
+0x1200		apex_container	com.google.pixel.vibrator.hal
+0x1300		apex_payload	com.android.adbd
+0x1300		apex_payload	com.android.adservices
+0x1300		apex_payload	com.android.appsearch
+0x1300		apex_payload	com.android.art
+0x1300		apex_payload	com.android.bluetooth
+0x1300		apex_payload	com.android.bt
+0x1300		apex_payload	com.android.btservices
+0x1300		apex_payload	com.android.cellbroadcast
+0x1300		apex_payload	com.android.compos
+0x1300		apex_payload	com.android.configinfrastructure
+0x1300		apex_payload	com.android.conscrypt
+0x1300		apex_payload	com.android.crashrecovery
+0x1300		apex_payload	com.android.devicelock
+0x1300		apex_payload	com.android.extservices
+0x1300		apex_payload	com.android.hardware.authsecret
+0x1300		apex_payload	com.android.hardware.biometrics.face.virtual
+0x1300		apex_payload	com.android.hardware.biometrics.fingerprint.virtual
+0x1300		apex_payload	com.android.hardware.boot
+0x1300		apex_payload	com.android.hardware.cas
+0x1300		apex_payload	com.android.hardware.neuralnetworks
+0x1300		apex_payload	com.android.hardware.rebootescrow
+0x1300		apex_payload	com.android.hardware.wifi
+0x1300		apex_payload	com.android.healthfitness
+0x1300		apex_payload	com.android.i18n
+0x1300		apex_payload	com.android.ipsec
+0x1300		apex_payload	com.android.media
+0x1300		apex_payload	com.android.media.swcodec
+0x1300		apex_payload	com.android.mediaprovider
+0x1300		apex_payload	com.android.neuralnetworks
+0x1300		apex_payload	com.android.nfcservices
+0x1300		apex_payload	com.android.npumanager
+0x1300		apex_payload	com.android.ondevicepersonalization
+0x1300		apex_payload	com.android.os.statsd
+0x1300		apex_payload	com.android.permission
+0x1300		apex_payload	com.android.profiling
+0x1300		apex_payload	com.android.resolv
+0x1300		apex_payload	com.android.rkpd
+0x1300		apex_payload	com.android.runtime
+0x1300		apex_payload	com.android.scheduling
+0x1300		apex_payload	com.android.sdkext
+0x1300		apex_payload	com.android.support.apexer
+0x1300		apex_payload	com.android.telephonycore
+0x1300		apex_payload	com.android.telephonymodules
+0x1300		apex_payload	com.android.tethering
+0x1300		apex_payload	com.android.tzdata
+0x1300		apex_payload	com.android.uprobestats
+0x1300		apex_payload	com.android.uwb
+0x1300		apex_payload	com.android.vibrator.drv2624
+0x1300		apex_payload	com.android.vibrator.sunfish
+0x1300		apex_payload	com.android.virt
+0x1300		apex_payload	com.android.vndk.current
+0x1300		apex_payload	com.android.vndk.current.on_vendor
+0x1300		apex_payload	com.android.webapp
+0x1300		apex_payload	com.android.wifi
+0x1300		apex_payload	com.google.pixel.vibrator.hal
+0x1500		app	prebuilts/calyx/microg/certs/microg
+0x1501		app	external/calyx/chromium/certs/chromium
+0x1502		app	com.google.android.apps.photos
+0x1503		app	prebuilts/calyx/lupin/updater/certs/org.calyxos.lupin.updater
+0x1600		repo	updater
+0x2000	bramble	avb	boot
+0x2000	bramble	avb	dtbo
+0x2000	bramble	avb	init_boot
+0x2000	bramble	avb	recovery
+0x2000	bramble	avb	system
+0x2000	bramble	avb	system_other
+0x2000	bramble	avb	vbmeta
+0x2000	bramble	avb	vbmeta_system
+0x2000	bramble	avb	vbmeta_vendor
+0x2000	bramble	avb	vendor
+0x2000	bramble	other	ota
+0x2100	redfin	avb	boot
+0x2100	redfin	avb	dtbo
+0x2100	redfin	avb	init_boot
+0x2100	redfin	avb	recovery
+0x2100	redfin	avb	system
+0x2100	redfin	avb	system_other
+0x2100	redfin	avb	vbmeta
+0x2100	redfin	avb	vbmeta_system
+0x2100	redfin	avb	vbmeta_vendor
+0x2100	redfin	avb	vendor
+0x2100	redfin	other	ota
