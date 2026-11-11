@@ -141,6 +141,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "bbb3ee18_36a4a9c6",
+        "filename": "scripts/signing/avb_signing.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 172,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-11T18:06:47Z",
+      "side": 1,
+      "message": "Thanks for explaining! The bash scripts are an early prototype really. In my opinion, it would be totally fine to drop features that we don\u0027t use and don\u0027t need in favor of less code. No need to rework the chain for that though. Just something to keep in mind for later, maybe a final cleanup or so.",
+      "parentUuid": "3a656b52_8252352d",
+      "revId": "e65e5aa02354f9f719095141c8ac315d373fe8f5",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "37e59aef_e9c08d8a",
