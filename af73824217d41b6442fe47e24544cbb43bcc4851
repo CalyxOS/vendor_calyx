@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "73a82f2f_db34692c",
+        "filename": "scripts/signing/cli.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 848,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-11T18:19:31Z",
+      "side": 1,
+      "message": "Will this get initialized with hardcoded attestation_id and wrap",
+      "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "7ba19c83_570bb632",
+        "filename": "scripts/signing/vendor_yubihsm.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 354,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-11T18:19:31Z",
+      "side": 1,
+      "message": "Is creating a new session for this temporary? If not, why not re-use an existing session?",
+      "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "3fcb9e54_5d1a57c1",
+        "filename": "scripts/signing/vendor_yubihsm.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 375,
+      "author": {
+        "id": 1000003
+      },
+      "writtenOn": "2026-11-11T18:19:31Z",
+      "side": 1,
+      "message": "Interesting: What\u0027s the reason for getting the recent log lines and removing them from what the HSM returned? Is there a chance that `set_log_index` didn\u0027t work and you get duplicates otherwise?",
+      "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    }
+  ]
+}
