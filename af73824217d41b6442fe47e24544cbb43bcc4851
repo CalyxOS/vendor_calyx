@@ -53,6 +53,24 @@
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "0bb13a43_5efff5a8",
+        "filename": "scripts/signing/vendor_yubihsm.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 354,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-12T08:50:59Z",
+      "side": 1,
+      "message": "It will reuse the session in one of the later commits, this is just to match the bash behavior.",
+      "parentUuid": "7ba19c83_570bb632",
+      "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "3fcb9e54_5d1a57c1",
@@ -66,6 +84,24 @@
       "writtenOn": "2026-11-11T18:19:31Z",
       "side": 1,
       "message": "Interesting: What\u0027s the reason for getting the recent log lines and removing them from what the HSM returned? Is there a chance that `set_log_index` didn\u0027t work and you get duplicates otherwise?",
+      "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
+      "serverId": "35266860-6252-469c-a67d-185064479fc0"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d093ab3d_d3ef9503",
+        "filename": "scripts/signing/vendor_yubihsm.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 375,
+      "author": {
+        "id": 1000248
+      },
+      "writtenOn": "2026-11-12T08:50:59Z",
+      "side": 1,
+      "message": "Yes, it\u0027s for handling a set_log_index() failure after the entries have already been saved to disk.",
+      "parentUuid": "3fcb9e54_5d1a57c1",
       "revId": "af73824217d41b6442fe47e24544cbb43bcc4851",
       "serverId": "35266860-6252-469c-a67d-185064479fc0"
     }
